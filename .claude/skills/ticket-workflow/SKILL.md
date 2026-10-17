@@ -23,8 +23,10 @@ throughout.
    summary under 70 characters, e.g. `LOG-123: BGL loader`. Description: summary of
    changes, checks run with their result, open points, and `Closes LOG-123` (or
    `Part of` for a partial step).
-5. **Wait for CI:** follow the run with `gh pr checks --watch`. If a check fails,
-   fix the cause in a new commit and push again.
+5. **Wait for CI:** wait until every required check is green. In the Claude desktop
+   app, use its CI monitor for the pull request instead of polling; elsewhere,
+   follow the run with `gh pr checks --watch`. If a check fails, fix the cause in a
+   new commit and push again.
 6. **Merge:** once every required check is green and the branch has no conflicts,
    merge with `gh pr merge <number> --merge` (merge commit, as in the existing
    history) and delete the remote branch (`git push origin --delete <branch>`). Do

@@ -241,11 +241,12 @@ versions before using an API, and never infer an installation from a plan.
 
 ## Git
 
-Agents push, open the pull request and merge it themselves once every required check
-is green; the steps are in `.claude/skills/ticket-workflow/SKILL.md`. Nothing reaches
-`main` except through a merged pull request: never push to `main`, never force-push a
-shared branch, never bypass branch protection, and never skip, disable or weaken a
-check to get green. Stop and ask instead of merging when the change needs a decision
+This file is the owner's standing authorization: for work on a ticket (or `NT:` work
+the user asked for), agents push the branch, open the pull request and merge it
+themselves once every required check is green, without asking first. The steps are
+in `.claude/skills/ticket-workflow/SKILL.md`. Nothing reaches `main` except through a
+merged pull request: never push to `main`, never force-push a shared branch, never
+bypass branch protection, and never skip, disable or weaken a check to get green. Stop and ask instead of merging when the change needs a decision
 the ticket does not cover or review comments are open.
 
 <!-- BEGIN:turborepo-agent-rules -->
