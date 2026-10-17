@@ -41,6 +41,7 @@ import {
   resultDigest,
 } from "./receipts.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
+import { eventTrend } from "./tools/event-trend.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
 /**
@@ -166,6 +167,7 @@ export class ToolFailure extends Error {
 const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(describeCorpus),
   toolEntry(searchLogs),
+  toolEntry(eventTrend),
 ]
 
 /** Optional index tools (A-33, P2); none implemented yet. */
@@ -382,12 +384,14 @@ async function runDefinition<I, O>(
 
   const signature = receiptSignature(def.name, def.version, input)
   const digest = resultDigest(data)
+  const factSpecs =
+    typeof def.factSpecs === "function" ? def.factSpecs(input) : def.factSpecs
   for (let attempt = 0; attempt < RECEIPT_ID_ATTEMPTS; attempt++) {
     const receiptId = newReceiptId()
     const facts = buildFacts(
       receiptId,
       { result: data, scope: run.scope },
-      def.factSpecs
+      factSpecs
     )
     const receipt = receiptSchema.parse({
       receipt_id: receiptId,

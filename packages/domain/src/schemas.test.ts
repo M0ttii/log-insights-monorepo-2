@@ -11,6 +11,10 @@ import { rankCriterionSchema } from "./rules/ranking.ts"
 import { patternStatusSchema } from "./rules/status.ts"
 import { emptyInputSchema, toolResultSchema } from "./tool.ts"
 import {
+  eventTrendInputSchema,
+  eventTrendOutputSchema,
+} from "./tools/event-trend.ts"
+import {
   searchLogsInputSchema,
   searchLogsOutputSchema,
 } from "./tools/search-logs.ts"
@@ -47,6 +51,8 @@ const schemas = {
   dominance: dominanceSchema,
   searchLogsInput: searchLogsInputSchema,
   searchLogsOutput: searchLogsOutputSchema,
+  eventTrendInput: eventTrendInputSchema,
+  eventTrendOutput: eventTrendOutputSchema,
 }
 
 type JsonObject = Record<string, unknown>
@@ -104,6 +110,17 @@ describe("JSON Schema export", () => {
     })
     expect(property(input, "from").description).toMatch(/inclusive/)
     expect(property(input, "to").description).toMatch(/exclusive/)
+  })
+
+  it("requires exactly one dataset and a bucket for event_trend", () => {
+    const input = z.toJSONSchema(eventTrendInputSchema, { io: "input" })
+    expect(input.additionalProperties).toBe(false)
+    expect(input.required).toEqual(["dataset", "bucket"])
+    expect(property(input, "dataset")).toMatchObject({
+      type: "string",
+      enum: ["bgl", "openstack"],
+    })
+    expect(property(input, "bucket").description).toMatch(/Monday/)
   })
 
   it("exports describe_corpus as an empty strict object", () => {

@@ -149,7 +149,11 @@ export type ToolDef<I, O> = {
   description: string
   input: z.ZodType<I>
   output: z.ZodType<O>
-  factSpecs: readonly FactSpec[]
+  /**
+   * A function of the validated input when a group key depends on it, e.g.
+   * the dimension a trend is split by (`{ bucket_start, component }`).
+   */
+  factSpecs: readonly FactSpec[] | ((input: I) => readonly FactSpec[])
   annotations: ToolAnnotations
   /** Cross-field checks JSON Schema cannot express; run after the schema parse. */
   validate?: (input: I) => ToolError | null
