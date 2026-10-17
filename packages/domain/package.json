@@ -20,6 +20,7 @@
     "./tools/count-events": "./src/tools/count-events.ts",
     "./tools/get-log-context": "./src/tools/get-log-context.ts",
     "./tools/event-trend": "./src/tools/event-trend.ts",
+    "./tools/recurring-patterns": "./src/tools/recurring-patterns.ts",
     "./tools/search-logs": "./src/tools/search-logs.ts",
     "./version": "./src/version.ts",
     "./rules/compare": "./src/rules/compare.ts",

@@ -72,6 +72,65 @@ export function investigationOrder<T extends RankCandidate>(
   return { ranked, basis, dropped }
 }
 
+/** Leader IDs per dimension, at most this many; `tied` keeps the full count. */
+export const MAX_LEADER_IDS = 5
+
+export const leaderSchema = z.strictObject({
+  value: z
+    .number()
+    .int()
+    .describe("Highest value of this criterion among all candidates checked."),
+  tied: z
+    .number()
+    .int()
+    .positive()
+    .describe("Candidates that share the highest value."),
+  pattern_ids: z
+    .array(z.string())
+    .min(1)
+    .max(MAX_LEADER_IDS)
+    .describe(
+      `Up to ${MAX_LEADER_IDS} of them in the investigation order (R-08).`
+    ),
+})
+
+export type Leader = z.infer<typeof leaderSchema>
+
+type LeaderCriterion = Exclude<RankCriterion, "pattern_id">
+
+export type Leaders = Record<LeaderCriterion, Leader | null>
+
+/**
+ * Which candidate leads in each R-08 criterion, over all candidates
+ * (frequency, breadth, change and events are determined separately). A
+ * criterion not determinable for every candidate has no leader (`null`),
+ * like it has no place in the order. `ranked` is the investigation order,
+ * so ties keep it.
+ */
+export function rankLeaders(ranked: readonly RankCandidate[]): Leaders {
+  const leader = (criterion: LeaderCriterion): Leader | null => {
+    const values = ranked.map((candidate) => candidate[criterion])
+    if (ranked.length === 0 || values.some((value) => value === null))
+      return null
+    const numbers = values.filter((value) => value !== null)
+    const best = Math.max(...numbers)
+    const top = ranked.filter((candidate) => candidate[criterion] === best)
+    return {
+      value: best,
+      tied: top.length,
+      pattern_ids: top
+        .slice(0, MAX_LEADER_IDS)
+        .map((candidate) => candidate.pattern_id),
+    }
+  }
+  return {
+    episodes: leader("episodes"),
+    breadth: leader("breadth"),
+    increase: leader("increase"),
+    events: leader("events"),
+  }
+}
+
 function compareBy(
   criterion: RankCriterion,
   a: RankCandidate,

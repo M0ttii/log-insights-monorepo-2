@@ -122,6 +122,144 @@ export function dominance(
   return { kind: "trade_off", dimensions, leaders, conflicts }
 }
 
+/** Conflicts with candidates outside the listed priorities, at most this many. */
+export const MAX_OUTSIDE_CONFLICTS = 5
+
+const conflictSchema = z.strictObject({
+  a: z.string().describe("pattern_id of the candidate ranked higher (R-08)."),
+  b: z.string().describe("pattern_id of the candidate ranked lower."),
+  a_ahead_in: z
+    .array(dominanceDimensionSchema)
+    .describe("Dimensions in which a is ahead."),
+  b_ahead_in: z
+    .array(dominanceDimensionSchema)
+    .describe(
+      "Dimensions in which b is ahead; both lists empty means a tie in every dimension."
+    ),
+  b_listed: z
+    .boolean()
+    .describe(
+      "b is among the listed priorities; false for a candidate further down the order that the first is not ahead of."
+    ),
+})
+
+export const priorityDominanceSchema = z
+  .discriminatedUnion("kind", [
+    z.strictObject({
+      kind: z.literal("clear_priority"),
+      pattern_id: z
+        .string()
+        .describe(
+          "First candidate; it dominates every other candidate checked: clear priority 1."
+        ),
+      dimensions: z
+        .array(dominanceDimensionSchema)
+        .describe(
+          "Dimensions compared; breadth and change are left out when not determinable for every candidate."
+        ),
+      compared_with: z
+        .number()
+        .int()
+        .nonnegative()
+        .describe("Other candidates it dominates (all checked but itself)."),
+    }),
+    z.strictObject({
+      kind: z.literal("trade_off"),
+      pattern_id: z
+        .string()
+        .describe("First candidate in the R-08 order; it is not dominant."),
+      dimensions: z
+        .array(dominanceDimensionSchema)
+        .describe(
+          "Dimensions compared; breadth and change are left out when not determinable for every candidate."
+        ),
+      not_dominated_by_first: z
+        .number()
+        .int()
+        .positive()
+        .describe(
+          "Candidates checked that the first does not dominate (R-09)."
+        ),
+      conflicts: z
+        .array(conflictSchema)
+        .describe(
+          `Pairs where neither dominates: every such pair among the listed priorities, then the first against at most ${MAX_OUTSIDE_CONFLICTS} unlisted candidates it does not dominate, in R-08 order.`
+        ),
+    }),
+  ])
+  .describe(
+    "R-09 dominance over every candidate checked, not a score: clear priority 1, or the trade-offs to name."
+  )
+
+export type PriorityDominance = z.infer<typeof priorityDominanceSchema>
+
+/**
+ * R-09 for an investigation order: does the first candidate dominate every
+ * other candidate checked? `ranked` is the whole R-08 order, the first
+ * `listed` entries are the priorities shown. Without a dominant first
+ * candidate the conflicts name the trade-offs among the listed priorities
+ * and between the first and the unlisted candidates it is not ahead of
+ * (bounded, the full count stays in `not_dominated_by_first`), so a
+ * trade-off is never hidden by the list length.
+ */
+export function priorityDominance(
+  ranked: readonly DominanceCandidate[],
+  listed: number
+): PriorityDominance {
+  const [first, ...others] = ranked
+  if (first === undefined)
+    throw new RangeError("priorityDominance needs at least one candidate")
+  if (!Number.isInteger(listed) || listed < 1 || listed > ranked.length)
+    throw new RangeError(`listed must be 1–${ranked.length}, got ${listed}`)
+  const dimensions = ALL.filter(
+    (dimension) =>
+      dimension === "episodes" ||
+      ranked.every((candidate) => candidate[dimension] !== null)
+  )
+  const notDominated = others.filter(
+    (other) => !dominates(first, other, dimensions)
+  )
+  if (notDominated.length === 0)
+    return {
+      kind: "clear_priority",
+      pattern_id: first.pattern_id,
+      dimensions,
+      compared_with: others.length,
+    }
+
+  const conflict = (
+    a: DominanceCandidate,
+    b: DominanceCandidate,
+    bListed: boolean
+  ) => ({
+    a: a.pattern_id,
+    b: b.pattern_id,
+    a_ahead_in: dimensions.filter((d) => valueOf(a, d) > valueOf(b, d)),
+    b_ahead_in: dimensions.filter((d) => valueOf(b, d) > valueOf(a, d)),
+    b_listed: bListed,
+  })
+  const shown = ranked.slice(0, listed)
+  const conflicts: z.infer<typeof conflictSchema>[] = []
+  shown.forEach((a, i) => {
+    for (const b of shown.slice(i + 1))
+      if (!dominates(a, b, dimensions) && !dominates(b, a, dimensions))
+        conflicts.push(conflict(a, b, true))
+  })
+  const outside = new Set(ranked.slice(listed))
+  for (const other of notDominated
+    .filter((candidate) => outside.has(candidate))
+    .slice(0, MAX_OUTSIDE_CONFLICTS))
+    conflicts.push(conflict(first, other, false))
+
+  return {
+    kind: "trade_off",
+    pattern_id: first.pattern_id,
+    dimensions,
+    not_dominated_by_first: notDominated.length,
+    conflicts,
+  }
+}
+
 export function dominates(
   a: DominanceCandidate,
   b: DominanceCandidate,

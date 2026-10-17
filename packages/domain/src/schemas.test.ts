@@ -6,8 +6,8 @@ import { factSchema, factSpecSchema } from "./facts.ts"
 import { filterSchema, pickFilter } from "./filters.ts"
 import { receiptSchema } from "./receipt.ts"
 import { changeLabelSchema } from "./rules/compare.ts"
-import { dominanceSchema } from "./rules/dominance.ts"
-import { rankCriterionSchema } from "./rules/ranking.ts"
+import { dominanceSchema, priorityDominanceSchema } from "./rules/dominance.ts"
+import { leaderSchema, rankCriterionSchema } from "./rules/ranking.ts"
 import { patternStatusSchema } from "./rules/status.ts"
 import { emptyInputSchema, toolResultSchema } from "./tool.ts"
 import {
@@ -22,6 +22,10 @@ import {
   getLogContextInputSchema,
   getLogContextOutputSchema,
 } from "./tools/get-log-context.ts"
+import {
+  recurringPatternsInputSchema,
+  recurringPatternsOutputSchema,
+} from "./tools/recurring-patterns.ts"
 import {
   searchLogsInputSchema,
   searchLogsOutputSchema,
@@ -57,12 +61,16 @@ const schemas = {
   patternStatus: patternStatusSchema,
   rankCriterion: rankCriterionSchema,
   dominance: dominanceSchema,
+  priorityDominance: priorityDominanceSchema,
+  leader: leaderSchema,
   searchLogsInput: searchLogsInputSchema,
   searchLogsOutput: searchLogsOutputSchema,
   countEventsInput: countEventsInputSchema,
   countEventsOutput: countEventsOutputSchema,
   eventTrendInput: eventTrendInputSchema,
   eventTrendOutput: eventTrendOutputSchema,
+  recurringPatternsInput: recurringPatternsInputSchema,
+  recurringPatternsOutput: recurringPatternsOutputSchema,
   getLogContextInput: getLogContextInputSchema,
   getLogContextOutput: getLogContextOutputSchema,
 }

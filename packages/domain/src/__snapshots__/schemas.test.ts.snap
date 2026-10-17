@@ -5471,6 +5471,77 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
 }
 `;
 
+exports[`JSON Schema export > leader converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "pattern_ids": {
+        "description": "Up to 5 of them in the investigation order (R-08).",
+        "items": {
+          "type": "string",
+        },
+        "maxItems": 5,
+        "minItems": 1,
+        "type": "array",
+      },
+      "tied": {
+        "description": "Candidates that share the highest value.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "value": {
+        "description": "Highest value of this criterion among all candidates checked.",
+        "maximum": 9007199254740991,
+        "minimum": -9007199254740991,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "value",
+      "tied",
+      "pattern_ids",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "pattern_ids": {
+        "description": "Up to 5 of them in the investigation order (R-08).",
+        "items": {
+          "type": "string",
+        },
+        "maxItems": 5,
+        "minItems": 1,
+        "type": "array",
+      },
+      "tied": {
+        "description": "Candidates that share the highest value.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "value": {
+        "description": "Highest value of this criterion among all candidates checked.",
+        "maximum": 9007199254740991,
+        "minimum": -9007199254740991,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "value",
+      "tied",
+      "pattern_ids",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`JSON Schema export > patternStatus converts losslessly for input and output 1`] = `
 {
   "input": {
@@ -5510,6 +5581,283 @@ exports[`JSON Schema export > patternStatus converts losslessly for input and ou
       },
     ],
     "description": "R-10 status; null when the pattern has no events in either period.",
+  },
+}
+`;
+
+exports[`JSON Schema export > priorityDominance converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "R-09 dominance over every candidate checked, not a score: clear priority 1, or the trade-offs to name.",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "compared_with": {
+            "description": "Other candidates it dominates (all checked but itself).",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "dimensions": {
+            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "clear_priority",
+            "type": "string",
+          },
+          "pattern_id": {
+            "description": "First candidate; it dominates every other candidate checked: clear priority 1.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "kind",
+          "pattern_id",
+          "dimensions",
+          "compared_with",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "conflicts": {
+            "description": "Pairs where neither dominates: every such pair among the listed priorities, then the first against at most 5 unlisted candidates it does not dominate, in R-08 order.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "a": {
+                  "description": "pattern_id of the candidate ranked higher (R-08).",
+                  "type": "string",
+                },
+                "a_ahead_in": {
+                  "description": "Dimensions in which a is ahead.",
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "b": {
+                  "description": "pattern_id of the candidate ranked lower.",
+                  "type": "string",
+                },
+                "b_ahead_in": {
+                  "description": "Dimensions in which b is ahead; both lists empty means a tie in every dimension.",
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "b_listed": {
+                  "description": "b is among the listed priorities; false for a candidate further down the order that the first is not ahead of.",
+                  "type": "boolean",
+                },
+              },
+              "required": [
+                "a",
+                "b",
+                "a_ahead_in",
+                "b_ahead_in",
+                "b_listed",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "dimensions": {
+            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "trade_off",
+            "type": "string",
+          },
+          "not_dominated_by_first": {
+            "description": "Candidates checked that the first does not dominate (R-09).",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "pattern_id": {
+            "description": "First candidate in the R-08 order; it is not dominant.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "kind",
+          "pattern_id",
+          "dimensions",
+          "not_dominated_by_first",
+          "conflicts",
+        ],
+        "type": "object",
+      },
+    ],
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "R-09 dominance over every candidate checked, not a score: clear priority 1, or the trade-offs to name.",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "compared_with": {
+            "description": "Other candidates it dominates (all checked but itself).",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "dimensions": {
+            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "clear_priority",
+            "type": "string",
+          },
+          "pattern_id": {
+            "description": "First candidate; it dominates every other candidate checked: clear priority 1.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "kind",
+          "pattern_id",
+          "dimensions",
+          "compared_with",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "conflicts": {
+            "description": "Pairs where neither dominates: every such pair among the listed priorities, then the first against at most 5 unlisted candidates it does not dominate, in R-08 order.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "a": {
+                  "description": "pattern_id of the candidate ranked higher (R-08).",
+                  "type": "string",
+                },
+                "a_ahead_in": {
+                  "description": "Dimensions in which a is ahead.",
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "b": {
+                  "description": "pattern_id of the candidate ranked lower.",
+                  "type": "string",
+                },
+                "b_ahead_in": {
+                  "description": "Dimensions in which b is ahead; both lists empty means a tie in every dimension.",
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "b_listed": {
+                  "description": "b is among the listed priorities; false for a candidate further down the order that the first is not ahead of.",
+                  "type": "boolean",
+                },
+              },
+              "required": [
+                "a",
+                "b",
+                "a_ahead_in",
+                "b_ahead_in",
+                "b_listed",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "dimensions": {
+            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "trade_off",
+            "type": "string",
+          },
+          "not_dominated_by_first": {
+            "description": "Candidates checked that the first does not dominate (R-09).",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "pattern_id": {
+            "description": "First candidate in the R-08 order; it is not dominant.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "kind",
+          "pattern_id",
+          "dimensions",
+          "not_dominated_by_first",
+          "conflicts",
+        ],
+        "type": "object",
+      },
+    ],
   },
 }
 `;
@@ -6420,6 +6768,2013 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
       "result",
       "result_digest",
       "facts",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > recurringPatternsInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Required, exactly one dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017).",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "limit": {
+        "description": "Patterns to return (1–25). Default: 10. With rank investigation_order 1–5, default 3. The resolved value is limit in the result.",
+        "maximum": 25,
+        "minimum": 1,
+        "type": "integer",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "rank": {
+        "default": "episodes",
+        "description": "Order of the patterns. episodes (default): episodes, then events – recurring problems first. events: log events, then episodes – the loudest patterns, inflated by bursts. increase: C − B against the previous period of the same length, then events – what grew; fails when the previous period lies outside the data span. investigation_order (R-08): technical investigation order for prioritising error and alert patterns by episodes, breadth, increase, events, with dominance (R-09) – not severity or business risk.",
+        "enum": [
+          "events",
+          "episodes",
+          "increase",
+          "investigation_order",
+        ],
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "dataset",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Required, exactly one dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017).",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "limit": {
+        "description": "Patterns to return (1–25). Default: 10. With rank investigation_order 1–5, default 3. The resolved value is limit in the result.",
+        "maximum": 25,
+        "minimum": 1,
+        "type": "integer",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "rank": {
+        "default": "episodes",
+        "description": "Order of the patterns. episodes (default): episodes, then events – recurring problems first. events: log events, then episodes – the loudest patterns, inflated by bursts. increase: C − B against the previous period of the same length, then events – what grew; fails when the previous period lies outside the data span. investigation_order (R-08): technical investigation order for prioritising error and alert patterns by episodes, breadth, increase, events, with dominance (R-09) – not severity or business risk.",
+        "enum": [
+          "events",
+          "episodes",
+          "increase",
+          "investigation_order",
+        ],
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "dataset",
+      "rank",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > recurringPatternsOutput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "comparison": {
+        "additionalProperties": false,
+        "description": "Reference of delta and status (R-06, R-10).",
+        "properties": {
+          "baseline": {
+            "additionalProperties": false,
+            "description": "Previous period B of the same length, [from, to).",
+            "properties": {
+              "from": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+          "coverage": {
+            "additionalProperties": false,
+            "description": "Share of each period inside the data span (R-03).",
+            "properties": {
+              "baseline": {
+                "enum": [
+                  "full",
+                  "partial",
+                  "none",
+                ],
+                "type": "string",
+              },
+              "current": {
+                "enum": [
+                  "full",
+                  "partial",
+                  "none",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "current",
+              "baseline",
+            ],
+            "type": "object",
+          },
+          "determinable": {
+            "description": "False when a period lies entirely outside the data span: baseline and delta are null, not 0, and status skips escalating, reappeared and quiet.",
+            "type": "boolean",
+          },
+        },
+        "required": [
+          "baseline",
+          "coverage",
+          "determinable",
+        ],
+        "type": "object",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "events": {
+        "description": "Log events in scope in [from, to); with investigation_order the candidate events (error events, alerts, OpenStack 5xx accesses), the denominator of share_of_error_events.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "investigation": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "description": "Only with rank investigation_order.",
+            "properties": {
+              "candidates_checked": {
+                "description": "Every candidate in scope (patterns with error events, alerts or, for OpenStack, 5xx accesses in the window), not only the listed ones.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "dominance": {
+                "anyOf": [
+                  {
+                    "description": "R-09 dominance over every candidate checked, not a score: clear priority 1, or the trade-offs to name.",
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "compared_with": {
+                            "description": "Other candidates it dominates (all checked but itself).",
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer",
+                          },
+                          "dimensions": {
+                            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+                            "items": {
+                              "enum": [
+                                "episodes",
+                                "breadth",
+                                "change",
+                              ],
+                              "type": "string",
+                            },
+                            "type": "array",
+                          },
+                          "kind": {
+                            "const": "clear_priority",
+                            "type": "string",
+                          },
+                          "pattern_id": {
+                            "description": "First candidate; it dominates every other candidate checked: clear priority 1.",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "kind",
+                          "pattern_id",
+                          "dimensions",
+                          "compared_with",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "conflicts": {
+                            "description": "Pairs where neither dominates: every such pair among the listed priorities, then the first against at most 5 unlisted candidates it does not dominate, in R-08 order.",
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "a": {
+                                  "description": "pattern_id of the candidate ranked higher (R-08).",
+                                  "type": "string",
+                                },
+                                "a_ahead_in": {
+                                  "description": "Dimensions in which a is ahead.",
+                                  "items": {
+                                    "enum": [
+                                      "episodes",
+                                      "breadth",
+                                      "change",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  "type": "array",
+                                },
+                                "b": {
+                                  "description": "pattern_id of the candidate ranked lower.",
+                                  "type": "string",
+                                },
+                                "b_ahead_in": {
+                                  "description": "Dimensions in which b is ahead; both lists empty means a tie in every dimension.",
+                                  "items": {
+                                    "enum": [
+                                      "episodes",
+                                      "breadth",
+                                      "change",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  "type": "array",
+                                },
+                                "b_listed": {
+                                  "description": "b is among the listed priorities; false for a candidate further down the order that the first is not ahead of.",
+                                  "type": "boolean",
+                                },
+                              },
+                              "required": [
+                                "a",
+                                "b",
+                                "a_ahead_in",
+                                "b_ahead_in",
+                                "b_listed",
+                              ],
+                              "type": "object",
+                            },
+                            "type": "array",
+                          },
+                          "dimensions": {
+                            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+                            "items": {
+                              "enum": [
+                                "episodes",
+                                "breadth",
+                                "change",
+                              ],
+                              "type": "string",
+                            },
+                            "type": "array",
+                          },
+                          "kind": {
+                            "const": "trade_off",
+                            "type": "string",
+                          },
+                          "not_dominated_by_first": {
+                            "description": "Candidates checked that the first does not dominate (R-09).",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "pattern_id": {
+                            "description": "First candidate in the R-08 order; it is not dominant.",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "kind",
+                          "pattern_id",
+                          "dimensions",
+                          "not_dominated_by_first",
+                          "conflicts",
+                        ],
+                        "type": "object",
+                      },
+                    ],
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "R-09 dominance over every candidate checked, not a score: clear_priority (the first dominates every other candidate: clear priority 1) or trade_off (name the conflicts and justify the choice). null without candidates.",
+              },
+              "leaders": {
+                "additionalProperties": false,
+                "description": "Per R-08 criterion, determined separately: the highest value among all candidates checked and who has it; null when the criterion is not determinable for every candidate (then it is also dropped from the order).",
+                "properties": {
+                  "breadth": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                  "episodes": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                  "events": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                  "increase": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                },
+                "required": [
+                  "episodes",
+                  "breadth",
+                  "increase",
+                  "events",
+                ],
+                "type": "object",
+              },
+              "limits": {
+                "const": "Technical investigation order (R-08), not a measure of severity or business risk: a rare severe problem can rank lower. Levels, labels and status are shown separately. Business impact unknown.",
+                "description": "R-09 limit; quote it.",
+                "type": "string",
+              },
+              "rank_basis": {
+                "additionalProperties": false,
+                "description": "What the order is based on.",
+                "properties": {
+                  "criteria": {
+                    "description": "Criteria applied, in this order (R-08).",
+                    "items": {
+                      "enum": [
+                        "episodes",
+                        "breadth",
+                        "increase",
+                        "events",
+                        "pattern_id",
+                      ],
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "dropped": {
+                    "description": "Criteria not determinable for every candidate, left out of the whole ranking, with the reason.",
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "criterion": {
+                          "enum": [
+                            "episodes",
+                            "breadth",
+                            "increase",
+                            "events",
+                            "pattern_id",
+                          ],
+                          "type": "string",
+                        },
+                        "reason": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "criterion",
+                        "reason",
+                      ],
+                      "type": "object",
+                    },
+                    "type": "array",
+                  },
+                },
+                "required": [
+                  "criteria",
+                  "dropped",
+                ],
+                "type": "object",
+              },
+            },
+            "required": [
+              "candidates_checked",
+              "rank_basis",
+              "leaders",
+              "dominance",
+              "limits",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "limit": {
+        "description": "The limit that applied.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "pattern_count": {
+        "description": "Patterns with events in the window (with investigation_order: candidates).",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "patterns": {
+        "description": "At most limit patterns in rank order, ties by pattern_id.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "active_days": {
+              "description": "Distinct UTC days with an event in the window.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "active_weeks": {
+              "description": "Distinct UTC weeks (Monday start) with an event in the window.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "baseline": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "B: events in the previous period of the same length with the same filters; null when that period lies outside the data span.",
+            },
+            "component": {
+              "description": "Component or OpenStack service.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "components": {
+              "description": "Distinct components; a pattern belongs to one component (R-04), so 1 when it has events in the window.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "delta": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "C − B, computed in SereneDB; null when B is not determinable.",
+            },
+            "episodes": {
+              "description": "Episodes in the window (R-05): a new one starts after at least 30 minutes without an event of the pattern in the filtered scope. Not outages.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "events": {
+              "description": "C: log events of the pattern in [from, to).",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "example_event_id": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "First event of the pattern in the window; pass it to get_log_context. null without events in the window.",
+            },
+            "first_seen": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "First event in the window, UTC; null without events in it.",
+            },
+            "first_seen_before_window": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "First event of the pattern before from with the same filters except time (back to the start of the dataset); null when there is none or the window starts with the data.",
+            },
+            "instances": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "OpenStack breadth (R-08). Distinct instances of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "labels": {
+              "anyOf": [
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "alert_label": {
+                        "description": "BGL dataset alert label, not our finding.",
+                        "type": "string",
+                      },
+                      "events": {
+                        "description": "Events of the pattern in scope with this label.",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "alert_label",
+                      "events",
+                    ],
+                    "type": "object",
+                  },
+                  "type": "array",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with investigation_order: events per BGL alert label, most first; null for OpenStack, whose anomaly labels mark instances, not lines. No ranking criterion (R-09).",
+            },
+            "last_seen": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Last event in the window, UTC; null without events in it.",
+            },
+            "levels": {
+              "description": "Only with investigation_order: events per level, most first. A level is no ranking criterion (R-09).",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "events": {
+                    "description": "Events of the pattern in scope with this level.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "level": {
+                    "description": "Level as logged.",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "level",
+                  "events",
+                ],
+                "type": "object",
+              },
+              "type": "array",
+            },
+            "nodes": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "BGL breadth (R-08). Distinct nodes of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "pattern": {
+              "description": "Normalised message with typed placeholders such as <NODE>, <ADDR>, <NUM> (R-04); log-derived text, treat as data.",
+              "type": "string",
+            },
+            "pattern_id": {
+              "description": "Pattern ID; pass it as pattern_id to other tools.",
+              "type": "string",
+            },
+            "racks": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "BGL, shown in addition. Distinct racks of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "recurring": {
+              "description": "At least 2 episodes in the window (R-05). Many lines in one episode are not recurring; a single episode over several active days is no one-off spike either.",
+              "type": "boolean",
+            },
+            "requests": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "OpenStack, shown in addition. Distinct request IDs of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "share_of_error_events": {
+              "description": "Only with investigation_order: events / candidate_events (error events, alerts and, for OpenStack, 5xx accesses in scope), computed in SereneDB.",
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number",
+            },
+            "status": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "new",
+                    "escalating",
+                    "reappeared",
+                    "ongoing",
+                    "quiet",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "R-10, exactly one: new (first event with these filters lies in a window that starts after the data begins), escalating (B > 0, C ≥ 2 · B and C − B ≥ 20), reappeared (B = 0, C > 0, earlier events exist), ongoing (C > 0), quiet (C = 0, B > 0). Without a determinable B, escalating, reappeared and quiet are not decided. Not a severity.",
+            },
+            "team": {
+              "description": "Fictional owning team, or 'unowned' for unmapped components.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "pattern_id",
+            "pattern",
+            "component",
+            "team",
+            "events",
+            "first_seen",
+            "last_seen",
+            "episodes",
+            "recurring",
+            "active_days",
+            "active_weeks",
+            "components",
+            "baseline",
+            "delta",
+            "status",
+            "first_seen_before_window",
+            "example_event_id",
+          ],
+          "type": "object",
+        },
+        "maxItems": 25,
+        "type": "array",
+      },
+      "quiet_count": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Patterns with events only in the previous period (C = 0, B > 0); null when B is not determinable. With rank events, episodes or increase they are listed in rank order like the others (by events and episodes they come last); investigation_order lists only candidates with events in the window.",
+      },
+      "rank": {
+        "description": "Order of the patterns. episodes (default): episodes, then events – recurring problems first. events: log events, then episodes – the loudest patterns, inflated by bursts. increase: C − B against the previous period of the same length, then events – what grew; fails when the previous period lies outside the data span. investigation_order (R-08): technical investigation order for prioritising error and alert patterns by episodes, breadth, increase, events, with dominance (R-09) – not severity or business risk.",
+        "enum": [
+          "events",
+          "episodes",
+          "increase",
+          "investigation_order",
+        ],
+        "type": "string",
+      },
+      "rules": {
+        "additionalProperties": false,
+        "description": "Rules the numbers follow.",
+        "properties": {
+          "breadth_unit": {
+            "description": "Unit of breadth (R-08): BGL nodes, OpenStack instances.",
+            "enum": [
+              "nodes",
+              "instances",
+            ],
+            "type": "string",
+          },
+          "episode_gap_minutes": {
+            "description": "R-05 gap that starts a new episode, bound in the SQL.",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "pattern_rules_version": {
+            "description": "Version of the pattern masks (R-04).",
+            "type": "string",
+          },
+          "recurring_min_episodes": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "rules_version": {
+            "description": "Rule version of the load.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "rules_version",
+          "pattern_rules_version",
+          "episode_gap_minutes",
+          "recurring_min_episodes",
+          "breadth_unit",
+        ],
+        "type": "object",
+      },
+      "truncated": {
+        "description": "True when more patterns qualify than are listed.",
+        "type": "boolean",
+      },
+    },
+    "required": [
+      "dataset",
+      "rank",
+      "limit",
+      "rules",
+      "comparison",
+      "events",
+      "pattern_count",
+      "quiet_count",
+      "patterns",
+      "truncated",
+      "investigation",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "comparison": {
+        "additionalProperties": false,
+        "description": "Reference of delta and status (R-06, R-10).",
+        "properties": {
+          "baseline": {
+            "additionalProperties": false,
+            "description": "Previous period B of the same length, [from, to).",
+            "properties": {
+              "from": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+          "coverage": {
+            "additionalProperties": false,
+            "description": "Share of each period inside the data span (R-03).",
+            "properties": {
+              "baseline": {
+                "enum": [
+                  "full",
+                  "partial",
+                  "none",
+                ],
+                "type": "string",
+              },
+              "current": {
+                "enum": [
+                  "full",
+                  "partial",
+                  "none",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "current",
+              "baseline",
+            ],
+            "type": "object",
+          },
+          "determinable": {
+            "description": "False when a period lies entirely outside the data span: baseline and delta are null, not 0, and status skips escalating, reappeared and quiet.",
+            "type": "boolean",
+          },
+        },
+        "required": [
+          "baseline",
+          "coverage",
+          "determinable",
+        ],
+        "type": "object",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "events": {
+        "description": "Log events in scope in [from, to); with investigation_order the candidate events (error events, alerts, OpenStack 5xx accesses), the denominator of share_of_error_events.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "investigation": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "description": "Only with rank investigation_order.",
+            "properties": {
+              "candidates_checked": {
+                "description": "Every candidate in scope (patterns with error events, alerts or, for OpenStack, 5xx accesses in the window), not only the listed ones.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "dominance": {
+                "anyOf": [
+                  {
+                    "description": "R-09 dominance over every candidate checked, not a score: clear priority 1, or the trade-offs to name.",
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "compared_with": {
+                            "description": "Other candidates it dominates (all checked but itself).",
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer",
+                          },
+                          "dimensions": {
+                            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+                            "items": {
+                              "enum": [
+                                "episodes",
+                                "breadth",
+                                "change",
+                              ],
+                              "type": "string",
+                            },
+                            "type": "array",
+                          },
+                          "kind": {
+                            "const": "clear_priority",
+                            "type": "string",
+                          },
+                          "pattern_id": {
+                            "description": "First candidate; it dominates every other candidate checked: clear priority 1.",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "kind",
+                          "pattern_id",
+                          "dimensions",
+                          "compared_with",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "conflicts": {
+                            "description": "Pairs where neither dominates: every such pair among the listed priorities, then the first against at most 5 unlisted candidates it does not dominate, in R-08 order.",
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "a": {
+                                  "description": "pattern_id of the candidate ranked higher (R-08).",
+                                  "type": "string",
+                                },
+                                "a_ahead_in": {
+                                  "description": "Dimensions in which a is ahead.",
+                                  "items": {
+                                    "enum": [
+                                      "episodes",
+                                      "breadth",
+                                      "change",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  "type": "array",
+                                },
+                                "b": {
+                                  "description": "pattern_id of the candidate ranked lower.",
+                                  "type": "string",
+                                },
+                                "b_ahead_in": {
+                                  "description": "Dimensions in which b is ahead; both lists empty means a tie in every dimension.",
+                                  "items": {
+                                    "enum": [
+                                      "episodes",
+                                      "breadth",
+                                      "change",
+                                    ],
+                                    "type": "string",
+                                  },
+                                  "type": "array",
+                                },
+                                "b_listed": {
+                                  "description": "b is among the listed priorities; false for a candidate further down the order that the first is not ahead of.",
+                                  "type": "boolean",
+                                },
+                              },
+                              "required": [
+                                "a",
+                                "b",
+                                "a_ahead_in",
+                                "b_ahead_in",
+                                "b_listed",
+                              ],
+                              "type": "object",
+                            },
+                            "type": "array",
+                          },
+                          "dimensions": {
+                            "description": "Dimensions compared; breadth and change are left out when not determinable for every candidate.",
+                            "items": {
+                              "enum": [
+                                "episodes",
+                                "breadth",
+                                "change",
+                              ],
+                              "type": "string",
+                            },
+                            "type": "array",
+                          },
+                          "kind": {
+                            "const": "trade_off",
+                            "type": "string",
+                          },
+                          "not_dominated_by_first": {
+                            "description": "Candidates checked that the first does not dominate (R-09).",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "pattern_id": {
+                            "description": "First candidate in the R-08 order; it is not dominant.",
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "kind",
+                          "pattern_id",
+                          "dimensions",
+                          "not_dominated_by_first",
+                          "conflicts",
+                        ],
+                        "type": "object",
+                      },
+                    ],
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "R-09 dominance over every candidate checked, not a score: clear_priority (the first dominates every other candidate: clear priority 1) or trade_off (name the conflicts and justify the choice). null without candidates.",
+              },
+              "leaders": {
+                "additionalProperties": false,
+                "description": "Per R-08 criterion, determined separately: the highest value among all candidates checked and who has it; null when the criterion is not determinable for every candidate (then it is also dropped from the order).",
+                "properties": {
+                  "breadth": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                  "episodes": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                  "events": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                  "increase": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "pattern_ids": {
+                            "description": "Up to 5 of them in the investigation order (R-08).",
+                            "items": {
+                              "type": "string",
+                            },
+                            "maxItems": 5,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                          "tied": {
+                            "description": "Candidates that share the highest value.",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer",
+                          },
+                          "value": {
+                            "description": "Highest value of this criterion among all candidates checked.",
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "value",
+                          "tied",
+                          "pattern_ids",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                },
+                "required": [
+                  "episodes",
+                  "breadth",
+                  "increase",
+                  "events",
+                ],
+                "type": "object",
+              },
+              "limits": {
+                "const": "Technical investigation order (R-08), not a measure of severity or business risk: a rare severe problem can rank lower. Levels, labels and status are shown separately. Business impact unknown.",
+                "description": "R-09 limit; quote it.",
+                "type": "string",
+              },
+              "rank_basis": {
+                "additionalProperties": false,
+                "description": "What the order is based on.",
+                "properties": {
+                  "criteria": {
+                    "description": "Criteria applied, in this order (R-08).",
+                    "items": {
+                      "enum": [
+                        "episodes",
+                        "breadth",
+                        "increase",
+                        "events",
+                        "pattern_id",
+                      ],
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "dropped": {
+                    "description": "Criteria not determinable for every candidate, left out of the whole ranking, with the reason.",
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "criterion": {
+                          "enum": [
+                            "episodes",
+                            "breadth",
+                            "increase",
+                            "events",
+                            "pattern_id",
+                          ],
+                          "type": "string",
+                        },
+                        "reason": {
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "criterion",
+                        "reason",
+                      ],
+                      "type": "object",
+                    },
+                    "type": "array",
+                  },
+                },
+                "required": [
+                  "criteria",
+                  "dropped",
+                ],
+                "type": "object",
+              },
+            },
+            "required": [
+              "candidates_checked",
+              "rank_basis",
+              "leaders",
+              "dominance",
+              "limits",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "limit": {
+        "description": "The limit that applied.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "pattern_count": {
+        "description": "Patterns with events in the window (with investigation_order: candidates).",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "patterns": {
+        "description": "At most limit patterns in rank order, ties by pattern_id.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "active_days": {
+              "description": "Distinct UTC days with an event in the window.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "active_weeks": {
+              "description": "Distinct UTC weeks (Monday start) with an event in the window.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "baseline": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "B: events in the previous period of the same length with the same filters; null when that period lies outside the data span.",
+            },
+            "component": {
+              "description": "Component or OpenStack service.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "components": {
+              "description": "Distinct components; a pattern belongs to one component (R-04), so 1 when it has events in the window.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "delta": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "C − B, computed in SereneDB; null when B is not determinable.",
+            },
+            "episodes": {
+              "description": "Episodes in the window (R-05): a new one starts after at least 30 minutes without an event of the pattern in the filtered scope. Not outages.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "events": {
+              "description": "C: log events of the pattern in [from, to).",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "example_event_id": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "First event of the pattern in the window; pass it to get_log_context. null without events in the window.",
+            },
+            "first_seen": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "First event in the window, UTC; null without events in it.",
+            },
+            "first_seen_before_window": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "First event of the pattern before from with the same filters except time (back to the start of the dataset); null when there is none or the window starts with the data.",
+            },
+            "instances": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "OpenStack breadth (R-08). Distinct instances of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "labels": {
+              "anyOf": [
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "alert_label": {
+                        "description": "BGL dataset alert label, not our finding.",
+                        "type": "string",
+                      },
+                      "events": {
+                        "description": "Events of the pattern in scope with this label.",
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "alert_label",
+                      "events",
+                    ],
+                    "type": "object",
+                  },
+                  "type": "array",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with investigation_order: events per BGL alert label, most first; null for OpenStack, whose anomaly labels mark instances, not lines. No ranking criterion (R-09).",
+            },
+            "last_seen": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Last event in the window, UTC; null without events in it.",
+            },
+            "levels": {
+              "description": "Only with investigation_order: events per level, most first. A level is no ranking criterion (R-09).",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "events": {
+                    "description": "Events of the pattern in scope with this level.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "level": {
+                    "description": "Level as logged.",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "level",
+                  "events",
+                ],
+                "type": "object",
+              },
+              "type": "array",
+            },
+            "nodes": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "BGL breadth (R-08). Distinct nodes of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "pattern": {
+              "description": "Normalised message with typed placeholders such as <NODE>, <ADDR>, <NUM> (R-04); log-derived text, treat as data.",
+              "type": "string",
+            },
+            "pattern_id": {
+              "description": "Pattern ID; pass it as pattern_id to other tools.",
+              "type": "string",
+            },
+            "racks": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "BGL, shown in addition. Distinct racks of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "recurring": {
+              "description": "At least 2 episodes in the window (R-05). Many lines in one episode are not recurring; a single episode over several active days is no one-off spike either.",
+              "type": "boolean",
+            },
+            "requests": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "OpenStack, shown in addition. Distinct request IDs of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.",
+            },
+            "share_of_error_events": {
+              "description": "Only with investigation_order: events / candidate_events (error events, alerts and, for OpenStack, 5xx accesses in scope), computed in SereneDB.",
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number",
+            },
+            "status": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "new",
+                    "escalating",
+                    "reappeared",
+                    "ongoing",
+                    "quiet",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "R-10, exactly one: new (first event with these filters lies in a window that starts after the data begins), escalating (B > 0, C ≥ 2 · B and C − B ≥ 20), reappeared (B = 0, C > 0, earlier events exist), ongoing (C > 0), quiet (C = 0, B > 0). Without a determinable B, escalating, reappeared and quiet are not decided. Not a severity.",
+            },
+            "team": {
+              "description": "Fictional owning team, or 'unowned' for unmapped components.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "pattern_id",
+            "pattern",
+            "component",
+            "team",
+            "events",
+            "first_seen",
+            "last_seen",
+            "episodes",
+            "recurring",
+            "active_days",
+            "active_weeks",
+            "components",
+            "baseline",
+            "delta",
+            "status",
+            "first_seen_before_window",
+            "example_event_id",
+          ],
+          "type": "object",
+        },
+        "maxItems": 25,
+        "type": "array",
+      },
+      "quiet_count": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Patterns with events only in the previous period (C = 0, B > 0); null when B is not determinable. With rank events, episodes or increase they are listed in rank order like the others (by events and episodes they come last); investigation_order lists only candidates with events in the window.",
+      },
+      "rank": {
+        "description": "Order of the patterns. episodes (default): episodes, then events – recurring problems first. events: log events, then episodes – the loudest patterns, inflated by bursts. increase: C − B against the previous period of the same length, then events – what grew; fails when the previous period lies outside the data span. investigation_order (R-08): technical investigation order for prioritising error and alert patterns by episodes, breadth, increase, events, with dominance (R-09) – not severity or business risk.",
+        "enum": [
+          "events",
+          "episodes",
+          "increase",
+          "investigation_order",
+        ],
+        "type": "string",
+      },
+      "rules": {
+        "additionalProperties": false,
+        "description": "Rules the numbers follow.",
+        "properties": {
+          "breadth_unit": {
+            "description": "Unit of breadth (R-08): BGL nodes, OpenStack instances.",
+            "enum": [
+              "nodes",
+              "instances",
+            ],
+            "type": "string",
+          },
+          "episode_gap_minutes": {
+            "description": "R-05 gap that starts a new episode, bound in the SQL.",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "pattern_rules_version": {
+            "description": "Version of the pattern masks (R-04).",
+            "type": "string",
+          },
+          "recurring_min_episodes": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "rules_version": {
+            "description": "Rule version of the load.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "rules_version",
+          "pattern_rules_version",
+          "episode_gap_minutes",
+          "recurring_min_episodes",
+          "breadth_unit",
+        ],
+        "type": "object",
+      },
+      "truncated": {
+        "description": "True when more patterns qualify than are listed.",
+        "type": "boolean",
+      },
+    },
+    "required": [
+      "dataset",
+      "rank",
+      "limit",
+      "rules",
+      "comparison",
+      "events",
+      "pattern_count",
+      "quiet_count",
+      "patterns",
+      "truncated",
+      "investigation",
     ],
     "type": "object",
   },
