@@ -696,6 +696,7 @@ describe("createRegistry", () => {
       "get_log_context",
       "count_events",
       "event_trend",
+      "recurring_patterns",
     ])
     expect(new Set(names).size).toBe(names.length)
   })

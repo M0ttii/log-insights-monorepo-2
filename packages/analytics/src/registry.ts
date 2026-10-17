@@ -44,6 +44,7 @@ import { countEvents } from "./tools/count-events.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
 import { eventTrend } from "./tools/event-trend.ts"
 import { getLogContext } from "./tools/get-log-context.ts"
+import { recurringPatterns } from "./tools/recurring-patterns.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
 /**
@@ -172,6 +173,7 @@ const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(getLogContext),
   toolEntry(countEvents),
   toolEntry(eventTrend),
+  toolEntry(recurringPatterns),
 ]
 
 /** Optional index tools (A-33, P2); none implemented yet. */
