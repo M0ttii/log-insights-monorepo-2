@@ -31,6 +31,10 @@ import {
   recurringPatternsOutputSchema,
 } from "./tools/recurring-patterns.ts"
 import {
+  latencyStatsInputSchema,
+  latencyStatsOutputSchema,
+} from "./tools/latency-stats.ts"
+import {
   searchLogsInputSchema,
   searchLogsOutputSchema,
 } from "./tools/search-logs.ts"
@@ -77,6 +81,8 @@ const schemas = {
   recurringPatternsOutput: recurringPatternsOutputSchema,
   getLogContextInput: getLogContextInputSchema,
   getLogContextOutput: getLogContextOutputSchema,
+  latencyStatsInput: latencyStatsInputSchema,
+  latencyStatsOutput: latencyStatsOutputSchema,
   checkClaimsInput: checkClaimsInputSchema,
   checkClaimsOutput: checkClaimsOutputSchema,
 }

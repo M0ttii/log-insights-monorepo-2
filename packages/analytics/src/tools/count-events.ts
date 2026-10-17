@@ -96,12 +96,12 @@ import { SqlParams } from "../sql.ts"
 const DIMENSION_KEYS = ["g1", "g2"] as const
 
 /** BGL-only filter fields; API accesses are OpenStack lines. */
-const BGL_FILTERS: readonly FilterField[] = [
+const BGL_FILTERS = [
   "node",
   "rack",
   "alert_label",
   "only_alerts",
-]
+] as const satisfies readonly FilterField[]
 
 const LOG_EVENTS_NOTE =
   "Counts are log events (parsed lines), not incidents or outages."
