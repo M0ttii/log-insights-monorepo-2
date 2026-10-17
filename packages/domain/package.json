@@ -17,6 +17,7 @@
     "./receipt": "./src/receipt.ts",
     "./time": "./src/time.ts",
     "./tool": "./src/tool.ts",
+    "./tools/search-logs": "./src/tools/search-logs.ts",
     "./version": "./src/version.ts",
     "./rules/compare": "./src/rules/compare.ts",
     "./rules/dominance": "./src/rules/dominance.ts",

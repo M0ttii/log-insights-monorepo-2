@@ -1,6 +1,10 @@
 import type { ToolError } from "@workspace/domain/errors"
 import type { Dataset } from "@workspace/domain/filters"
-import type { DataSpan } from "@workspace/domain/time"
+import {
+  formatInstant,
+  parseInstant,
+  type DataSpan,
+} from "@workspace/domain/time"
 import type { QueryRunner } from "@workspace/domain/tool"
 import { z } from "zod"
 
@@ -66,4 +70,14 @@ export async function getDataSpan(
   )
   if (rows.length === 0) return null
   return spanRow.parse(rows[0])
+}
+
+/**
+ * Exclusive end of a window that covers a span up to and including its last
+ * event: 1 µs after it, because windows are `[from, to)` (R-03).
+ */
+export function spanEnd(span: DataSpan): string {
+  const micros = parseInstant(span.last)
+  if (micros === null) throw new RangeError(`not an instant: ${span.last}`)
+  return formatInstant(micros + 1n)
 }

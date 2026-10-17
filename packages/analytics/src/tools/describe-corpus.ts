@@ -1,10 +1,6 @@
 import { toSafeInteger } from "@workspace/domain/bigint"
 import { datasetSchema, type Dataset } from "@workspace/domain/filters"
-import {
-  formatInstant,
-  instantSchema,
-  parseInstant,
-} from "@workspace/domain/time"
+import { instantSchema } from "@workspace/domain/time"
 import {
   defineTool,
   emptyInputSchema,
@@ -15,7 +11,7 @@ import {
 import { CONTRACT_VERSION } from "@workspace/domain/version"
 import { z } from "zod"
 
-import { corpusNotLoaded } from "../corpus.ts"
+import { corpusNotLoaded, spanEnd } from "../corpus.ts"
 import { isoTime } from "../sql.ts"
 
 /**
@@ -474,7 +470,7 @@ export const describeCorpus = defineTool({
           windows: datasets.map((row) => ({
             dataset: row.dataset,
             from: row.first_event,
-            to: afterLast(row.last_event),
+            to: spanEnd({ first: row.first_event, last: row.last_event }),
           })),
           filters: {},
         },
@@ -495,10 +491,3 @@ export const describeCorpus = defineTool({
     }
   },
 })
-
-/** Scope windows exclude their end, so the window over a whole span ends 1 µs after the last event. */
-function afterLast(last: string): string {
-  const micros = parseInstant(last)
-  if (micros === null) throw new RangeError(`not an instant: ${last}`)
-  return formatInstant(micros + 1n)
-}

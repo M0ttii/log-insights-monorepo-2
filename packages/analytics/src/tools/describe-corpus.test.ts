@@ -1,5 +1,6 @@
 import type { Receipt } from "@workspace/domain/receipt"
 import type { RoleGuidance } from "@workspace/domain/tool"
+import { CONTRACT_VERSION } from "@workspace/domain/version"
 import { describe, expect, it } from "vitest"
 
 import { createRegistry } from "../registry.ts"
@@ -147,7 +148,7 @@ describe("describe_corpus", () => {
     })
     expect(describeCorpus.output.parse(outcome.result.data).versions).toEqual({
       ...ROWS.load_manifest?.[0],
-      contract_version: "2.0.0",
+      contract_version: CONTRACT_VERSION,
     })
     expect(stored[0]?.scope.windows).toEqual([
       {

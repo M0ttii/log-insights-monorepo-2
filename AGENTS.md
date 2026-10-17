@@ -56,10 +56,11 @@ read-only profiling queries (`packages/corpus/sql/profiling/`) behind the data
 decisions of U03 (masks, levels, ownership, episode threshold, breadth;
 technical.md § 7). `packages/analytics` holds
 the pool, filter compiler, receipt store, registry (`runTool`, `rerun`,
-`catalog`) and the first tool, `describe_corpus` (technical.md § 8.1, § 12;
-`CONTRACT_VERSION` 2.0.0: `run()` returns a `ToolRun`, the registry adds facts
-and the receipt). The other seven tools, MCP server and web chat are not
-implemented yet. Tooling is configured (see "Tooling and checks").
+`catalog`) and the first two tools, `describe_corpus` and `search_logs` with
+the modes `terms`, `phrase` and `fuzzy` (technical.md § 8.1, § 8.2, § 12;
+`CONTRACT_VERSION` 2.1.0: `run()` returns a `ToolRun`, the registry adds facts
+and the receipt; tool schemas live in `domain/tools/`). The other six tools,
+MCP server and web chat are not implemented yet. Tooling is configured (see "Tooling and checks").
 
 ## Product and domain invariants
 
@@ -431,7 +432,7 @@ against SereneDB from `compose.yaml`. Keep it green.
 | `pnpm deps:check` | dependency-cruiser | No cycles, no Radix/assistant-ui, no relative imports across workspaces, `packages/ui` stays generic, no server workspaces in the browser graph, private `partials/`. Uses the root `tsconfig.json`, which maps the aliases for repository-wide tools. |
 | `pnpm knip` | knip | Unused files, exports, and dependencies per workspace; `packages/ui/src/components` exports are exempt because shadcn generates complete APIs; `tsx` in `packages/analytics` is ignored because tests start it only as `node --import tsx` from code. |
 | `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); needs no Docker. JSON Schema snapshots of the domain contracts live in `packages/domain/src/__snapshots__` and are updated with `pnpm vitest run -u` only together with a `CONTRACT_VERSION` bump (patch for description-only changes). |
-| `pnpm test:integration` | Vitest | Projects `corpus-integration` (`packages/corpus/tests/integration/`): loads the 2k samples and hand-written fixtures through the real loader into SereneDB and checks hand-determined values, time zones and idempotence; and `analytics-integration` (`packages/analytics/tests/integration/`): `describe_corpus` through the registry, receipts, the pool's 10 s cancel and client cancellation against the loaded samples. Needs Docker and `.env`; part of CI, not of `pnpm check`. |
+| `pnpm test:integration` | Vitest | Projects `corpus-integration` (`packages/corpus/tests/integration/`): loads the 2k samples and hand-written fixtures through the real loader into SereneDB and checks hand-determined values, time zones and idempotence; and `analytics-integration` (`packages/analytics/tests/integration/`): `describe_corpus` and `search_logs` through the registry, receipts, the pool's 10 s cancel and client cancellation against the loaded samples, plus `search_logs` on a small synthetic database (`log_insights_search_fixtures`, rebuilt by the test) for embedded instructions and window bounds. Needs Docker and `.env`; part of CI, not of `pnpm check`. |
 | `pnpm build` | Turborepo | Production builds of workspaces with a `build` script; none exist until `apps/web` is created. |
 | `pnpm data:setup [--samples]` | tsx + `pg` (`@workspace/corpus`) | Starts SereneDB, downloads the raw files into `.data/raw` if missing (pinned size and SHA-256), runs `packages/corpus/sql/` in order, checks the result (`load_checks`), writes `load_manifest` and prints the load balance. Idempotent. Default: full corpus into `SERENEDB_DATABASE`; `--samples`: Loghub 2k samples into `log_insights_samples`. Not part of `pnpm check`. |
 | `pnpm data:profile [name …] [--samples] [--wide]` | tsx + `pg` (`@workspace/corpus`) | Read-only profiling queries in `packages/corpus/sql/profiling/` (one statement per `-- @ <title>`) against the loaded corpus or, with `--samples`, the 2k samples; prints results with the data version. Decisions in concept.md/technical.md cite them. Not part of `pnpm check` or CI. |

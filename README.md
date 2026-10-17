@@ -7,8 +7,9 @@ receipt.
 
 > **Status:** SereneDB runs via Docker Compose and passed the compatibility
 > gate (`pnpm gate`); `pnpm data:setup` loads the corpus, and the data
-> decisions below come from profiling it (`pnpm data:profile`). The tool
-> layer, the MCP server and the web chat are not implemented yet.
+> decisions below come from profiling it (`pnpm data:profile`). Two of the
+> eight tools exist (`describe_corpus`, `search_logs`); the other tools, the
+> MCP server and the web chat are not implemented yet.
 
 ## Requirements
 
@@ -46,8 +47,23 @@ created; to change it later, run `ALTER ROLE` or recreate the volume
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
 | `pnpm data:setup [--samples]` | Load BGL and OpenStack into SereneDB (idempotent); `--samples` loads the Loghub 2k samples into the database `log_insights_samples` instead |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
-| `pnpm test:integration` | Loader and pattern tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
+| `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
 | `pnpm gate [G1 …] [--keep]` | SereneDB compatibility gate (technical spec § 5.2) against the running container; full-corpus probes need `.data/raw/BGL.log` and are skipped without it |
+
+## Tools
+
+Every tool runs through one registry (`packages/analytics`), writes a query
+receipt to `.data/receipts/` and returns fact IDs for its numbers. Until the
+README tool reference is generated from the registry, this table is kept by
+hand; the full descriptions are in the tool definitions.
+
+| Tool | Purpose | Limits |
+|---|---|---|
+| `describe_corpus` | Datasets with events, time spans, fields, levels, components with their fictional team, labels, known limits, versions and answer guidance per role | – |
+| `search_logs` | Full-text search over log messages with BM25 ranking; `total_matches` is exact and comes from the same condition as the hits. Modes: `terms` (default, all words in any order), `phrase` (words adjacent and in order), `fuzzy` (one term with `max_edits` 1–2 typos, default 1) | `limit` 1–50 (default 20), `query` ≤ 200 characters, messages cut to 400 characters; `fuzzy` expands a term to at most 50 index terms per index segment (`sdb_levenshtein_max_terms`), and count and hits use the same expansion |
+
+Matching is case-insensitive on whole tokens without stemming; operators,
+quotes and `*` are not evaluated. Hits are examples, never a frequency.
 
 ## Data
 
@@ -155,6 +171,7 @@ and [port management](https://docs.superset.sh/ports).
 
 ```text
 apps/                       applications (none yet; apps/mcp and apps/web are planned)
+packages/analytics          pool, filter compiler, receipts, tool registry and tools
 packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
 packages/domain             pure Zod contracts, fact IDs and rule functions
 packages/evals              role eval questions (development set)
