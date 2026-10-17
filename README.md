@@ -71,7 +71,24 @@ in the technical spec (§ 5.1).
 | `pnpm data:setup [--samples]` | Load BGL and OpenStack into SereneDB (idempotent); `--samples` loads the Loghub 2k samples into the database `log_insights_samples` instead |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
 | `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
+| `pnpm test:golden [file-filter …]` | Independent, read-only SQL comparisons for all eight tools against the full corpus, plus raw-file/load reconciliation; local only, excluded from `pnpm test` and CI |
 | `pnpm gate [G1 …] [--keep]` | SereneDB compatibility gate (technical spec § 5.2) against the running container; full-corpus probes need `.data/raw/BGL.log` and are skipped without it |
+
+Golden tests require `.env`, the loaded full corpus (`load_manifest.source =
+'corpus'`) and the original files under `.data/raw/`. They never start containers
+or load data. Each Golden file names its independent author. The queries are
+written from the specification without importing tool implementations or the
+filter compiler; the tested tools are called through the registry with client
+`test`. Counts compare exactly, decimal comparisons allow 1e-9 absolute plus
+1e-9 relative error, and UTC timestamps preserve microseconds.
+
+Per-query Golden timings and tool database/wall timings, receipt IDs and result
+digests are printed and saved in `.data/golden/*.jsonl`; receipts remain in the
+configured receipt directory. Run without other database workloads for the
+full-BGL precursor benchmark (`both`, 60 minutes). Its Golden timing measures
+anchor-summary validation; complete precursor rows are independently checked by
+the smaller aggregate cases. These single-run timings are not a performance
+percentile report.
 
 ## Tools
 
