@@ -80,6 +80,17 @@ export function dimensionExpression(
   return DIMENSIONS[parsed.data](qualifier)
 }
 
+/**
+ * R-01 API accesses: OpenStack lines with an HTTP status, with or without
+ * request ID. The same condition as the view `api_access`
+ * (corpus/sql/40_stats.sql), written against the relation a tool reads so it
+ * also applies on the full-text index relation, which the view is not.
+ */
+export function apiAccessCondition(qualifier: string): string {
+  checkQualifier(qualifier)
+  return `${qualifier}.dataset = 'openstack' AND ${qualifier}.http_status IS NOT NULL`
+}
+
 export type CompileOptions = {
   /** Fields the tool declared with `pickFilter`; any other present field is rejected. */
   accepted: readonly FilterField[]

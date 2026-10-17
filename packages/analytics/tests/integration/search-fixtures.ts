@@ -1,7 +1,5 @@
-import { Client } from "pg"
-
 import type { Connection } from "../../src/config.ts"
-import { samplesConnection } from "./helpers.ts"
+import { rebuildDatabase, samplesConnection } from "./helpers.ts"
 
 /**
  * A synthetic search database for cases the 2k samples do not contain:
@@ -114,27 +112,5 @@ export function fixtureConnection(): Connection {
 
 /** Creates the database if needed and rebuilds its tables; idempotent. */
 export async function buildSearchFixtures(): Promise<void> {
-  const admin = new Client(samplesConnection())
-  await admin.connect()
-  try {
-    const found = await admin.query(
-      "SELECT 1 FROM pg_database WHERE datname = $1",
-      [FIXTURE_DATABASE]
-    )
-    if (found.rowCount === 0)
-      await admin.query(`CREATE DATABASE ${FIXTURE_DATABASE}`)
-  } finally {
-    await admin.end()
-  }
-
-  const client = new Client(fixtureConnection())
-  await client.connect()
-  try {
-    await client.query("SET TimeZone = 'UTC'")
-    // One statement per round trip: a dictionary created in the same simple
-    // query is invisible to CREATE INDEX (gate G1).
-    for (const statement of STATEMENTS) await client.query(statement)
-  } finally {
-    await client.end()
-  }
+  await rebuildDatabase(fixtureConnection(), STATEMENTS)
 }

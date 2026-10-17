@@ -7,8 +7,9 @@ receipt.
 
 > **Status:** SereneDB runs via Docker Compose and passed the compatibility
 > gate (`pnpm gate`); `pnpm data:setup` loads the corpus, and the data
-> decisions below come from profiling it (`pnpm data:profile`). Two of the
-> eight tools exist (`describe_corpus`, `search_logs`); the other tools, the
+> decisions below come from profiling it (`pnpm data:profile`). Three of the
+> eight tools exist (`describe_corpus`, `search_logs`, `count_events`
+> without `compare`); the other tools, the
 > MCP server and the web chat are not implemented yet.
 
 ## Requirements
@@ -61,6 +62,7 @@ hand; the full descriptions are in the tool definitions.
 |---|---|---|
 | `describe_corpus` | Datasets with events, time spans, fields, levels, components with their fictional team, labels, known limits, versions and answer guidance per role | – |
 | `search_logs` | Full-text search over log messages with BM25 ranking; `total_matches` is exact and comes from the same condition as the hits. Modes: `terms` (default, all words in any order), `phrase` (words adjacent and in order), `fuzzy` (one term with `max_edits` 1–2 typos, default 1) | `limit` 1–50 (default 20), `query` ≤ 200 characters, messages cut to 400 characters; `fuzzy` expands a term to at most 50 index terms per index segment (`sdb_levenshtein_max_terms`), and count and hits use the same expansion |
+| `count_events` | Counts over the stated scope grouped by 1–2 dimensions (`dataset`, `team`, `component`, `level`, `alert_label`, `rack`, `node`, `pattern`, `http_status`, `endpoint`), with exact `total`, `share` per group (fraction of `total`, computed in SereneDB) and the groups beyond `top_n` summed in `other`. Without `from`/`to` each dataset counts over its full span. A missing value is its own category `null`; unmapped components count as team `unowned`. `http_status` and `endpoint` count OpenStack API accesses, not log events | `top_n` 1–50 (default 20); BGL-only dimensions and filters cannot be combined with `http_status` or `endpoint` |
 
 Matching is case-insensitive on whole tokens without stemming; operators,
 quotes and `*` are not evaluated. Hits are examples, never a frequency.
