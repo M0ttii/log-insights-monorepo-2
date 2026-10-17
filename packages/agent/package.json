@@ -1,0 +1,24 @@
+{
+  "name": "@workspace/agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./playbooks": "./src/playbooks.ts"
+  },
+  "scripts": {
+    "lint": "eslint --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workspace/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^10",
+    "typescript": "^5",
+    "vitest": "5.0.5"
+  }
+}

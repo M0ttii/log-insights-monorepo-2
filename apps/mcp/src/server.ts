@@ -7,6 +7,7 @@ import {
   type CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js"
 import { loadConfig } from "@workspace/analytics/config"
+import { loadPlaybooks } from "@workspace/agent/playbooks"
 import { createDatabase } from "@workspace/analytics/db"
 import { FileReceiptStore } from "@workspace/analytics/receipts"
 import { createRegistry, type Registry } from "@workspace/analytics/registry"
@@ -40,8 +41,16 @@ export function createMcpServer(options: {
       if (!outcome.ok) return toToolErrorResult(outcome.error)
       const entry = registry.tools.find((tool) => tool.name === name)
       const text = entry?.summarize(outcome.result) ?? summarize(outcome.result)
+      const content: CallToolResult["content"] = [{ type: "text", text }]
+      // Desktop may omit Initialize instructions from the model's context.
+      // Deliver the same source with results so direct questions still route.
+      if (playbooks !== undefined)
+        content.push({ type: "text", text: playbooks.instructions })
+      content.push({ type: "text", text: JSON.stringify(outcome.result) })
       return {
-        content: [{ type: "text", text }],
+        // Some clients expose only content to the model. Keep the complete
+        // validated result there too, including groups, guidance and fact IDs.
+        content,
         structuredContent: { ...outcome.result },
       }
     } catch {
@@ -89,7 +98,7 @@ function summarize(result: ToolResult<unknown>): string {
 
 /** Configuration is validated before the transport connects; the pool stays lazy. */
 export async function startMcpServer(
-  playbooks?: PlaybookSource
+  playbooks: PlaybookSource = loadPlaybooks()
 ): Promise<void> {
   const config = loadConfig()
   const db = createDatabase(config.connection)
@@ -98,7 +107,7 @@ export async function startMcpServer(
     db,
     receipts,
     workspaceTools: config.workspaceTools,
-    roleGuidance: playbooks?.guidance,
+    roleGuidance: playbooks.guidance,
   })
   const server = createMcpServer({ registry, receipts, playbooks })
   const transport = new StdioServerTransport()

@@ -12,6 +12,7 @@ import { isAbsolute, join } from "node:path"
 import { promisify } from "node:util"
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { loadPlaybooks } from "@workspace/agent/playbooks"
 import {
   StdioClientTransport,
   type StdioServerParameters,
@@ -157,6 +158,75 @@ async function readJsonResource(client: Client, uri: string) {
 }
 
 describe("MCP stdio smoke against Loghub 2k samples", () => {
+  it("delivers versioned role instructions, prompts and corpus guidance from one source", async () => {
+    const source = loadPlaybooks()
+    expect(session.client.getInstructions()).toBe(source.instructions)
+    const listed = await session.client.listPrompts()
+    expect(listed.prompts.map((prompt) => prompt.name)).toEqual(
+      Object.keys(source.prompts)
+    )
+    for (const [name, prompt] of Object.entries(source.prompts)) {
+      const entry = listed.prompts.find((item) => item.name === name)
+      expect(entry).toMatchObject({
+        title: prompt.title,
+        description: prompt.description,
+      })
+      expect(entry?.arguments?.map((arg) => arg.name)).toEqual([
+        "question",
+        "dataset",
+        "from",
+        "to",
+      ])
+      expect(entry?.arguments?.every((arg) => !arg.required)).toBe(true)
+      const args = {
+        question: "Review the matching errors",
+        dataset: "bgl" as const,
+        from: "2005-06-01T00:00:00Z",
+        to: "2005-07-01T00:00:00Z",
+      }
+      for (const input of [{}, args]) {
+        const result = await session.client.getPrompt({
+          name,
+          arguments: input,
+        })
+        expect(result.messages).toEqual([
+          {
+            role: "user",
+            content: { type: "text", text: prompt.render(input) },
+          },
+        ])
+      }
+    }
+    const result = resultSchema.parse(
+      (await callTool(session.client, "describe_corpus", {})).structuredContent
+    )
+    expect(result.data).toMatchObject({
+      guidance_version: source.version,
+      answer_guidance: {
+        routing: source.guidance.routing,
+        roles: source.guidance.roles,
+      },
+    })
+    const wire = await callTool(session.client, "describe_corpus", {})
+    expect(wire.content).toContainEqual({
+      type: "text",
+      text: source.instructions,
+    })
+    const payload = wire.content.at(-1)
+    if (payload?.type !== "text") throw new Error("Missing MCP text payload")
+    expect(JSON.parse(payload.text)).toEqual(wire.structuredContent)
+    const stored = receiptSchema.parse(
+      JSON.parse(
+        await readFile(
+          join(receiptDir, `${result.receipt.receipt_id}.json`),
+          "utf8"
+        )
+      )
+    )
+    expect(stored.result).toEqual(result.data)
+    expect(session.protocolErrors).toEqual([])
+  })
+
   it("advertises exactly the canonical eight tools and draft-7 contracts", async () => {
     const listed = await session.client.listTools()
     expect(listed.nextCursor).toBeUndefined()
