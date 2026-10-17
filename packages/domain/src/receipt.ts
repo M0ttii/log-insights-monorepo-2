@@ -45,10 +45,9 @@ export const scopeSchema = z
             ),
         })
       )
-      .min(1)
       .max(2)
       .describe(
-        "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset."
+        "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus."
       ),
     filters: filterSchema
       .omit({ dataset: true, from: true, to: true })

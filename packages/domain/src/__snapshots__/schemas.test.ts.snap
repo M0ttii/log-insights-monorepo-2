@@ -39,6 +39,940 @@ exports[`JSON Schema export > changeLabel converts losslessly for input and outp
 }
 `;
 
+exports[`JSON Schema export > checkClaimsInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "claims": {
+        "description": "1–30 claims: every number the answer states, each with the fact ID it cites.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "fact": {
+              "description": "Fact ID exactly as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string",
+            },
+            "group": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string",
+                  },
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "boolean",
+                  },
+                ],
+              },
+              "description": "Dimension values the text attributes the number to, e.g. {"dataset":"bgl","team":"Compute Platform"}; must equal the fact's group exactly (keys and values). Required: pass {} for ungrouped facts.",
+              "propertyNames": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "type": "object",
+            },
+            "metric": {
+              "description": "Metric the text names, e.g. events or requests; must equal the fact's metric.",
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string",
+            },
+            "unit": {
+              "const": "percent",
+              "description": "percent when a ratio is stated in percent (37.5 for 0.375); percent facts such as pct_change are stated as they are.",
+              "type": "string",
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "number",
+                },
+                {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+              ],
+              "description": "The value as stated: a number, or a string in the answer format with comma thousands separators and a dot decimal point ("4,747,963", "37.5"; "1.204" is a decimal); a time as ISO-8601 UTC prefix ("2005-06-03", "2005-06-03T15:42Z").",
+            },
+          },
+          "required": [
+            "fact",
+            "value",
+            "metric",
+            "group",
+          ],
+          "type": "object",
+        },
+        "maxItems": 30,
+        "minItems": 1,
+        "type": "array",
+      },
+    },
+    "required": [
+      "claims",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "claims": {
+        "description": "1–30 claims: every number the answer states, each with the fact ID it cites.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "fact": {
+              "description": "Fact ID exactly as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string",
+            },
+            "group": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string",
+                  },
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "type": "boolean",
+                  },
+                ],
+              },
+              "description": "Dimension values the text attributes the number to, e.g. {"dataset":"bgl","team":"Compute Platform"}; must equal the fact's group exactly (keys and values). Required: pass {} for ungrouped facts.",
+              "propertyNames": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "type": "object",
+            },
+            "metric": {
+              "description": "Metric the text names, e.g. events or requests; must equal the fact's metric.",
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string",
+            },
+            "unit": {
+              "const": "percent",
+              "description": "percent when a ratio is stated in percent (37.5 for 0.375); percent facts such as pct_change are stated as they are.",
+              "type": "string",
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "number",
+                },
+                {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+              ],
+              "description": "The value as stated: a number, or a string in the answer format with comma thousands separators and a dot decimal point ("4,747,963", "37.5"; "1.204" is a decimal); a time as ISO-8601 UTC prefix ("2005-06-03", "2005-06-03T15:42Z").",
+            },
+          },
+          "required": [
+            "fact",
+            "value",
+            "metric",
+            "group",
+          ],
+          "type": "object",
+        },
+        "maxItems": 30,
+        "minItems": 1,
+        "type": "array",
+      },
+    },
+    "required": [
+      "claims",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > checkClaimsOutput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "claims": {
+        "description": "One result per claim, in input order.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "claim": {
+              "additionalProperties": false,
+              "description": "The claim as submitted.",
+              "properties": {
+                "fact": {
+                  "description": "Fact ID exactly as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "group": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string",
+                      },
+                      {
+                        "type": "number",
+                      },
+                      {
+                        "type": "boolean",
+                      },
+                    ],
+                  },
+                  "description": "Dimension values the text attributes the number to, e.g. {"dataset":"bgl","team":"Compute Platform"}; must equal the fact's group exactly (keys and values). Required: pass {} for ungrouped facts.",
+                  "propertyNames": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "type": "object",
+                },
+                "metric": {
+                  "description": "Metric the text names, e.g. events or requests; must equal the fact's metric.",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "unit": {
+                  "const": "percent",
+                  "description": "percent when a ratio is stated in percent (37.5 for 0.375); percent facts such as pct_change are stated as they are.",
+                  "type": "string",
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                    },
+                    {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                  ],
+                  "description": "The value as stated: a number, or a string in the answer format with comma thousands separators and a dot decimal point ("4,747,963", "37.5"; "1.204" is a decimal); a time as ISO-8601 UTC prefix ("2005-06-03", "2005-06-03T15:42Z").",
+                },
+              },
+              "required": [
+                "fact",
+                "value",
+                "metric",
+                "group",
+              ],
+              "type": "object",
+            },
+            "fact": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "group": {
+                      "additionalProperties": {
+                        "type": "string",
+                      },
+                      "propertyNames": {
+                        "type": "string",
+                      },
+                      "type": "object",
+                    },
+                    "metric": {
+                      "type": "string",
+                    },
+                    "unit": {
+                      "type": "string",
+                    },
+                    "value": {
+                      "type": [
+                        "number",
+                        "string",
+                      ],
+                    },
+                  },
+                  "required": [
+                    "value",
+                    "metric",
+                    "unit",
+                    "group",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "The cited fact; null when unresolved.",
+            },
+            "mismatch_on": {
+              "description": "Differing fields for mismatch, in this order; empty otherwise.",
+              "items": {
+                "enum": [
+                  "value",
+                  "metric",
+                  "group",
+                ],
+                "type": "string",
+              },
+              "type": "array",
+            },
+            "reason": {
+              "description": "Why the claim is not verified and how to correct it; null when verified.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "receipt": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data_version": {
+                      "type": "string",
+                    },
+                    "receipt_id": {
+                      "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
+                      "pattern": "^r_[0-9a-f]{8}$",
+                      "type": "string",
+                    },
+                    "scope": {
+                      "additionalProperties": false,
+                      "description": "What the numbers cover.",
+                      "properties": {
+                        "filters": {
+                          "additionalProperties": false,
+                          "description": "Filters applied besides dataset and window.",
+                          "properties": {
+                            "alert_label": {
+                              "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+                              "maxLength": 32,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "components": {
+                              "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                              "items": {
+                                "maxLength": 64,
+                                "minLength": 1,
+                                "type": "string",
+                              },
+                              "maxItems": 20,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "instance_id": {
+                              "description": "OpenStack only: exact instance UUID.",
+                              "maxLength": 64,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "levels": {
+                              "description": "Only these levels (1–10).",
+                              "items": {
+                                "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+                                "pattern": "^[A-Z][A-Z_]{0,15}$",
+                                "type": "string",
+                              },
+                              "maxItems": 10,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "node": {
+                              "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+                              "maxLength": 64,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "only_alerts": {
+                              "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+                              "type": "boolean",
+                            },
+                            "only_errors": {
+                              "description": "Only error events (R-02 levels per dataset). Default: false.",
+                              "type": "boolean",
+                            },
+                            "pattern_id": {
+                              "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+                              "pattern": "^[0-9a-f]{8,64}$",
+                              "type": "string",
+                            },
+                            "rack": {
+                              "description": "BGL only: rack, e.g. R02.",
+                              "maxLength": 16,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "request_id": {
+                              "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+                              "maxLength": 64,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "teams": {
+                              "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+                              "items": {
+                                "maxLength": 64,
+                                "minLength": 1,
+                                "type": "string",
+                              },
+                              "maxItems": 10,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "text": {
+                              "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+                              "maxLength": 200,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                          },
+                          "type": "object",
+                        },
+                        "windows": {
+                          "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus.",
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "dataset": {
+                                "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+                                "enum": [
+                                  "bgl",
+                                  "openstack",
+                                ],
+                                "type": "string",
+                              },
+                              "from": {
+                                "description": "Resolved window start, inclusive.",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                "type": "string",
+                              },
+                              "period": {
+                                "description": "Only in period comparisons: current period C or reference period B.",
+                                "enum": [
+                                  "current",
+                                  "baseline",
+                                ],
+                                "type": "string",
+                              },
+                              "to": {
+                                "description": "Resolved window end, exclusive.",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "dataset",
+                              "from",
+                              "to",
+                            ],
+                            "type": "object",
+                          },
+                          "maxItems": 2,
+                          "type": "array",
+                        },
+                      },
+                      "required": [
+                        "windows",
+                        "filters",
+                      ],
+                      "type": "object",
+                    },
+                    "tool": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "receipt_id",
+                    "tool",
+                    "data_version",
+                    "scope",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "The receipt of the cited fact with its scope; null for unknown_receipt and malformed IDs.",
+            },
+            "status": {
+              "description": "verified: value, metric and group match the cited fact. mismatch: at least one differs (mismatch_on). unknown_fact: malformed ID, or the receipt has no such fact. unknown_receipt: no receipt with that ID. Both unknown statuses count as unresolved.",
+              "enum": [
+                "verified",
+                "mismatch",
+                "unknown_fact",
+                "unknown_receipt",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "claim",
+            "status",
+            "mismatch_on",
+            "reason",
+            "fact",
+            "receipt",
+          ],
+          "type": "object",
+        },
+        "maxItems": 30,
+        "type": "array",
+      },
+      "summary": {
+        "additionalProperties": false,
+        "description": "Counts over the claims above; checked = verified + mismatch + unresolved.",
+        "properties": {
+          "checked": {
+            "description": "Claims submitted and checked.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "mismatch": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "text": {
+            "description": "Verification line for the answer: "N claims checked · M mismatch · K unresolved".",
+            "type": "string",
+          },
+          "unresolved": {
+            "description": "unknown_fact plus unknown_receipt.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "verified": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "checked",
+          "verified",
+          "mismatch",
+          "unresolved",
+          "text",
+        ],
+        "type": "object",
+      },
+    },
+    "required": [
+      "claims",
+      "summary",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "claims": {
+        "description": "One result per claim, in input order.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "claim": {
+              "additionalProperties": false,
+              "description": "The claim as submitted.",
+              "properties": {
+                "fact": {
+                  "description": "Fact ID exactly as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "group": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string",
+                      },
+                      {
+                        "type": "number",
+                      },
+                      {
+                        "type": "boolean",
+                      },
+                    ],
+                  },
+                  "description": "Dimension values the text attributes the number to, e.g. {"dataset":"bgl","team":"Compute Platform"}; must equal the fact's group exactly (keys and values). Required: pass {} for ungrouped facts.",
+                  "propertyNames": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "type": "object",
+                },
+                "metric": {
+                  "description": "Metric the text names, e.g. events or requests; must equal the fact's metric.",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "unit": {
+                  "const": "percent",
+                  "description": "percent when a ratio is stated in percent (37.5 for 0.375); percent facts such as pct_change are stated as they are.",
+                  "type": "string",
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                    },
+                    {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                  ],
+                  "description": "The value as stated: a number, or a string in the answer format with comma thousands separators and a dot decimal point ("4,747,963", "37.5"; "1.204" is a decimal); a time as ISO-8601 UTC prefix ("2005-06-03", "2005-06-03T15:42Z").",
+                },
+              },
+              "required": [
+                "fact",
+                "value",
+                "metric",
+                "group",
+              ],
+              "type": "object",
+            },
+            "fact": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "group": {
+                      "additionalProperties": {
+                        "type": "string",
+                      },
+                      "propertyNames": {
+                        "type": "string",
+                      },
+                      "type": "object",
+                    },
+                    "metric": {
+                      "type": "string",
+                    },
+                    "unit": {
+                      "type": "string",
+                    },
+                    "value": {
+                      "type": [
+                        "number",
+                        "string",
+                      ],
+                    },
+                  },
+                  "required": [
+                    "value",
+                    "metric",
+                    "unit",
+                    "group",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "The cited fact; null when unresolved.",
+            },
+            "mismatch_on": {
+              "description": "Differing fields for mismatch, in this order; empty otherwise.",
+              "items": {
+                "enum": [
+                  "value",
+                  "metric",
+                  "group",
+                ],
+                "type": "string",
+              },
+              "type": "array",
+            },
+            "reason": {
+              "description": "Why the claim is not verified and how to correct it; null when verified.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "receipt": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data_version": {
+                      "type": "string",
+                    },
+                    "receipt_id": {
+                      "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
+                      "pattern": "^r_[0-9a-f]{8}$",
+                      "type": "string",
+                    },
+                    "scope": {
+                      "additionalProperties": false,
+                      "description": "What the numbers cover.",
+                      "properties": {
+                        "filters": {
+                          "additionalProperties": false,
+                          "description": "Filters applied besides dataset and window.",
+                          "properties": {
+                            "alert_label": {
+                              "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+                              "maxLength": 32,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "components": {
+                              "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                              "items": {
+                                "maxLength": 64,
+                                "minLength": 1,
+                                "type": "string",
+                              },
+                              "maxItems": 20,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "instance_id": {
+                              "description": "OpenStack only: exact instance UUID.",
+                              "maxLength": 64,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "levels": {
+                              "description": "Only these levels (1–10).",
+                              "items": {
+                                "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+                                "pattern": "^[A-Z][A-Z_]{0,15}$",
+                                "type": "string",
+                              },
+                              "maxItems": 10,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "node": {
+                              "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+                              "maxLength": 64,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "only_alerts": {
+                              "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+                              "type": "boolean",
+                            },
+                            "only_errors": {
+                              "description": "Only error events (R-02 levels per dataset). Default: false.",
+                              "type": "boolean",
+                            },
+                            "pattern_id": {
+                              "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+                              "pattern": "^[0-9a-f]{8,64}$",
+                              "type": "string",
+                            },
+                            "rack": {
+                              "description": "BGL only: rack, e.g. R02.",
+                              "maxLength": 16,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "request_id": {
+                              "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+                              "maxLength": 64,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                            "teams": {
+                              "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+                              "items": {
+                                "maxLength": 64,
+                                "minLength": 1,
+                                "type": "string",
+                              },
+                              "maxItems": 10,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "text": {
+                              "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+                              "maxLength": 200,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                          },
+                          "type": "object",
+                        },
+                        "windows": {
+                          "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus.",
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "dataset": {
+                                "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+                                "enum": [
+                                  "bgl",
+                                  "openstack",
+                                ],
+                                "type": "string",
+                              },
+                              "from": {
+                                "description": "Resolved window start, inclusive.",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                "type": "string",
+                              },
+                              "period": {
+                                "description": "Only in period comparisons: current period C or reference period B.",
+                                "enum": [
+                                  "current",
+                                  "baseline",
+                                ],
+                                "type": "string",
+                              },
+                              "to": {
+                                "description": "Resolved window end, exclusive.",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "dataset",
+                              "from",
+                              "to",
+                            ],
+                            "type": "object",
+                          },
+                          "maxItems": 2,
+                          "type": "array",
+                        },
+                      },
+                      "required": [
+                        "windows",
+                        "filters",
+                      ],
+                      "type": "object",
+                    },
+                    "tool": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "receipt_id",
+                    "tool",
+                    "data_version",
+                    "scope",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "The receipt of the cited fact with its scope; null for unknown_receipt and malformed IDs.",
+            },
+            "status": {
+              "description": "verified: value, metric and group match the cited fact. mismatch: at least one differs (mismatch_on). unknown_fact: malformed ID, or the receipt has no such fact. unknown_receipt: no receipt with that ID. Both unknown statuses count as unresolved.",
+              "enum": [
+                "verified",
+                "mismatch",
+                "unknown_fact",
+                "unknown_receipt",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "claim",
+            "status",
+            "mismatch_on",
+            "reason",
+            "fact",
+            "receipt",
+          ],
+          "type": "object",
+        },
+        "maxItems": 30,
+        "type": "array",
+      },
+      "summary": {
+        "additionalProperties": false,
+        "description": "Counts over the claims above; checked = verified + mismatch + unresolved.",
+        "properties": {
+          "checked": {
+            "description": "Claims submitted and checked.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "mismatch": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "text": {
+            "description": "Verification line for the answer: "N claims checked · M mismatch · K unresolved".",
+            "type": "string",
+          },
+          "unresolved": {
+            "description": "unknown_fact plus unknown_receipt.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "verified": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "checked",
+          "verified",
+          "mismatch",
+          "unresolved",
+          "text",
+        ],
+        "type": "object",
+      },
+    },
+    "required": [
+      "claims",
+      "summary",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`JSON Schema export > countEventsInput converts losslessly for input and output 1`] = `
 {
   "input": {
@@ -2905,7 +3839,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "object",
               },
               "windows": {
-                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
+                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -2946,7 +3880,6 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   "type": "object",
                 },
                 "maxItems": 2,
-                "minItems": 1,
                 "type": "array",
               },
             },
@@ -3306,7 +4239,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "object",
               },
               "windows": {
-                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
+                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -3347,7 +4280,6 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   "type": "object",
                 },
                 "maxItems": 2,
-                "minItems": 1,
                 "type": "array",
               },
             },
@@ -6235,7 +7167,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "object",
           },
           "windows": {
-            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
+            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus.",
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -6276,7 +7208,6 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               "type": "object",
             },
             "maxItems": 2,
-            "minItems": 1,
             "type": "array",
           },
         },
@@ -6675,7 +7606,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "object",
           },
           "windows": {
-            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
+            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus.",
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -6716,7 +7647,6 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               "type": "object",
             },
             "maxItems": 2,
-            "minItems": 1,
             "type": "array",
           },
         },
