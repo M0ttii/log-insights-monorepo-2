@@ -66,6 +66,8 @@ export const populationSchema = z
     "Population in scope with its counting unit; null for tools without a corpus population (check_claims)."
   )
 
+export type Population = z.infer<typeof populationSchema>
+
 export const receiptSchema = z.strictObject({
   receipt_id: receiptIdSchema,
   created_at: instantSchema.describe("UTC time of the run."),
