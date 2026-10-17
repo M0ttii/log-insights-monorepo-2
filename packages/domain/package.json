@@ -20,6 +20,7 @@
     "./tool": "./src/tool.ts",
     "./tools/check-claims": "./src/tools/check-claims.ts",
     "./tools/count-events": "./src/tools/count-events.ts",
+    "./tools/get-log-context": "./src/tools/get-log-context.ts",
     "./tools/event-trend": "./src/tools/event-trend.ts",
     "./tools/search-logs": "./src/tools/search-logs.ts",
     "./version": "./src/version.ts",

@@ -23,6 +23,10 @@ import {
   eventTrendOutputSchema,
 } from "./tools/event-trend.ts"
 import {
+  getLogContextInputSchema,
+  getLogContextOutputSchema,
+} from "./tools/get-log-context.ts"
+import {
   searchLogsInputSchema,
   searchLogsOutputSchema,
 } from "./tools/search-logs.ts"
@@ -63,6 +67,8 @@ const schemas = {
   countEventsOutput: countEventsOutputSchema,
   eventTrendInput: eventTrendInputSchema,
   eventTrendOutput: eventTrendOutputSchema,
+  getLogContextInput: getLogContextInputSchema,
+  getLogContextOutput: getLogContextOutputSchema,
   checkClaimsInput: checkClaimsInputSchema,
   checkClaimsOutput: checkClaimsOutputSchema,
 }
