@@ -6,14 +6,18 @@
   "scripts": {
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "gate": "node --env-file-if-exists=../../.env --import tsx gate/run.ts"
+    "gate": "node --env-file-if-exists=../../.env --import tsx gate/run.ts",
+    "data:setup": "node --env-file-if-exists=../../.env --import tsx src/setup.ts"
   },
   "dependencies": {
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "tar": "7.5.22",
+    "yauzl": "3.4.0"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
     "@types/pg": "8.23.1",
+    "@types/yauzl": "3.4.0",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^10",

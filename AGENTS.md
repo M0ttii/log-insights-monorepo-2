@@ -48,8 +48,11 @@ a tool layer on SereneDB exposed through an MCP server (P0) and a web chat (P1).
 SereneDB runs via Docker Compose (`compose.yaml`, image 26.09.1.3 pinned by
 digest, loopback only, password from `.env`) and passed the compatibility gate
 (`pnpm gate`, probes in `packages/corpus/gate/`, results and required rewrites in
-technical.md § 5.2). Loader, tools, MCP server and web chat are not implemented
-yet. Tooling is configured (see "Tooling and checks").
+technical.md § 5.2). `pnpm data:setup` downloads BGL and OpenStack and loads them
+into `log_events` with load report, manifest and full-text index
+(`packages/corpus`, technical.md § 7); `--samples` loads the Loghub 2k samples
+into the separate database `log_insights_samples`. Tools, MCP server and web
+chat are not implemented yet. Tooling is configured (see "Tooling and checks").
 
 ## Product and domain invariants
 
@@ -156,7 +159,7 @@ packages/
                         # receipts, tools, registry; golden and integration tests
   agent/                # planned: role playbooks (export ./playbooks) and the
                         # AI SDK tool adapter (export ./ai-sdk)
-  corpus/               # planned: sql/*.sql, setup, download, receipt export
+  corpus/               # gate/, sql/*.sql, src/ (setup, download, load), tests/integration/
   evals/                # planned: role questions, eval runner, results
   typescript-config/    # shared tsconfig presets
   eslint-config/        # shared ESLint presets (base, next-js, react-internal)
@@ -408,8 +411,10 @@ domain code independent of Next.js, React, database drivers, and provider SDKs.
 Toolchain is pinned: Node 24 (`.nvmrc`, `engines`) and pnpm 11.25
 (`packageManager`). Turborepo runs per-workspace tasks (`lint`, `typecheck`,
 `build`, `dev`); repository-wide tools run once from the root. CI
-(`.github/workflows/ci.yml`) runs every step below on pushes to `main`/`master`
-and on pull requests; keep it green.
+(`.github/workflows/ci.yml`) runs every step below except `pnpm gate` and the
+full-corpus `pnpm data:setup` on pushes to `main`/`master` and on pull requests;
+its `loader` job runs `pnpm data:setup --samples` and `pnpm test:integration`
+against SereneDB from `compose.yaml`. Keep it green.
 
 | Script (root) | Tool | Purpose |
 |---|---|---|
@@ -418,11 +423,13 @@ and on pull requests; keep it green.
 | `pnpm format:check` | Prettier | Code, JSON, and CSS; Markdown docs are not auto-formatted. |
 | `pnpm deps:check` | dependency-cruiser | No cycles, no Radix/assistant-ui, no relative imports across workspaces, `packages/ui` stays generic, no server workspaces in the browser graph, private `partials/`. Uses the root `tsconfig.json`, which maps the aliases for repository-wide tools. |
 | `pnpm knip` | knip | Unused files, exports, and dependencies per workspace; `packages/ui/src/components` exports are exempt because shadcn generates complete APIs. |
-| `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); `passWithNoTests` is removed once domain tests exist. |
+| `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); needs no Docker. |
+| `pnpm test:integration` | Vitest | Project `corpus-integration` (`packages/corpus/tests/integration/`): loads the 2k samples and hand-written fixtures through the real loader into SereneDB and checks hand-determined values, time zones and idempotence. Needs Docker and `.env`; part of CI, not of `pnpm check`. |
 | `pnpm build` | Turborepo | Production builds of workspaces with a `build` script; none exist until `apps/web` is created. |
+| `pnpm data:setup [--samples]` | tsx + `pg` (`@workspace/corpus`) | Starts SereneDB, downloads the raw files into `.data/raw` if missing (pinned size and SHA-256), runs `packages/corpus/sql/` in order, checks the result (`load_checks`), writes `load_manifest` and prints the load balance. Idempotent. Default: full corpus into `SERENEDB_DATABASE`; `--samples`: Loghub 2k samples into `log_insights_samples`. Not part of `pnpm check`. |
 | `pnpm gate [G1 …] [--keep]` | tsx + `pg` (`@workspace/corpus`) | SereneDB compatibility gate (technical.md § 5.2) against the running Compose service; needs `.env`. Full-corpus probes need `.data/raw/BGL.log` and are reported as skipped without it. Rerun after any image change; a `DIFF` means documented behaviour changed. Not part of `pnpm check` or CI (needs Docker and the corpus). |
 
-Planned scripts (technical.md): `pnpm data:setup`, `pnpm mcp`, `pnpm mcp:desktop-config`,
+Planned scripts (technical.md): `pnpm mcp`, `pnpm mcp:desktop-config`,
 `pnpm test:golden`, `pnpm eval`, `pnpm report:perf`, and with the web app `pnpm test:e2e`
 (Playwright + axe in `apps/web`: both mandatory viewports, no serious/critical axe
 violations, no console errors, no horizontal overflow; known issues use `test.fixme`
