@@ -696,6 +696,7 @@ describe("createRegistry", () => {
       "get_log_context",
       "count_events",
       "event_trend",
+      "check_claims",
     ])
     expect(new Set(names).size).toBe(names.length)
   })

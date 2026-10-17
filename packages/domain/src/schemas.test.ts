@@ -11,6 +11,10 @@ import { rankCriterionSchema } from "./rules/ranking.ts"
 import { patternStatusSchema } from "./rules/status.ts"
 import { emptyInputSchema, toolResultSchema } from "./tool.ts"
 import {
+  checkClaimsInputSchema,
+  checkClaimsOutputSchema,
+} from "./tools/check-claims.ts"
+import {
   countEventsInputSchema,
   countEventsOutputSchema,
 } from "./tools/count-events.ts"
@@ -65,6 +69,8 @@ const schemas = {
   eventTrendOutput: eventTrendOutputSchema,
   getLogContextInput: getLogContextInputSchema,
   getLogContextOutput: getLogContextOutputSchema,
+  checkClaimsInput: checkClaimsInputSchema,
+  checkClaimsOutput: checkClaimsOutputSchema,
 }
 
 type JsonObject = Record<string, unknown>
@@ -133,6 +139,24 @@ describe("JSON Schema export", () => {
       enum: ["bgl", "openstack"],
     })
     expect(property(input, "bucket").description).toMatch(/Monday/)
+  })
+
+  it("keeps the fact ID of check_claims a bounded string and the group required", () => {
+    const input = z.toJSONSchema(checkClaimsInputSchema, { io: "input" })
+    expect(property(input, "claims")).toMatchObject({
+      minItems: 1,
+      maxItems: 30,
+    })
+    const claim = asObject(property(input, "claims").items)
+    expect(claim.additionalProperties).toBe(false)
+    expect(claim.required).toEqual(["fact", "value", "metric", "group"])
+    const fact = property(claim, "fact")
+    expect(fact).toMatchObject({ type: "string", maxLength: 64 })
+    // A pattern would let the SDK reject the whole call before the handler.
+    expect(fact.pattern).toBeUndefined()
+    expect(property(claim, "group").description).toMatch(
+      /pass \{\} for ungrouped facts/
+    )
   })
 
   it("exports describe_corpus as an empty strict object", () => {

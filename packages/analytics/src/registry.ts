@@ -40,6 +40,7 @@ import {
   receiptSignature,
   resultDigest,
 } from "./receipts.ts"
+import { checkClaims } from "./tools/check-claims.ts"
 import { countEvents } from "./tools/count-events.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
 import { eventTrend } from "./tools/event-trend.ts"
@@ -172,6 +173,7 @@ const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(getLogContext),
   toolEntry(countEvents),
   toolEntry(eventTrend),
+  toolEntry(checkClaims),
 ]
 
 /** Optional index tools (A-33, P2); none implemented yet. */
