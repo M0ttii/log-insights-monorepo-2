@@ -1,10 +1,13 @@
 /**
- * Named thresholds from concept.md. Values marked "until U03" are defaults that
- * profiling (U03, LOG-12) confirms or replaces per dataset; changing one bumps
- * CONTRACT_VERSION.
+ * Named thresholds from concept.md; changing one bumps CONTRACT_VERSION.
  */
 
-/** R-05: a new episode starts after at least this many minutes without an event. Default until U03. */
+/**
+ * R-05: a new episode starts after at least this many minutes without an
+ * event. Confirmed for both datasets by profiling (U03, LOG-12; concept R-05):
+ * BGL gaps of error patterns are sparse between 10 min and 2 h, and every gap
+ * between OpenStack error events is at least 30 min.
+ */
 export const EPISODE_GAP_MINUTES = 30
 
 /** R-05: a pattern with at least this many episodes in the window is "recurring". */

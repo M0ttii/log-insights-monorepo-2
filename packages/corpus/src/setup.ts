@@ -19,6 +19,7 @@ import {
   type LoadResult,
 } from "./load.ts"
 import { CORPUS, SAMPLES, type Source } from "./sources.ts"
+import { VERSIONS } from "./versions.ts"
 
 const count = (value: unknown) => Number(value).toLocaleString("en-US")
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`
@@ -82,7 +83,7 @@ function printResult(source: Source, result: LoadResult): void {
     const share = patterns === 0 ? 0 : (100 * single) / patterns
     console.log(
       `  ${String(stats["dataset"])}: ${String(stats["first_ts"])} to ${String(stats["last_ts"])}, ` +
-        `${count(patterns)} patterns (draft masks), ${count(single)} single-event (${share.toFixed(1)} %)`
+        `${count(patterns)} patterns (masks ${VERSIONS.patternRules}), ${count(single)} single-event (${share.toFixed(1)} %)`
     )
     if (stats["api_accesses"] !== null) {
       console.log(

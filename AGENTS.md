@@ -19,10 +19,10 @@ follow "Tickets and Git workflow".
 
 Read only the relevant sections in the docs/ directory before changing behavior:
 
-1. [concept.md](docs/concept.md) v3.4: product requirements A-01–A-38, role playbooks,
+1. [concept.md](docs/concept.md) v3.5: product requirements A-01–A-38, role playbooks,
    answer contract, rules R-01–R-11, priorities, and acceptance cases S-01–S-16.
    It follows the published challenge brief, which wins on conflict.
-2. [technical.md](docs/technical.md) v2.5: data model, loader, tool contracts, fact IDs,
+2. [technical.md](docs/technical.md) v2.9: data model, loader, tool contracts, fact IDs,
    receipts, MCP server, web chat, verification, and work packages with dependencies.
 3. [ui-concept.md](docs/ui-concept.md) v2.3: navigation, interaction, visual direction,
    and UI states; authoritative for UI structure where technical.md summarizes it.
@@ -51,7 +51,10 @@ digest, loopback only, password from `.env`) and passed the compatibility gate
 technical.md § 5.2). `pnpm data:setup` downloads BGL and OpenStack and loads them
 into `log_events` with load report, manifest and full-text index
 (`packages/corpus`, technical.md § 7); `--samples` loads the Loghub 2k samples
-into the separate database `log_insights_samples`. `packages/analytics` holds
+into the separate database `log_insights_samples`. `pnpm data:profile` runs the
+read-only profiling queries (`packages/corpus/sql/profiling/`) behind the data
+decisions of U03 (masks, levels, ownership, episode threshold, breadth;
+technical.md § 7). `packages/analytics` holds
 the pool, filter compiler, receipt store, registry (`runTool`, `rerun`,
 `catalog`) and the first tool, `describe_corpus` (technical.md § 8.1, § 12;
 `CONTRACT_VERSION` 2.0.0: `run()` returns a `ToolRun`, the registry adds facts
@@ -431,6 +434,7 @@ against SereneDB from `compose.yaml`. Keep it green.
 | `pnpm test:integration` | Vitest | Projects `corpus-integration` (`packages/corpus/tests/integration/`): loads the 2k samples and hand-written fixtures through the real loader into SereneDB and checks hand-determined values, time zones and idempotence; and `analytics-integration` (`packages/analytics/tests/integration/`): `describe_corpus` through the registry, receipts, the pool's 10 s cancel and client cancellation against the loaded samples. Needs Docker and `.env`; part of CI, not of `pnpm check`. |
 | `pnpm build` | Turborepo | Production builds of workspaces with a `build` script; none exist until `apps/web` is created. |
 | `pnpm data:setup [--samples]` | tsx + `pg` (`@workspace/corpus`) | Starts SereneDB, downloads the raw files into `.data/raw` if missing (pinned size and SHA-256), runs `packages/corpus/sql/` in order, checks the result (`load_checks`), writes `load_manifest` and prints the load balance. Idempotent. Default: full corpus into `SERENEDB_DATABASE`; `--samples`: Loghub 2k samples into `log_insights_samples`. Not part of `pnpm check`. |
+| `pnpm data:profile [name …] [--samples] [--wide]` | tsx + `pg` (`@workspace/corpus`) | Read-only profiling queries in `packages/corpus/sql/profiling/` (one statement per `-- @ <title>`) against the loaded corpus or, with `--samples`, the 2k samples; prints results with the data version. Decisions in concept.md/technical.md cite them. Not part of `pnpm check` or CI. |
 | `pnpm gate [G1 …] [--keep]` | tsx + `pg` (`@workspace/corpus`) | SereneDB compatibility gate (technical.md § 5.2) against the running Compose service; needs `.env`. Full-corpus probes need `.data/raw/BGL.log` and are reported as skipped without it. Rerun after any image change; a `DIFF` means documented behaviour changed. Not part of `pnpm check` or CI (needs Docker and the corpus). |
 
 Planned scripts (technical.md): `pnpm mcp`, `pnpm mcp:desktop-config`,

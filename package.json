@@ -22,7 +22,8 @@
     "knip": "knip",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm deps:check && pnpm knip && pnpm test",
     "gate": "pnpm --filter @workspace/corpus gate",
-    "data:setup": "pnpm --filter @workspace/corpus data:setup"
+    "data:setup": "pnpm --filter @workspace/corpus data:setup",
+    "data:profile": "pnpm --filter @workspace/corpus data:profile"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",

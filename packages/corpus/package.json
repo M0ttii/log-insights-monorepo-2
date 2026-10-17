@@ -7,7 +7,8 @@
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "gate": "node --env-file-if-exists=../../.env --import tsx gate/run.ts",
-    "data:setup": "node --env-file-if-exists=../../.env --import tsx src/setup.ts"
+    "data:setup": "node --env-file-if-exists=../../.env --import tsx src/setup.ts",
+    "data:profile": "node --env-file-if-exists=../../.env --import tsx src/profile.ts"
   },
   "dependencies": {
     "pg": "8.23.1",

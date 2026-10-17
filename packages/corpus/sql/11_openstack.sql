@@ -88,7 +88,8 @@ SELECT
   NULLIF(http.bytes, '')::BIGINT AS response_bytes,
   -- Seconds with up to 7 decimals; DECIMAL keeps the conversion exact.
   (NULLIF(http.seconds, '')::DECIMAL(18, 7) * 1000)::DOUBLE AS latency_ms,
-  -- R-02, provisional until U03 confirms the observed levels.
+  -- R-02, confirmed by profiling (U03): INFO, WARNING, ERROR and CRITICAL
+  -- occur; ERROR and CRITICAL are errors.
   level IN ('ERROR', 'CRITICAL') AS is_error,
   -- Dataset label by instance ID: NULL where the line names no instance or
   -- the source has no labels, never false by default.
