@@ -1,0 +1,164 @@
+import { z } from "zod"
+
+import type { ToolError } from "./errors.ts"
+import { factSchema, type Fact, type FactSpec } from "./facts.ts"
+import {
+  receiptSummarySchema,
+  type Client,
+  type Receipt,
+  type ReceiptSummary,
+} from "./receipt.ts"
+
+/**
+ * Tool contract (technical.md § 8.1). Registry (U05), MCP server (U06), web
+ * chat (U17) and evals use these types; tool packages define no own filter,
+ * fact or error types.
+ */
+
+/** MCP tool names: stable snake_case, at most 64 characters. */
+export const TOOL_NAME_PATTERN = /^[a-z][a-z0-9_]{0,63}$/
+
+/**
+ * MCP tool annotations. All four hints are always set because the
+ * specification's defaults are pessimistic (destructive, open world).
+ */
+export type ToolAnnotations = {
+  readOnlyHint: boolean
+  destructiveHint: boolean
+  idempotentHint: boolean
+  openWorldHint: boolean
+}
+
+/**
+ * The eight default tools only read SereneDB. Writing the receipt file is an
+ * audit record of the call, not an effect on the data, so they count as
+ * read-only and idempotent: the same input on the same data version returns
+ * the same numbers.
+ */
+export const READ_ONLY_ANNOTATIONS: ToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+}
+
+/** Executes parameterized SQL; implemented by the analytics pool (U05). */
+export type QueryRunner = {
+  query(
+    sql: string,
+    params: readonly unknown[],
+    signal: AbortSignal
+  ): Promise<{ rows: Record<string, unknown>[]; durationMs: number }>
+}
+
+/** Replaceable in tests. */
+export type Clock = { now(): string }
+
+/** One JSON file per receipt (§ 6.2), implemented in analytics (U05). */
+export type ReceiptStore = {
+  put(receipt: Receipt): Promise<void>
+  get(id: string): Promise<Receipt | null>
+  list(): Promise<string[]>
+}
+
+export type ToolContext = {
+  db: QueryRunner
+  clock: Clock
+  receipts: ReceiptStore
+  dataVersion: string
+  client: Client
+  /** Aborted when the client cancels the call (MCP cancellation, closed web request). */
+  signal: AbortSignal
+  /** Role guidance from the playbooks, injected for describe_corpus (A-37). */
+  roleGuidance?: string
+}
+
+export type ToolResult<O> = {
+  data: O
+  facts: Fact[]
+  receipt: ReceiptSummary
+  /** Caveats such as "counts are log entries, not incidents" or truncation hints. */
+  notes: string[]
+}
+
+/** Expected failures are values, not exceptions, so callers handle every case. */
+export type ToolOutcome<O> =
+  { ok: true; result: ToolResult<O> } | { ok: false; error: ToolError }
+
+export type ToolDef<I, O> = {
+  name: string
+  title: string
+  version: string
+  description: string
+  input: z.ZodType<I>
+  output: z.ZodType<O>
+  factSpecs: readonly FactSpec[]
+  annotations: ToolAnnotations
+  /** Cross-field checks JSON Schema cannot express; run after the schema parse. */
+  validate?: (input: I) => ToolError | null
+  run: (ctx: ToolContext, input: I) => Promise<ToolOutcome<O>>
+}
+
+/** Checks the static parts of a definition once, at module load. */
+export function defineTool<I, O>(def: ToolDef<I, O>): ToolDef<I, O> {
+  if (!TOOL_NAME_PATTERN.test(def.name))
+    throw new Error(`invalid tool name: ${def.name}`)
+  if (def.title.trim() === "" || def.description.trim() === "") {
+    throw new Error(`tool ${def.name} needs a title and a description`)
+  }
+  return def
+}
+
+/**
+ * Schema of the whole result envelope, so MCP `structuredContent` can be
+ * validated against the tool's `outputSchema`.
+ */
+export function toolResultSchema<O extends z.ZodType>(output: O) {
+  return z.strictObject({
+    data: output,
+    facts: z
+      .array(factSchema)
+      .describe("Citable facts; quote their IDs, never build paths."),
+    receipt: receiptSummarySchema,
+    notes: z.array(z.string()).describe("Caveats to carry into the answer."),
+  })
+}
+
+/** describe_corpus takes no input: `{"type":"object","additionalProperties":false}`. */
+export const emptyInputSchema = z.strictObject({})
+
+/**
+ * Template for tool descriptions (A-16): the model chooses tools from this
+ * text, so every tool states the same parts in the same order.
+ */
+export type ToolDescription = {
+  purpose: string
+  useWhen: string
+  /** Each case names the tool to use instead. */
+  doNotUseWhen: readonly { situation: string; use: string }[]
+  inputs: string
+  /** From `pickFilter(...).summary`, so text and schema list the same fields. */
+  filters?: string
+  outputs: string
+  truncation: string
+  /** R-01 counting unit of the numbers, e.g. "log events (parsed lines), not incidents". */
+  countingUnit: string
+}
+
+export function renderDescription(description: ToolDescription): string {
+  const avoid = description.doNotUseWhen
+    .map(({ situation, use }) => `${situation} (use ${use})`)
+    .join("; ")
+  return [
+    description.purpose,
+    `Use when: ${description.useWhen}`,
+    avoid === "" ? null : `Do not use when: ${avoid}.`,
+    `Inputs: ${description.inputs}`,
+    description.filters ?? null,
+    `Output: ${description.outputs}`,
+    `Truncation: ${description.truncation}`,
+    `Counting unit: ${description.countingUnit}`,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n")
+}

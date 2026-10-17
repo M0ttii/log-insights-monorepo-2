@@ -150,7 +150,7 @@ apps/
 packages/
   ui/                   # @workspace/ui: shadcn primitives (src/components), shadcn
                         # hooks (src/hooks), cn() (src/lib), globals.css and tokens
-  domain/               # planned: pure Zod contracts, fact IDs and rule functions
+  domain/               # pure Zod contracts, fact IDs and rule functions
                         # (R-06, R-08, R-09, R-10)
   analytics/            # planned: the only place that executes SQL: db, filters,
                         # receipts, tools, registry; golden and integration tests
@@ -418,7 +418,7 @@ and on pull requests; keep it green.
 | `pnpm format:check` | Prettier | Code, JSON, and CSS; Markdown docs are not auto-formatted. |
 | `pnpm deps:check` | dependency-cruiser | No cycles, no Radix/assistant-ui, no relative imports across workspaces, `packages/ui` stays generic, no server workspaces in the browser graph, private `partials/`. Uses the root `tsconfig.json`, which maps the aliases for repository-wide tools. |
 | `pnpm knip` | knip | Unused files, exports, and dependencies per workspace; `packages/ui/src/components` exports are exempt because shadcn generates complete APIs. |
-| `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); `passWithNoTests` is removed once domain tests exist. |
+| `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); JSON Schema snapshots of the domain contracts live in `packages/domain/src/__snapshots__` and are updated with `pnpm vitest run -u` only together with a `CONTRACT_VERSION` bump (patch for description-only changes). |
 | `pnpm build` | Turborepo | Production builds of workspaces with a `build` script; none exist until `apps/web` is created. |
 | `pnpm gate [G1 …] [--keep]` | tsx + `pg` (`@workspace/corpus`) | SereneDB compatibility gate (technical.md § 5.2) against the running Compose service; needs `.env`. Full-corpus probes need `.data/raw/BGL.log` and are reported as skipped without it. Rerun after any image change; a `DIFF` means documented behaviour changed. Not part of `pnpm check` or CI (needs Docker and the corpus). |
 

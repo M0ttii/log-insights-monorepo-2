@@ -12,7 +12,5 @@ export default defineConfig({
         },
       },
     ],
-    // packages/ has no tests yet; remove once the first domain tests exist.
-    passWithNoTests: true,
   },
 })
