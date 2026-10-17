@@ -95,6 +95,26 @@ describe("validateFilter", () => {
       "request_id",
     ])
     expect(issuePaths({ rack: "R02", instance_id: "abc" })).toEqual([""])
+    expect(
+      issuePaths({
+        dataset: "bgl",
+        endpoints: ["/v2/<ID>/servers/detail"],
+        http_status: { min: 500, max: 599 },
+      })
+    ).toEqual(["endpoints", "http_status"])
+  })
+
+  it("accepts an inclusive status range only with min ≤ max", () => {
+    expect(validateFilter({ http_status: { min: 503, max: 503 } })).toBeNull()
+    expect(issuePaths({ http_status: { min: 500, max: 499 } })).toEqual([
+      "http_status",
+    ])
+    expect(
+      filterSchema.safeParse({ http_status: { min: 99, max: 200 } }).success
+    ).toBe(false)
+    expect(
+      filterSchema.safeParse({ http_status: { min: 400, max: 499.5 } }).success
+    ).toBe(false)
   })
 })
 

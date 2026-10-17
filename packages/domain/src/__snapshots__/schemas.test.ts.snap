@@ -381,6 +381,40 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                               "minItems": 1,
                               "type": "array",
                             },
+                            "endpoints": {
+                              "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+                              "items": {
+                                "maxLength": 200,
+                                "minLength": 1,
+                                "type": "string",
+                              },
+                              "maxItems": 20,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "http_status": {
+                              "additionalProperties": false,
+                              "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+                              "properties": {
+                                "max": {
+                                  "description": "Highest status, inclusive.",
+                                  "maximum": 599,
+                                  "minimum": 100,
+                                  "type": "integer",
+                                },
+                                "min": {
+                                  "description": "Lowest status, inclusive.",
+                                  "maximum": 599,
+                                  "minimum": 100,
+                                  "type": "integer",
+                                },
+                              },
+                              "required": [
+                                "min",
+                                "max",
+                              ],
+                              "type": "object",
+                            },
                             "instance_id": {
                               "description": "OpenStack only: exact instance UUID.",
                               "maxLength": 64,
@@ -761,6 +795,40 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                               "maxItems": 20,
                               "minItems": 1,
                               "type": "array",
+                            },
+                            "endpoints": {
+                              "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+                              "items": {
+                                "maxLength": 200,
+                                "minLength": 1,
+                                "type": "string",
+                              },
+                              "maxItems": 20,
+                              "minItems": 1,
+                              "type": "array",
+                            },
+                            "http_status": {
+                              "additionalProperties": false,
+                              "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+                              "properties": {
+                                "max": {
+                                  "description": "Highest status, inclusive.",
+                                  "maximum": 599,
+                                  "minimum": 100,
+                                  "type": "integer",
+                                },
+                                "min": {
+                                  "description": "Lowest status, inclusive.",
+                                  "maximum": 599,
+                                  "minimum": 100,
+                                  "type": "integer",
+                                },
+                              },
+                              "required": [
+                                "min",
+                                "max",
+                              ],
+                              "type": "object",
                             },
                             "instance_id": {
                               "description": "OpenStack only: exact instance UUID.",
@@ -3770,6 +3838,40 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                     "minItems": 1,
                     "type": "array",
                   },
+                  "endpoints": {
+                    "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+                    "items": {
+                      "maxLength": 200,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "maxItems": 20,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "http_status": {
+                    "additionalProperties": false,
+                    "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+                    "properties": {
+                      "max": {
+                        "description": "Highest status, inclusive.",
+                        "maximum": 599,
+                        "minimum": 100,
+                        "type": "integer",
+                      },
+                      "min": {
+                        "description": "Lowest status, inclusive.",
+                        "maximum": 599,
+                        "minimum": 100,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "min",
+                      "max",
+                    ],
+                    "type": "object",
+                  },
                   "instance_id": {
                     "description": "OpenStack only: exact instance UUID.",
                     "maxLength": 64,
@@ -4170,6 +4272,40 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                     "minItems": 1,
                     "type": "array",
                   },
+                  "endpoints": {
+                    "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+                    "items": {
+                      "maxLength": 200,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "maxItems": 20,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "http_status": {
+                    "additionalProperties": false,
+                    "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+                    "properties": {
+                      "max": {
+                        "description": "Highest status, inclusive.",
+                        "maximum": 599,
+                        "minimum": 100,
+                        "type": "integer",
+                      },
+                      "min": {
+                        "description": "Lowest status, inclusive.",
+                        "maximum": 599,
+                        "minimum": 100,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "min",
+                      "max",
+                    ],
+                    "type": "object",
+                  },
                   "instance_id": {
                     "description": "OpenStack only: exact instance UUID.",
                     "maxLength": 64,
@@ -4540,11 +4676,45 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         ],
         "type": "string",
       },
+      "endpoints": {
+        "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+        "items": {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
       "from": {
         "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
         "format": "date-time",
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
         "type": "string",
+      },
+      "http_status": {
+        "additionalProperties": false,
+        "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+        "properties": {
+          "max": {
+            "description": "Highest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+          "min": {
+            "description": "Lowest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "min",
+          "max",
+        ],
+        "type": "object",
       },
       "instance_id": {
         "description": "OpenStack only: exact instance UUID.",
@@ -4649,11 +4819,45 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         ],
         "type": "string",
       },
+      "endpoints": {
+        "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+        "items": {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
       "from": {
         "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
         "format": "date-time",
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
         "type": "string",
+      },
+      "http_status": {
+        "additionalProperties": false,
+        "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+        "properties": {
+          "max": {
+            "description": "Highest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+          "min": {
+            "description": "Lowest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "min",
+          "max",
+        ],
+        "type": "object",
       },
       "instance_id": {
         "description": "OpenStack only: exact instance UUID.",
@@ -6403,6 +6607,1430 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
 }
 `;
 
+exports[`JSON Schema export > latencyStatsInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Optional, only openstack: API accesses exist in OpenStack only. Default: openstack.",
+        "enum": [
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "endpoints": {
+        "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+        "items": {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "group_by": {
+        "description": "Optional, one grouping: endpoint, method, status, component, hour or day. Without it only the total row is returned.",
+        "enum": [
+          "endpoint",
+          "method",
+          "status",
+          "component",
+          "hour",
+          "day",
+        ],
+        "type": "string",
+      },
+      "http_status": {
+        "additionalProperties": false,
+        "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+        "properties": {
+          "max": {
+            "description": "Highest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+          "min": {
+            "description": "Lowest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "min",
+          "max",
+        ],
+        "type": "object",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "description": "Groups to list for endpoint, method, status or component (1–20), most API accesses first. Default: 10. The rest is aggregated as other. Not allowed with hour, day or without group_by: every bucket is listed.",
+        "maximum": 20,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Optional, only openstack: API accesses exist in OpenStack only. Default: openstack.",
+        "enum": [
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "endpoints": {
+        "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+        "items": {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "group_by": {
+        "description": "Optional, one grouping: endpoint, method, status, component, hour or day. Without it only the total row is returned.",
+        "enum": [
+          "endpoint",
+          "method",
+          "status",
+          "component",
+          "hour",
+          "day",
+        ],
+        "type": "string",
+      },
+      "http_status": {
+        "additionalProperties": false,
+        "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+        "properties": {
+          "max": {
+            "description": "Highest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+          "min": {
+            "description": "Lowest status, inclusive.",
+            "maximum": 599,
+            "minimum": 100,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "min",
+          "max",
+        ],
+        "type": "object",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "description": "Groups to list for endpoint, method, status or component (1–20), most API accesses first. Default: 10. The rest is aggregated as other. Not allowed with hour, day or without group_by: every bucket is listed.",
+        "maximum": 20,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > latencyStatsOutput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "data_span": {
+        "additionalProperties": false,
+        "description": "Observed span of the dataset, before any filter.",
+        "properties": {
+          "first": {
+            "description": "First OpenStack event, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+          "last": {
+            "description": "Last OpenStack event, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "first",
+          "last",
+        ],
+        "type": "object",
+      },
+      "dataset": {
+        "const": "openstack",
+        "type": "string",
+      },
+      "effective_range": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "description": "Start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "End, exclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Window ∩ data span: the time the numbers cover; null when the window lies outside the data span (no data is not zero).",
+      },
+      "group_by": {
+        "anyOf": [
+          {
+            "description": "Grouping: endpoint (API path with IDs masked), method (HTTP method), status (HTTP status code), component (logging service), hour or day (UTC buckets [start, start + 1 unit), listed in time order).",
+            "enum": [
+              "endpoint",
+              "method",
+              "status",
+              "component",
+              "hour",
+              "day",
+            ],
+            "type": "string",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "group_count": {
+        "description": "Number of groups in scope (with hour or day: buckets listed); 0 without group_by.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "groups": {
+        "description": "endpoint, method, status, component: at most top_n groups by api_access_events descending, then key ascending. hour, day: every bucket of the effective range in time order, empty buckets included.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "api_access_events": {
+              "description": "API accesses: OpenStack lines with an HTTP status, with or without request ID (R-01). Denominator of rate_5xx and rate_4xx.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "bucket_end": {
+              "description": "With hour or day: bucket end, UTC, exclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "bucket_start": {
+              "description": "With hour or day: bucket start, UTC, inclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "capture_gap": {
+              "description": "With hour or day: OpenStack has no log event at all in this bucket; its zero is missing data, not observed calm.",
+              "type": "boolean",
+            },
+            "component": {
+              "description": "Service that logged the access.",
+              "type": "string",
+            },
+            "endpoint": {
+              "description": "API path with IDs masked.",
+              "type": "string",
+            },
+            "errors_4xx": {
+              "description": "API accesses with status 400–499 (client errors, not failed accesses, R-02). Numerator of rate_4xx.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "errors_5xx": {
+              "description": "API accesses with status 500–599 (failed accesses, R-02). Numerator of rate_5xx.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "latency_values": {
+              "description": "API accesses with a latency; the percentiles are computed over these.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "max_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Highest latency in milliseconds; null without a latency value.",
+            },
+            "method": {
+              "description": "HTTP method.",
+              "type": "string",
+            },
+            "p50_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Median (p50) latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "p90_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "p90 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "p95_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "p95 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "p99_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "p99 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "partial": {
+              "description": "With hour or day: the window or the data span starts or ends inside this bucket, so it covers less than a full unit.",
+              "type": "boolean",
+            },
+            "rate_4xx": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "errors_4xx / api_access_events as a fraction (0–1), computed in SereneDB; null when api_access_events is 0.",
+            },
+            "rate_5xx": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "errors_5xx / api_access_events as a fraction (0–1), computed in SereneDB. 0 is an observed zero over api_access_events; null when api_access_events is 0.",
+            },
+            "status": {
+              "description": "HTTP status code.",
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+            "unique_requests": {
+              "description": "Distinct request IDs (a separate counting unit, R-01); accesses without request ID are not counted.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "without_request_id": {
+              "description": "API accesses without request ID (part of api_access_events).",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "api_access_events",
+            "without_request_id",
+            "unique_requests",
+            "latency_values",
+            "p50_ms",
+            "p90_ms",
+            "p95_ms",
+            "p99_ms",
+            "max_ms",
+            "errors_5xx",
+            "rate_5xx",
+            "errors_4xx",
+            "rate_4xx",
+          ],
+          "type": "object",
+        },
+        "maxItems": 120,
+        "type": "array",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "api_access_events": {
+                "description": "API accesses: OpenStack lines with an HTTP status, with or without request ID (R-01). Denominator of rate_5xx and rate_4xx.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "errors_4xx": {
+                "description": "API accesses with status 400–499 (client errors, not failed accesses, R-02). Numerator of rate_4xx.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "errors_5xx": {
+                "description": "API accesses with status 500–599 (failed accesses, R-02). Numerator of rate_5xx.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "groups": {
+                "description": "Groups aggregated here.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "latency_values": {
+                "description": "API accesses with a latency; the percentiles are computed over these.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "max_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Highest latency in milliseconds; null without a latency value.",
+              },
+              "p50_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Median (p50) latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "p90_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "p90 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "p95_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "p95 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "p99_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "p99 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "rate_4xx": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "errors_4xx / api_access_events as a fraction (0–1), computed in SereneDB; null when api_access_events is 0.",
+              },
+              "rate_5xx": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "errors_5xx / api_access_events as a fraction (0–1), computed in SereneDB. 0 is an observed zero over api_access_events; null when api_access_events is 0.",
+              },
+              "unique_requests": {
+                "description": "Distinct request IDs (a separate counting unit, R-01); accesses without request ID are not counted.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "without_request_id": {
+                "description": "API accesses without request ID (part of api_access_events).",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "groups",
+              "api_access_events",
+              "without_request_id",
+              "unique_requests",
+              "latency_values",
+              "p50_ms",
+              "p90_ms",
+              "p95_ms",
+              "p99_ms",
+              "max_ms",
+              "errors_5xx",
+              "rate_5xx",
+              "errors_4xx",
+              "rate_4xx",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "The groups beyond top_n, aggregated over their accesses (percentiles over their latencies, not averaged); null when every group is listed.",
+      },
+      "top_n": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "The top_n that applied; null with hour, day or without group_by.",
+      },
+      "total": {
+        "additionalProperties": false,
+        "description": "All API accesses in scope; the denominator of the total rates.",
+        "properties": {
+          "api_access_events": {
+            "description": "API accesses: OpenStack lines with an HTTP status, with or without request ID (R-01). Denominator of rate_5xx and rate_4xx.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "errors_4xx": {
+            "description": "API accesses with status 400–499 (client errors, not failed accesses, R-02). Numerator of rate_4xx.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "errors_5xx": {
+            "description": "API accesses with status 500–599 (failed accesses, R-02). Numerator of rate_5xx.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "latency_values": {
+            "description": "API accesses with a latency; the percentiles are computed over these.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "max_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Highest latency in milliseconds; null without a latency value.",
+          },
+          "p50_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Median (p50) latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "p90_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "p90 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "p95_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "p95 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "p99_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "p99 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "rate_4xx": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "errors_4xx / api_access_events as a fraction (0–1), computed in SereneDB; null when api_access_events is 0.",
+          },
+          "rate_5xx": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "errors_5xx / api_access_events as a fraction (0–1), computed in SereneDB. 0 is an observed zero over api_access_events; null when api_access_events is 0.",
+          },
+          "unique_requests": {
+            "description": "Distinct request IDs (a separate counting unit, R-01); accesses without request ID are not counted.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "without_request_id": {
+            "description": "API accesses without request ID (part of api_access_events).",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "api_access_events",
+          "without_request_id",
+          "unique_requests",
+          "latency_values",
+          "p50_ms",
+          "p90_ms",
+          "p95_ms",
+          "p99_ms",
+          "max_ms",
+          "errors_5xx",
+          "rate_5xx",
+          "errors_4xx",
+          "rate_4xx",
+        ],
+        "type": "object",
+      },
+      "truncated": {
+        "description": "True when group_count is larger than the listed groups.",
+        "type": "boolean",
+      },
+      "unit": {
+        "const": "api_accesses",
+        "description": "Counting unit of the counts and the denominator of every rate (R-01); unique_requests are requests.",
+        "type": "string",
+      },
+    },
+    "required": [
+      "dataset",
+      "unit",
+      "group_by",
+      "data_span",
+      "effective_range",
+      "total",
+      "group_count",
+      "groups",
+      "other",
+      "truncated",
+      "top_n",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "data_span": {
+        "additionalProperties": false,
+        "description": "Observed span of the dataset, before any filter.",
+        "properties": {
+          "first": {
+            "description": "First OpenStack event, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+          "last": {
+            "description": "Last OpenStack event, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "first",
+          "last",
+        ],
+        "type": "object",
+      },
+      "dataset": {
+        "const": "openstack",
+        "type": "string",
+      },
+      "effective_range": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "description": "Start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "End, exclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Window ∩ data span: the time the numbers cover; null when the window lies outside the data span (no data is not zero).",
+      },
+      "group_by": {
+        "anyOf": [
+          {
+            "description": "Grouping: endpoint (API path with IDs masked), method (HTTP method), status (HTTP status code), component (logging service), hour or day (UTC buckets [start, start + 1 unit), listed in time order).",
+            "enum": [
+              "endpoint",
+              "method",
+              "status",
+              "component",
+              "hour",
+              "day",
+            ],
+            "type": "string",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "group_count": {
+        "description": "Number of groups in scope (with hour or day: buckets listed); 0 without group_by.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "groups": {
+        "description": "endpoint, method, status, component: at most top_n groups by api_access_events descending, then key ascending. hour, day: every bucket of the effective range in time order, empty buckets included.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "api_access_events": {
+              "description": "API accesses: OpenStack lines with an HTTP status, with or without request ID (R-01). Denominator of rate_5xx and rate_4xx.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "bucket_end": {
+              "description": "With hour or day: bucket end, UTC, exclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "bucket_start": {
+              "description": "With hour or day: bucket start, UTC, inclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "capture_gap": {
+              "description": "With hour or day: OpenStack has no log event at all in this bucket; its zero is missing data, not observed calm.",
+              "type": "boolean",
+            },
+            "component": {
+              "description": "Service that logged the access.",
+              "type": "string",
+            },
+            "endpoint": {
+              "description": "API path with IDs masked.",
+              "type": "string",
+            },
+            "errors_4xx": {
+              "description": "API accesses with status 400–499 (client errors, not failed accesses, R-02). Numerator of rate_4xx.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "errors_5xx": {
+              "description": "API accesses with status 500–599 (failed accesses, R-02). Numerator of rate_5xx.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "latency_values": {
+              "description": "API accesses with a latency; the percentiles are computed over these.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "max_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Highest latency in milliseconds; null without a latency value.",
+            },
+            "method": {
+              "description": "HTTP method.",
+              "type": "string",
+            },
+            "p50_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Median (p50) latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "p90_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "p90 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "p95_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "p95 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "p99_ms": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "p99 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+            },
+            "partial": {
+              "description": "With hour or day: the window or the data span starts or ends inside this bucket, so it covers less than a full unit.",
+              "type": "boolean",
+            },
+            "rate_4xx": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "errors_4xx / api_access_events as a fraction (0–1), computed in SereneDB; null when api_access_events is 0.",
+            },
+            "rate_5xx": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "errors_5xx / api_access_events as a fraction (0–1), computed in SereneDB. 0 is an observed zero over api_access_events; null when api_access_events is 0.",
+            },
+            "status": {
+              "description": "HTTP status code.",
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+            "unique_requests": {
+              "description": "Distinct request IDs (a separate counting unit, R-01); accesses without request ID are not counted.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "without_request_id": {
+              "description": "API accesses without request ID (part of api_access_events).",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "api_access_events",
+            "without_request_id",
+            "unique_requests",
+            "latency_values",
+            "p50_ms",
+            "p90_ms",
+            "p95_ms",
+            "p99_ms",
+            "max_ms",
+            "errors_5xx",
+            "rate_5xx",
+            "errors_4xx",
+            "rate_4xx",
+          ],
+          "type": "object",
+        },
+        "maxItems": 120,
+        "type": "array",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "api_access_events": {
+                "description": "API accesses: OpenStack lines with an HTTP status, with or without request ID (R-01). Denominator of rate_5xx and rate_4xx.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "errors_4xx": {
+                "description": "API accesses with status 400–499 (client errors, not failed accesses, R-02). Numerator of rate_4xx.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "errors_5xx": {
+                "description": "API accesses with status 500–599 (failed accesses, R-02). Numerator of rate_5xx.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "groups": {
+                "description": "Groups aggregated here.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "latency_values": {
+                "description": "API accesses with a latency; the percentiles are computed over these.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "max_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Highest latency in milliseconds; null without a latency value.",
+              },
+              "p50_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Median (p50) latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "p90_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "p90 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "p95_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "p95 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "p99_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "p99 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+              },
+              "rate_4xx": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "errors_4xx / api_access_events as a fraction (0–1), computed in SereneDB; null when api_access_events is 0.",
+              },
+              "rate_5xx": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "errors_5xx / api_access_events as a fraction (0–1), computed in SereneDB. 0 is an observed zero over api_access_events; null when api_access_events is 0.",
+              },
+              "unique_requests": {
+                "description": "Distinct request IDs (a separate counting unit, R-01); accesses without request ID are not counted.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "without_request_id": {
+                "description": "API accesses without request ID (part of api_access_events).",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "groups",
+              "api_access_events",
+              "without_request_id",
+              "unique_requests",
+              "latency_values",
+              "p50_ms",
+              "p90_ms",
+              "p95_ms",
+              "p99_ms",
+              "max_ms",
+              "errors_5xx",
+              "rate_5xx",
+              "errors_4xx",
+              "rate_4xx",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "The groups beyond top_n, aggregated over their accesses (percentiles over their latencies, not averaged); null when every group is listed.",
+      },
+      "top_n": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "The top_n that applied; null with hour, day or without group_by.",
+      },
+      "total": {
+        "additionalProperties": false,
+        "description": "All API accesses in scope; the denominator of the total rates.",
+        "properties": {
+          "api_access_events": {
+            "description": "API accesses: OpenStack lines with an HTTP status, with or without request ID (R-01). Denominator of rate_5xx and rate_4xx.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "errors_4xx": {
+            "description": "API accesses with status 400–499 (client errors, not failed accesses, R-02). Numerator of rate_4xx.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "errors_5xx": {
+            "description": "API accesses with status 500–599 (failed accesses, R-02). Numerator of rate_5xx.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "latency_values": {
+            "description": "API accesses with a latency; the percentiles are computed over these.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "max_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Highest latency in milliseconds; null without a latency value.",
+          },
+          "p50_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Median (p50) latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "p90_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "p90 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "p95_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "p95 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "p99_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "p99 latency in milliseconds over latency_values, continuous (linear interpolation, quantile_cont); null without a latency value.",
+          },
+          "rate_4xx": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "errors_4xx / api_access_events as a fraction (0–1), computed in SereneDB; null when api_access_events is 0.",
+          },
+          "rate_5xx": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "errors_5xx / api_access_events as a fraction (0–1), computed in SereneDB. 0 is an observed zero over api_access_events; null when api_access_events is 0.",
+          },
+          "unique_requests": {
+            "description": "Distinct request IDs (a separate counting unit, R-01); accesses without request ID are not counted.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "without_request_id": {
+            "description": "API accesses without request ID (part of api_access_events).",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "api_access_events",
+          "without_request_id",
+          "unique_requests",
+          "latency_values",
+          "p50_ms",
+          "p90_ms",
+          "p95_ms",
+          "p99_ms",
+          "max_ms",
+          "errors_5xx",
+          "rate_5xx",
+          "errors_4xx",
+          "rate_4xx",
+        ],
+        "type": "object",
+      },
+      "truncated": {
+        "description": "True when group_count is larger than the listed groups.",
+        "type": "boolean",
+      },
+      "unit": {
+        "const": "api_accesses",
+        "description": "Counting unit of the counts and the denominator of every rate (R-01); unique_requests are requests.",
+        "type": "string",
+      },
+    },
+    "required": [
+      "dataset",
+      "unit",
+      "group_by",
+      "data_span",
+      "effective_range",
+      "total",
+      "group_count",
+      "groups",
+      "other",
+      "truncated",
+      "top_n",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`JSON Schema export > leader converts losslessly for input and output 1`] = `
 {
   "input": {
@@ -7098,6 +8726,40 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                 "minItems": 1,
                 "type": "array",
               },
+              "endpoints": {
+                "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array",
+              },
+              "http_status": {
+                "additionalProperties": false,
+                "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+                "properties": {
+                  "max": {
+                    "description": "Highest status, inclusive.",
+                    "maximum": 599,
+                    "minimum": 100,
+                    "type": "integer",
+                  },
+                  "min": {
+                    "description": "Lowest status, inclusive.",
+                    "maximum": 599,
+                    "minimum": 100,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "min",
+                  "max",
+                ],
+                "type": "object",
+              },
               "instance_id": {
                 "description": "OpenStack only: exact instance UUID.",
                 "maxLength": 64,
@@ -7536,6 +9198,40 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                 "maxItems": 20,
                 "minItems": 1,
                 "type": "array",
+              },
+              "endpoints": {
+                "description": "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail.",
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array",
+              },
+              "http_status": {
+                "additionalProperties": false,
+                "description": "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx.",
+                "properties": {
+                  "max": {
+                    "description": "Highest status, inclusive.",
+                    "maximum": 599,
+                    "minimum": 100,
+                    "type": "integer",
+                  },
+                  "min": {
+                    "description": "Lowest status, inclusive.",
+                    "maximum": 599,
+                    "minimum": 100,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "min",
+                  "max",
+                ],
+                "type": "object",
               },
               "instance_id": {
                 "description": "OpenStack only: exact instance UUID.",

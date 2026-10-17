@@ -48,6 +48,8 @@ const levelSchema = z
   .regex(/^[A-Z][A-Z_]{0,15}$/)
   .describe("Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.")
 
+const httpStatusSchema = z.number().int().min(100).max(599)
+
 const filterShape = {
   dataset: datasetSchema.optional(),
   from: instantSchema
@@ -107,6 +109,23 @@ const filterShape = {
   instance_id: name(64)
     .optional()
     .describe("OpenStack only: exact instance UUID."),
+  endpoints: z
+    .array(name(200))
+    .min(1)
+    .max(20)
+    .optional()
+    .describe(
+      "OpenStack only: only API accesses to these endpoints (1–20), exactly as returned with IDs masked, e.g. /v2/<ID>/servers/detail."
+    ),
+  http_status: z
+    .strictObject({
+      min: httpStatusSchema.describe("Lowest status, inclusive."),
+      max: httpStatusSchema.describe("Highest status, inclusive."),
+    })
+    .optional()
+    .describe(
+      "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx."
+    ),
   pattern_id: z
     .string()
     .regex(/^[0-9a-f]{8,64}$/)
@@ -135,7 +154,12 @@ const BGL_ONLY: readonly FilterField[] = [
   "alert_label",
   "only_alerts",
 ]
-const OPENSTACK_ONLY: readonly FilterField[] = ["request_id", "instance_id"]
+const OPENSTACK_ONLY: readonly FilterField[] = [
+  "request_id",
+  "instance_id",
+  "endpoints",
+  "http_status",
+]
 
 export type PickedFilter<K extends FilterField> = {
   /** Accepted fields in declaration order. */
@@ -175,6 +199,15 @@ export function validateFilter(filter: Partial<Filter>): ToolError | null {
     issues.push({
       path: "to",
       message: "Must be later than from; windows are [from, to).",
+    })
+  }
+  if (
+    filter.http_status !== undefined &&
+    filter.http_status.min > filter.http_status.max
+  ) {
+    issues.push({
+      path: "http_status",
+      message: "min must not exceed max; both bounds are inclusive.",
     })
   }
 
