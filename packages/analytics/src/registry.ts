@@ -45,6 +45,7 @@ import { countEvents } from "./tools/count-events.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
 import { eventTrend } from "./tools/event-trend.ts"
 import { getLogContext } from "./tools/get-log-context.ts"
+import { latencyStats } from "./tools/latency-stats.ts"
 import { recurringPatterns } from "./tools/recurring-patterns.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
@@ -175,6 +176,7 @@ const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(countEvents),
   toolEntry(eventTrend),
   toolEntry(recurringPatterns),
+  toolEntry(latencyStats),
   toolEntry(checkClaims),
 ]
 

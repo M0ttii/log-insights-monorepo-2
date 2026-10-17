@@ -119,15 +119,25 @@ describe("compileFilter", () => {
         {
           request_id: "req-1",
           instance_id: "b9000564-fe1a-409b-b8cc-1e88b294cd1d",
+          endpoints: ["/v2/<ID>/servers/detail", "/latest/meta-data/"],
+          http_status: { min: 500, max: 599 },
           only_errors: false,
         },
         ALL,
         "e"
       )
     ).toEqual({
-      where: "e.request_id = $1 AND e.instance_id = $2",
+      where:
+        "e.request_id = $1 AND e.instance_id = $2 AND e.endpoint IN ($3, $4) AND e.http_status BETWEEN $5 AND $6",
       relation: "log_events",
-      params: ["req-1", "b9000564-fe1a-409b-b8cc-1e88b294cd1d"],
+      params: [
+        "req-1",
+        "b9000564-fe1a-409b-b8cc-1e88b294cd1d",
+        "/v2/<ID>/servers/detail",
+        "/latest/meta-data/",
+        500,
+        599,
+      ],
     })
   })
 
