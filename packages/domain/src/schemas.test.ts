@@ -11,6 +11,10 @@ import { rankCriterionSchema } from "./rules/ranking.ts"
 import { patternStatusSchema } from "./rules/status.ts"
 import { emptyInputSchema, toolResultSchema } from "./tool.ts"
 import {
+  getLogContextInputSchema,
+  getLogContextOutputSchema,
+} from "./tools/get-log-context.ts"
+import {
   searchLogsInputSchema,
   searchLogsOutputSchema,
 } from "./tools/search-logs.ts"
@@ -47,6 +51,8 @@ const schemas = {
   dominance: dominanceSchema,
   searchLogsInput: searchLogsInputSchema,
   searchLogsOutput: searchLogsOutputSchema,
+  getLogContextInput: getLogContextInputSchema,
+  getLogContextOutput: getLogContextOutputSchema,
 }
 
 type JsonObject = Record<string, unknown>
