@@ -249,12 +249,14 @@ versions before using an API, and never infer an installation from a plan.
   Preserve S-01–S-16 and the role eval with its pass threshold (technical.md § 13).
 - `pnpm check` runs lint, typecheck, format, dependency, knip and unit checks. CI
   adds the build and a `loader` job (`pnpm data:setup --samples`, then
-  `pnpm test:integration`, which needs Docker and `.env`). `pnpm gate`,
+  `pnpm test:integration`, which needs Docker and `.env`). `pnpm test:golden`
+  runs the independent full-corpus Golden suite locally,
+  never as part of `pnpm test` or CI. `pnpm gate`,
   `pnpm data:profile` and the full-corpus `pnpm data:setup` run only locally. Keep
   CI green.
 - Never name a script `setup`: `pnpm setup` is a built-in that edits the shell
   configuration. Env vars that code reads must be declared in `turbo.json`. Planned
-  scripts (technical.md): `pnpm mcp`, `pnpm mcp:desktop-config`, `pnpm test:golden`,
+  scripts (technical.md): `pnpm mcp`, `pnpm mcp:desktop-config`,
   `pnpm eval`, `pnpm report:perf`, `pnpm test:e2e`; add each in its workspace with a
   root alias.
 - A successful build does not verify accessibility, runtime behavior or data

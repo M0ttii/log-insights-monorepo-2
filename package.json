@@ -23,7 +23,8 @@
     "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm deps:check && pnpm knip && pnpm test",
     "gate": "pnpm --filter @workspace/corpus gate",
     "data:setup": "pnpm --filter @workspace/corpus data:setup",
-    "data:profile": "pnpm --filter @workspace/corpus data:profile"
+    "data:profile": "pnpm --filter @workspace/corpus data:profile",
+    "test:golden": "pnpm --filter @workspace/analytics test:golden"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",
