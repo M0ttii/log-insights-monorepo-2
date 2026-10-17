@@ -7,6 +7,10 @@
     "serenedb-docs": {
       "type": "http",
       "url": "https://api.serenedb.com/mcp"
+    },
+    "log-insights": {
+      "command": "pnpm",
+      "args": ["--silent", "mcp"]
     }
   }
 }

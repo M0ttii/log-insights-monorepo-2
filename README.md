@@ -10,8 +10,9 @@ receipt.
 > decisions below come from profiling it (`pnpm data:profile`). All eight
 > tools exist (`describe_corpus`, `search_logs`, `get_log_context`,
 > `count_events` with `compare`, `event_trend`, `recurring_patterns` with
-> `rank: investigation_order`, `latency_stats`, `check_claims`); the MCP
-> server and the web chat are not implemented yet.
+> `rank: investigation_order`, `latency_stats`, `check_claims`). The stdio MCP
+> server exposes the registry to Claude clients. Role playbooks and the web chat
+> are not implemented yet.
 
 ## Requirements
 
@@ -71,7 +72,55 @@ in the technical spec (§ 5.1).
 | `pnpm data:setup [--samples]` | Load BGL and OpenStack into SereneDB (idempotent); `--samples` loads the Loghub 2k samples into the database `log_insights_samples` instead |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
 | `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
+| `pnpm --silent mcp` | Run the stdio MCP server over the shared tool registry |
+| `pnpm --silent mcp:desktop-config` | Print the Claude Desktop configuration with absolute paths |
+| `pnpm test:mcp` | MCP stdio smoke and shutdown checks against the loaded 2k samples |
 | `pnpm gate [G1 …] [--keep]` | SereneDB compatibility gate (technical spec § 5.2) against the running container; full-corpus probes need `.data/raw/BGL.log` and are skipped without it |
+
+## MCP connection
+
+Start the server with `pnpm --silent mcp`. stdout contains MCP messages only;
+operational logs go to stderr. The root `.env` is loaded at startup, and receipts
+use `<repository>/.data/receipts` even when the client starts elsewhere.
+`LOG_INSIGHTS_RECEIPTS_DIR` overrides that location; relative paths remain relative
+to the repository.
+
+Claude Code loads `log-insights` from the repository's `.mcp.json`. Approve that
+server in Claude Code, then ask it to call `describe_corpus`. To register it from
+another directory:
+
+```bash
+claude mcp add log-insights -- pnpm --dir /absolute/path/to/repository --silent mcp
+```
+
+For Claude Desktop, run `pnpm --silent mcp:desktop-config` and add the printed
+`log-insights` entry to the `mcpServers` object in your Desktop configuration,
+preserving existing entries. Restart Desktop, select the local server and ask it
+to call `describe_corpus`. The generated block uses absolute Node, tsx, source and
+`.env` paths, so Desktop needs no shell PATH. Regenerate it after moving the
+repository or changing the Node installation. It contains no credentials.
+
+The server exposes eight read-only tools, `corpus://overview`, `corpus://schema`,
+`corpus://ownership` and `receipt://{id}`. Each corpus resource uses
+`describe_corpus` and stores a receipt; its facts resolve against that full
+receipt. The schema resource lists the same available analytical fields as
+`describe_corpus`. Ownership is fictional. Missing receipts return `not_found`
+with a correction hint.
+
+Role prompts and server instructions are absent until the shared playbooks (U15)
+are supplied. `describe_corpus.answer_guidance` is `null` and explains that limit
+in `notes`. The integration point accepts instructions, role guidance and the
+three prompt renderers from one `PlaybookSource`; it ships no placeholder role
+text. Optional index tools follow in U21, so enabling
+`LOG_INSIGHTS_WORKSPACE_TOOLS=1` currently still exposes eight tools.
+
+`pnpm test:mcp` checks actual stdio messages, advertised schemas, resources,
+receipts, actionable errors, process shutdown and startup
+from another working directory against the Loghub 2k samples. It also starts the
+generated Desktop command. CI runs this after loading samples. Unit tests in
+`pnpm test` cover cancellation routing and playbook-source registration. Actual Claude Code
+and Desktop sessions require a signed-in client and remain a separate acceptance
+check; transport tests do not establish model behavior or instruction uptake.
 
 ## Tools
 
@@ -199,7 +248,8 @@ and [port management](https://docs.superset.sh/ports).
 ## Structure
 
 ```text
-apps/                       applications (none yet; apps/mcp and apps/web are planned)
+apps/mcp                    stdio MCP server, resources, playbook interface, desktop config and smoke tests
+apps/web                    planned web chat (not created yet)
 packages/analytics          pool, filter compiler, receipts, tool registry and tools
 packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
 packages/domain             pure Zod contracts, fact IDs and rule functions

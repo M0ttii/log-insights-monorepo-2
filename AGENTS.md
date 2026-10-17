@@ -252,9 +252,11 @@ versions before using an API, and never infer an installation from a plan.
   `pnpm test:integration`, which needs Docker and `.env`). `pnpm gate`,
   `pnpm data:profile` and the full-corpus `pnpm data:setup` run only locally. Keep
   CI green.
+- MCP scripts: `pnpm --silent mcp`, `pnpm --silent mcp:desktop-config`;
+  `pnpm test:mcp` runs the stdio smoke against the loaded 2k samples in CI.
 - Never name a script `setup`: `pnpm setup` is a built-in that edits the shell
   configuration. Env vars that code reads must be declared in `turbo.json`. Planned
-  scripts (technical.md): `pnpm mcp`, `pnpm mcp:desktop-config`, `pnpm test:golden`,
+  scripts (technical.md): `pnpm test:golden`,
   `pnpm eval`, `pnpm report:perf`, `pnpm test:e2e`; add each in its workspace with a
   root alias.
 - A successful build does not verify accessibility, runtime behavior or data
