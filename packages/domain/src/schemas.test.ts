@@ -11,6 +11,10 @@ import { rankCriterionSchema } from "./rules/ranking.ts"
 import { patternStatusSchema } from "./rules/status.ts"
 import { emptyInputSchema, toolResultSchema } from "./tool.ts"
 import {
+  countEventsInputSchema,
+  countEventsOutputSchema,
+} from "./tools/count-events.ts"
+import {
   eventTrendInputSchema,
   eventTrendOutputSchema,
 } from "./tools/event-trend.ts"
@@ -51,6 +55,8 @@ const schemas = {
   dominance: dominanceSchema,
   searchLogsInput: searchLogsInputSchema,
   searchLogsOutput: searchLogsOutputSchema,
+  countEventsInput: countEventsInputSchema,
+  countEventsOutput: countEventsOutputSchema,
   eventTrendInput: eventTrendInputSchema,
   eventTrendOutput: eventTrendOutputSchema,
 }

@@ -7,7 +7,6 @@ import {
 } from "@workspace/domain/errors"
 import type { FactSpec } from "@workspace/domain/facts"
 import { validateFilter, type Filter } from "@workspace/domain/filters"
-import type { Scope } from "@workspace/domain/receipt"
 import {
   bucketCount,
   bucketGrid,
@@ -44,8 +43,8 @@ import {
 } from "@workspace/domain/tools/event-trend"
 import { z } from "zod"
 
-import { corpusNotLoaded, getDataSpan, spanEnd } from "../corpus.ts"
 import { compileFilter, dimensionExpression } from "../filters.ts"
+import { resolveWindows, scopeFilters } from "../scope.ts"
 import { isoTime, SqlParams } from "../sql.ts"
 
 /**
@@ -101,10 +100,6 @@ const cellRow = z.object({
   bucket_events: exactCount,
 })
 
-const FILTER_FIELDS_IN_SCOPE = TREND_FILTER.fields.filter(
-  (field) => field !== "from" && field !== "to"
-)
-
 export const eventTrend = defineTool({
   name: "event_trend",
   title: "Event trend",
@@ -143,15 +138,22 @@ export const eventTrend = defineTool({
   validate: validateTrend,
   summary: summarizeEventTrend,
   async run(ctx, input) {
-    const span = await getDataSpan(ctx.db, input.dataset, ctx.signal)
-    if (span === null) return { ok: false, error: corpusNotLoaded }
-
+    const resolved = await resolveWindows(
+      ctx.db,
+      [input.dataset],
+      input,
+      ctx.signal
+    )
+    if (!resolved.ok) return resolved
+    const [first] = resolved.windows
+    if (first === undefined) throw new Error("no window for the dataset")
+    const { span } = first
     const requested: TimeRange = {
-      from: input.from ?? span.first,
-      to: input.to ?? spanEnd(span),
+      from: first.window.from,
+      to: first.window.to,
     }
     const effective = effectiveRange(requested, span)
-    const filters = scopeFilters(input)
+    const filters = scopeFilters(input, TREND_FILTER.fields)
     const splitBy = input.split_by ?? null
 
     if (effective === null) {
@@ -534,15 +536,6 @@ function filterOf(input: EventTrendInput): Partial<Filter> {
     if (value !== undefined) Object.assign(filter, { [field]: value })
   }
   return filter
-}
-
-function scopeFilters(input: EventTrendInput): Scope["filters"] {
-  const filters: Partial<Filter> = {}
-  for (const field of FILTER_FIELDS_IN_SCOPE) {
-    const value = input[field]
-    if (value !== undefined) Object.assign(filters, { [field]: value })
-  }
-  return filters
 }
 
 function instantKey(value: string): bigint {

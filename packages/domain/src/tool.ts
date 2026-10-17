@@ -150,8 +150,9 @@ export type ToolDef<I, O> = {
   input: z.ZodType<I>
   output: z.ZodType<O>
   /**
-   * A function of the validated input when a group key depends on it, e.g.
-   * the dimension a trend is split by (`{ bucket_start, component }`).
+   * Fact specs, or a function of the validated input for tools whose group
+   * keys follow the input (count_events: `groupKeys` = `group_by`;
+   * event_trend: the split dimension).
    */
   factSpecs: readonly FactSpec[] | ((input: I) => readonly FactSpec[])
   annotations: ToolAnnotations

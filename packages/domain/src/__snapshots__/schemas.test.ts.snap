@@ -39,6 +39,711 @@ exports[`JSON Schema export > changeLabel converts losslessly for input and outp
 }
 `;
 
+exports[`JSON Schema export > countEventsInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "group_by": {
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "maxItems": 2,
+        "minItems": 1,
+        "type": "array",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "default": 20,
+        "description": "Groups to return (1–50), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "group_by",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "group_by": {
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "maxItems": 2,
+        "minItems": 1,
+        "type": "array",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "default": 20,
+        "description": "Groups to return (1–50), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "group_by",
+      "top_n",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > countEventsOutput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "group_by": {
+        "description": "The grouping dimensions, in this order.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "group_count": {
+        "description": "Number of distinct groups in scope.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "groups": {
+        "description": "At most top_n groups: events descending, then the dimension values ascending with null last.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "alert_label": {
+              "description": "BGL dataset alert label (not our finding); null = no label.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "component": {
+              "description": "Component or OpenStack service.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "dataset": {
+              "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+              "enum": [
+                "bgl",
+                "openstack",
+              ],
+              "type": "string",
+            },
+            "endpoint": {
+              "description": "API path with IDs masked.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "events": {
+              "description": "Count of the group in the counting unit.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "http_status": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "HTTP status of the API accesses.",
+            },
+            "level": {
+              "description": "Level as logged.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "node": {
+              "description": "BGL node; null for events without a node and for OpenStack.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pattern": {
+              "description": "pattern_id; pass it as pattern_id filter, recurring_patterns shows the pattern text.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "rack": {
+              "description": "BGL rack; null for events without a node.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "share": {
+              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded.",
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number",
+            },
+            "team": {
+              "description": "Fictional owning team, or 'unowned' for unmapped components.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "events",
+            "share",
+          ],
+          "type": "object",
+        },
+        "maxItems": 50,
+        "type": "array",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "description": "Their count in the counting unit.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "groups": {
+                "description": "Groups summed here.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "share": {
+                "description": "events / total as a fraction (0–1).",
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+            },
+            "required": [
+              "groups",
+              "events",
+              "share",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Groups beyond top_n, summed; null when every group is listed.",
+      },
+      "top_n": {
+        "description": "The top_n that applied.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "total": {
+        "description": "Exact population in scope (all groups, including other).",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "truncated": {
+        "description": "True when group_count is larger than the listed groups.",
+        "type": "boolean",
+      },
+      "unit": {
+        "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+        "enum": [
+          "log_events",
+          "api_accesses",
+          "requests",
+        ],
+        "type": "string",
+      },
+    },
+    "required": [
+      "group_by",
+      "unit",
+      "total",
+      "group_count",
+      "groups",
+      "other",
+      "truncated",
+      "top_n",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "group_by": {
+        "description": "The grouping dimensions, in this order.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "group_count": {
+        "description": "Number of distinct groups in scope.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "groups": {
+        "description": "At most top_n groups: events descending, then the dimension values ascending with null last.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "alert_label": {
+              "description": "BGL dataset alert label (not our finding); null = no label.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "component": {
+              "description": "Component or OpenStack service.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "dataset": {
+              "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+              "enum": [
+                "bgl",
+                "openstack",
+              ],
+              "type": "string",
+            },
+            "endpoint": {
+              "description": "API path with IDs masked.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "events": {
+              "description": "Count of the group in the counting unit.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "http_status": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "HTTP status of the API accesses.",
+            },
+            "level": {
+              "description": "Level as logged.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "node": {
+              "description": "BGL node; null for events without a node and for OpenStack.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pattern": {
+              "description": "pattern_id; pass it as pattern_id filter, recurring_patterns shows the pattern text.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "rack": {
+              "description": "BGL rack; null for events without a node.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "share": {
+              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded.",
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number",
+            },
+            "team": {
+              "description": "Fictional owning team, or 'unowned' for unmapped components.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "events",
+            "share",
+          ],
+          "type": "object",
+        },
+        "maxItems": 50,
+        "type": "array",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "description": "Their count in the counting unit.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "groups": {
+                "description": "Groups summed here.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "share": {
+                "description": "events / total as a fraction (0–1).",
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+            },
+            "required": [
+              "groups",
+              "events",
+              "share",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Groups beyond top_n, summed; null when every group is listed.",
+      },
+      "top_n": {
+        "description": "The top_n that applied.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "total": {
+        "description": "Exact population in scope (all groups, including other).",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "truncated": {
+        "description": "True when group_count is larger than the listed groups.",
+        "type": "boolean",
+      },
+      "unit": {
+        "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+        "enum": [
+          "log_events",
+          "api_accesses",
+          "requests",
+        ],
+        "type": "string",
+      },
+    },
+    "required": [
+      "group_by",
+      "unit",
+      "total",
+      "group_count",
+      "groups",
+      "other",
+      "truncated",
+      "top_n",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`JSON Schema export > dominance converts losslessly for input and output 1`] = `
 {
   "input": {
