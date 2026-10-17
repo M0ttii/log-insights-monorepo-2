@@ -693,6 +693,7 @@ describe("createRegistry", () => {
     expect(names).toEqual([
       "describe_corpus",
       "search_logs",
+      "get_log_context",
       "count_events",
       "event_trend",
     ])

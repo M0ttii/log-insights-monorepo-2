@@ -11,6 +11,7 @@
     "packages/analytics": {
       "entry": [
         "tests/integration/print-times.ts",
+        "tests/integration/print-context.ts",
         "tests/integration/print-trend.ts"
       ],
       "ignoreDependencies": ["tsx"]

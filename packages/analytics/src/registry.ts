@@ -43,6 +43,7 @@ import {
 import { countEvents } from "./tools/count-events.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
 import { eventTrend } from "./tools/event-trend.ts"
+import { getLogContext } from "./tools/get-log-context.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
 /**
@@ -168,6 +169,7 @@ export class ToolFailure extends Error {
 const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(describeCorpus),
   toolEntry(searchLogs),
+  toolEntry(getLogContext),
   toolEntry(countEvents),
   toolEntry(eventTrend),
 ]
