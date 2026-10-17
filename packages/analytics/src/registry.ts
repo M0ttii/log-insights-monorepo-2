@@ -41,6 +41,7 @@ import {
   resultDigest,
 } from "./receipts.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
+import { searchLogs } from "./tools/search-logs.ts"
 
 /**
  * The tool registry (technical.md § 8): one list of tools and one run
@@ -71,6 +72,11 @@ export type ToolEntry = {
   /** The whole result envelope (data, facts, receipt, notes), for MCP `outputSchema`. */
   readonly outputSchema: z.ZodType
   execute(rawInput: unknown, run: RunEnvironment): Promise<ToolOutcome<unknown>>
+  /**
+   * Text block for clients without structured output (MCP, § 9); `null`
+   * when the tool defines no summary.
+   */
+  summarize(result: ToolResult<unknown>): string | null
 }
 
 /** Catalog row for MCP (U06), the AI SDK adapter (U15/U17) and the README tool reference (U20). */
@@ -157,7 +163,10 @@ export class ToolFailure extends Error {
  * when it never changes (U06). One module per tool keeps parallel tool
  * tickets (U07–U13) apart.
  */
-const DEFAULT_TOOLS: readonly ToolEntry[] = [toolEntry(describeCorpus)]
+const DEFAULT_TOOLS: readonly ToolEntry[] = [
+  toolEntry(describeCorpus),
+  toolEntry(searchLogs),
+]
 
 /** Optional index tools (A-33, P2); none implemented yet. */
 const WORKSPACE_TOOLS: readonly ToolEntry[] = []
@@ -309,6 +318,11 @@ export function toolEntry<I, O>(def: ToolDef<I, O>): ToolEntry {
       const invalid = def.validate?.(parsed.data) ?? null
       if (invalid !== null) return { ok: false, error: invalid }
       return runDefinition(def, parsed.data, environment)
+    },
+    summarize(result) {
+      if (def.summary === undefined) return null
+      // The data passed the output schema when the result was built.
+      return def.summary({ ...result, data: def.output.parse(result.data) })
     },
   }
 }

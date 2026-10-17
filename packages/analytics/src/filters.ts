@@ -86,6 +86,12 @@ export type CompileOptions = {
   params: SqlParams
   /** Table alias used in the FROM clause; defaults to the relation name. */
   alias?: string
+  /**
+   * Reads the full-text index relation even without `text`, for tools that
+   * add their own full-text condition (search_logs). Default: the index only
+   * when `text` is present.
+   */
+  relation?: Relation
 }
 
 /**
@@ -113,7 +119,10 @@ export function compileFilter(
   }
 
   const relation: Relation =
-    filter.text === undefined ? "log_events" : "log_events_idx"
+    options.relation ??
+    (filter.text === undefined ? "log_events" : "log_events_idx")
+  if (filter.text !== undefined && relation !== "log_events_idx")
+    throw new Error("a text filter needs the full-text index relation")
   const q = options.alias ?? relation
   checkQualifier(q)
   const { params } = options

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 
+import { dbUnavailable } from "@workspace/domain/errors"
 import { pickFilter, validateFilter } from "@workspace/domain/filters"
 import type { Receipt } from "@workspace/domain/receipt"
 import {
@@ -689,8 +690,35 @@ describe("createRegistry", () => {
   it("registers the default tools in a fixed order with unique names", () => {
     const { registry } = setup({}, { tools: undefined })
     const names = registry.tools.map((tool) => tool.name)
-    expect(names).toEqual(["describe_corpus"])
+    expect(names).toEqual(["describe_corpus", "search_logs"])
     expect(new Set(names).size).toBe(names.length)
+  })
+
+  it("summarizes through the tool's summary, or returns null without one", async () => {
+    const { registry } = setup()
+    const outcome = await registry.runTool("count_test", {}, call())
+    if (!outcome.ok) throw new Error(outcome.error.message)
+    const [entry] = registry.tools
+    expect(entry?.summarize(outcome.result)).toBeNull()
+
+    const summarized = toolEntry(
+      defineTool({
+        name: "summarized_test",
+        title: "Summarized test",
+        version: "1.0.0",
+        description: "Test tool.",
+        input: inputSchema,
+        output: outputSchema,
+        factSpecs: [],
+        annotations: READ_ONLY_ANNOTATIONS,
+        run: async () => ({ ok: false, error: dbUnavailable() }),
+        summary: (result) =>
+          `${result.data.groups.length} groups [${result.receipt.receipt_id}]`,
+      })
+    )
+    expect(summarized.summarize(outcome.result)).toBe(
+      `1 groups [${outcome.result.receipt.receipt_id}]`
+    )
   })
 
   it("rejects duplicate tool names", () => {

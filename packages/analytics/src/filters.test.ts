@@ -91,6 +91,24 @@ describe("compileFilter", () => {
     })
   })
 
+  it("reads the index relation on request, for tools with their own full-text condition", () => {
+    const params = new SqlParams()
+    const result = compileFilter(
+      { dataset: "bgl" },
+      { accepted: ALL, params, relation: "log_events_idx" }
+    )
+    expect(result.ok && result.filter).toEqual({
+      where: "log_events_idx.dataset = $1",
+      relation: "log_events_idx",
+    })
+    expect(() =>
+      compileFilter(
+        { text: "parity" },
+        { accepted: ALL, params: new SqlParams(), relation: "log_events" }
+      )
+    ).toThrow("a text filter needs the full-text index relation")
+  })
+
   it("compiles the OpenStack fields and leaves false flags out", () => {
     expect(
       compile(
