@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
     "knip": "knip",
-    "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm deps:check && pnpm knip && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm deps:check && pnpm knip && pnpm test",
+    "gate": "pnpm --filter @workspace/corpus gate"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",

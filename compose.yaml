@@ -1,0 +1,51 @@
+# SereneDB for Log Insights (technical.md § 5.1). The only service; app processes
+# run locally with Node.
+#
+# Image pinned by tag and digest of the multi-arch index (linux/amd64 and
+# linux/arm64). 26.10.1 is newer but ships linux/amd64 only, which would run
+# emulated on Apple Silicon; revisit when a multi-arch 26.10.x exists.
+services:
+  serenedb:
+    image: serenedb/serenedb:26.09.1.3@sha256:018a3187c1931302fe5f5ce46b3ac1df6644af77d9c0c56730d9a959eeee5636
+    environment:
+      # Only connections from inside the container are trusted without a
+      # password; host connections arrive via the Docker gateway and need SCRAM.
+      # The password seeds the superuser when the data volume is first created;
+      # changing it later requires ALTER ROLE or a fresh volume.
+      POSTGRES_PASSWORD: ${SERENEDB_PASSWORD:?Set SERENEDB_PASSWORD in .env (see .env.example)}
+    # Published on loopback only (AGENTS.md: SereneDB binds to loopback).
+    ports:
+      - "127.0.0.1:7890:7890"
+    volumes:
+      - serenedb-data:/var/lib/serenedb
+      # Raw corpus files for read_csv (technical.md § 7).
+      - ./.data/raw:/data/raw:ro
+      # Query receipts for read_json in the performance report (technical.md § 6.2).
+      - ./.data/receipts:/data/receipts:ro
+    ulimits:
+      # SereneDB keeps many data and index files open (installation docs).
+      nofile:
+        soft: 131072
+        hard: 131072
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "psql",
+          "-h",
+          "127.0.0.1",
+          "-p",
+          "7890",
+          "-U",
+          "postgres",
+          "-tAc",
+          "SELECT 1",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  serenedb-data:

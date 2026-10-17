@@ -14,5 +14,13 @@
       "persistent": true
     }
   },
-  "globalPassThroughEnv": ["CI", "PORT"]
+  "globalPassThroughEnv": [
+    "CI",
+    "PORT",
+    "SERENEDB_HOST",
+    "SERENEDB_PORT",
+    "SERENEDB_USER",
+    "SERENEDB_PASSWORD",
+    "SERENEDB_DATABASE"
+  ]
 }
