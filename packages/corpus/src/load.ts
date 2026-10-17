@@ -13,6 +13,13 @@ import {
 } from "./config.ts"
 import { openClient } from "./db.ts"
 import { ensureSourceFiles, type RawFile } from "./download.ts"
+import {
+  expectedServerVersion,
+  isDigestPinned,
+  LOCAL_IMAGES,
+  validateImage,
+  type ImageIdentity,
+} from "./image.ts"
 import { dataVersion, sqlDigest, type ManifestInput } from "./manifest.ts"
 import {
   loadSteps,
@@ -135,22 +142,125 @@ async function ensureDatabase(
   }
 }
 
-/** Image reference (tag and digest) of the running SereneDB container. */
-async function serenedbImage(root: string): Promise<string> {
-  const id = await docker(root, ["compose", "ps", "-q", "serenedb"])
-  if (id === "") throw new Error("The serenedb Compose service is not running")
-  const image = await docker(root, [
-    "inspect",
-    "--format",
-    "{{.Config.Image}}",
-    id,
+/**
+ * Makes the configured image available without ever resolving a mutable tag
+ * against a registry: a digest-pinned reference is pulled if missing, a local
+ * tag must already be present (compose.yaml sets `pull_policy: never`).
+ */
+async function ensureImage(root: string): Promise<void> {
+  const reference = await docker(root, [
+    "compose",
+    "config",
+    "--images",
+    "serenedb",
   ])
-  if (!image.includes("@sha256:")) {
+  if (reference === "" || reference.includes("\n")) {
+    throw new Error(`Unexpected image list from docker compose: ${reference}`)
+  }
+  const present = await docker(root, ["image", "inspect", reference]).then(
+    () => true,
+    () => false
+  )
+  if (present) return
+  if (!isDigestPinned(reference)) {
+    const local = LOCAL_IMAGES.find((image) => image.reference === reference)
     throw new Error(
-      `SereneDB image ${image} is not pinned by digest (compose.yaml)`
+      `SereneDB image ${reference} is not present and is never pulled (not ` +
+        `pinned by digest)${local === undefined ? "" : `; restore it with ${local.restore}`}`
     )
   }
-  return image
+  await docker(root, ["pull", reference])
+}
+
+type ContainerFacts = {
+  /** `.Config.Image`: the reference Compose started. */
+  reference: string
+  /** `.Image`: the image ID (config digest). */
+  imageId: string
+  /** Host bindings of container port 7890 as `ip:port`. */
+  published: string[]
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+
+/** Reads the fields the loader needs from `docker inspect <id>` output. */
+function parseInspect(json: string): ContainerFacts {
+  const parsed: unknown = JSON.parse(json)
+  const container: unknown = Array.isArray(parsed) ? parsed[0] : undefined
+  if (!isRecord(container) || !isRecord(container["Config"])) {
+    throw new Error("Unexpected output of docker inspect")
+  }
+  const reference = container["Config"]["Image"]
+  const imageId = container["Image"]
+  const network = container["NetworkSettings"]
+  const ports = isRecord(network) ? network["Ports"] : undefined
+  const bindings = isRecord(ports) ? ports["7890/tcp"] : undefined
+  if (typeof reference !== "string" || typeof imageId !== "string") {
+    throw new Error("docker inspect reports no image for the container")
+  }
+  const published = (Array.isArray(bindings) ? bindings : []).map(
+    (binding: unknown) =>
+      isRecord(binding)
+        ? `${String(binding["HostIp"])}:${String(binding["HostPort"])}`
+        : "?"
+  )
+  return { reference, imageId, published }
+}
+
+/**
+ * Image of the running SereneDB container of this Compose project, after
+ * checking that it is the server the loader connects to: its port 7890 must
+ * be published on 127.0.0.1 at SERENEDB_PORT. Otherwise a second checkout's
+ * container could be inspected while another one is loaded.
+ */
+async function serenedbImage(
+  root: string,
+  connection: Connection
+): Promise<ImageIdentity> {
+  const id = await docker(root, ["compose", "ps", "-q", "serenedb"])
+  if (id === "") throw new Error("The serenedb Compose service is not running")
+  const { reference, imageId, published } = parseInspect(
+    await docker(root, ["inspect", id])
+  )
+  const expected = `127.0.0.1:${String(connection.port)}`
+  if (
+    connection.host !== "127.0.0.1" ||
+    published.length === 0 ||
+    !published.every((binding) => binding === expected)
+  ) {
+    throw new Error(
+      `SereneDB container ${id.slice(0, 12)} publishes 7890 on ` +
+        `${published.join(", ") || "no host port"}, but the loader connects to ` +
+        `${connection.host}:${String(connection.port)}; check SERENEDB_PORT and ` +
+        "COMPOSE_PROJECT_NAME in .env"
+    )
+  }
+  return validateImage({ reference, imageId })
+}
+
+/** `SELECT version()`, checked against the expectation of a listed local build. */
+async function serverVersion(
+  connection: Connection,
+  image: ImageIdentity
+): Promise<string> {
+  const client = await openClient(connection)
+  try {
+    const { rows } = await client.query<{ version: string }>(
+      "SELECT version() AS version"
+    )
+    const version = rows[0]?.version
+    if (typeof version !== "string") throw new Error("No server version")
+    const expected = expectedServerVersion(image.reference)
+    if (expected !== null && version !== expected) {
+      throw new Error(
+        `SereneDB image ${image.reference} reports ${version}, expected ${expected}`
+      )
+    }
+    return version
+  } finally {
+    await client.end()
+  }
 }
 
 async function runScript(
@@ -181,7 +291,9 @@ async function timed(run: () => Promise<void>): Promise<number> {
 
 /**
  * Loads a source into SereneDB (technical.md § 7): starts the Compose
- * service, makes the raw files present and verified, runs sql/ in order,
+ * service of this checkout (project, port and image from .env), verifies the
+ * image identity and server version, makes the raw files present and
+ * verified, runs sql/ in order,
  * checks the result, writes load_manifest and returns the load balance.
  */
 export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
@@ -199,12 +311,16 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
   const rawDir = hostRawDir(root)
   await mkdir(rawDir, { recursive: true })
   await mkdir(join(root, ".data", "receipts"), { recursive: true })
-  await docker(root, ["compose", "up", "-d", "serenedb"])
+  await ensureImage(root)
+  await docker(root, ["compose", "up", "-d", "--pull", "never", "serenedb"])
   await waitForSereneDb(baseConnection, log)
   if (source.database !== null)
     await ensureDatabase(baseConnection, source.database)
-  const image = await serenedbImage(root)
-  log(`  ${image}, database ${connection.database}`)
+  const image = await serenedbImage(root, baseConnection)
+  const server = await serverVersion(baseConnection, image)
+  log(
+    `  ${image.reference} (image ID ${image.imageId}), ${server}, database ${connection.database}`
+  )
 
   log(`Raw files (${source.description})`)
   const files = await ensureSourceFiles(source, rawDir, log)
@@ -233,7 +349,9 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     files: files
       .filter((file) => loadedPaths.has(file.path))
       .map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })),
-    image,
+    image: image.reference,
+    imageId: image.imageId,
+    serverVersion: server,
     versions: VERSIONS,
     sqlDigest: sqlDigest(sources),
   }
@@ -288,7 +406,9 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       new Date().toISOString(),
       source.id,
       JSON.stringify(manifest.files),
-      image,
+      manifest.image,
+      manifest.imageId,
+      manifest.serverVersion,
       VERSIONS.loader,
       VERSIONS.parser,
       VERSIONS.patternRules,

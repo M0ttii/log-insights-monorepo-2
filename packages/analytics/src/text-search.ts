@@ -11,7 +11,13 @@ import { z } from "zod"
 export const INDEX = "log_events_idx"
 const DICTIONARY = "log_text"
 
-const TOKENIZE_SQL = `SELECT to_json(ts_lexize('${DICTIONARY}', $1)) AS tokens`
+/**
+ * `VARCHAR[]` arrives as a PostgreSQL text array, which `pg` parses (quoting
+ * of `"`, `\`, `,` and the string `NULL` follows PostgreSQL). Not `to_json`:
+ * SereneDB 26.10.1 cannot describe the result of a JSON function over a bound
+ * parameter and sends no usable columns (gate G1).
+ */
+const TOKENIZE_SQL = `SELECT ts_lexize('${DICTIONARY}', $1::VARCHAR) AS tokens`
 
 const tokensRow = z.object({ tokens: z.array(z.string()) })
 

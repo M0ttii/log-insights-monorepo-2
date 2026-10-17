@@ -247,7 +247,13 @@ export const latencyStats = defineTool({
       time || groupBy === null ? null : (input.top_n ?? LATENCY_DEFAULT_TOP_N)
 
     const { rows } = await ctx.db.query(
-      statement(groupBy, where, topN === null ? null : params.add(topN)),
+      statement(
+        groupBy,
+        where,
+        // Typed: SereneDB 26.10.1 cannot describe a result whose type depends
+        // on an untyped parameter (`$n + 1`) and sends no usable columns (gate G1).
+        topN === null ? null : `${params.add(topN)}::BIGINT`
+      ),
       params.values,
       ctx.signal
     )

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto"
 
+import { LOG_TEXT_ANALYZER } from "../../src/analyzer.ts"
 import { connect, failureOf } from "../db.ts"
 import { check, equals, type Probe } from "../probe.ts"
 
@@ -13,7 +14,7 @@ export const g08ReadOnlyRole: Probe = {
       "CREATE OR REPLACE TABLE gate.g8 AS SELECT * FROM (VALUES (1::BIGINT, 'kernel panic')) v(id, msg)"
     )
     await db.rows(
-      "CREATE TEXT SEARCH DICTIONARY gate.g8_dict (template = 'text', locale = 'en_US.UTF-8', case = 'lower', stemming = false, frequency)"
+      `CREATE TEXT SEARCH DICTIONARY gate.g8_dict AS ${LOG_TEXT_ANALYZER} WITH (frequency)`
     )
     await db.rows(
       "CREATE INDEX g8_idx ON gate.g8 USING inverted (id, msg gate.g8_dict)"

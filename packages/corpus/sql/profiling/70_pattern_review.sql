@@ -72,5 +72,7 @@ SELECT dataset, component, count(*) AS patterns, sum(events) AS events,
   string_agg(pattern, ' | ' ORDER BY pattern) AS members
 FROM f GROUP BY dataset, component, family
 HAVING count(*) > 1
-ORDER BY dataset, patterns DESC, events DESC, component
+-- family ends the order: (dataset, component, family) is the group key, so
+-- the 40 rows are the same on every engine version (ties were cut at random).
+ORDER BY dataset, patterns DESC, events DESC, component, family
 LIMIT 40;

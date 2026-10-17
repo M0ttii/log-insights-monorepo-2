@@ -10,11 +10,13 @@ const STATEMENT_TIMEOUT_MS = 10_000
 // episode starts of the anchor pattern within the scope; for each other
 // pattern count anchors with at least one occurrence in the window before;
 // base rate is the share of fixed grid windows from the span start that
-// contain the pattern. Ratios are computed in SereneDB.
+// contain the pattern. Ratios are computed in SereneDB. Parameters in
+// result expressions are typed: 26.10.1 cannot describe the result of
+// `… // $4` with an untyped $4 (gate G1).
 const PRECURSORS = `
 WITH scope AS (SELECT event_id, ts, pattern_id FROM gate.bgl WHERE dataset = 'bgl'),
 span AS (SELECT min(ts) AS t0, max(ts) AS t1 FROM scope),
-grid AS (SELECT (epoch_us(t1) - epoch_us(t0)) // $4 + 1 AS windows FROM span),
+grid AS (SELECT (epoch_us(t1) - epoch_us(t0)) // $4::BIGINT + 1 AS windows FROM span),
 anchors AS (
   SELECT event_id, ts FROM (
     SELECT event_id, ts, lag(ts) OVER (ORDER BY ts, event_id) AS prev_ts
@@ -29,7 +31,7 @@ hits AS (
   ORDER BY anchors_with_pattern DESC, e.pattern_id
   LIMIT 10),
 base AS (
-  SELECT s.pattern_id, count(DISTINCT (epoch_us(s.ts) - epoch_us(span.t0)) // $4) AS windows_with_pattern
+  SELECT s.pattern_id, count(DISTINCT (epoch_us(s.ts) - epoch_us(span.t0)) // $4::BIGINT) AS windows_with_pattern
   FROM scope s, span
   WHERE s.pattern_id IN (SELECT pattern_id FROM hits)
   GROUP BY s.pattern_id)

@@ -14,7 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { hostRawDir } from "../../src/config.ts"
 import { runLoad, type LoadResult } from "../../src/load.ts"
 import type { DirectFile, Source } from "../../src/sources.ts"
-import { connectTo, loadEnv, rows, root } from "./helpers.ts"
+import { closeIfOpen, connectTo, loadEnv, rows, root } from "./helpers.ts"
 
 loadEnv()
 
@@ -106,8 +106,11 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await client.end()
-  await rm(join(hostRawDir(root), DIR), { recursive: true, force: true })
+  try {
+    await closeIfOpen(client)
+  } finally {
+    await rm(join(hostRawDir(root), DIR), { recursive: true, force: true })
+  }
 })
 
 describe("load balance", () => {

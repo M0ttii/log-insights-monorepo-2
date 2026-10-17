@@ -44,6 +44,9 @@ const CANCEL_GRACE_MS = 2_000
 /** TIMESTAMP and TIMESTAMPTZ cross the driver as raw text (§ 6.1); BIGINT and NUMERIC stay strings by default. */
 const RAW_TEXT_OIDS = new Set([1114, 1184])
 
+/** PostgreSQL `unknown`: what SereneDB sends for a result it could not type. */
+const UNKNOWN_OID = 705
+
 const rawTimestampTypes = {
   getTypeParser(oid: number, format?: "text" | "binary") {
     if (RAW_TEXT_OIDS.has(oid)) return (value: string) => value
@@ -222,6 +225,15 @@ export function createDatabase(
       })
       // Finished in a race with the cancel: the result is dropped with the connection.
       if (stopped !== null) throw new QueryFailure(stopped)
+      // SereneDB 26.10.1 describes a result whose types depend on a bound
+      // parameter it cannot type (`$n + 1`, JSON functions over `$n`) as one
+      // column `unknown` (OID 705), whatever the real columns are (gate G1).
+      // Fail instead of returning rows under the wrong key; type the
+      // parameter in the SQL (`$n::BIGINT`) to fix the query.
+      if (result.fields.some((field) => field.dataTypeID === UNKNOWN_OID)) {
+        log("db query result undescribed (oid 705)")
+        throw new QueryFailure("failed")
+      }
       return {
         rows: result.rows,
         durationMs: Math.round((performance.now() - started) * 100) / 100,

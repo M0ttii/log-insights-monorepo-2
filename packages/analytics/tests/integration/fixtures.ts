@@ -49,9 +49,10 @@ function statements(rows: readonly FixtureRow[]): string[] {
     "CREATE OR REPLACE TABLE corpus_stats AS SELECT dataset, min(ts) AS first_ts, max(ts) AS last_ts FROM log_events GROUP BY dataset",
     "CREATE OR REPLACE TABLE load_manifest AS SELECT 'dv_fixture000000000' AS data_version",
     // Same dictionary and index options as corpus/sql/50_index.sql.
-    `CREATE TEXT SEARCH DICTIONARY log_text (
-      template = 'text', locale = 'en_US.UTF-8', case = 'lower',
-      stemming = false, frequency, position, norm)`,
+    `CREATE TEXT SEARCH DICTIONARY log_text AS
+      split_text_icu('en_US.UTF-8')
+      | normalize_tokens('en_US.UTF-8', case := 'lower')
+      WITH (frequency, position, norm)`,
     `CREATE INDEX log_events_idx ON log_events USING inverted (
       dataset, source_file, component, level, source_type, node, rack, midplane,
       alert_label, request_id, instance_id, endpoint, pattern_id,

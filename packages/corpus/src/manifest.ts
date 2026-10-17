@@ -7,7 +7,12 @@ type ManifestFile = { path: string; bytes: number; sha256: string }
 export type ManifestInput = {
   source: string
   files: readonly ManifestFile[]
+  /** Image reference Compose started: tag, plus `@sha256:` registry digest if pinned. */
   image: string
+  /** Docker image ID (config digest) of the running container; never a registry digest. */
+  imageId: string
+  /** `SELECT version()` of the server that ran the load. */
+  serverVersion: string
   versions: typeof VERSIONS
   sqlDigest: string
 }
@@ -30,7 +35,8 @@ export function canonicalJson(value: unknown): string {
 
 /**
  * data_version: `dv_` + the first 16 hex digits of SHA-256 over the canonical
- * manifest without created_at. The same files, image, versions and SQL give
+ * manifest without created_at. The same files, image (reference and image
+ * ID), server version, rule versions and SQL give
  * the same version on every run and machine.
  */
 export function dataVersion(input: ManifestInput): string {

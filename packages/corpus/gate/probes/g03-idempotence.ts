@@ -1,3 +1,4 @@
+import { LOG_TEXT_ANALYZER } from "../../src/analyzer.ts"
 import { failureOf } from "../db.ts"
 import { check, equals, type Probe } from "../probe.ts"
 
@@ -9,7 +10,7 @@ export const g03Idempotence: Probe = {
       "CREATE OR REPLACE TABLE gate.g3 AS SELECT * FROM (VALUES (1::BIGINT, 'alpha beta'), (2, 'gamma')) v(id, msg)"
     )
     await db.rows(
-      "CREATE TEXT SEARCH DICTIONARY gate.g3_dict (template = 'text', locale = 'en_US.UTF-8', case = 'lower', stemming = false, frequency)"
+      `CREATE TEXT SEARCH DICTIONARY gate.g3_dict AS ${LOG_TEXT_ANALYZER} WITH (frequency)`
     )
     await db.rows(
       "CREATE INDEX g3_idx ON gate.g3 USING inverted (id, msg gate.g3_dict)"
@@ -22,18 +23,24 @@ export const g03Idempotence: Probe = {
       "SELECT count(*) FROM gate.g3_idx WHERE msg @@ 'alpha'"
     )
 
-    await db.rows(
+    const replace =
       "CREATE OR REPLACE TABLE gate.g3 AS SELECT * FROM (VALUES (1::BIGINT, 'alpha beta'), (2, 'gamma'), (3, 'alpha again')) v(id, msg)"
+    // 26.10.1: a dependent view blocks the replace (26.09.1.3 dropped it
+    // silently). The loader therefore drops its views first (01_schema.sql).
+    const blockedByView = await failureOf(() => db.rows(replace))
+    const rowsWhileBlocked = await db.value("SELECT count(*) FROM gate.g3")
+    const viewKept = await failureOf(() =>
+      db.rows("SELECT count(*) FROM gate.g3_view")
     )
+    await db.rows("DROP VIEW gate.g3_view")
+
+    await db.rows(replace)
     const rowsAfter = await db.value("SELECT count(*) FROM gate.g3")
     const indexesAfter = await db.value(
       "SELECT count(*) FROM pg_indexes WHERE schemaname = 'gate' AND tablename = 'g3'"
     )
     const indexGone = await failureOf(() =>
       db.rows("SELECT count(*) FROM gate.g3_idx WHERE msg @@ 'alpha'")
-    )
-    const viewGone = await failureOf(() =>
-      db.rows("SELECT count(*) FROM gate.g3_view")
     )
     const dictionaryKept = await db.value(
       "SELECT ts_lexize('gate.g3_dict', 'Alpha')::text"
@@ -60,7 +67,19 @@ export const g03Idempotence: Probe = {
 
     return [
       equals("index before replace", "1", before),
-      equals("replace swaps the table contents", "3", rowsAfter),
+      check(
+        "replace fails while a view depends on the table (26.10.1; 26.09.1.3 dropped the view silently)",
+        "error 2BP01 'Cannot drop entry … entries that depend on it'",
+        `${blockedByView?.code ?? "no error"}: ${blockedByView?.message ?? "replaced"}`,
+        blockedByView?.code === "2BP01"
+      ),
+      equals("failed replace keeps the old contents", "2", rowsWhileBlocked),
+      equals("failed replace keeps the view", null, viewKept),
+      equals(
+        "replace after DROP VIEW swaps the table contents",
+        "3",
+        rowsAfter
+      ),
       equals(
         "replace drops the dependent inverted index silently",
         "0",
@@ -71,12 +90,6 @@ export const g03Idempotence: Probe = {
         "query error",
         indexGone?.message ?? "still queryable",
         indexGone !== null
-      ),
-      check(
-        "dependent view is dropped silently",
-        "query error",
-        viewGone?.message ?? "still queryable",
-        viewGone !== null
       ),
       equals(
         "text search dictionary survives the replace",

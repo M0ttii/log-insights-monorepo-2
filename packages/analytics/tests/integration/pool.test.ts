@@ -13,6 +13,7 @@ import { z } from "zod"
 import {
   createDatabase,
   QUERY_TIMEOUT_MS,
+  QueryFailure,
   type Database,
 } from "../../src/db.ts"
 import { FileReceiptStore } from "../../src/receipts.ts"
@@ -110,6 +111,29 @@ async function heavyQueriesAfterSettling(): Promise<string> {
 }
 
 describe("pool", () => {
+  it("never returns rows of a result SereneDB could not describe", async () => {
+    // One column whose type depends on an untyped parameter: SereneDB
+    // 26.10.1 describes it as `unknown` (OID 705, gate G1). The pool must
+    // fail rather than hand out `{ unknown: "6" }`; a typed parameter works.
+    const signal = new AbortController().signal
+    const untyped = await db.query("SELECT $1 + 1 AS x", [5], signal).then(
+      (result) => ({ rows: result.rows }),
+      (error: unknown) => ({
+        error:
+          error instanceof QueryFailure
+            ? { name: error.name, kind: error.kind }
+            : String(error),
+      })
+    )
+    // Either correctly described (a fixed image) or rejected, never mislabelled.
+    expect([
+      { rows: [{ x: 6 }] },
+      { error: { name: "QueryFailure", kind: "failed" } },
+    ]).toContainEqual(untyped)
+    const typed = await db.query("SELECT $1::BIGINT + 1 AS x", [5], signal)
+    expect(typed.rows).toEqual([{ x: "6" }])
+  })
+
   it("cancels a query on the server after 10 s and stays usable", async () => {
     const receiptsDir = join(dir, "timeout")
     const registry = registryWith(receiptsDir)

@@ -31,8 +31,10 @@ export const g10PhraseFuzzy: Probe = {
       '(( "cache parity error',
     ])
 
+    // Typed like search_logs: an untyped distance leaves 26.10.1 unable to
+    // describe the result (gate G1).
     const [fuzzyCount, fuzzyList] = countAndList(
-      "message @@ ts_levenshtein($1, $2)"
+      "message @@ ts_levenshtein($1::VARCHAR, $2::INTEGER)"
     )
     const fuzzy = await db.value(fuzzyCount, ["parrity", 1])
     const fuzzyHits = await db.value(fuzzyList, ["parrity", 1])
@@ -43,7 +45,7 @@ export const g10PhraseFuzzy: Probe = {
     const distance4 = await failureOf(() => db.rows(fuzzyCount, ["parrity", 4]))
     const distance4Strict = await failureOf(() =>
       db.rows(
-        "SELECT count(*) FROM gate.bgl_idx WHERE message @@ ts_levenshtein($1, $2, false)",
+        "SELECT count(*) FROM gate.bgl_idx WHERE message @@ ts_levenshtein($1::VARCHAR, $2::INTEGER, false)",
         ["parrity", 4]
       )
     )
@@ -80,7 +82,7 @@ export const g10PhraseFuzzy: Probe = {
         syntaxInPhrase
       ),
       equals(
-        "ts_levenshtein($1, $2): count(*) equals full hit list",
+        "ts_levenshtein($1::VARCHAR, $2::INTEGER): count(*) equals full hit list",
         fuzzy,
         fuzzyHits
       ),

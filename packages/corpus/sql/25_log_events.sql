@@ -1,7 +1,9 @@
 -- log_events (technical.md § 6.1): one wide table for both datasets, fields
 -- of the other dataset NULL. Only accepted lines; rejected ones are in
--- load_rejects. CREATE OR REPLACE TABLE drops dependent views and indexes
--- without notice (gate G3); 40_stats.sql and 50_index.sql recreate them.
+-- load_rejects. CREATE OR REPLACE TABLE drops a dependent inverted index
+-- without notice and fails while a view depends on the table (gate G3), so
+-- 01_schema.sql drops the views first; 40_stats.sql and 50_index.sql
+-- recreate views and index.
 --
 -- event_id: BGL = line number; OpenStack = 10,000,000 + running line number
 -- over the files in their fixed order (stage_files_openstack.lines_before).

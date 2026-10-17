@@ -1,7 +1,8 @@
 -- Corpus description and views. corpus_stats is the source for
 -- describe_corpus (A-04): no figure about the corpus is a constant in code.
--- The views are recreated on every load because replacing log_events drops
--- them silently (gate G3).
+-- The views are recreated on every load: 01_schema.sql drops them, because
+-- replacing log_events or ownership fails while a view depends on them
+-- (gate G3).
 
 -- R-01: API accesses are OpenStack lines with an HTTP status, with or without
 -- request ID. Requests are count(DISTINCT request_id) over this view.

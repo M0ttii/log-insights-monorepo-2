@@ -12,6 +12,8 @@ const input: ManifestInput = {
   source: "corpus",
   files: [{ path: "BGL.log", bytes: 10, sha256: "ab" }],
   image: "serenedb/serenedb:1@sha256:00",
+  imageId: "sha256:01",
+  serverVersion: "PostgreSQL 18.3 (SereneDB 1)",
   versions: VERSIONS,
   sqlDigest: "cd",
 }
@@ -34,6 +36,8 @@ describe("dataVersion", () => {
       sqlDigest: "cd",
       versions: VERSIONS,
       image: input.image,
+      serverVersion: input.serverVersion,
+      imageId: input.imageId,
       files: input.files,
       source: "corpus",
     }
@@ -41,11 +45,13 @@ describe("dataVersion", () => {
     expect(dataVersion(input)).toMatch(/^dv_[0-9a-f]{16}$/)
   })
 
-  it("changes with a file digest, the image, the SQL or the source", () => {
+  it("changes with a file digest, the image, its ID, the server, the SQL or the source", () => {
     const base = dataVersion(input)
     const changed: ManifestInput[] = [
       { ...input, files: [{ path: "BGL.log", bytes: 10, sha256: "ac" }] },
       { ...input, image: "serenedb/serenedb:2@sha256:00" },
+      { ...input, imageId: "sha256:02" },
+      { ...input, serverVersion: "PostgreSQL 18.3 (SereneDB 2)" },
       { ...input, sqlDigest: "ce" },
       { ...input, source: "samples" },
     ]
