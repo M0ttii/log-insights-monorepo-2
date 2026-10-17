@@ -13,6 +13,17 @@ export default defineConfig({
           hookTimeout: 60_000,
         },
       },
+      // Author: Codex root (LOG-13). Full corpus, explicit opt-in only; never CI.
+      {
+        test: {
+          name: "analytics-golden",
+          root: import.meta.dirname,
+          environment: "node",
+          include: ["packages/analytics/tests/golden/**/*.test.ts"],
+          testTimeout: 120_000,
+          hookTimeout: 30_000,
+        },
+      },
       // Unit tests live beside the code in every workspace and run in Node.
       {
         test: {

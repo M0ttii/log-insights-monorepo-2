@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "lint": "eslint --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:golden": "vitest run --config ../../vitest.config.ts --project analytics-golden --no-file-parallelism"
   },
   "exports": {
     "./config": "./src/config.ts",

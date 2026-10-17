@@ -26,7 +26,8 @@
     "data:profile": "pnpm --filter @workspace/corpus data:profile",
     "mcp": "pnpm --silent --dir apps/mcp start",
     "mcp:desktop-config": "pnpm --silent --dir apps/mcp run desktop-config",
-    "test:mcp": "pnpm --filter @workspace/mcp test:smoke"
+    "test:mcp": "pnpm --filter @workspace/mcp test:smoke",
+    "test:golden": "pnpm --filter @workspace/analytics test:golden"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",
