@@ -51,6 +51,39 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "minLength": 1,
         "type": "string",
       },
+      "compare": {
+        "anyOf": [
+          {
+            "const": "previous_period",
+            "description": "The immediately preceding period of the same length as [from, to).",
+            "type": "string",
+          },
+          {
+            "additionalProperties": false,
+            "description": "A chosen reference period of the same length.",
+            "properties": {
+              "from": {
+                "description": "Reference start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "Reference end, exclusive; as long as [from, to) and not overlapping it.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+        ],
+        "description": "Period comparison (R-06): counts the same filters in a reference period B and reports C (the window), B, C − B, the change in percent and a classification per group. Needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ 25.",
+      },
       "components": {
         "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
         "items": {
@@ -77,7 +110,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "type": "string",
       },
       "group_by": {
-        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null.",
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. With compare exactly one.",
         "items": {
           "description": "Grouping dimension.",
           "enum": [
@@ -171,7 +204,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
       },
       "top_n": {
         "default": 20,
-        "description": "Groups to return (1–50), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
+        "description": "Groups to return (1–50; with compare 1–25), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
         "maximum": 50,
         "minimum": 1,
         "type": "integer",
@@ -192,6 +225,39 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "minLength": 1,
         "type": "string",
       },
+      "compare": {
+        "anyOf": [
+          {
+            "const": "previous_period",
+            "description": "The immediately preceding period of the same length as [from, to).",
+            "type": "string",
+          },
+          {
+            "additionalProperties": false,
+            "description": "A chosen reference period of the same length.",
+            "properties": {
+              "from": {
+                "description": "Reference start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "Reference end, exclusive; as long as [from, to) and not overlapping it.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+        ],
+        "description": "Period comparison (R-06): counts the same filters in a reference period B and reports C (the window), B, C − B, the change in percent and a classification per group. Needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ 25.",
+      },
       "components": {
         "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
         "items": {
@@ -218,7 +284,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "type": "string",
       },
       "group_by": {
-        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null.",
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. With compare exactly one.",
         "items": {
           "description": "Grouping dimension.",
           "enum": [
@@ -312,7 +378,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
       },
       "top_n": {
         "default": 20,
-        "description": "Groups to return (1–50), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
+        "description": "Groups to return (1–50; with compare 1–25), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
         "maximum": 50,
         "minimum": 1,
         "type": "integer",
@@ -333,6 +399,117 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
+      "comparison": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "description": "Totals of the comparison: B, C − B, change and R-06 classification of total (= C).",
+            "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "first observed in this comparison",
+                      "not observed in either period",
+                      "significantly increased",
+                    ],
+                    "type": "string",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
+              },
+              "coverage": {
+                "additionalProperties": false,
+                "description": "Data-span coverage of both periods (R-03).",
+                "properties": {
+                  "baseline": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                  "current": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "current",
+                  "baseline",
+                ],
+                "type": "object",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
+              "determinable": {
+                "description": "False when a period lies entirely outside the data span: then B, delta, pct_change and classification are null everywhere, never 0.",
+                "type": "boolean",
+              },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "reference": {
+                "description": "previous_period or a chosen reference; both windows are in scope.windows with period current and baseline.",
+                "enum": [
+                  "previous_period",
+                  "custom",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "reference",
+              "coverage",
+              "determinable",
+              "classification",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Period comparison; null without compare.",
+      },
       "group_by": {
         "description": "The grouping dimensions, in this order.",
         "items": {
@@ -354,13 +531,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
         "type": "array",
       },
       "group_count": {
-        "description": "Number of distinct groups in scope.",
+        "description": "Number of distinct groups in scope; with compare in either period.",
         "maximum": 9007199254740991,
         "minimum": 0,
         "type": "integer",
       },
       "groups": {
-        "description": "At most top_n groups: events descending, then the dimension values ascending with null last.",
+        "description": "At most top_n groups: events descending, then the dimension values ascending with null last. With a determinable compare: |C − B| descending, then C descending, then the value.",
         "items": {
           "additionalProperties": false,
           "properties": {
@@ -370,6 +547,35 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "string",
                 "null",
               ],
+            },
+            "baseline": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "first observed in this comparison",
+                    "not observed in either period",
+                    "significantly increased",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
             },
             "component": {
               "description": "Component or OpenStack service.",
@@ -386,6 +592,19 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
               "type": "string",
             },
+            "delta": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: C − B; null when not determinable.",
+            },
             "endpoint": {
               "description": "API path with IDs masked.",
               "type": [
@@ -394,7 +613,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
             },
             "events": {
-              "description": "Count of the group in the counting unit.",
+              "description": "Count of the group in the counting unit; with compare the count C in [from, to).",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
@@ -433,6 +652,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "null",
               ],
             },
+            "pct_change": {
+              "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+              "type": [
+                "number",
+                "null",
+              ],
+            },
             "rack": {
               "description": "BGL rack; null for events without a node.",
               "type": [
@@ -441,10 +667,17 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
             },
             "share": {
-              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded.",
-              "maximum": 1,
-              "minimum": 0,
-              "type": "number",
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded; null when total is 0.",
             },
             "team": {
               "description": "Fictional owning team, or 'unowned' for unmapped components.",
@@ -465,8 +698,34 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
           {
             "additionalProperties": false,
             "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
               "events": {
-                "description": "Their count in the counting unit.",
+                "description": "Their count in the counting unit (C).",
                 "maximum": 9007199254740991,
                 "minimum": 0,
                 "type": "integer",
@@ -477,11 +736,25 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "minimum": 0,
                 "type": "integer",
               },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
               "share": {
-                "description": "events / total as a fraction (0–1).",
-                "maximum": 1,
-                "minimum": 0,
-                "type": "number",
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "events / total as a fraction (0–1); null when total is 0.",
               },
             },
             "required": [
@@ -504,7 +777,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
         "type": "integer",
       },
       "total": {
-        "description": "Exact population in scope (all groups, including other).",
+        "description": "Exact population in scope (all groups, including other); with compare C over [from, to).",
         "maximum": 9007199254740991,
         "minimum": 0,
         "type": "integer",
@@ -530,6 +803,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
       "group_count",
       "groups",
       "other",
+      "comparison",
       "truncated",
       "top_n",
     ],
@@ -539,6 +813,117 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
+      "comparison": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "description": "Totals of the comparison: B, C − B, change and R-06 classification of total (= C).",
+            "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "first observed in this comparison",
+                      "not observed in either period",
+                      "significantly increased",
+                    ],
+                    "type": "string",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
+              },
+              "coverage": {
+                "additionalProperties": false,
+                "description": "Data-span coverage of both periods (R-03).",
+                "properties": {
+                  "baseline": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                  "current": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "current",
+                  "baseline",
+                ],
+                "type": "object",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
+              "determinable": {
+                "description": "False when a period lies entirely outside the data span: then B, delta, pct_change and classification are null everywhere, never 0.",
+                "type": "boolean",
+              },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "reference": {
+                "description": "previous_period or a chosen reference; both windows are in scope.windows with period current and baseline.",
+                "enum": [
+                  "previous_period",
+                  "custom",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "reference",
+              "coverage",
+              "determinable",
+              "classification",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Period comparison; null without compare.",
+      },
       "group_by": {
         "description": "The grouping dimensions, in this order.",
         "items": {
@@ -560,13 +945,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
         "type": "array",
       },
       "group_count": {
-        "description": "Number of distinct groups in scope.",
+        "description": "Number of distinct groups in scope; with compare in either period.",
         "maximum": 9007199254740991,
         "minimum": 0,
         "type": "integer",
       },
       "groups": {
-        "description": "At most top_n groups: events descending, then the dimension values ascending with null last.",
+        "description": "At most top_n groups: events descending, then the dimension values ascending with null last. With a determinable compare: |C − B| descending, then C descending, then the value.",
         "items": {
           "additionalProperties": false,
           "properties": {
@@ -576,6 +961,35 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "string",
                 "null",
               ],
+            },
+            "baseline": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "first observed in this comparison",
+                    "not observed in either period",
+                    "significantly increased",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
             },
             "component": {
               "description": "Component or OpenStack service.",
@@ -592,6 +1006,19 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
               "type": "string",
             },
+            "delta": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: C − B; null when not determinable.",
+            },
             "endpoint": {
               "description": "API path with IDs masked.",
               "type": [
@@ -600,7 +1027,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
             },
             "events": {
-              "description": "Count of the group in the counting unit.",
+              "description": "Count of the group in the counting unit; with compare the count C in [from, to).",
               "maximum": 9007199254740991,
               "minimum": 0,
               "type": "integer",
@@ -639,6 +1066,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "null",
               ],
             },
+            "pct_change": {
+              "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+              "type": [
+                "number",
+                "null",
+              ],
+            },
             "rack": {
               "description": "BGL rack; null for events without a node.",
               "type": [
@@ -647,10 +1081,17 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
             },
             "share": {
-              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded.",
-              "maximum": 1,
-              "minimum": 0,
-              "type": "number",
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded; null when total is 0.",
             },
             "team": {
               "description": "Fictional owning team, or 'unowned' for unmapped components.",
@@ -671,8 +1112,34 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
           {
             "additionalProperties": false,
             "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
               "events": {
-                "description": "Their count in the counting unit.",
+                "description": "Their count in the counting unit (C).",
                 "maximum": 9007199254740991,
                 "minimum": 0,
                 "type": "integer",
@@ -683,11 +1150,25 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "minimum": 0,
                 "type": "integer",
               },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
               "share": {
-                "description": "events / total as a fraction (0–1).",
-                "maximum": 1,
-                "minimum": 0,
-                "type": "number",
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "events / total as a fraction (0–1); null when total is 0.",
               },
             },
             "required": [
@@ -710,7 +1191,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
         "type": "integer",
       },
       "total": {
-        "description": "Exact population in scope (all groups, including other).",
+        "description": "Exact population in scope (all groups, including other); with compare C over [from, to).",
         "maximum": 9007199254740991,
         "minimum": 0,
         "type": "integer",
@@ -736,6 +1217,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
       "group_count",
       "groups",
       "other",
+      "comparison",
       "truncated",
       "top_n",
     ],
@@ -1459,7 +1941,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "object",
               },
               "windows": {
-                "description": "One window per dataset; BGL and OpenStack share no time axis.",
+                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -1475,6 +1957,14 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                       "description": "Resolved window start, inclusive.",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                    "period": {
+                      "description": "Only in period comparisons: current period C or reference period B.",
+                      "enum": [
+                        "current",
+                        "baseline",
+                      ],
                       "type": "string",
                     },
                     "to": {
@@ -1852,7 +2342,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "object",
               },
               "windows": {
-                "description": "One window per dataset; BGL and OpenStack share no time axis.",
+                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -1868,6 +2358,14 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                       "description": "Resolved window start, inclusive.",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                    "period": {
+                      "description": "Only in period comparisons: current period C or reference period B.",
+                      "enum": [
+                        "current",
+                        "baseline",
+                      ],
                       "type": "string",
                     },
                     "to": {
@@ -2754,7 +3252,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "object",
           },
           "windows": {
-            "description": "One window per dataset; BGL and OpenStack share no time axis.",
+            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -2770,6 +3268,14 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                   "description": "Resolved window start, inclusive.",
                   "format": "date-time",
                   "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                "period": {
+                  "description": "Only in period comparisons: current period C or reference period B.",
+                  "enum": [
+                    "current",
+                    "baseline",
+                  ],
                   "type": "string",
                 },
                 "to": {
@@ -3186,7 +3692,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "object",
           },
           "windows": {
-            "description": "One window per dataset; BGL and OpenStack share no time axis.",
+            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -3202,6 +3708,14 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                   "description": "Resolved window start, inclusive.",
                   "format": "date-time",
                   "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                "period": {
+                  "description": "Only in period comparisons: current period C or reference period B.",
+                  "enum": [
+                    "current",
+                    "baseline",
+                  ],
                   "type": "string",
                 },
                 "to": {

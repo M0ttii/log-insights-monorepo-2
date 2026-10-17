@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { classifyChange } from "./compare.ts"
+import {
+  classifyChange,
+  comparisonCoverage,
+  referencePeriod,
+} from "./compare.ts"
 import { dominance, type DominanceCandidate } from "./dominance.ts"
 import { investigationOrder, type RankCandidate } from "./ranking.ts"
 import {
@@ -328,5 +332,98 @@ describe("R-09 dominance", () => {
 
   it("needs at least one candidate", () => {
     expect(() => dominance([])).toThrow(RangeError)
+  })
+})
+
+describe("R-06 referencePeriod", () => {
+  const current = { from: "2005-08-01T00:00:00Z", to: "2005-09-01T00:00:00Z" }
+
+  it("takes the equally long period right before", () => {
+    expect(referencePeriod(current, "previous_period")).toEqual({
+      ok: true,
+      baseline: {
+        from: "2005-07-01T00:00:00.000000Z",
+        to: "2005-08-01T00:00:00.000000Z",
+      },
+    })
+  })
+
+  it("accepts a chosen reference of the same length, before or after", () => {
+    const later = { from: "2005-10-01T00:00:00Z", to: "2005-11-01T00:00:00Z" }
+    expect(referencePeriod(current, later)).toEqual({
+      ok: true,
+      baseline: later,
+    })
+    // Same instant, other offset: still 31 days and adjacent.
+    expect(
+      referencePeriod(current, {
+        from: "2005-06-30T17:00:00-07:00",
+        to: "2005-07-31T17:00:00-07:00",
+      }).ok
+    ).toBe(true)
+  })
+
+  it("rejects other lengths, overlaps and reversed references", () => {
+    expect(
+      referencePeriod(current, {
+        from: "2005-07-01T00:00:00Z",
+        to: "2005-07-01T00:00:00.000001Z",
+      })
+    ).toEqual({
+      ok: false,
+      reason:
+        "The reference must be as long as [from, to) (R-06): 31 d expected, 1 µs given.",
+    })
+    expect(
+      referencePeriod(current, {
+        from: "2005-08-31T23:59:59Z",
+        to: "2005-10-01T23:59:59Z",
+      })
+    ).toEqual({
+      ok: false,
+      reason: "The reference must not overlap [from, to).",
+    })
+    expect(
+      referencePeriod(current, { from: current.to, to: current.from }).ok
+    ).toBe(false)
+  })
+})
+
+describe("comparisonCoverage", () => {
+  const span = {
+    first: "2005-06-03T22:42:50.675872Z",
+    last: "2006-01-03T15:13:09.127918Z",
+  }
+
+  it("is determinable only when both periods overlap the data span", () => {
+    expect(
+      comparisonCoverage(
+        { from: "2005-08-01T00:00:00Z", to: "2005-09-01T00:00:00Z" },
+        { from: "2005-07-01T00:00:00Z", to: "2005-08-01T00:00:00Z" },
+        span
+      )
+    ).toEqual({ current: "full", baseline: "full", determinable: true })
+    expect(
+      comparisonCoverage(
+        { from: "2005-07-01T00:00:00Z", to: "2005-08-01T00:00:00Z" },
+        { from: "2005-05-31T00:00:00Z", to: "2005-07-01T00:00:00Z" },
+        span
+      )
+    ).toEqual({ current: "full", baseline: "partial", determinable: true })
+    expect(
+      comparisonCoverage(
+        { from: "2005-06-03T00:00:00Z", to: "2005-06-04T00:00:00Z" },
+        { from: "2005-06-02T00:00:00Z", to: "2005-06-03T00:00:00Z" },
+        span
+      )
+    ).toEqual({ current: "partial", baseline: "none", determinable: false })
+    // A baseline ending exactly at the first event does not contain it.
+    expect(
+      comparisonCoverage(
+        { from: span.first, to: "2005-06-04T22:42:50.675872Z" },
+        { from: "2005-06-02T22:42:50.675872Z", to: span.first },
+        span
+      ).baseline
+    ).toBe("none")
   })
 })
