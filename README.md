@@ -11,8 +11,8 @@ receipt.
 > tools exist (`describe_corpus`, `search_logs`, `get_log_context`,
 > `count_events` with `compare`, `event_trend`, `recurring_patterns` with
 > `rank: investigation_order`, `latency_stats`, `check_claims`). The stdio MCP
-> server exposes the registry to Claude clients. Role playbooks and the web chat
-> are not implemented yet.
+> server exposes the registry and shared role playbooks to Claude clients. The web
+> chat is not implemented yet; real-client role acceptance is still pending.
 
 ## Requirements
 
@@ -124,20 +124,38 @@ receipt. The schema resource lists the same available analytical fields as
 `describe_corpus`. Ownership is fictional. Missing receipts return `not_found`
 with a correction hint.
 
-Role prompts and server instructions are absent until the shared playbooks (U15)
-are supplied. `describe_corpus.answer_guidance` is `null` and explains that limit
-in `notes`. The integration point accepts instructions, role guidance and the
-three prompt renderers from one `PlaybookSource`; it ships no placeholder role
-text. Optional index tools follow in U21, so enabling
+The server loads the versioned playbooks from `@workspace/agent/playbooks`.
+Choose `/mcp__log-insights__engineer_investigation`,
+`/mcp__log-insights__team_lead_review` or
+`/mcp__log-insights__manager_priorities` in Claude Code; in Claude Desktop choose
+the corresponding prompt from the input's prompt menu. Each accepts optional
+`question`, `dataset`, `from` and `to` arguments. Without a selected prompt,
+server instructions and `describe_corpus.answer_guidance` provide role routing,
+the required answer sections and checks before a recommendation; an unclear
+perspective calls for clarification. `guidance_version` identifies the playbook
+bundle in the corpus result and receipt. Prompts guide the model; the server does
+not inspect the client's final answer. Optional index tools follow in U21, so enabling
 `LOG_INSIGHTS_WORKSPACE_TOOLS=1` currently still exposes eight tools.
+
+Successful tool calls include the complete validated JSON result in a text block
+as well as structured content, so clients that expose only text to the model
+still receive dataset/group labels, role guidance, evidence and all fact IDs.
+If a local Desktop extension launches this checkout, its MCPB manifest must allow
+the server's generated prompts (`prompts_generated: true`); an older launcher
+manifest can list prompts yet block their retrieval. See the
+[MCPB manifest specification](https://github.com/modelcontextprotocol/mcpb/blob/main/MANIFEST.md).
 
 `pnpm test:mcp` checks actual stdio messages, advertised schemas, resources,
 receipts, actionable errors, process shutdown and startup
 from another working directory against the Loghub 2k samples. It also starts the
 generated Desktop command. CI runs this after loading samples. Unit tests in
-`pnpm test` cover cancellation routing and playbook-source registration. Actual Claude Code
-and Desktop sessions require a signed-in client and remain a separate acceptance
-check; transport tests do not establish model behavior or instruction uptake.
+`pnpm test` cover cancellation routing and playbook-source registration. The smoke
+also checks all three prompts, Initialize instructions and persisted corpus
+guidance against the same playbook source. Actual Claude Code and Desktop
+sessions with `claude-opus-5-5` remain a separate acceptance check: instruction
+uptake and answers with/without prompts have not yet been established in either
+client. Claude Code was not signed in and no API key was configured during the
+initial U15 check; transport tests do not establish model behavior.
 
 ## Tools
 

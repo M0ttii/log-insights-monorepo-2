@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js"
+import { loadPlaybooks } from "@workspace/agent/playbooks"
 import { createRegistry } from "@workspace/analytics/registry"
 import type { ReceiptStore, QueryRunner } from "@workspace/domain/tool"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -38,6 +39,35 @@ async function connect(playbooks?: PlaybookSource) {
 }
 
 describe("MCP registry adapter", () => {
+  it("serves the production playbooks through initialize and prompts/get", async () => {
+    const source = loadPlaybooks()
+    const { client, db } = await connect(source)
+    expect(client.getInstructions()).toBe(source.instructions)
+    const listed = await client.listPrompts()
+    expect(listed.prompts.map((prompt) => prompt.name)).toEqual(
+      Object.keys(source.prompts)
+    )
+    for (const [name, prompt] of Object.entries(source.prompts)) {
+      const result = await client.getPrompt({
+        name,
+        arguments: { question: "Investigate this scope", dataset: "bgl" },
+      })
+      expect(result.messages).toEqual([
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: prompt.render({
+              question: "Investigate this scope",
+              dataset: "bgl",
+            }),
+          },
+        },
+      ])
+    }
+    expect(db.query).not.toHaveBeenCalled()
+  })
+
   it("advertises all canonical tools and no playbooks without a source", async () => {
     const { client, registry } = await connect()
     const { tools } = await client.listTools()
