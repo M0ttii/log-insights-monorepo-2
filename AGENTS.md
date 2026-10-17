@@ -93,8 +93,9 @@ versions before using an API, and never infer an installation from a plan.
   for tool inputs/outputs, MCP schemas and AI SDK tools; `@modelcontextprotocol/sdk`
   (stdio; Streamable HTTP is P1); Vercel AI SDK with `@ai-sdk/anthropic` and
   `@ai-sdk/react` (one streaming request with tools and a step limit; Claude is the
-  model); Next.js App Router, Tailwind, shadcn/ui on Base UI, Lucide; TanStack Query
-  only where interactive client fetching needs it.
+  model, `claude-opus-5-5` by default and for eval, baseline and demo runs, because
+  the judges use it); Next.js App Router, Tailwind, shadcn/ui on Base UI, Lucide;
+  TanStack Query only where interactive client fetching needs it.
 - Not used (concept v3.0): Effect, SQLite, a worker or job queue, Caddy or another
   proxy, a second agent framework, Python services, a vector database. Add none of
   these, nor another service, ORM or schema library, without a need recorded in
@@ -126,6 +127,16 @@ versions before using an API, and never infer an installation from a plan.
   behavior with the `serenedb-docs` MCP (or `sdb_docs.search`) before writing or
   changing SQL. Gate results and required rewrites are in technical.md § 5.2; rerun
   `pnpm gate` after any image change (a `DIFF` means documented behavior changed).
+- SereneDB computes, TypeScript does not (technical.md § 5.3): every analytical value
+  and every rule outcome (R-05 flag, R-06 classification, R-08 order, R-09
+  dominance, R-10 status, zero buckets inside the data span) comes from SQL.
+  TypeScript validates input, assembles allowlisted SQL, assigns fact IDs, writes
+  receipts and checks claims; the pure functions in `domain/rules/` serve as test
+  oracles, not as the computation. Before writing generic SQL or computing outside
+  SereneDB, search the SereneDB docs (`sdb_docs.search`, the docs MCP or Context7
+  `/serenedb/serenedb`) for a SereneDB-native function, and record each one used or
+  rejected in technical.md § 5.3 with its gate probe or reason. SereneDB AI
+  functions in SQL (`ai_*`) and vector search on them are not used (concept 3.2).
 - Each process owns one lazily created `pg` pool (at most four connections, never at
   import or build time), disposed at shutdown and in test teardown; account for dev
   reloads. Every query has a 10 s limit enforced by the pool: SereneDB accepts
