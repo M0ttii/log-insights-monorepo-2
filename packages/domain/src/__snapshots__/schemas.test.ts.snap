@@ -1,0 +1,2982 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`JSON Schema export > changeLabel converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "anyOf": [
+      {
+        "enum": [
+          "first observed in this comparison",
+          "not observed in either period",
+          "significantly increased",
+        ],
+        "type": "string",
+      },
+      {
+        "type": "null",
+      },
+    ],
+    "description": "R-06 label; null when none applies.",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "anyOf": [
+      {
+        "enum": [
+          "first observed in this comparison",
+          "not observed in either period",
+          "significantly increased",
+        ],
+        "type": "string",
+      },
+      {
+        "type": "null",
+      },
+    ],
+    "description": "R-06 label; null when none applies.",
+  },
+}
+`;
+
+exports[`JSON Schema export > dominance converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "description": "Dimensions compared.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "clear_priority",
+            "type": "string",
+          },
+          "pattern_id": {
+            "description": "Candidate that dominates all others: clear priority 1.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "kind",
+          "pattern_id",
+          "dimensions",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "conflicts": {
+            "description": "Pairs where neither dominates; both ahead lists empty means a tie.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "a": {
+                  "type": "string",
+                },
+                "a_ahead_in": {
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "b": {
+                  "type": "string",
+                },
+                "b_ahead_in": {
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+              },
+              "required": [
+                "a",
+                "b",
+                "a_ahead_in",
+                "b_ahead_in",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "dimensions": {
+            "description": "Dimensions compared.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "trade_off",
+            "type": "string",
+          },
+          "leaders": {
+            "description": "Candidates with the highest value per dimension.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "dimension": {
+                  "enum": [
+                    "episodes",
+                    "breadth",
+                    "change",
+                  ],
+                  "type": "string",
+                },
+                "pattern_ids": {
+                  "items": {
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+              },
+              "required": [
+                "dimension",
+                "pattern_ids",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+        },
+        "required": [
+          "kind",
+          "dimensions",
+          "leaders",
+          "conflicts",
+        ],
+        "type": "object",
+      },
+    ],
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "description": "Dimensions compared.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "clear_priority",
+            "type": "string",
+          },
+          "pattern_id": {
+            "description": "Candidate that dominates all others: clear priority 1.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "kind",
+          "pattern_id",
+          "dimensions",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "conflicts": {
+            "description": "Pairs where neither dominates; both ahead lists empty means a tie.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "a": {
+                  "type": "string",
+                },
+                "a_ahead_in": {
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "b": {
+                  "type": "string",
+                },
+                "b_ahead_in": {
+                  "items": {
+                    "enum": [
+                      "episodes",
+                      "breadth",
+                      "change",
+                    ],
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+              },
+              "required": [
+                "a",
+                "b",
+                "a_ahead_in",
+                "b_ahead_in",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "dimensions": {
+            "description": "Dimensions compared.",
+            "items": {
+              "enum": [
+                "episodes",
+                "breadth",
+                "change",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "kind": {
+            "const": "trade_off",
+            "type": "string",
+          },
+          "leaders": {
+            "description": "Candidates with the highest value per dimension.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "dimension": {
+                  "enum": [
+                    "episodes",
+                    "breadth",
+                    "change",
+                  ],
+                  "type": "string",
+                },
+                "pattern_ids": {
+                  "items": {
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+              },
+              "required": [
+                "dimension",
+                "pattern_ids",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+        },
+        "required": [
+          "kind",
+          "dimensions",
+          "leaders",
+          "conflicts",
+        ],
+        "type": "object",
+      },
+    ],
+  },
+}
+`;
+
+exports[`JSON Schema export > emptyInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {},
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {},
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > exampleInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "default": 20,
+        "description": "Groups to return (1–50). Default: 20.",
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "default": 20,
+        "description": "Groups to return (1–50). Default: 20.",
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "top_n",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > exampleResult converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "data": {
+        "additionalProperties": false,
+        "properties": {
+          "total": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "total",
+        ],
+        "type": "object",
+      },
+      "facts": {
+        "description": "Citable facts; quote their IDs, never build paths.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "group": {
+              "additionalProperties": {
+                "type": "string",
+              },
+              "description": "Dimension values of the row the value belongs to; {} for ungrouped facts.",
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
+            "id": {
+              "description": "Fact ID as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+              "pattern": "^r_[0-9a-f]{8}\\.f[1-9][0-9]*$",
+              "type": "string",
+            },
+            "metric": {
+              "type": "string",
+            },
+            "path": {
+              "description": "JSON pointer of the value inside the receipt, e.g. /result/groups/2/events.",
+              "type": "string",
+            },
+            "unit": {
+              "type": "string",
+            },
+            "value": {
+              "description": "Number, or ISO-8601 instant for times.",
+              "type": [
+                "number",
+                "string",
+              ],
+            },
+          },
+          "required": [
+            "id",
+            "path",
+            "value",
+            "metric",
+            "unit",
+            "group",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+      "notes": {
+        "description": "Caveats to carry into the answer.",
+        "items": {
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "receipt": {
+        "additionalProperties": false,
+        "description": "Receipt summary returned with every result; the full receipt is receipt://{id}.",
+        "properties": {
+          "data_version": {
+            "description": "load_manifest data version the run read.",
+            "minLength": 1,
+            "type": "string",
+          },
+          "duration_ms": {
+            "description": "Sum of database round trips in milliseconds.",
+            "minimum": 0,
+            "type": "number",
+          },
+          "input": {
+            "$ref": "#/$defs/__schema0",
+            "description": "Validated input with resolved defaults; basis for re-run.",
+          },
+          "params": {
+            "description": "Bound parameters per SQL text.",
+            "items": {
+              "items": {
+                "$ref": "#/$defs/__schema1",
+              },
+              "type": "array",
+            },
+            "type": "array",
+          },
+          "population": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "count": {
+                    "description": "Events, accesses or requests in scope, or total matches.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "unit": {
+                    "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+                    "enum": [
+                      "log_events",
+                      "api_accesses",
+                      "requests",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "count",
+                  "unit",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+          },
+          "receipt_id": {
+            "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
+            "pattern": "^r_[0-9a-f]{8}$",
+            "type": "string",
+          },
+          "result_digest": {
+            "description": "SHA-256 over canonical JSON of result.",
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string",
+          },
+          "rows_returned": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "scope": {
+            "additionalProperties": false,
+            "description": "What the numbers cover.",
+            "properties": {
+              "filters": {
+                "additionalProperties": false,
+                "description": "Filters applied besides dataset and window.",
+                "properties": {
+                  "alert_label": {
+                    "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+                    "maxLength": 32,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "components": {
+                    "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                    "items": {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "maxItems": 20,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "instance_id": {
+                    "description": "OpenStack only: exact instance UUID.",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "levels": {
+                    "description": "Only these levels (1–10).",
+                    "items": {
+                      "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+                      "pattern": "^[A-Z][A-Z_]{0,15}$",
+                      "type": "string",
+                    },
+                    "maxItems": 10,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "node": {
+                    "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "only_alerts": {
+                    "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+                    "type": "boolean",
+                  },
+                  "only_errors": {
+                    "description": "Only error events (R-02 levels per dataset). Default: false.",
+                    "type": "boolean",
+                  },
+                  "pattern_id": {
+                    "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+                    "pattern": "^[0-9a-f]{8,64}$",
+                    "type": "string",
+                  },
+                  "rack": {
+                    "description": "BGL only: rack, e.g. R02.",
+                    "maxLength": 16,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "request_id": {
+                    "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "teams": {
+                    "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+                    "items": {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "maxItems": 10,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "text": {
+                    "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "type": "object",
+              },
+              "windows": {
+                "description": "One window per dataset; BGL and OpenStack share no time axis.",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "dataset": {
+                      "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+                      "enum": [
+                        "bgl",
+                        "openstack",
+                      ],
+                      "type": "string",
+                    },
+                    "from": {
+                      "description": "Resolved window start, inclusive.",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                    "to": {
+                      "description": "Resolved window end, exclusive.",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "dataset",
+                    "from",
+                    "to",
+                  ],
+                  "type": "object",
+                },
+                "maxItems": 2,
+                "minItems": 1,
+                "type": "array",
+              },
+            },
+            "required": [
+              "windows",
+              "filters",
+            ],
+            "type": "object",
+          },
+          "signature": {
+            "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string",
+          },
+          "sql": {
+            "description": "Exact SQL texts in execution order.",
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "truncated": {
+            "type": "boolean",
+          },
+        },
+        "required": [
+          "receipt_id",
+          "input",
+          "signature",
+          "data_version",
+          "sql",
+          "params",
+          "scope",
+          "population",
+          "rows_returned",
+          "truncated",
+          "duration_ms",
+          "result_digest",
+        ],
+        "type": "object",
+      },
+    },
+    "required": [
+      "data",
+      "facts",
+      "receipt",
+      "notes",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "data": {
+        "additionalProperties": false,
+        "properties": {
+          "total": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "total",
+        ],
+        "type": "object",
+      },
+      "facts": {
+        "description": "Citable facts; quote their IDs, never build paths.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "group": {
+              "additionalProperties": {
+                "type": "string",
+              },
+              "description": "Dimension values of the row the value belongs to; {} for ungrouped facts.",
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
+            "id": {
+              "description": "Fact ID as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+              "pattern": "^r_[0-9a-f]{8}\\.f[1-9][0-9]*$",
+              "type": "string",
+            },
+            "metric": {
+              "type": "string",
+            },
+            "path": {
+              "description": "JSON pointer of the value inside the receipt, e.g. /result/groups/2/events.",
+              "type": "string",
+            },
+            "unit": {
+              "type": "string",
+            },
+            "value": {
+              "description": "Number, or ISO-8601 instant for times.",
+              "type": [
+                "number",
+                "string",
+              ],
+            },
+          },
+          "required": [
+            "id",
+            "path",
+            "value",
+            "metric",
+            "unit",
+            "group",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+      "notes": {
+        "description": "Caveats to carry into the answer.",
+        "items": {
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "receipt": {
+        "additionalProperties": false,
+        "description": "Receipt summary returned with every result; the full receipt is receipt://{id}.",
+        "properties": {
+          "data_version": {
+            "description": "load_manifest data version the run read.",
+            "minLength": 1,
+            "type": "string",
+          },
+          "duration_ms": {
+            "description": "Sum of database round trips in milliseconds.",
+            "minimum": 0,
+            "type": "number",
+          },
+          "input": {
+            "$ref": "#/$defs/__schema0",
+            "description": "Validated input with resolved defaults; basis for re-run.",
+          },
+          "params": {
+            "description": "Bound parameters per SQL text.",
+            "items": {
+              "items": {
+                "$ref": "#/$defs/__schema1",
+              },
+              "type": "array",
+            },
+            "type": "array",
+          },
+          "population": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "count": {
+                    "description": "Events, accesses or requests in scope, or total matches.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "unit": {
+                    "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+                    "enum": [
+                      "log_events",
+                      "api_accesses",
+                      "requests",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "count",
+                  "unit",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+          },
+          "receipt_id": {
+            "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
+            "pattern": "^r_[0-9a-f]{8}$",
+            "type": "string",
+          },
+          "result_digest": {
+            "description": "SHA-256 over canonical JSON of result.",
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string",
+          },
+          "rows_returned": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "scope": {
+            "additionalProperties": false,
+            "description": "What the numbers cover.",
+            "properties": {
+              "filters": {
+                "additionalProperties": false,
+                "description": "Filters applied besides dataset and window.",
+                "properties": {
+                  "alert_label": {
+                    "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+                    "maxLength": 32,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "components": {
+                    "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                    "items": {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "maxItems": 20,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "instance_id": {
+                    "description": "OpenStack only: exact instance UUID.",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "levels": {
+                    "description": "Only these levels (1–10).",
+                    "items": {
+                      "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+                      "pattern": "^[A-Z][A-Z_]{0,15}$",
+                      "type": "string",
+                    },
+                    "maxItems": 10,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "node": {
+                    "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "only_alerts": {
+                    "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+                    "type": "boolean",
+                  },
+                  "only_errors": {
+                    "description": "Only error events (R-02 levels per dataset). Default: false.",
+                    "type": "boolean",
+                  },
+                  "pattern_id": {
+                    "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+                    "pattern": "^[0-9a-f]{8,64}$",
+                    "type": "string",
+                  },
+                  "rack": {
+                    "description": "BGL only: rack, e.g. R02.",
+                    "maxLength": 16,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "request_id": {
+                    "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "teams": {
+                    "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+                    "items": {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "maxItems": 10,
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "text": {
+                    "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "type": "object",
+              },
+              "windows": {
+                "description": "One window per dataset; BGL and OpenStack share no time axis.",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "dataset": {
+                      "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+                      "enum": [
+                        "bgl",
+                        "openstack",
+                      ],
+                      "type": "string",
+                    },
+                    "from": {
+                      "description": "Resolved window start, inclusive.",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                    "to": {
+                      "description": "Resolved window end, exclusive.",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "dataset",
+                    "from",
+                    "to",
+                  ],
+                  "type": "object",
+                },
+                "maxItems": 2,
+                "minItems": 1,
+                "type": "array",
+              },
+            },
+            "required": [
+              "windows",
+              "filters",
+            ],
+            "type": "object",
+          },
+          "signature": {
+            "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string",
+          },
+          "sql": {
+            "description": "Exact SQL texts in execution order.",
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "truncated": {
+            "type": "boolean",
+          },
+        },
+        "required": [
+          "receipt_id",
+          "input",
+          "signature",
+          "data_version",
+          "sql",
+          "params",
+          "scope",
+          "population",
+          "rows_returned",
+          "truncated",
+          "duration_ms",
+          "result_digest",
+        ],
+        "type": "object",
+      },
+    },
+    "required": [
+      "data",
+      "facts",
+      "receipt",
+      "notes",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > fact converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "group": {
+        "additionalProperties": {
+          "type": "string",
+        },
+        "description": "Dimension values of the row the value belongs to; {} for ungrouped facts.",
+        "propertyNames": {
+          "type": "string",
+        },
+        "type": "object",
+      },
+      "id": {
+        "description": "Fact ID as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+        "pattern": "^r_[0-9a-f]{8}\\.f[1-9][0-9]*$",
+        "type": "string",
+      },
+      "metric": {
+        "type": "string",
+      },
+      "path": {
+        "description": "JSON pointer of the value inside the receipt, e.g. /result/groups/2/events.",
+        "type": "string",
+      },
+      "unit": {
+        "type": "string",
+      },
+      "value": {
+        "description": "Number, or ISO-8601 instant for times.",
+        "type": [
+          "number",
+          "string",
+        ],
+      },
+    },
+    "required": [
+      "id",
+      "path",
+      "value",
+      "metric",
+      "unit",
+      "group",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "group": {
+        "additionalProperties": {
+          "type": "string",
+        },
+        "description": "Dimension values of the row the value belongs to; {} for ungrouped facts.",
+        "propertyNames": {
+          "type": "string",
+        },
+        "type": "object",
+      },
+      "id": {
+        "description": "Fact ID as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+        "pattern": "^r_[0-9a-f]{8}\\.f[1-9][0-9]*$",
+        "type": "string",
+      },
+      "metric": {
+        "type": "string",
+      },
+      "path": {
+        "description": "JSON pointer of the value inside the receipt, e.g. /result/groups/2/events.",
+        "type": "string",
+      },
+      "unit": {
+        "type": "string",
+      },
+      "value": {
+        "description": "Number, or ISO-8601 instant for times.",
+        "type": [
+          "number",
+          "string",
+        ],
+      },
+    },
+    "required": [
+      "id",
+      "path",
+      "value",
+      "metric",
+      "unit",
+      "group",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > factSpec converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "groupKeys": {
+        "description": "Dimension fields of the surrounding row that identify the group, e.g. [dataset, team].",
+        "items": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "metric": {
+        "description": "What the number measures, e.g. events, share, p95_latency.",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string",
+      },
+      "path": {
+        "description": "Pointer from the receipt root; * matches every array element, e.g. /result/groups/*/events.",
+        "pattern": "^\\/(result|scope)(\\/([A-Za-z0-9_]+|\\*))+$",
+        "type": "string",
+      },
+      "unit": {
+        "description": "Unit, counting units after R-01: log_events, api_accesses, requests.",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "path",
+      "metric",
+      "unit",
+      "groupKeys",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "groupKeys": {
+        "description": "Dimension fields of the surrounding row that identify the group, e.g. [dataset, team].",
+        "items": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "metric": {
+        "description": "What the number measures, e.g. events, share, p95_latency.",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string",
+      },
+      "path": {
+        "description": "Pointer from the receipt root; * matches every array element, e.g. /result/groups/*/events.",
+        "pattern": "^\\/(result|scope)(\\/([A-Za-z0-9_]+|\\*))+$",
+        "type": "string",
+      },
+      "unit": {
+        "description": "Unit, counting units after R-01: log_events, api_accesses, requests.",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "path",
+      "metric",
+      "unit",
+      "groupKeys",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > filter converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+    },
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+    },
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > patternStatus converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "anyOf": [
+      {
+        "enum": [
+          "new",
+          "escalating",
+          "reappeared",
+          "ongoing",
+          "quiet",
+        ],
+        "type": "string",
+      },
+      {
+        "type": "null",
+      },
+    ],
+    "description": "R-10 status; null when the pattern has no events in either period.",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "anyOf": [
+      {
+        "enum": [
+          "new",
+          "escalating",
+          "reappeared",
+          "ongoing",
+          "quiet",
+        ],
+        "type": "string",
+      },
+      {
+        "type": "null",
+      },
+    ],
+    "description": "R-10 status; null when the pattern has no events in either period.",
+  },
+}
+`;
+
+exports[`JSON Schema export > rankCriterion converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "enum": [
+      "episodes",
+      "breadth",
+      "increase",
+      "events",
+      "pattern_id",
+    ],
+    "type": "string",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "enum": [
+      "episodes",
+      "breadth",
+      "increase",
+      "events",
+      "pattern_id",
+    ],
+    "type": "string",
+  },
+}
+`;
+
+exports[`JSON Schema export > receipt converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+      "__schema2": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema2",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema2",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "client": {
+        "enum": [
+          "mcp",
+          "web",
+          "eval",
+          "test",
+        ],
+        "type": "string",
+      },
+      "created_at": {
+        "description": "UTC time of the run.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "data_version": {
+        "description": "load_manifest data version the run read.",
+        "minLength": 1,
+        "type": "string",
+      },
+      "duration_ms": {
+        "description": "Sum of database round trips in milliseconds.",
+        "minimum": 0,
+        "type": "number",
+      },
+      "facts": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "group": {
+              "additionalProperties": {
+                "type": "string",
+              },
+              "description": "Dimension values of the row the value belongs to; {} for ungrouped facts.",
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
+            "id": {
+              "description": "Fact ID as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+              "pattern": "^r_[0-9a-f]{8}\\.f[1-9][0-9]*$",
+              "type": "string",
+            },
+            "metric": {
+              "type": "string",
+            },
+            "path": {
+              "description": "JSON pointer of the value inside the receipt, e.g. /result/groups/2/events.",
+              "type": "string",
+            },
+            "unit": {
+              "type": "string",
+            },
+            "value": {
+              "description": "Number, or ISO-8601 instant for times.",
+              "type": [
+                "number",
+                "string",
+              ],
+            },
+          },
+          "required": [
+            "id",
+            "path",
+            "value",
+            "metric",
+            "unit",
+            "group",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+      "input": {
+        "$ref": "#/$defs/__schema0",
+        "description": "Validated input with resolved defaults; basis for re-run.",
+      },
+      "params": {
+        "description": "Bound parameters per SQL text.",
+        "items": {
+          "items": {
+            "$ref": "#/$defs/__schema1",
+          },
+          "type": "array",
+        },
+        "type": "array",
+      },
+      "population": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Events, accesses or requests in scope, or total matches.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "unit": {
+                "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+                "enum": [
+                  "log_events",
+                  "api_accesses",
+                  "requests",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "count",
+              "unit",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+      },
+      "receipt_id": {
+        "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
+        "pattern": "^r_[0-9a-f]{8}$",
+        "type": "string",
+      },
+      "result": {
+        "$ref": "#/$defs/__schema2",
+      },
+      "result_digest": {
+        "description": "SHA-256 over canonical JSON of result.",
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string",
+      },
+      "row_limit": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "rows_returned": {
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "scope": {
+        "additionalProperties": false,
+        "description": "What the numbers cover.",
+        "properties": {
+          "filters": {
+            "additionalProperties": false,
+            "description": "Filters applied besides dataset and window.",
+            "properties": {
+              "alert_label": {
+                "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+                "maxLength": 32,
+                "minLength": 1,
+                "type": "string",
+              },
+              "components": {
+                "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                "items": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array",
+              },
+              "instance_id": {
+                "description": "OpenStack only: exact instance UUID.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "levels": {
+                "description": "Only these levels (1–10).",
+                "items": {
+                  "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+                  "pattern": "^[A-Z][A-Z_]{0,15}$",
+                  "type": "string",
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array",
+              },
+              "node": {
+                "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "only_alerts": {
+                "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+                "type": "boolean",
+              },
+              "only_errors": {
+                "description": "Only error events (R-02 levels per dataset). Default: false.",
+                "type": "boolean",
+              },
+              "pattern_id": {
+                "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+                "pattern": "^[0-9a-f]{8,64}$",
+                "type": "string",
+              },
+              "rack": {
+                "description": "BGL only: rack, e.g. R02.",
+                "maxLength": 16,
+                "minLength": 1,
+                "type": "string",
+              },
+              "request_id": {
+                "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "teams": {
+                "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+                "items": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array",
+              },
+              "text": {
+                "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "type": "object",
+          },
+          "windows": {
+            "description": "One window per dataset; BGL and OpenStack share no time axis.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "dataset": {
+                  "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+                  "enum": [
+                    "bgl",
+                    "openstack",
+                  ],
+                  "type": "string",
+                },
+                "from": {
+                  "description": "Resolved window start, inclusive.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                "to": {
+                  "description": "Resolved window end, exclusive.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "dataset",
+                "from",
+                "to",
+              ],
+              "type": "object",
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "type": "array",
+          },
+        },
+        "required": [
+          "windows",
+          "filters",
+        ],
+        "type": "object",
+      },
+      "signature": {
+        "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string",
+      },
+      "sql": {
+        "description": "Exact SQL texts in execution order.",
+        "items": {
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "tool": {
+        "type": "string",
+      },
+      "tool_version": {
+        "type": "string",
+      },
+      "truncated": {
+        "type": "boolean",
+      },
+    },
+    "required": [
+      "receipt_id",
+      "created_at",
+      "client",
+      "tool",
+      "tool_version",
+      "input",
+      "signature",
+      "data_version",
+      "sql",
+      "params",
+      "scope",
+      "population",
+      "rows_returned",
+      "truncated",
+      "row_limit",
+      "duration_ms",
+      "result",
+      "result_digest",
+      "facts",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+      "__schema2": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+          {
+            "items": {
+              "$ref": "#/$defs/__schema2",
+            },
+            "type": "array",
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema2",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        ],
+      },
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "client": {
+        "enum": [
+          "mcp",
+          "web",
+          "eval",
+          "test",
+        ],
+        "type": "string",
+      },
+      "created_at": {
+        "description": "UTC time of the run.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "data_version": {
+        "description": "load_manifest data version the run read.",
+        "minLength": 1,
+        "type": "string",
+      },
+      "duration_ms": {
+        "description": "Sum of database round trips in milliseconds.",
+        "minimum": 0,
+        "type": "number",
+      },
+      "facts": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "group": {
+              "additionalProperties": {
+                "type": "string",
+              },
+              "description": "Dimension values of the row the value belongs to; {} for ungrouped facts.",
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
+            "id": {
+              "description": "Fact ID as listed in a tool result's facts, e.g. r_7f3a9c21.f4. Never build it yourself.",
+              "pattern": "^r_[0-9a-f]{8}\\.f[1-9][0-9]*$",
+              "type": "string",
+            },
+            "metric": {
+              "type": "string",
+            },
+            "path": {
+              "description": "JSON pointer of the value inside the receipt, e.g. /result/groups/2/events.",
+              "type": "string",
+            },
+            "unit": {
+              "type": "string",
+            },
+            "value": {
+              "description": "Number, or ISO-8601 instant for times.",
+              "type": [
+                "number",
+                "string",
+              ],
+            },
+          },
+          "required": [
+            "id",
+            "path",
+            "value",
+            "metric",
+            "unit",
+            "group",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+      "input": {
+        "$ref": "#/$defs/__schema0",
+        "description": "Validated input with resolved defaults; basis for re-run.",
+      },
+      "params": {
+        "description": "Bound parameters per SQL text.",
+        "items": {
+          "items": {
+            "$ref": "#/$defs/__schema1",
+          },
+          "type": "array",
+        },
+        "type": "array",
+      },
+      "population": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "description": "Events, accesses or requests in scope, or total matches.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "unit": {
+                "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+                "enum": [
+                  "log_events",
+                  "api_accesses",
+                  "requests",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "count",
+              "unit",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+      },
+      "receipt_id": {
+        "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
+        "pattern": "^r_[0-9a-f]{8}$",
+        "type": "string",
+      },
+      "result": {
+        "$ref": "#/$defs/__schema2",
+      },
+      "result_digest": {
+        "description": "SHA-256 over canonical JSON of result.",
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string",
+      },
+      "row_limit": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "rows_returned": {
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "scope": {
+        "additionalProperties": false,
+        "description": "What the numbers cover.",
+        "properties": {
+          "filters": {
+            "additionalProperties": false,
+            "description": "Filters applied besides dataset and window.",
+            "properties": {
+              "alert_label": {
+                "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+                "maxLength": 32,
+                "minLength": 1,
+                "type": "string",
+              },
+              "components": {
+                "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                "items": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array",
+              },
+              "instance_id": {
+                "description": "OpenStack only: exact instance UUID.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "levels": {
+                "description": "Only these levels (1–10).",
+                "items": {
+                  "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+                  "pattern": "^[A-Z][A-Z_]{0,15}$",
+                  "type": "string",
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array",
+              },
+              "node": {
+                "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "only_alerts": {
+                "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+                "type": "boolean",
+              },
+              "only_errors": {
+                "description": "Only error events (R-02 levels per dataset). Default: false.",
+                "type": "boolean",
+              },
+              "pattern_id": {
+                "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+                "pattern": "^[0-9a-f]{8,64}$",
+                "type": "string",
+              },
+              "rack": {
+                "description": "BGL only: rack, e.g. R02.",
+                "maxLength": 16,
+                "minLength": 1,
+                "type": "string",
+              },
+              "request_id": {
+                "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+              "teams": {
+                "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+                "items": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array",
+              },
+              "text": {
+                "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "type": "object",
+          },
+          "windows": {
+            "description": "One window per dataset; BGL and OpenStack share no time axis.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "dataset": {
+                  "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+                  "enum": [
+                    "bgl",
+                    "openstack",
+                  ],
+                  "type": "string",
+                },
+                "from": {
+                  "description": "Resolved window start, inclusive.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                "to": {
+                  "description": "Resolved window end, exclusive.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "dataset",
+                "from",
+                "to",
+              ],
+              "type": "object",
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "type": "array",
+          },
+        },
+        "required": [
+          "windows",
+          "filters",
+        ],
+        "type": "object",
+      },
+      "signature": {
+        "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string",
+      },
+      "sql": {
+        "description": "Exact SQL texts in execution order.",
+        "items": {
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "tool": {
+        "type": "string",
+      },
+      "tool_version": {
+        "type": "string",
+      },
+      "truncated": {
+        "type": "boolean",
+      },
+    },
+    "required": [
+      "receipt_id",
+      "created_at",
+      "client",
+      "tool",
+      "tool_version",
+      "input",
+      "signature",
+      "data_version",
+      "sql",
+      "params",
+      "scope",
+      "population",
+      "rows_returned",
+      "truncated",
+      "row_limit",
+      "duration_ms",
+      "result",
+      "result_digest",
+      "facts",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > toolError converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "invalid_input",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "issues": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string",
+                },
+                "path": {
+                  "description": "Dotted path of the offending input field; empty for the whole input.",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "path",
+                "message",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "issues",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "not_found",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "id": {
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+          "resource": {
+            "enum": [
+              "event",
+              "receipt",
+              "pattern",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "resource",
+          "id",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "query_timeout",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+          "timeout_ms": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "timeout_ms",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "db_unavailable",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "receipt_unavailable",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "limit_exceeded",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "limit": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+          "requested": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "limit",
+          "requested",
+        ],
+        "type": "object",
+      },
+    ],
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "invalid_input",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "issues": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string",
+                },
+                "path": {
+                  "description": "Dotted path of the offending input field; empty for the whole input.",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "path",
+                "message",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "issues",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "not_found",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "id": {
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+          "resource": {
+            "enum": [
+              "event",
+              "receipt",
+              "pattern",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "resource",
+          "id",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "query_timeout",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+          "timeout_ms": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "timeout_ms",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "db_unavailable",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "receipt_unavailable",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "limit_exceeded",
+            "type": "string",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "limit": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+          "requested": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "limit",
+          "requested",
+        ],
+        "type": "object",
+      },
+    ],
+  },
+}
+`;

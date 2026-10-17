@@ -153,7 +153,7 @@ apps/
 packages/
   ui/                   # @workspace/ui: shadcn primitives (src/components), shadcn
                         # hooks (src/hooks), cn() (src/lib), globals.css and tokens
-  domain/               # planned: pure Zod contracts, fact IDs and rule functions
+  domain/               # pure Zod contracts, fact IDs and rule functions
                         # (R-06, R-08, R-09, R-10)
   analytics/            # planned: the only place that executes SQL: db, filters,
                         # receipts, tools, registry; golden and integration tests
@@ -423,7 +423,7 @@ against SereneDB from `compose.yaml`. Keep it green.
 | `pnpm format:check` | Prettier | Code, JSON, and CSS; Markdown docs are not auto-formatted. |
 | `pnpm deps:check` | dependency-cruiser | No cycles, no Radix/assistant-ui, no relative imports across workspaces, `packages/ui` stays generic, no server workspaces in the browser graph, private `partials/`. Uses the root `tsconfig.json`, which maps the aliases for repository-wide tools. |
 | `pnpm knip` | knip | Unused files, exports, and dependencies per workspace; `packages/ui/src/components` exports are exempt because shadcn generates complete APIs. |
-| `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); needs no Docker. |
+| `pnpm test` | Vitest | Project `packages` (add a project per app once it has tests); unit tests beside code (`*.test.ts[x]`); needs no Docker. JSON Schema snapshots of the domain contracts live in `packages/domain/src/__snapshots__` and are updated with `pnpm vitest run -u` only together with a `CONTRACT_VERSION` bump (patch for description-only changes). |
 | `pnpm test:integration` | Vitest | Project `corpus-integration` (`packages/corpus/tests/integration/`): loads the 2k samples and hand-written fixtures through the real loader into SereneDB and checks hand-determined values, time zones and idempotence. Needs Docker and `.env`; part of CI, not of `pnpm check`. |
 | `pnpm build` | Turborepo | Production builds of workspaces with a `build` script; none exist until `apps/web` is created. |
 | `pnpm data:setup [--samples]` | tsx + `pg` (`@workspace/corpus`) | Starts SereneDB, downloads the raw files into `.data/raw` if missing (pinned size and SHA-256), runs `packages/corpus/sql/` in order, checks the result (`load_checks`), writes `load_manifest` and prints the load balance. Idempotent. Default: full corpus into `SERENEDB_DATABASE`; `--samples`: Loghub 2k samples into `log_insights_samples`. Not part of `pnpm check`. |
