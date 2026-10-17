@@ -448,8 +448,9 @@ although their rules were verified to run.
 
 ## Tickets and Git workflow
 
-Every ticket follows the same sequence. The user pushes and opens pull requests;
-agents never push, open pull requests or merge.
+Every ticket follows the same sequence. Agents push, open the pull request and
+merge it themselves once CI is green; nothing reaches `main` except through a
+merged pull request.
 
 1. **Start:** read the Linear ticket with its description, acceptance criteria,
    relations, sub-issues and comments. Set its status to `In Progress`.
@@ -461,13 +462,31 @@ agents never push, open pull requests or merge.
 3. **Commit:** commit in one or more focused commits on that branch. Stage the
    files explicitly, keep unrelated changes out, and keep hooks enabled. Run the
    relevant checks before committing (see "Tests and completion").
-4. **Update Linear:** after the work on a ticket, update the ticket.
+4. **Push and open a pull request:** push the branch with `git push -u origin
+   <branch>` and open a pull request against `main` (or the base branch) with
+   `gh pr create`. Title: the ticket ID and a summary under 70 characters, e.g.
+   `LOG-123: BGL loader`. Description: summary of changes, checks run with their
+   result, open points, and `Closes LOG-123` (or `Part of` for a partial step).
+5. **Wait for CI:** follow the run with `gh pr checks --watch`. If a check fails,
+   fix the cause in a new commit on the branch and push again; never skip, disable
+   or weaken a check to get green.
+6. **Merge:** once every required check is green and the branch has no conflicts,
+   merge with `gh pr merge --merge --delete-branch` (merge commit, as in the
+   existing history), then update the local `main` (`git switch main && git pull
+   --ff-only`). Do not merge with failing or pending checks, never push directly
+   to `main`, never force-push a shared branch, and do not bypass branch
+   protection. A pull request that builds on an unmerged branch is merged only
+   after its base. Stop and ask instead of merging if the change needs a decision
+   the ticket does not cover, or if review comments are open.
+7. **Update Linear:** after the work on a ticket, update the ticket.
    - Add a comment with what changed, the branch and commits, the checks run and
-     their result, and any open point or limitation.
+     their result, the pull request and its CI result, and any open point or
+     limitation.
    - Keep the description aligned if scope or acceptance criteria changed, and
      tick completed checklist items.
-   - Set the status: `Done` when every acceptance criterion is met and committed
-     with green checks; otherwise leave it `In Progress` and name what remains.
+   - Set the status: `Done` when every acceptance criterion is met and the pull
+     request is merged with green CI; otherwise leave it `In Progress` and name
+     what remains.
      Record blockers as `blocked by` relations. Never mark a ticket done on the
      strength of an unrun check.
 
