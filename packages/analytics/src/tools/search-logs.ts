@@ -289,7 +289,9 @@ function textCondition(
       const [term] = tokens
       if (term === undefined || maxEdits === null)
         throw new Error("fuzzy search without its term or distance")
-      return `${column} @@ ts_levenshtein(${params.add(term)}, ${params.add(maxEdits)})`
+      // Typed: an untyped distance is ambiguous to SereneDB 26.10.1, which
+      // then cannot describe the result columns (gate G1).
+      return `${column} @@ ts_levenshtein(${params.add(term)}::VARCHAR, ${params.add(maxEdits)}::INTEGER)`
     }
   }
 }

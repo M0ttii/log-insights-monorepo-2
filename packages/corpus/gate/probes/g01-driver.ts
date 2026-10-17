@@ -1,3 +1,4 @@
+import { LOG_TEXT_ANALYZER } from "../../src/analyzer.ts"
 import { connect, display, failureOf } from "../db.ts"
 import { check, equals, type Probe } from "../probe.ts"
 
@@ -15,7 +16,7 @@ export const g01Driver: Probe = {
       "CREATE TABLE gate.g1 AS SELECT * FROM (VALUES (1::BIGINT, 'kernel panic'), (2, 'disk ok')) v(id, msg)"
     )
     await db.rows(
-      "CREATE TEXT SEARCH DICTIONARY gate.g1_dict (template = 'text', locale = 'en_US.UTF-8', case = 'lower', stemming = false, frequency)"
+      `CREATE TEXT SEARCH DICTIONARY gate.g1_dict AS ${LOG_TEXT_ANALYZER} WITH (frequency)`
     )
     await db.rows(
       "CREATE INDEX g1_idx ON gate.g1 USING inverted (id, msg gate.g1_dict)"
@@ -75,9 +76,43 @@ export const g01Driver: Probe = {
     )
     const batchedDdl = await failureOf(() =>
       db.client.query(
-        "CREATE TEXT SEARCH DICTIONARY gate.g1_batch_dict (template = 'text', locale = 'en_US.UTF-8', case = 'lower', frequency); CREATE INDEX g1_batch_idx ON gate.g1 USING inverted (id, msg gate.g1_batch_dict)"
+        `CREATE TEXT SEARCH DICTIONARY gate.g1_batch_dict AS ${LOG_TEXT_ANALYZER} WITH (frequency); CREATE INDEX g1_batch_idx ON gate.g1 USING inverted (id, msg gate.g1_batch_dict)`
       )
     )
+
+    // Result description over the extended protocol (what pg always uses
+    // with parameters). 26.10.1 sends one column `unknown` (OID 705) when a
+    // result type depends on a parameter it cannot type yet; the data rows
+    // keep their real width, so pg either crashes on a missing field or
+    // returns `{ unknown: … }`. 26.09.1.3 described these statements fully.
+    const describe = async (sql: string, values: unknown[]) => {
+      const result = await db.client.query(sql, values)
+      return result.fields.map((f) => `${f.name}:${f.dataTypeID}`).join(",")
+    }
+    const untypedArithmetic = await describe("SELECT $1 + 1 AS x", [5])
+    const typedArithmetic = await describe("SELECT $1::BIGINT + 1 AS x", [5])
+    const jsonOverParameter = await describe(
+      "SELECT to_json($1::INTEGER) AS j",
+      [5]
+    )
+    const fuzzyUntyped = await describe(
+      "SELECT count(*) AS n FROM gate.g1_idx WHERE msg @@ ts_levenshtein($1, $2)",
+      ["panik", 1]
+    )
+    const fuzzyTyped = await describe(
+      "SELECT count(*) AS n FROM gate.g1_idx WHERE msg @@ ts_levenshtein($1::VARCHAR, $2::INTEGER)",
+      ["panik", 1]
+    )
+    const lexize = await db.client.query(
+      "SELECT ts_lexize('gate.g1_dict', $1::VARCHAR) AS tokens",
+      ['Kernel PANIC, "1,000" O\'Reilly NULL']
+    )
+    // On a throwaway connection: the driver fails while decoding the row.
+    const scratch = await connect(config)
+    const multiColumn = await failureOf(() =>
+      scratch.client.query("SELECT 1 AS a, $1 + 1 AS b", [5])
+    )
+    await scratch.close().catch(() => undefined)
 
     return [
       equals(
@@ -169,11 +204,56 @@ export const g01Driver: Probe = {
         multiStatementError?.message ?? "succeeded",
         multiStatementError?.message.includes("no_such_column") ?? false
       ),
+      // 26.09.1.3 failed here ('Dictionary for inverted index does not
+      // exists'). Scripts are still sent statement by statement, which works
+      // either way and stops at the failing statement.
       check(
-        "dictionary created earlier in the same batch is invisible to CREATE INDEX",
-        "error 'Dictionary for inverted index does not exists' (send scripts statement by statement)",
+        "dictionary created earlier in the same batch is visible to CREATE INDEX (26.10.1; invisible on 26.09.1.3)",
+        "succeeded",
         batchedDdl?.message ?? "succeeded",
-        batchedDdl?.message.includes("Dictionary for inverted index") ?? false
+        batchedDdl === null
+      ),
+      equals(
+        "untyped parameter in a result expression: described as one column unknown:705 (26.10.1 regression)",
+        "unknown:705",
+        untypedArithmetic
+      ),
+      equals(
+        "typed parameter ($1::BIGINT + 1) is described correctly",
+        "x:20",
+        typedArithmetic
+      ),
+      equals(
+        "JSON function over a parameter is unknown:705 even when typed (avoid to_json over $n)",
+        "unknown:705",
+        jsonOverParameter
+      ),
+      equals(
+        "ts_levenshtein($1, $2) with untyped distance: unknown:705",
+        "unknown:705",
+        fuzzyUntyped
+      ),
+      equals(
+        "ts_levenshtein($1::VARCHAR, $2::INTEGER) is described correctly",
+        "n:20",
+        fuzzyTyped
+      ),
+      equals(
+        "ts_lexize($1::VARCHAR) arrives as VARCHAR[] (OID 1009) and pg parses quoting",
+        {
+          oid: 1009,
+          tokens: ["kernel", "panic", "1,000", "o'reilly", "null"],
+        },
+        {
+          oid: lexize.fields[0]?.dataTypeID,
+          tokens: lexize.rows[0]?.["tokens"],
+        }
+      ),
+      check(
+        "several columns with one undescribed: pg cannot map the data row",
+        "error (the analytics pool also rejects any OID 705 result)",
+        multiColumn?.message ?? "succeeded",
+        multiColumn !== null
       ),
     ]
   },

@@ -22,6 +22,16 @@ export async function connectTo(database: string): Promise<Client> {
   return openClient({ ...connectionFromEnv(), database })
 }
 
+/**
+ * Closes the client a suite's beforeAll opened. If beforeAll failed before
+ * connecting, the variable is still unassigned at run time: there is nothing
+ * to close, and vitest reports the setup error instead of a TypeError from
+ * the teardown. An error while closing an open client still fails the run.
+ */
+export async function closeIfOpen(client: Client | undefined): Promise<void> {
+  if (client !== undefined) await client.end()
+}
+
 /** Rows of a query as plain objects; integration tests compare them literally. */
 export async function rows(
   client: Client,
@@ -29,6 +39,24 @@ export async function rows(
   values: unknown[] = []
 ): Promise<Array<Record<string, unknown>>> {
   return (await client.query<Record<string, unknown>>(sql, values)).rows
+}
+
+const docker = async (args: string[]) =>
+  (await run("docker", args, { cwd: root })).stdout.trim()
+
+/**
+ * Reference and image ID of this checkout's running serenedb container, read
+ * with docker directly rather than through the loader.
+ */
+export async function composeContainerImage(): Promise<{
+  reference: string
+  imageId: string
+}> {
+  const id = await docker(["compose", "ps", "-q", "serenedb"])
+  const [reference = "", imageId = ""] = (
+    await docker(["inspect", "--format", "{{.Config.Image}} {{.Image}}", id])
+  ).split(" ")
+  return { reference, imageId }
 }
 
 /** Runs `pnpm data:setup <args>` as a separate process with the given time zone. */

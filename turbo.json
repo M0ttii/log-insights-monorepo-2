@@ -17,6 +17,8 @@
   "globalPassThroughEnv": [
     "CI",
     "PORT",
+    "COMPOSE_PROJECT_NAME",
+    "SERENEDB_IMAGE",
     "SERENEDB_HOST",
     "SERENEDB_PORT",
     "SERENEDB_USER",

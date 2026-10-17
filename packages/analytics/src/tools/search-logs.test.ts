@@ -103,7 +103,7 @@ describe("search_logs SQL", () => {
     expect(outcome.ok).toBe(true)
     const [tokenize, span, count, list] = toolCalls(calls)
     expect(tokenize).toEqual({
-      sql: "SELECT to_json(ts_lexize('log_text', $1)) AS tokens",
+      sql: "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
       params: ["cache parity"],
     })
     expect(span?.params).toEqual(["bgl"])
@@ -150,7 +150,7 @@ describe("search_logs SQL", () => {
     const fuzzy = setup({ tokens: ["parrity"] })
     const outcome = await fuzzy.search({ query: "PARRITY", match: "fuzzy" })
     expect(toolCalls(fuzzy.calls).at(-2)).toEqual({
-      sql: "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ ts_levenshtein($1, $2)",
+      sql: "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ ts_levenshtein($1::VARCHAR, $2::INTEGER)",
       params: ["parrity", 1],
     })
     expect(outcome.ok && outcome.result.data).toMatchObject({
@@ -222,7 +222,7 @@ describe("search_logs validation", () => {
       issues: [{ path: "query" }],
     })
     expect(toolCalls(calls).map((call) => call.sql)).toEqual([
-      "SELECT to_json(ts_lexize('log_text', $1)) AS tokens",
+      "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
     ])
   })
 

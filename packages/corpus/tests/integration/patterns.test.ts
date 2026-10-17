@@ -15,7 +15,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { profilingQueries } from "../../src/profiling-queries.ts"
 import { SAMPLES_DATABASE } from "../../src/sources.ts"
-import { connectTo, loadEnv, rows, runSetupCli } from "./helpers.ts"
+import {
+  closeIfOpen,
+  connectTo,
+  loadEnv,
+  rows,
+  runSetupCli,
+} from "./helpers.ts"
 
 loadEnv()
 
@@ -41,7 +47,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await client.end()
+  await closeIfOpen(client)
 })
 
 async function pattern(dataset: string, message: string): Promise<unknown> {

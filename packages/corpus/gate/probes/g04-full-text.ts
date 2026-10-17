@@ -103,32 +103,43 @@ export const g04FullText: Probe = {
       ["pari*"]
     )
 
-    // Defect reproduction: ts and event_id as range columns inside the index.
-    // With background compaction disabled the over-count is stable; with it,
-    // the count may become correct after a few seconds (observed), so a
-    // correct-looking result is no proof.
+    // ts and event_id as range columns inside the index. On 26.09.1.3 range
+    // filters there over-counted, non-deterministically (65,045–65,069
+    // instead of 65,028 for June 2005); with background compaction the count
+    // sometimes became right after a few seconds, so one correct-looking
+    // result is no proof. The probe therefore compares several ranges with
+    // compaction off, twice each. The production index keeps ts and event_id
+    // out regardless (sql/50_index.sql); this measures, it does not decide.
     await db.rows(
       `CREATE INDEX bgl_range_idx ON gate.bgl USING inverted (event_id, ts, message gate.msg_dict)
        WITH (compaction_interval = 0)`
     )
     await db.rows("VACUUM (REFRESH_TABLE) gate.bgl")
-    const rangeArgs = ["parity", "2005-06-01T00:00:00Z", "2005-07-01T00:00:00Z"]
-    const rangeInIndex = await db.value(
-      "SELECT count(*) FROM gate.bgl_range_idx WHERE message @@ $1 AND ts >= $2::TIMESTAMPTZ AND ts < $3::TIMESTAMPTZ",
-      rangeArgs
-    )
-    const rangeBase = await db.value(
-      "SELECT count(*) FROM gate.bgl WHERE regexp_matches(lower(message), $1) AND ts >= $2::TIMESTAMPTZ AND ts < $3::TIMESTAMPTZ",
-      [tokenRegex("parity"), rangeArgs[1], rangeArgs[2]]
-    )
-    const lowerOnly = await db.value(
-      "SELECT count(*) FROM gate.bgl_range_idx WHERE message @@ $1 AND ts >= $2::TIMESTAMPTZ",
-      rangeArgs.slice(0, 2)
-    )
-    const lowerOnlyBase = await db.value(
-      "SELECT count(*) FROM gate.bgl WHERE regexp_matches(lower(message), $1) AND ts >= $2::TIMESTAMPTZ",
-      [tokenRegex("parity"), rangeArgs[1]]
-    )
+    const RANGES = [
+      ["2005-06-01T00:00:00Z", "2005-07-01T00:00:00Z"],
+      ["2005-06-03T22:42:50.363779Z", "2005-06-04T00:00:00Z"],
+      ["2005-08-01T00:00:00Z", "2005-12-01T00:00:00.000001Z"],
+      ["2005-11-03T16:30:10.649636Z", "2006-01-04T16:00:05.233639Z"],
+    ] as const
+    const rangeRuns: Array<{ index: string; base: string }> = []
+    for (let round = 0; round < 2; round++) {
+      for (const [from, to] of RANGES) {
+        rangeRuns.push({
+          index: String(
+            await db.value(
+              "SELECT count(*) FROM gate.bgl_range_idx WHERE message @@ $1 AND ts >= $2::TIMESTAMPTZ AND ts < $3::TIMESTAMPTZ",
+              ["parity", from, to]
+            )
+          ),
+          base: String(
+            await db.value(
+              "SELECT count(*) FROM gate.bgl WHERE regexp_matches(lower(message), $1) AND ts >= $2::TIMESTAMPTZ AND ts < $3::TIMESTAMPTZ",
+              [tokenRegex("parity"), from, to]
+            )
+          ),
+        })
+      }
+    }
     const idRange = await db.value(
       "SELECT count(*) FROM gate.bgl_range_idx WHERE message @@ $1 AND event_id >= 1 AND event_id < 2400000",
       ["parity"]
@@ -138,8 +149,11 @@ export const g04FullText: Probe = {
       [tokenRegex("parity")]
     )
     await db.rows("DROP INDEX gate.bgl_range_idx")
-    const defect: Info = {
-      info: `range columns inside the index (compaction off): ts range ${String(rangeInIndex)} vs base ${String(rangeBase)}; ts >= only ${String(lowerOnly)} vs ${String(lowerOnlyBase)}; event_id range ${String(idRange)} vs ${String(idRangeBase)}`,
+    const rangeSummary = rangeRuns
+      .map((run) => `${run.index}/${run.base}`)
+      .join(", ")
+    const measurement: Info = {
+      info: `range columns inside the index (compaction off), index/base per range and round: ${rangeSummary}; event_id range ${String(idRange)}/${String(idRangeBase)}`,
     }
 
     return [
@@ -216,12 +230,13 @@ export const g04FullText: Probe = {
         operatorsIgnored
       ),
       equals("'*' in a bare string is no wildcard", "0", wildcardLiteral),
-      defect,
+      measurement,
       check(
-        "known defect: range filter on an indexed ts column over-counts",
-        "index count > base count (a DIFF here means: re-test ranges inside the index)",
-        `${String(rangeInIndex)} vs ${String(rangeBase)}`,
-        Number(rangeInIndex) > Number(rangeBase)
+        "ts and event_id range filters inside the index equal the base table (26.10.1; over-counted on 26.09.1.3; production index unchanged)",
+        "index = base for every range and round",
+        `${rangeSummary}; event_id ${String(idRange)}/${String(idRangeBase)}`,
+        rangeRuns.every((run) => run.index === run.base) &&
+          String(idRange) === String(idRangeBase)
       ),
     ]
   },

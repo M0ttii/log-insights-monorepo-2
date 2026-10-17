@@ -127,6 +127,16 @@ versions before using an API, and never infer an installation from a plan.
   behavior with the `serenedb-docs` MCP (or `sdb_docs.search`) before writing or
   changing SQL. Gate results and required rewrites are in technical.md § 5.2; rerun
   `pnpm gate` after any image change (a `DIFF` means documented behavior changed).
+- The image is SereneDB 26.10.1 from `SERENEDB_IMAGE` (technical.md § 5.1): the
+  unofficial, unpublished `local/serenedb:26.10.1-arm64` on Apple Silicon (restored
+  with `docker image load`, never pulled or rebuilt for a run), the official
+  digest-pinned amd64 image in CI. Never point an image at another version's data
+  volume; experiments use their own `COMPOSE_PROJECT_NAME`, volume and
+  `SERENEDB_PORT`, and leave other checkouts' instances alone.
+- Type every bound parameter that appears in a result expression (`$1::BIGINT + 1`,
+  `ts_levenshtein($1::VARCHAR, $2::INTEGER)`) and never wrap a parameter in a JSON
+  function in the select list: SereneDB 26.10.1 otherwise describes the result as
+  one `unknown` column (gate G1), which the pool rejects.
 - Each process owns one lazily created `pg` pool (at most four connections, never at
   import or build time), disposed at shutdown and in test teardown; account for dev
   reloads. Every query has a 10 s limit enforced by the pool: SereneDB accepts
@@ -189,7 +199,8 @@ versions before using an API, and never infer an installation from a plan.
 ## Data, safety and secrets
 
 - Raw corpus files live in `.data/` (gitignored, never committed). Loading is
-  idempotent (`CREATE OR REPLACE TABLE`); load checks compare line counts with the
+  idempotent (`CREATE OR REPLACE TABLE`, after dropping the views that depend on
+  the replaced tables, gate G3); load checks compare line counts with the
   brief and record rejects with reasons. `pnpm data:setup --samples` loads the
   Loghub 2k samples into the separate database `log_insights_samples`.
 - Validate input sizes, limits and time ranges; bound result sets. Never read a whole

@@ -8,6 +8,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { SAMPLES_DATABASE } from "../../src/sources.ts"
 import {
+  closeIfOpen,
+  composeContainerImage,
   connectTo,
   dataVersionOf,
   loadEnv,
@@ -28,7 +30,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await client.end()
+  await closeIfOpen(client)
 })
 
 describe("load balance", () => {
@@ -360,12 +362,15 @@ describe("helper tables", () => {
     ])
   })
 
-  it("records checksums, image digest and versions in the manifest", async () => {
+  it("records checksums, image identity, server and versions in the manifest", async () => {
     const [manifest] = await rows(
       client,
-      `SELECT data_version, source, files, image, pattern_rules_version,
-         ownership_version, rules_version FROM load_manifest`
+      `SELECT data_version, source, files, image, image_id, server_version,
+         pattern_rules_version, ownership_version, rules_version FROM load_manifest`
     )
+    // Independent of the loader: what Docker and the server report now.
+    const container = await composeContainerImage()
+    const [server] = await rows(client, "SELECT version() AS version")
     expect(manifest).toMatchObject({
       data_version: dataVersionOf(firstOutput),
       source: "samples",
@@ -388,8 +393,17 @@ describe("helper tables", () => {
         },
       ],
     })
-    expect(String(manifest?.["image"])).toMatch(
-      /^serenedb\/serenedb:.+@sha256:[0-9a-f]{64}$/
+    // The reference Compose started (tag, plus registry digest when pinned)
+    // and the image ID, which is the config digest, not a registry digest.
+    expect(manifest?.["image"]).toBe(container.reference)
+    expect(manifest?.["image_id"]).toBe(container.imageId)
+    expect(String(manifest?.["image_id"])).toMatch(/^sha256:[0-9a-f]{64}$/)
+    expect(String(manifest?.["image"])).not.toContain(
+      String(manifest?.["image_id"]).slice("sha256:".length)
+    )
+    expect(manifest?.["server_version"]).toBe(server?.["version"])
+    expect(String(manifest?.["server_version"])).toMatch(
+      /\(SereneDB 26\.10\.1\)$/
     )
   })
 

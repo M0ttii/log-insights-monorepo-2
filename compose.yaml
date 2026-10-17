@@ -1,12 +1,27 @@
 # SereneDB for Log Insights (technical.md § 5.1). The only service; app processes
 # run locally with Node.
 #
-# Image pinned by tag and digest of the multi-arch index (linux/amd64 and
-# linux/arm64). 26.10.1 is newer but ships linux/amd64 only, which would run
-# emulated on Apple Silicon; revisit when a multi-arch 26.10.x exists.
+# The image comes from SERENEDB_IMAGE in .env and has no default, so a missing
+# setting fails instead of silently starting another SereneDB version. Two
+# 26.10.1 builds of the same source commit (tag v26.10.1, 3d12e1a8) are
+# verified (technical.md § 5.1, packages/corpus/src/image.ts):
+#   - local/serenedb:26.10.1-arm64: unofficial local linux/arm64 build, for
+#     Apple Silicon; restored with `docker image load`, never pulled. The
+#     loader checks its immutable image ID.
+#   - serenedb/serenedb:26.10.1@sha256:6d41…: official image, linux/amd64 only
+#     (CI); pinned by registry manifest digest.
+#
+# Several checkouts can run side by side: each gets its own Compose project
+# (COMPOSE_PROJECT_NAME or the directory name), and with it its own data
+# volume, plus its own host port (SERENEDB_PORT). `pnpm data:setup` runs
+# `docker compose` from the workspace root, so it uses the same .env.
 services:
   serenedb:
-    image: serenedb/serenedb:26.09.1.3@sha256:018a3187c1931302fe5f5ce46b3ac1df6644af77d9c0c56730d9a959eeee5636
+    image: ${SERENEDB_IMAGE:?Set SERENEDB_IMAGE in .env (see .env.example)}
+    # Never resolve the image against a registry implicitly: a local tag such
+    # as local/serenedb:… could otherwise be pulled from Docker Hub. The loader
+    # pulls only references pinned by digest (packages/corpus/src/load.ts).
+    pull_policy: never
     environment:
       # Only connections from inside the container are trusted without a
       # password; host connections arrive via the Docker gateway and need SCRAM.
@@ -15,7 +30,7 @@ services:
       POSTGRES_PASSWORD: ${SERENEDB_PASSWORD:?Set SERENEDB_PASSWORD in .env (see .env.example)}
     # Published on loopback only (AGENTS.md: SereneDB binds to loopback).
     ports:
-      - "127.0.0.1:7890:7890"
+      - "127.0.0.1:${SERENEDB_PORT:?Set SERENEDB_PORT in .env (see .env.example)}:7890"
     volumes:
       - serenedb-data:/var/lib/serenedb
       # Raw corpus files for read_csv (technical.md § 7).

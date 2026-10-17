@@ -5,8 +5,8 @@ recommendation** for three roles: engineer, team lead and manager. SereneDB
 searches and computes; Claude explains and recommends; every number has a query
 receipt.
 
-> **Status:** SereneDB runs via Docker Compose and passed the compatibility
-> gate (`pnpm gate`); `pnpm data:setup` loads the corpus, and the data
+> **Status:** SereneDB 26.10.1 runs via Docker Compose and passed the
+> compatibility gate (`pnpm gate`); `pnpm data:setup` loads the corpus, and the data
 > decisions below come from profiling it (`pnpm data:profile`). All eight
 > tools exist (`describe_corpus`, `search_logs`, `get_log_context`,
 > `count_events` with `compare`, `event_trend`, `recurring_patterns` with
@@ -25,22 +25,43 @@ receipt.
 pnpm install
 pnpm check
 
-cp .env.example .env            # then set SERENEDB_PASSWORD, e.g. openssl rand -hex 16
+cp .env.example .env            # then set SERENEDB_PASSWORD, e.g. openssl rand -hex 16,
+                                # and SERENEDB_IMAGE (see "SereneDB image" below)
 pnpm data:setup                 # starts SereneDB, downloads and loads the corpus
 ```
 
 `pnpm data:setup` starts SereneDB (`docker compose up -d serenedb`, bound to
-127.0.0.1:7890 only), downloads `BGL.zip` and `OpenStack.tar.gz` from
+127.0.0.1 only, port `SERENEDB_PORT`, default 7890), checks the image
+identity, downloads `BGL.zip` and `OpenStack.tar.gz` from
 [Zenodo](https://zenodo.org/records/8196385) into `.data/raw` if they are
 missing (about 63 MB, 810 MB unpacked; every file is checked against a pinned
 SHA-256), loads them into SereneDB and prints the load balance. It needs no
-tools besides Docker, Node and pnpm, takes about a minute on an Apple M laptop
-and can be rerun at any time: a second run downloads nothing and yields the
-same data version.
+tools besides Docker, Node and pnpm, takes well under a minute on an Apple M
+laptop and can be rerun at any time: a second run downloads nothing and yields
+the same data version.
 
 The password seeds the SereneDB superuser when its data volume is first
 created; to change it later, run `ALTER ROLE` or recreate the volume
 (`docker compose down -v`, which deletes all loaded data).
+
+### SereneDB image
+
+The project runs SereneDB 26.10.1 (source tag `v26.10.1`, commit `3d12e1a8`).
+`SERENEDB_IMAGE` in `.env` has no default and selects one of two verified
+builds:
+
+| Platform | `SERENEDB_IMAGE` | Notes |
+|---|---|---|
+| Apple Silicon (linux/arm64) | `local/serenedb:26.10.1-arm64` | **Unofficial local build, not published.** The official 26.10.1 release has no ARM64 image. Restore it with `docker image load --input <archive>/docker-image.tar.gz`; it is never pulled, and the loader accepts it only with image ID `sha256:fd1b1353…7fb0` |
+| linux/amd64 (CI) | `serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9` | Official release, pinned by digest; emulated on Apple Silicon it does not start |
+
+`load_manifest` records the image reference, its image ID and
+`SELECT version()`. Load into a fresh volume: a volume created by another
+SereneDB version is not reused. A second checkout can run next to the first
+with its own `COMPOSE_PROJECT_NAME` (own container and volume) and
+`SERENEDB_PORT` in its `.env`; `pnpm data:setup` and the integration tests
+use those settings. Build provenance, restore and rollback to 26.09.1.3 are
+in the technical spec (§ 5.1).
 
 ## Scripts
 
@@ -93,7 +114,7 @@ The 18 rejected BGL lines have no node and carry fragments of other messages
 or binary bytes before `RAS KERNEL INFO`, so their fields cannot be determined;
 they are kept verbatim in the table `load_rejects`. Per-file figures are in
 `load_report`, the corpus description in `corpus_stats`, checksums, image
-digest and rule versions in `load_manifest`.
+reference and ID, server version and rule versions in `load_manifest`.
 
 Time is UTC. BGL time comes from the Unix seconds plus the microseconds of the
 text timestamp; the text timestamp itself is US Pacific local time (7 h behind
