@@ -1,0 +1,18 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  msw: false
+
+# eslint-config-next 16.4 pulls in eslint-plugin-react, -import and -jsx-a11y,
+# whose peer ranges stop at ESLint 9. Their rules were verified to run under
+# ESLint 10; revisit when the plugins declare ESLint 10 support.
+peerDependencyRules:
+  allowedVersions:
+    eslint-plugin-react>eslint: "10"
+    eslint-plugin-import>eslint: "10"
+    eslint-plugin-jsx-a11y>eslint: "10"

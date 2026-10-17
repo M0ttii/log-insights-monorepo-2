@@ -1,0 +1,201 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Class sources: the web app and this package. */
+@source "../../../apps/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #f7f8fa;
+  --foreground: #202635;
+  --card: oklch(1 0 0);
+  --card-foreground: #202635;
+  --popover: oklch(1 0 0);
+  --popover-foreground: #202635;
+  --primary: #5654d6;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f4;
+  --secondary-foreground: #202635;
+  --muted: #f1f3f6;
+  /* Secondary text from ui-concept.md § 8; meets 4.5:1 on muted surfaces. */
+  --muted-foreground: #596579;
+  --accent: #eef0f4;
+  --accent-foreground: #202635;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #dfe3ea;
+  --input: #858fa1;
+  --ring: #5654d6;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #202635;
+  --sidebar-primary: #5654d6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eeedfc;
+  --sidebar-accent-foreground: #4543b5;
+  --sidebar-border: #e6e9ef;
+  --sidebar-ring: #5654d6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+:root {
+  color-scheme: light;
+  --workspace-gutter: 1.5rem;
+  /* Reading column for reports (ui-concept.md § 4); data views may be wider. */
+  --report-width: 53.75rem;
+  --data-width: 76rem;
+  /* Quiet indigo-tinted surface reserved for the report conclusion. */
+  --conclusion-background: #f5f5fe;
+  --conclusion-border: #d9d8f6;
+  /* Report spine: visible on the workspace ground without competing with text. */
+  --spine-line: #c3c9d4;
+  --context-height: 3.5rem;
+  --evidence-width: 32rem;
+  --severity-fatal-foreground: #861b27;
+  --severity-fatal-background: #fce7eb;
+  --severity-error-foreground: #a12b36;
+  --severity-error-background: #fff0f1;
+  --severity-warning-foreground: #855000;
+  --severity-warning-background: #fff3d9;
+  --severity-info-foreground: #315d89;
+  --severity-info-background: #edf4fc;
+  --severity-unknown-foreground: #596579;
+  --severity-unknown-background: #edf0f4;
+  --run-running-foreground: #4543b5;
+  --run-running-background: #eeedfc;
+  --run-waiting-foreground: #65500d;
+  --run-waiting-background: #fff7db;
+  --run-completed-foreground: #28634a;
+  --run-completed-background: #eaf5ee;
+  --run-partial-foreground: #855000;
+  --run-partial-background: #fff3d9;
+  --run-failed-foreground: #a12b36;
+  --run-failed-background: #fff0f1;
+  --run-cancelled-foreground: #596579;
+  --run-cancelled-background: #edf0f4;
+  --run-previous-foreground: #596579;
+  --run-previous-background: #edf0f4;
+  --hypothesis-open-foreground: #596579;
+  --hypothesis-open-background: #ffffff;
+  --hypothesis-supported-foreground: #ffffff;
+  --hypothesis-supported-background: #475569;
+  --hypothesis-contradicted-foreground: #475569;
+  --hypothesis-contradicted-background: #e8edf2;
+  --quality-usable-foreground: #315d59;
+  --quality-usable-background: #e9f3f2;
+  --quality-limited-foreground: #855000;
+  --quality-limited-background: #fff3d9;
+  --quality-unknown-foreground: #596579;
+  --quality-unknown-background: #edf0f4;
+  --quality-unusable-foreground: #854511;
+  --quality-unusable-background: #fff0e5;
+  --group-new-foreground: #4543b5;
+  --group-new-background: #ffffff;
+  --group-escalating-foreground: #805314;
+  --group-escalating-background: #fff0d8;
+  --group-reappeared-foreground: #475569;
+  --group-reappeared-background: #edf0f4;
+  --group-ongoing-foreground: #475569;
+  --group-ongoing-background: #edf0f4;
+  --group-quiet-foreground: #596579;
+  --group-quiet-background: #f3f4f6;
+  --group-recurring-foreground: #475569;
+  --group-recurring-background: #ffffff;
+  --evaluation-passed-foreground: #28634a;
+  --evaluation-passed-background: #eaf5ee;
+  --evaluation-failed-foreground: #a12b36;
+  --evaluation-failed-background: #fff0f1;
+}
+
+@layer base {
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: #deddf8;
+    color: #202635;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
+  * {
+    scrollbar-color: #858fa1 transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
