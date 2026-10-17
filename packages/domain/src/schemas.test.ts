@@ -10,6 +10,10 @@ import { dominanceSchema } from "./rules/dominance.ts"
 import { rankCriterionSchema } from "./rules/ranking.ts"
 import { patternStatusSchema } from "./rules/status.ts"
 import { emptyInputSchema, toolResultSchema } from "./tool.ts"
+import {
+  searchLogsInputSchema,
+  searchLogsOutputSchema,
+} from "./tools/search-logs.ts"
 
 /**
  * MCP and the AI SDK see these schemas as JSON Schema 2020-12. The snapshots
@@ -41,6 +45,8 @@ const schemas = {
   patternStatus: patternStatusSchema,
   rankCriterion: rankCriterionSchema,
   dominance: dominanceSchema,
+  searchLogsInput: searchLogsInputSchema,
+  searchLogsOutput: searchLogsOutputSchema,
 }
 
 type JsonObject = Record<string, unknown>

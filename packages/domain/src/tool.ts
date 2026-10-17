@@ -154,6 +154,12 @@ export type ToolDef<I, O> = {
   /** Cross-field checks JSON Schema cannot express; run after the schema parse. */
   validate?: (input: I) => ToolError | null
   run: (ctx: ToolContext, input: I) => Promise<ToolRunOutcome<O>>
+  /**
+   * Short text for clients without structured output (MCP text block, § 9):
+   * the core numbers with fact IDs, the receipt ID and truncation. Log text
+   * appears only quoted, as data.
+   */
+  summary?: (result: ToolResult<O>) => string
 }
 
 /** Checks the static parts of a definition once, at module load. */
