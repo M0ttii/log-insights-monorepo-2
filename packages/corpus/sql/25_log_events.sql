@@ -33,7 +33,7 @@ WITH events AS (
     message
   FROM stage_openstack WHERE reject_reason IS NULL
 ), patterned AS (
-  SELECT *, log_pattern(message) AS pattern FROM events
+  SELECT *, log_pattern(dataset, message) AS pattern FROM events
 )
 SELECT
   event_id::BIGINT AS event_id, dataset, source_file, line_no::BIGINT AS line_no,
