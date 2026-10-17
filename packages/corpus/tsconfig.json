@@ -6,6 +6,6 @@
     "lib": ["es2023"],
     "types": ["node"]
   },
-  "include": ["gate", "src"],
+  "include": ["gate", "src", "tests"],
   "exclude": ["node_modules"]
 }

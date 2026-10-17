@@ -4,9 +4,8 @@
  * Usage: pnpm gate [G1 G4 …] [--keep]
  *   Runs all probes, or the named ones, against the SereneDB from compose.yaml
  *   and prints expected vs observed per check. Probes on the full corpus need
- *   .data/raw/BGL.log (downloaded by U02's setup; until then manually:
- *   curl -L -o .data/raw/BGL.zip 'https://zenodo.org/records/8196385/files/BGL.zip?download=1'
- *   and unzip it into .data/raw). Without it those checks are reported as skipped.
+ *   .data/raw/BGL.log, which `pnpm data:setup` downloads. Without it those
+ *   checks are reported as skipped.
  *   --keep leaves the gate schema and fixture files for manual inspection.
  * Exit code: 0 all checks as expected, 1 at least one check differs, 2 error.
  */

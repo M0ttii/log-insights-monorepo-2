@@ -105,3 +105,17 @@ export function fillPlaceholders(
     return value
   })
 }
+
+/** A SQL string literal; quotes are doubled, control characters are refused. */
+export function sqlString(value: string): string {
+  if ([...value].some((char) => char.charCodeAt(0) < 0x20)) {
+    throw new Error("SQL literal must not contain control characters")
+  }
+  return `'${value.replaceAll("'", "''")}'`
+}
+
+/** A SQL list literal of strings, e.g. `['/data/raw/a.log', '/data/raw/b.log']`. */
+export function sqlStringList(values: readonly string[]): string {
+  if (values.length === 0) throw new Error("SQL list must not be empty")
+  return `[${values.map((value) => sqlString(value)).join(", ")}]`
+}

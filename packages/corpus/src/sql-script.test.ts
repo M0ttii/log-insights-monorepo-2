@@ -1,6 +1,31 @@
 import { describe, expect, it } from "vitest"
 
-import { fillPlaceholders, splitSqlScript } from "./sql-script.ts"
+import {
+  fillPlaceholders,
+  splitSqlScript,
+  sqlString,
+  sqlStringList,
+} from "./sql-script.ts"
+
+describe("sqlString", () => {
+  it("quotes and doubles embedded quotes", () => {
+    expect(sqlString("/data/raw/it's.log")).toBe("'/data/raw/it''s.log'")
+  })
+
+  it("refuses control characters", () => {
+    expect(() => sqlString("a\nb")).toThrow(/control characters/)
+  })
+})
+
+describe("sqlStringList", () => {
+  it("builds a list literal in the given order", () => {
+    expect(sqlStringList(["/b", "/a"])).toBe("['/b', '/a']")
+  })
+
+  it("refuses an empty list", () => {
+    expect(() => sqlStringList([])).toThrow(/empty/)
+  })
+})
 
 describe("splitSqlScript", () => {
   it("splits on statement ends and drops line comments", () => {

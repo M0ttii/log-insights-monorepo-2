@@ -32,3 +32,27 @@ jobs:
       - run: pnpm knip
       - run: pnpm test
       - run: pnpm build
+
+  loader:
+    # pnpm data:setup against the Loghub 2k samples and the loader integration
+    # tests (technical.md § 7, LOG-11). SereneDB runs through compose.yaml, as
+    # locally: the same pinned image, port and the .data/raw mount the loader
+    # reads from; data:setup starts it itself.
+    name: Loader against SereneDB (Loghub 2k samples)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create .env with a throwaway SereneDB password
+        run: sed "s/^SERENEDB_PASSWORD=$/SERENEDB_PASSWORD=$(openssl rand -hex 16)/" .env.example > .env
+      - run: pnpm --silent data:setup --samples
+      - run: pnpm test:integration
+      - name: Stop SereneDB
+        if: always()
+        run: docker compose down -v

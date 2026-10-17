@@ -2,13 +2,24 @@ import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   test: {
-    // Unit tests live beside the code in every workspace and run in Node.
     projects: [
+      // Unit tests live beside the code in every workspace and run in Node.
       {
         test: {
           name: "packages",
           environment: "node",
           include: ["packages/*/src/**/*.test.{ts,tsx}"],
+        },
+      },
+      // Loader against a running SereneDB (Compose, .env): `pnpm test:integration`.
+      // Not part of `pnpm test`, which runs without Docker.
+      {
+        test: {
+          name: "corpus-integration",
+          environment: "node",
+          include: ["packages/corpus/tests/integration/**/*.test.ts"],
+          testTimeout: 180_000,
+          hookTimeout: 300_000,
         },
       },
     ],
