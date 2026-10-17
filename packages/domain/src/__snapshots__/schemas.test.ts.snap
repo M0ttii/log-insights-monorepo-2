@@ -39,6 +39,1193 @@ exports[`JSON Schema export > changeLabel converts losslessly for input and outp
 }
 `;
 
+exports[`JSON Schema export > countEventsInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "compare": {
+        "anyOf": [
+          {
+            "const": "previous_period",
+            "description": "The immediately preceding period of the same length as [from, to).",
+            "type": "string",
+          },
+          {
+            "additionalProperties": false,
+            "description": "A chosen reference period of the same length.",
+            "properties": {
+              "from": {
+                "description": "Reference start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "Reference end, exclusive; as long as [from, to) and not overlapping it.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+        ],
+        "description": "Period comparison (R-06): counts the same filters in a reference period B and reports C (the window), B, C − B, the change in percent and a classification per group. Needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ 25.",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "group_by": {
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. With compare exactly one.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "maxItems": 2,
+        "minItems": 1,
+        "type": "array",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "default": 20,
+        "description": "Groups to return (1–50; with compare 1–25), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "group_by",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "compare": {
+        "anyOf": [
+          {
+            "const": "previous_period",
+            "description": "The immediately preceding period of the same length as [from, to).",
+            "type": "string",
+          },
+          {
+            "additionalProperties": false,
+            "description": "A chosen reference period of the same length.",
+            "properties": {
+              "from": {
+                "description": "Reference start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "Reference end, exclusive; as long as [from, to) and not overlapping it.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+        ],
+        "description": "Period comparison (R-06): counts the same filters in a reference period B and reports C (the window), B, C − B, the change in percent and a classification per group. Needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ 25.",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "group_by": {
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. With compare exactly one.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "maxItems": 2,
+        "minItems": 1,
+        "type": "array",
+      },
+      "instance_id": {
+        "description": "OpenStack only: exact instance UUID.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "request_id": {
+        "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "top_n": {
+        "default": 20,
+        "description": "Groups to return (1–50; with compare 1–25), largest first. Default: 20. The remaining groups are summed in other; total is exact regardless.",
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+      },
+    },
+    "required": [
+      "group_by",
+      "top_n",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > countEventsOutput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "comparison": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "description": "Totals of the comparison: B, C − B, change and R-06 classification of total (= C).",
+            "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "first observed in this comparison",
+                      "not observed in either period",
+                      "significantly increased",
+                    ],
+                    "type": "string",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
+              },
+              "coverage": {
+                "additionalProperties": false,
+                "description": "Data-span coverage of both periods (R-03).",
+                "properties": {
+                  "baseline": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                  "current": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "current",
+                  "baseline",
+                ],
+                "type": "object",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
+              "determinable": {
+                "description": "False when a period lies entirely outside the data span: then B, delta, pct_change and classification are null everywhere, never 0.",
+                "type": "boolean",
+              },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "reference": {
+                "description": "previous_period or a chosen reference; both windows are in scope.windows with period current and baseline.",
+                "enum": [
+                  "previous_period",
+                  "custom",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "reference",
+              "coverage",
+              "determinable",
+              "classification",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Period comparison; null without compare.",
+      },
+      "group_by": {
+        "description": "The grouping dimensions, in this order.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "group_count": {
+        "description": "Number of distinct groups in scope; with compare in either period.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "groups": {
+        "description": "At most top_n groups: events descending, then the dimension values ascending with null last. With a determinable compare: |C − B| descending, then C descending, then the value.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "alert_label": {
+              "description": "BGL dataset alert label (not our finding); null = no label.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "baseline": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "first observed in this comparison",
+                    "not observed in either period",
+                    "significantly increased",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
+            },
+            "component": {
+              "description": "Component or OpenStack service.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "dataset": {
+              "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+              "enum": [
+                "bgl",
+                "openstack",
+              ],
+              "type": "string",
+            },
+            "delta": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: C − B; null when not determinable.",
+            },
+            "endpoint": {
+              "description": "API path with IDs masked.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "events": {
+              "description": "Count of the group in the counting unit; with compare the count C in [from, to).",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "http_status": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "HTTP status of the API accesses.",
+            },
+            "level": {
+              "description": "Level as logged.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "node": {
+              "description": "BGL node; null for events without a node and for OpenStack.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pattern": {
+              "description": "pattern_id; pass it as pattern_id filter, recurring_patterns shows the pattern text.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pct_change": {
+              "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+              "type": [
+                "number",
+                "null",
+              ],
+            },
+            "rack": {
+              "description": "BGL rack; null for events without a node.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "share": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded; null when total is 0.",
+            },
+            "team": {
+              "description": "Fictional owning team, or 'unowned' for unmapped components.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "events",
+            "share",
+          ],
+          "type": "object",
+        },
+        "maxItems": 50,
+        "type": "array",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
+              "events": {
+                "description": "Their count in the counting unit (C).",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "groups": {
+                "description": "Groups summed here.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "share": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "events / total as a fraction (0–1); null when total is 0.",
+              },
+            },
+            "required": [
+              "groups",
+              "events",
+              "share",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Groups beyond top_n, summed; null when every group is listed.",
+      },
+      "top_n": {
+        "description": "The top_n that applied.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "total": {
+        "description": "Exact population in scope (all groups, including other); with compare C over [from, to).",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "truncated": {
+        "description": "True when group_count is larger than the listed groups.",
+        "type": "boolean",
+      },
+      "unit": {
+        "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+        "enum": [
+          "log_events",
+          "api_accesses",
+          "requests",
+        ],
+        "type": "string",
+      },
+    },
+    "required": [
+      "group_by",
+      "unit",
+      "total",
+      "group_count",
+      "groups",
+      "other",
+      "comparison",
+      "truncated",
+      "top_n",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "comparison": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "description": "Totals of the comparison: B, C − B, change and R-06 classification of total (= C).",
+            "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "classification": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "first observed in this comparison",
+                      "not observed in either period",
+                      "significantly increased",
+                    ],
+                    "type": "string",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
+              },
+              "coverage": {
+                "additionalProperties": false,
+                "description": "Data-span coverage of both periods (R-03).",
+                "properties": {
+                  "baseline": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                  "current": {
+                    "description": "Share of the period inside the dataset's data span: full, partial (only the observed part is counted) or none (no observed count).",
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "current",
+                  "baseline",
+                ],
+                "type": "object",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
+              "determinable": {
+                "description": "False when a period lies entirely outside the data span: then B, delta, pct_change and classification are null everywhere, never 0.",
+                "type": "boolean",
+              },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "reference": {
+                "description": "previous_period or a chosen reference; both windows are in scope.windows with period current and baseline.",
+                "enum": [
+                  "previous_period",
+                  "custom",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "reference",
+              "coverage",
+              "determinable",
+              "classification",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Period comparison; null without compare.",
+      },
+      "group_by": {
+        "description": "The grouping dimensions, in this order.",
+        "items": {
+          "description": "Grouping dimension.",
+          "enum": [
+            "dataset",
+            "team",
+            "component",
+            "level",
+            "alert_label",
+            "rack",
+            "node",
+            "pattern",
+            "http_status",
+            "endpoint",
+          ],
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "group_count": {
+        "description": "Number of distinct groups in scope; with compare in either period.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "groups": {
+        "description": "At most top_n groups: events descending, then the dimension values ascending with null last. With a determinable compare: |C − B| descending, then C descending, then the value.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "alert_label": {
+              "description": "BGL dataset alert label (not our finding); null = no label.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "baseline": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+            },
+            "classification": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "first observed in this comparison",
+                    "not observed in either period",
+                    "significantly increased",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
+            },
+            "component": {
+              "description": "Component or OpenStack service.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "dataset": {
+              "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+              "enum": [
+                "bgl",
+                "openstack",
+              ],
+              "type": "string",
+            },
+            "delta": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Only with compare: C − B; null when not determinable.",
+            },
+            "endpoint": {
+              "description": "API path with IDs masked.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "events": {
+              "description": "Count of the group in the counting unit; with compare the count C in [from, to).",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "http_status": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "HTTP status of the API accesses.",
+            },
+            "level": {
+              "description": "Level as logged.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "node": {
+              "description": "BGL node; null for events without a node and for OpenStack.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pattern": {
+              "description": "pattern_id; pass it as pattern_id filter, recurring_patterns shows the pattern text.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pct_change": {
+              "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+              "type": [
+                "number",
+                "null",
+              ],
+            },
+            "rack": {
+              "description": "BGL rack; null for events without a node.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "share": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "events / total as a fraction (0–1), computed in SereneDB, unrounded; null when total is 0.",
+            },
+            "team": {
+              "description": "Fictional owning team, or 'unowned' for unmapped components.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "events",
+            "share",
+          ],
+          "type": "object",
+        },
+        "maxItems": 50,
+        "type": "array",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "baseline": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with compare: C − B; null when not determinable.",
+              },
+              "events": {
+                "description": "Their count in the counting unit (C).",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "groups": {
+                "description": "Groups summed here.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "pct_change": {
+                "description": "Only with compare: 100 · (C − B) / B in percent, computed in SereneDB; null when B = 0 or not determinable.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
+              "share": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "events / total as a fraction (0–1); null when total is 0.",
+              },
+            },
+            "required": [
+              "groups",
+              "events",
+              "share",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Groups beyond top_n, summed; null when every group is listed.",
+      },
+      "top_n": {
+        "description": "The top_n that applied.",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer",
+      },
+      "total": {
+        "description": "Exact population in scope (all groups, including other); with compare C over [from, to).",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "truncated": {
+        "description": "True when group_count is larger than the listed groups.",
+        "type": "boolean",
+      },
+      "unit": {
+        "description": "R-01 counting unit: log_events (parsed lines), api_accesses (OpenStack lines with HTTP status), requests (unique request IDs).",
+        "enum": [
+          "log_events",
+          "api_accesses",
+          "requests",
+        ],
+        "type": "string",
+      },
+    },
+    "required": [
+      "group_by",
+      "unit",
+      "total",
+      "group_count",
+      "groups",
+      "other",
+      "comparison",
+      "truncated",
+      "top_n",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`JSON Schema export > dominance converts losslessly for input and output 1`] = `
 {
   "input": {
@@ -328,6 +1515,970 @@ exports[`JSON Schema export > emptyInput converts losslessly for input and outpu
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {},
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > eventTrendInput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "bucket": {
+        "description": "Bucket size in UTC: hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit).",
+        "enum": [
+          "hour",
+          "day",
+          "week",
+        ],
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Required, exactly one dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis, so a trend is always per dataset; call twice to see both.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "split_by": {
+        "description": "Optional, one dimension: the 5 values with the most events in scope become series (ties by value), all others are summed as other. Without split_by only the bucket totals are returned.",
+        "enum": [
+          "team",
+          "component",
+          "level",
+          "alert_label",
+          "rack",
+          "node",
+          "pattern",
+        ],
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "dataset",
+      "bucket",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alert_label": {
+        "description": "BGL only: dataset alert label (not our finding), e.g. KERNDTLB.",
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+      },
+      "bucket": {
+        "description": "Bucket size in UTC: hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit).",
+        "enum": [
+          "hour",
+          "day",
+          "week",
+        ],
+        "type": "string",
+      },
+      "components": {
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "type": "array",
+      },
+      "dataset": {
+        "description": "Required, exactly one dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis, so a trend is always per dataset; call twice to see both.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "from": {
+        "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "levels": {
+        "description": "Only these levels (1–10).",
+        "items": {
+          "description": "Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.",
+          "pattern": "^[A-Z][A-Z_]{0,15}$",
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "node": {
+        "description": "BGL only: exact node ID, e.g. R02-M1-N0-C:J12-U11.",
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string",
+      },
+      "only_alerts": {
+        "description": "BGL only: only lines with an alert label other than '-'. Default: false.",
+        "type": "boolean",
+      },
+      "only_errors": {
+        "description": "Only error events (R-02 levels per dataset). Default: false.",
+        "type": "boolean",
+      },
+      "pattern_id": {
+        "description": "Exact pattern ID as returned by recurring_patterns (lower-case hex).",
+        "pattern": "^[0-9a-f]{8,64}$",
+        "type": "string",
+      },
+      "rack": {
+        "description": "BGL only: rack, e.g. R02.",
+        "maxLength": 16,
+        "minLength": 1,
+        "type": "string",
+      },
+      "split_by": {
+        "description": "Optional, one dimension: the 5 values with the most events in scope become series (ties by value), all others are summed as other. Without split_by only the bucket totals are returned.",
+        "enum": [
+          "team",
+          "component",
+          "level",
+          "alert_label",
+          "rack",
+          "node",
+          "pattern",
+        ],
+        "type": "string",
+      },
+      "teams": {
+        "description": "Only components owned by these teams (fictional ownership table, 1–10); unmapped components are 'unowned'.",
+        "items": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "type": "array",
+      },
+      "text": {
+        "description": "Full-text condition on the message, all terms must match (1–200 characters).",
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+      },
+      "to": {
+        "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "dataset",
+      "bucket",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`JSON Schema export > eventTrendOutput converts losslessly for input and output 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "bucket": {
+        "enum": [
+          "hour",
+          "day",
+          "week",
+        ],
+        "type": "string",
+      },
+      "bucket_count": {
+        "description": "Number of buckets returned.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "buckets": {
+        "description": "Every bucket of the effective range by bucket_start.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "bucket_end": {
+              "description": "Bucket end, UTC, exclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "bucket_start": {
+              "description": "Bucket start, UTC, inclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "capture_gap": {
+              "description": "The dataset has no event at all in this bucket (any filter): no data was captured, so its zero is not observed calm.",
+              "type": "boolean",
+            },
+            "events": {
+              "description": "Log events in scope in this bucket, all series.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "other_events": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Events of all other values in this bucket; null when there is no other series.",
+            },
+            "partial": {
+              "description": "The window or the data span starts or ends inside this bucket, so it covers less than a full unit; a lower count here is no drop.",
+              "type": "boolean",
+            },
+            "series": {
+              "description": "Events per series in this bucket, in the order of series.",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "alert_label": {
+                    "description": "Value of alert_label when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "component": {
+                    "description": "Value of component when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "events": {
+                    "description": "Log events of this series.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "level": {
+                    "description": "Value of level when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "node": {
+                    "description": "Value of node when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "pattern": {
+                    "description": "Value of pattern when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "rack": {
+                    "description": "Value of rack when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "team": {
+                    "description": "Value of team when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "events",
+                ],
+                "type": "object",
+              },
+              "maxItems": 5,
+              "type": "array",
+            },
+          },
+          "required": [
+            "bucket_start",
+            "bucket_end",
+            "partial",
+            "capture_gap",
+            "events",
+            "series",
+            "other_events",
+          ],
+          "type": "object",
+        },
+        "maxItems": 120,
+        "type": "array",
+      },
+      "data_span": {
+        "additionalProperties": false,
+        "description": "Observed span of the whole dataset, before any filter.",
+        "properties": {
+          "first": {
+            "description": "First event of the dataset, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+          "last": {
+            "description": "Last event of the dataset, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "first",
+          "last",
+        ],
+        "type": "object",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "effective_range": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "description": "Start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "End, exclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Intersection of the requested window and the data span: the time the buckets cover. null when the window lies outside the data span.",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "description": "Events of all values outside the series.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "merged_values": {
+                "description": "Number of values summed as other.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "events",
+              "merged_values",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Values beyond the top 5; null when there are none.",
+      },
+      "series": {
+        "description": "Series with their events in scope, by events descending, then value; empty without split_by.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "alert_label": {
+              "description": "Value of alert_label when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "component": {
+              "description": "Value of component when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "events": {
+              "description": "Log events of this series.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "level": {
+              "description": "Value of level when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "node": {
+              "description": "Value of node when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pattern": {
+              "description": "Value of pattern when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "rack": {
+              "description": "Value of rack when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "team": {
+              "description": "Value of team when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+          },
+          "required": [
+            "events",
+          ],
+          "type": "object",
+        },
+        "maxItems": 5,
+        "type": "array",
+      },
+      "split_by": {
+        "anyOf": [
+          {
+            "description": "Dimension that splits the trend into series: team (fictional ownership, unmapped = unowned), component, level, alert_label (BGL only, dataset label), rack (BGL only), node (BGL only), pattern (pattern_id).",
+            "enum": [
+              "team",
+              "component",
+              "level",
+              "alert_label",
+              "rack",
+              "node",
+              "pattern",
+            ],
+            "type": "string",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "total": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Log events in scope over the effective range; null when the window lies outside the data span (no data is not zero).",
+      },
+    },
+    "required": [
+      "dataset",
+      "bucket",
+      "split_by",
+      "data_span",
+      "effective_range",
+      "bucket_count",
+      "total",
+      "series",
+      "other",
+      "buckets",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "bucket": {
+        "enum": [
+          "hour",
+          "day",
+          "week",
+        ],
+        "type": "string",
+      },
+      "bucket_count": {
+        "description": "Number of buckets returned.",
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer",
+      },
+      "buckets": {
+        "description": "Every bucket of the effective range by bucket_start.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "bucket_end": {
+              "description": "Bucket end, UTC, exclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "bucket_start": {
+              "description": "Bucket start, UTC, inclusive.",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+              "type": "string",
+            },
+            "capture_gap": {
+              "description": "The dataset has no event at all in this bucket (any filter): no data was captured, so its zero is not observed calm.",
+              "type": "boolean",
+            },
+            "events": {
+              "description": "Log events in scope in this bucket, all series.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "other_events": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "Events of all other values in this bucket; null when there is no other series.",
+            },
+            "partial": {
+              "description": "The window or the data span starts or ends inside this bucket, so it covers less than a full unit; a lower count here is no drop.",
+              "type": "boolean",
+            },
+            "series": {
+              "description": "Events per series in this bucket, in the order of series.",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "alert_label": {
+                    "description": "Value of alert_label when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "component": {
+                    "description": "Value of component when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "events": {
+                    "description": "Log events of this series.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "level": {
+                    "description": "Value of level when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "node": {
+                    "description": "Value of node when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "pattern": {
+                    "description": "Value of pattern when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "rack": {
+                    "description": "Value of rack when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                  "team": {
+                    "description": "Value of team when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+                    "type": [
+                      "string",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "events",
+                ],
+                "type": "object",
+              },
+              "maxItems": 5,
+              "type": "array",
+            },
+          },
+          "required": [
+            "bucket_start",
+            "bucket_end",
+            "partial",
+            "capture_gap",
+            "events",
+            "series",
+            "other_events",
+          ],
+          "type": "object",
+        },
+        "maxItems": 120,
+        "type": "array",
+      },
+      "data_span": {
+        "additionalProperties": false,
+        "description": "Observed span of the whole dataset, before any filter.",
+        "properties": {
+          "first": {
+            "description": "First event of the dataset, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+          "last": {
+            "description": "Last event of the dataset, UTC.",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "first",
+          "last",
+        ],
+        "type": "object",
+      },
+      "dataset": {
+        "description": "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis.",
+        "enum": [
+          "bgl",
+          "openstack",
+        ],
+        "type": "string",
+      },
+      "effective_range": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "description": "Start, inclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "description": "End, exclusive.",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Intersection of the requested window and the data span: the time the buckets cover. null when the window lies outside the data span.",
+      },
+      "other": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "description": "Events of all values outside the series.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "merged_values": {
+                "description": "Number of values summed as other.",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "events",
+              "merged_values",
+            ],
+            "type": "object",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Values beyond the top 5; null when there are none.",
+      },
+      "series": {
+        "description": "Series with their events in scope, by events descending, then value; empty without split_by.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "alert_label": {
+              "description": "Value of alert_label when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "component": {
+              "description": "Value of component when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "events": {
+              "description": "Log events of this series.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "level": {
+              "description": "Value of level when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "node": {
+              "description": "Value of node when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "pattern": {
+              "description": "Value of pattern when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "rack": {
+              "description": "Value of rack when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "team": {
+              "description": "Value of team when the trend is split by it; null is its own category (field empty, e.g. no alert label).",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+          },
+          "required": [
+            "events",
+          ],
+          "type": "object",
+        },
+        "maxItems": 5,
+        "type": "array",
+      },
+      "split_by": {
+        "anyOf": [
+          {
+            "description": "Dimension that splits the trend into series: team (fictional ownership, unmapped = unowned), component, level, alert_label (BGL only, dataset label), rack (BGL only), node (BGL only), pattern (pattern_id).",
+            "enum": [
+              "team",
+              "component",
+              "level",
+              "alert_label",
+              "rack",
+              "node",
+              "pattern",
+            ],
+            "type": "string",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      },
+      "total": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Log events in scope over the effective range; null when the window lies outside the data span (no data is not zero).",
+      },
+    },
+    "required": [
+      "dataset",
+      "bucket",
+      "split_by",
+      "data_span",
+      "effective_range",
+      "bucket_count",
+      "total",
+      "series",
+      "other",
+      "buckets",
+    ],
     "type": "object",
   },
 }
@@ -754,7 +2905,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "object",
               },
               "windows": {
-                "description": "One window per dataset; BGL and OpenStack share no time axis.",
+                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -770,6 +2921,14 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                       "description": "Resolved window start, inclusive.",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                    "period": {
+                      "description": "Only in period comparisons: current period C or reference period B.",
+                      "enum": [
+                        "current",
+                        "baseline",
+                      ],
                       "type": "string",
                     },
                     "to": {
@@ -1147,7 +3306,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "object",
               },
               "windows": {
-                "description": "One window per dataset; BGL and OpenStack share no time axis.",
+                "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -1163,6 +3322,14 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                       "description": "Resolved window start, inclusive.",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                      "type": "string",
+                    },
+                    "period": {
+                      "description": "Only in period comparisons: current period C or reference period B.",
+                      "enum": [
+                        "current",
+                        "baseline",
+                      ],
                       "type": "string",
                     },
                     "to": {
@@ -3720,7 +5887,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "object",
           },
           "windows": {
-            "description": "One window per dataset; BGL and OpenStack share no time axis.",
+            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -3736,6 +5903,14 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                   "description": "Resolved window start, inclusive.",
                   "format": "date-time",
                   "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                "period": {
+                  "description": "Only in period comparisons: current period C or reference period B.",
+                  "enum": [
+                    "current",
+                    "baseline",
+                  ],
                   "type": "string",
                 },
                 "to": {
@@ -4152,7 +6327,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "object",
           },
           "windows": {
-            "description": "One window per dataset; BGL and OpenStack share no time axis.",
+            "description": "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset.",
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -4168,6 +6343,14 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                   "description": "Resolved window start, inclusive.",
                   "format": "date-time",
                   "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                  "type": "string",
+                },
+                "period": {
+                  "description": "Only in period comparisons: current period C or reference period B.",
+                  "enum": [
+                    "current",
+                    "baseline",
+                  ],
                   "type": "string",
                 },
                 "to": {

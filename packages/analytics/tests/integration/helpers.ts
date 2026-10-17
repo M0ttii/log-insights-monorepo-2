@@ -5,6 +5,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { promisify } from "node:util"
 
+import { Client } from "pg"
+
 import {
   findWorkspaceRoot,
   loadConfig,
@@ -50,4 +52,39 @@ export async function runScript(
     }
   )
   return stdout
+}
+
+/**
+ * Creates a fixture database next to the samples if needed and runs its
+ * statements, one per round trip: a dictionary created in the same simple
+ * query is invisible to CREATE INDEX (gate G1). Idempotent when the
+ * statements are.
+ */
+export async function rebuildDatabase(
+  connection: Connection,
+  statements: readonly string[]
+): Promise<void> {
+  if (!/^[a-z_][a-z0-9_]*$/.test(connection.database))
+    throw new RangeError(`invalid database name: ${connection.database}`)
+  const admin = new Client(samplesConnection())
+  await admin.connect()
+  try {
+    const found = await admin.query(
+      "SELECT 1 FROM pg_database WHERE datname = $1",
+      [connection.database]
+    )
+    if (found.rowCount === 0)
+      await admin.query(`CREATE DATABASE ${connection.database}`)
+  } finally {
+    await admin.end()
+  }
+
+  const client = new Client(connection)
+  await client.connect()
+  try {
+    await client.query("SET TimeZone = 'UTC'")
+    for (const statement of statements) await client.query(statement)
+  } finally {
+    await client.end()
+  }
 }

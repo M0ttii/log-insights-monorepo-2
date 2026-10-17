@@ -690,7 +690,13 @@ describe("createRegistry", () => {
   it("registers the default tools in a fixed order with unique names", () => {
     const { registry } = setup({}, { tools: undefined })
     const names = registry.tools.map((tool) => tool.name)
-    expect(names).toEqual(["describe_corpus", "search_logs", "get_log_context"])
+    expect(names).toEqual([
+      "describe_corpus",
+      "search_logs",
+      "get_log_context",
+      "count_events",
+      "event_trend",
+    ])
     expect(new Set(names).size).toBe(names.length)
   })
 

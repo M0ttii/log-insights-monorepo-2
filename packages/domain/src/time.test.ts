@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  bucketCount,
+  bucketGrid,
   bucketStarts,
   coverage,
+  effectiveRange,
   fillBuckets,
   formatInstant,
   parseInstant,
@@ -214,5 +217,113 @@ describe("fillBuckets", () => {
     expect(() =>
       fillBuckets([{ bucket: "2005-06-06T00:00:00Z", count: 1 }], starts, zero)
     ).toThrow(RangeError)
+  })
+})
+
+describe("effectiveRange", () => {
+  it("intersects the window with the span; the span end is last + 1 µs", () => {
+    expect(
+      effectiveRange(
+        { from: "2005-06-01T00:00:00Z", to: "2007-01-01T00:00:00Z" },
+        BGL_SPAN
+      )
+    ).toEqual({ from: BGL_FIRST, to: "2006-01-04T16:00:05.233640Z" })
+    expect(
+      effectiveRange(
+        { from: "2005-07-01T00:00:00+02:00", to: "2005-07-02T00:00:00Z" },
+        BGL_SPAN
+      )
+    ).toEqual({
+      from: "2005-06-30T22:00:00.000000Z",
+      to: "2005-07-02T00:00:00.000000Z",
+    })
+  })
+
+  it("is null without overlap, also when the window ends exactly on first", () => {
+    expect(
+      effectiveRange({ from: "2004-01-01T00:00:00Z", to: BGL_FIRST }, BGL_SPAN)
+    ).toBeNull()
+    expect(
+      effectiveRange(
+        { from: "2006-01-04T16:00:05.233640Z", to: "2007-01-01T00:00:00Z" },
+        BGL_SPAN
+      )
+    ).toBeNull()
+  })
+})
+
+describe("bucketCount", () => {
+  it("counts every bucket the range touches", () => {
+    const range = { from: "2005-06-03T22:42:50Z", to: "2005-06-04T00:00:00Z" }
+    expect(bucketCount(range, "hour")).toBe(2)
+    expect(bucketCount(range, "day")).toBe(1)
+    expect(
+      bucketCount(
+        { from: "2005-06-03T22:00:00Z", to: "2005-06-04T00:00:00.000001Z" },
+        "hour"
+      )
+    ).toBe(3)
+    // Friday 3 June to Monday 6 June 00:00 (excluded): one Monday week.
+    expect(
+      bucketCount(
+        { from: "2005-06-03T00:00:00Z", to: "2005-06-06T00:00:00Z" },
+        "week"
+      )
+    ).toBe(1)
+  })
+
+  it("matches the grid length", () => {
+    const range = { from: BGL_FIRST, to: "2006-01-04T16:00:05.233640Z" }
+    for (const unit of ["hour", "day", "week"] as const)
+      expect(bucketCount(range, unit)).toBe(bucketGrid(range, unit).length)
+    expect(bucketCount(range, "week")).toBe(32)
+    expect(bucketCount(range, "day")).toBe(216)
+  })
+})
+
+describe("bucketGrid", () => {
+  it("lists start, end and partial edges", () => {
+    expect(
+      bucketGrid(
+        { from: "2005-06-03T22:42:50.363779Z", to: "2005-06-04T01:00:00Z" },
+        "hour"
+      )
+    ).toEqual([
+      {
+        start: "2005-06-03T22:00:00.000000Z",
+        end: "2005-06-03T23:00:00.000000Z",
+        partial: true,
+      },
+      {
+        start: "2005-06-03T23:00:00.000000Z",
+        end: "2005-06-04T00:00:00.000000Z",
+        partial: false,
+      },
+      {
+        start: "2005-06-04T00:00:00.000000Z",
+        end: "2005-06-04T01:00:00.000000Z",
+        partial: false,
+      },
+    ])
+  })
+
+  it("marks a bucket cut by the end of the range", () => {
+    expect(
+      bucketGrid(
+        { from: "2005-06-06T00:00:00Z", to: "2005-06-14T00:00:00Z" },
+        "week"
+      )
+    ).toEqual([
+      {
+        start: "2005-06-06T00:00:00.000000Z",
+        end: "2005-06-13T00:00:00.000000Z",
+        partial: false,
+      },
+      {
+        start: "2005-06-13T00:00:00.000000Z",
+        end: "2005-06-20T00:00:00.000000Z",
+        partial: true,
+      },
+    ])
   })
 })

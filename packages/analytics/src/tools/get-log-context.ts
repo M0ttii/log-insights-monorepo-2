@@ -4,7 +4,7 @@ import {
   notFound,
   type ToolError,
 } from "@workspace/domain/errors"
-import { datasetSchema, type Filter } from "@workspace/domain/filters"
+import { datasetSchema } from "@workspace/domain/filters"
 import type { Scope } from "@workspace/domain/receipt"
 import {
   EPISODE_GAP_MINUTES,
@@ -50,8 +50,14 @@ import {
 } from "@workspace/domain/tools/get-log-context"
 import { z } from "zod"
 
-import { corpusNotLoaded, getDataSpan, spanEnd } from "../corpus.ts"
+import { spanEnd } from "../corpus.ts"
 import { compileFilter, dimensionExpression } from "../filters.ts"
+import {
+  describeFilters,
+  describeWindows,
+  resolveWindows,
+  scopeFilters,
+} from "../scope.ts"
 import { exactCount, isoTime, SqlParams } from "../sql.ts"
 import {
   INDEX,
@@ -145,10 +151,6 @@ const patternRow = z.object({
 
 const EVENT_COLUMNS = (q: string) =>
   `${q}.event_id, ${isoTime(`${q}.ts`)} AS ts, ${q}.component, ${q}.level, ${q}.node, ${q}.alert_label, ${q}.request_id, ${q}.pattern_id, left(${q}.message, ${CONTEXT_TEXT_MAX_CHARS}) AS message, length(${q}.message) > ${CONTEXT_TEXT_MAX_CHARS} AS message_truncated`
-
-const FILTER_FIELDS_IN_SCOPE = PRECURSOR_FILTER.fields.filter(
-  (field) => field !== "dataset" && field !== "from" && field !== "to"
-)
 
 export const getLogContext = defineTool({
   name: "get_log_context",
@@ -590,13 +592,11 @@ async function runAggregate(
     }
   }
 
-  const span = await getDataSpan(db, dataset, signal)
-  if (span === null) return { ok: false, error: corpusNotLoaded }
-  const window = {
-    dataset,
-    from: input.from ?? span.first,
-    to: input.to ?? spanEnd(span),
-  }
+  const resolved = await resolveWindows(db, [dataset], input, signal)
+  if (!resolved.ok) return resolved
+  const [first] = resolved.windows
+  if (first === undefined) throw new Error("no window for the dataset")
+  const { window, span } = first
   const grid = gridBounds(window, span.first, spanEnd(span))
 
   // The CTEs every aggregate query starts with: matched events and anchors.
@@ -784,13 +784,8 @@ function gridBounds(
 
 /** Anchor condition and filters as receipt filters; the query reads like the `text` filter. */
 function aggregateFilters(input: GetLogContextInput): Scope["filters"] {
-  const filters: Partial<Filter> = {}
-  for (const field of FILTER_FIELDS_IN_SCOPE) {
-    const value = input[field]
-    if (value !== undefined) Object.assign(filters, { [field]: value })
-  }
-  if (input.query !== undefined) filters.text = input.query
-  return filters
+  const filters = scopeFilters(input, PRECURSOR_FILTER.fields)
+  return input.query === undefined ? filters : { ...filters, text: input.query }
 }
 
 function aggregateNotes(data: AggregateContextOutput, scope: Scope): string[] {
@@ -799,12 +794,9 @@ function aggregateNotes(data: AggregateContextOutput, scope: Scope): string[] {
     `Anchors are episode starts (gap ≥ ${data.episode_gap_minutes} min) of the matched events in scope, so a burst counts once; filters select anchors only, window events come from the whole dataset. The anchor patterns (${data.excluded_patterns}) are excluded from the lists.`,
   ]
   if (data.anchors === 0) {
-    const [window] = scope.windows
-    const filters = Object.entries(scope.filters)
-      .map(([field, value]) => `${field}=${JSON.stringify(value)}`)
-      .join(", ")
+    const filters = describeFilters(scope.filters)
     notes.push(
-      `No anchors: no log event matches in ${data.dataset}${window === undefined ? "" : ` [${window.from}, ${window.to})`}${filters === "" ? "" : ` with ${filters}`}. Check the pattern_id or query, or widen the window.`
+      `No anchors: no log event matches in ${describeWindows(scope.windows)}${filters === "" ? "" : ` with ${filters}`}. Check the pattern_id or query, or widen the window.`
     )
     return notes
   }

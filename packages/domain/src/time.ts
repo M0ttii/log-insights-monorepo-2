@@ -176,6 +176,67 @@ export function bucketStarts(
 }
 
 /**
+ * The part of `range` inside the data span, `[max(from, first), min(to,
+ * last + 1 µs))`; `null` when they do not overlap. Trends cover only this
+ * part: outside it there is no data, which is not a zero (R-03).
+ */
+export function effectiveRange(
+  range: TimeRange,
+  span: DataSpan
+): TimeRange | null {
+  const from = maxBigint(requireInstant(range.from), requireInstant(span.first))
+  const to = minBigint(requireInstant(range.to), requireInstant(span.last) + 1n)
+  if (from >= to) return null
+  return { from: formatInstant(from), to: formatInstant(to) }
+}
+
+/**
+ * Number of buckets of `unit` that overlap `range`, without listing them,
+ * so a limit check stays cheap for fine buckets over long ranges.
+ */
+export function bucketCount(range: TimeRange, unit: BucketUnit): number {
+  const from = requireInstant(range.from)
+  const to = requireInstant(range.to)
+  if (from >= to) return 0
+  const step = bucketLength(unit)
+  const first = truncateToBucket(from, unit)
+  const last = truncateToBucket(to - 1n, unit)
+  return Number((last - first) / step) + 1
+}
+
+/** One bucket `[start, end)` of a trend grid. */
+export type BucketSlot = {
+  start: string
+  end: string
+  /**
+   * The covered range starts after `start` or ends before `end`: the bucket
+   * holds less time than its unit, so a lower count there is no drop.
+   */
+  partial: boolean
+}
+
+/**
+ * The full bucket grid of a trend: every bucket that overlaps `range`
+ * (usually the effective range), in ascending order and with its end.
+ * Weeks start on Monday, like `date_trunc('week', …)` in UTC.
+ */
+export function bucketGrid(range: TimeRange, unit: BucketUnit): BucketSlot[] {
+  const from = requireInstant(range.from)
+  const to = requireInstant(range.to)
+  const step = bucketLength(unit)
+  const slots: BucketSlot[] = []
+  for (let start = truncateToBucket(from, unit); start < to; start += step) {
+    const end = start + step
+    slots.push({
+      start: formatInstant(start),
+      end: formatInstant(end),
+      partial: start < from || end > to,
+    })
+  }
+  return slots
+}
+
+/**
  * Completes observed buckets with zeros inside the data span: a bucket in
  * `starts` without a row is an observed zero. Rows are matched by instant, so
  * `…T00:00:00Z` and `…T00:00:00.000000Z` are the same bucket.

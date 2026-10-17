@@ -3,19 +3,13 @@ import {
   type InputIssue,
   type ToolError,
 } from "@workspace/domain/errors"
-import {
-  datasetSchema,
-  validateFilter,
-  type Dataset,
-  type Filter,
-} from "@workspace/domain/filters"
+import { datasetSchema, validateFilter } from "@workspace/domain/filters"
 import type { Scope } from "@workspace/domain/receipt"
 import { instantSchema } from "@workspace/domain/time"
 import {
   defineTool,
   READ_ONLY_ANNOTATIONS,
   renderDescription,
-  type QueryRunner,
 } from "@workspace/domain/tool"
 import {
   FUZZY_DEFAULT_EDITS,
@@ -35,8 +29,14 @@ import {
 } from "@workspace/domain/tools/search-logs"
 import { z } from "zod"
 
-import { corpusNotLoaded, getDataSpan, spanEnd } from "../corpus.ts"
 import { compileFilter } from "../filters.ts"
+import {
+  ALL_DATASETS,
+  describeFilters,
+  describeWindows,
+  resolveWindows,
+  scopeFilters,
+} from "../scope.ts"
 import { exactCount, isoTime, SqlParams } from "../sql.ts"
 import {
   INDEX,
@@ -61,8 +61,6 @@ import {
  * another. Phrase has no `slop`: within one log template the words are
  * fixed and adjacent, and words that may sit apart are what `terms` finds.
  */
-
-const ALL_DATASETS: readonly Dataset[] = ["bgl", "openstack"]
 
 const ORDER: Record<SearchSort, string> = {
   relevance: `BM25(${INDEX}.tableoid) DESC, ${INDEX}.event_id`,
@@ -89,10 +87,6 @@ const hitRow = z.object({
   message_truncated: z.boolean().nullable(),
   score: z.number(),
 })
-
-const FILTER_FIELDS_IN_SCOPE = SEARCH_FILTER.fields.filter(
-  (field) => field !== "dataset" && field !== "from" && field !== "to"
-)
 
 export const searchLogs = defineTool({
   name: "search_logs",
@@ -165,12 +159,9 @@ export const searchLogs = defineTool({
 
     const datasets =
       input.dataset === undefined ? ALL_DATASETS : [input.dataset]
-    const windows: Scope["windows"] = []
-    for (const dataset of datasets) {
-      const window = await resolveWindow(ctx.db, dataset, input, ctx.signal)
-      if (window === null) return { ok: false, error: corpusNotLoaded }
-      windows.push(window)
-    }
+    const resolved = await resolveWindows(ctx.db, datasets, input, ctx.signal)
+    if (!resolved.ok) return resolved
+    const windows = resolved.windows.map(({ window }) => window)
 
     const params = new SqlParams()
     const maxEdits =
@@ -207,7 +198,10 @@ export const searchLogs = defineTool({
       return { ...hit, message_truncated: hit.message_truncated === true }
     })
     const truncated = total > hits.length
-    const scope: Scope = { windows, filters: scopeFilters(input) }
+    const scope: Scope = {
+      windows,
+      filters: scopeFilters(input, SEARCH_FILTER.fields),
+    }
 
     return {
       ok: true,
@@ -300,31 +294,6 @@ function textCondition(
   }
 }
 
-/** The searched window per dataset: the given bounds, else the data span (end exclusive). */
-async function resolveWindow(
-  db: QueryRunner,
-  dataset: Dataset,
-  input: SearchLogsInput,
-  signal: AbortSignal
-): Promise<Scope["windows"][number] | null> {
-  const span = await getDataSpan(db, dataset, signal)
-  if (span === null) return null
-  return {
-    dataset,
-    from: input.from ?? span.first,
-    to: input.to ?? spanEnd(span),
-  }
-}
-
-function scopeFilters(input: SearchLogsInput): Scope["filters"] {
-  const filters: Partial<Filter> = {}
-  for (const field of FILTER_FIELDS_IN_SCOPE) {
-    const value = input[field]
-    if (value !== undefined) Object.assign(filters, { [field]: value })
-  }
-  return filters
-}
-
 function notesFor(
   input: SearchLogsInput,
   scope: Scope,
@@ -334,12 +303,8 @@ function notesFor(
 ): string[] {
   const notes = [BASE_NOTE]
   if (total === 0) {
-    const windows = scope.windows
-      .map(({ dataset, from, to }) => `${dataset} [${from}, ${to})`)
-      .join(", ")
-    const filters = Object.entries(scope.filters)
-      .map(([field, value]) => `${field}=${JSON.stringify(value)}`)
-      .join(", ")
+    const windows = describeWindows(scope.windows)
+    const filters = describeFilters(scope.filters)
     notes.push(
       `No matching events for ${JSON.stringify(input.query)} (match ${input.match}) in ${windows}${filters === "" ? "" : ` with ${filters}`}.`
     )

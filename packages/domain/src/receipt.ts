@@ -37,12 +37,18 @@ export const scopeSchema = z
           dataset: datasetSchema,
           from: instantSchema.describe("Resolved window start, inclusive."),
           to: instantSchema.describe("Resolved window end, exclusive."),
+          period: z
+            .enum(["current", "baseline"])
+            .optional()
+            .describe(
+              "Only in period comparisons: current period C or reference period B."
+            ),
         })
       )
       .min(1)
       .max(2)
       .describe(
-        "One window per dataset; BGL and OpenStack share no time axis."
+        "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset."
       ),
     filters: filterSchema
       .omit({ dataset: true, from: true, to: true })

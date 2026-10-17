@@ -112,7 +112,7 @@ describe("get_log_context catalog entry", () => {
     const entry = registry
       .catalog()
       .find((tool) => tool.name === "get_log_context")
-    expect(registry.tools.map((tool) => tool.name)).toEqual([
+    expect(registry.tools.map((tool) => tool.name).slice(0, 3)).toEqual([
       "describe_corpus",
       "search_logs",
       "get_log_context",

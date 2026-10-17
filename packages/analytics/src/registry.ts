@@ -40,7 +40,9 @@ import {
   receiptSignature,
   resultDigest,
 } from "./receipts.ts"
+import { countEvents } from "./tools/count-events.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
+import { eventTrend } from "./tools/event-trend.ts"
 import { getLogContext } from "./tools/get-log-context.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
@@ -168,6 +170,8 @@ const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(describeCorpus),
   toolEntry(searchLogs),
   toolEntry(getLogContext),
+  toolEntry(countEvents),
+  toolEntry(eventTrend),
 ]
 
 /** Optional index tools (A-33, P2); none implemented yet. */
@@ -384,12 +388,14 @@ async function runDefinition<I, O>(
 
   const signature = receiptSignature(def.name, def.version, input)
   const digest = resultDigest(data)
+  const factSpecs =
+    typeof def.factSpecs === "function" ? def.factSpecs(input) : def.factSpecs
   for (let attempt = 0; attempt < RECEIPT_ID_ATTEMPTS; attempt++) {
     const receiptId = newReceiptId()
     const facts = buildFacts(
       receiptId,
       { result: data, scope: run.scope },
-      def.factSpecs
+      factSpecs
     )
     const receipt = receiptSchema.parse({
       receipt_id: receiptId,
