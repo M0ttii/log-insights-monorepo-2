@@ -25,8 +25,7 @@ questions:
       On BGL in June 2005, ciod repeatedly failed to read the message prefix
       on the control stream. Is this one bad node or something job-wide, and
       what should I check next?
-    scope:
-      { dataset: bgl, from: "2005-06-01T00:00:00Z", to: "2005-07-01T00:00:00Z" }
+    scope: { dataset: bgl, from: "2005-06-01T00:00:00Z", to: "2005-07-01T00:00:00Z" }
     required_evidence:
       - total matches of the failure text (search_logs, total_matches, not hits)
       - neighbourhood of one occurrence (get_log_context mode event)
@@ -40,20 +39,8 @@ questions:
       low base rate. The hypothesis "job start fails, the job's control
       streams then fail" is supported, not a proven cause (R-07, R-11).
     allowed_tool_sequences:
-      - [
-          search_logs,
-          get_log_context,
-          count_events,
-          get_log_context,
-          check_claims,
-        ]
-      - [
-          search_logs,
-          count_events,
-          get_log_context,
-          get_log_context,
-          check_claims,
-        ]
+      - [search_logs, get_log_context, count_events, get_log_context, check_claims]
+      - [search_logs, count_events, get_log_context, get_log_context, check_claims]
     reference:
       pattern_id: 287312f13c189c4d
       events: 5983
@@ -125,12 +112,7 @@ questions:
     covers: [S-02]
     question: >-
       Why did the OpenStack API return 503 on 17 May 2017 around 06:25 UTC?
-    scope:
-      {
-        dataset: openstack,
-        from: "2017-05-17T06:00:00Z",
-        to: "2017-05-17T07:00:00Z",
-      }
+    scope: { dataset: openstack, from: "2017-05-17T06:00:00Z", to: "2017-05-17T07:00:00Z" }
     required_evidence:
       - 5xx accesses with numerator and denominator (latency_stats group_by status)
       - the request's other lines (get_log_context scope same_request)
@@ -156,13 +138,7 @@ questions:
     question: >-
       Which recurring problems did Workload Runtime have on BGL in June 2005,
       and what should the team investigate first?
-    scope:
-      {
-        dataset: bgl,
-        team: Workload Runtime,
-        from: "2005-06-01T00:00:00Z",
-        to: "2005-07-01T00:00:00Z",
-      }
+    scope: { dataset: bgl, team: Workload Runtime, from: "2005-06-01T00:00:00Z", to: "2005-07-01T00:00:00Z" }
     required_evidence:
       - recurring patterns with episodes, active days and breadth (recurring_patterns)
       - weekly trend of the leading pattern (event_trend bucket week)
@@ -180,13 +156,7 @@ questions:
     question: >-
       For Compute Platform on BGL, compare 14–28 November 2005 with the two
       weeks before. What is escalating?
-    scope:
-      {
-        dataset: bgl,
-        team: Compute Platform,
-        from: "2005-11-14T00:00:00Z",
-        to: "2005-11-28T00:00:00Z",
-      }
+    scope: { dataset: bgl, team: Compute Platform, from: "2005-11-14T00:00:00Z", to: "2005-11-28T00:00:00Z" }
     required_evidence:
       - comparison with C, B, C − B and the R-06 classification (count_events compare)
       - pattern status per R-10 (recurring_patterns)
