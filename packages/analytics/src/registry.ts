@@ -41,6 +41,7 @@ import {
   resultDigest,
 } from "./receipts.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
+import { getLogContext } from "./tools/get-log-context.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
 /**
@@ -166,6 +167,7 @@ export class ToolFailure extends Error {
 const DEFAULT_TOOLS: readonly ToolEntry[] = [
   toolEntry(describeCorpus),
   toolEntry(searchLogs),
+  toolEntry(getLogContext),
 ]
 
 /** Optional index tools (A-33, P2); none implemented yet. */

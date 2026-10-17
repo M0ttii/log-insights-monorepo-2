@@ -1,3 +1,6 @@
+import { toSafeInteger } from "@workspace/domain/bigint"
+import { z } from "zod"
+
 /** Small SQL building blocks shared by the filter compiler and the tools. */
 
 export type SqlValue = string | number | boolean | null
@@ -24,3 +27,12 @@ export class SqlParams {
 export function isoTime(column: string): string {
   return `strftime(${column}, '%Y-%m-%dT%H:%M:%S.%fZ')`
 }
+
+/**
+ * A `BIGINT` or count column: arrives as an exact string and becomes a
+ * number only after a range check (AGENTS.md).
+ */
+export const exactCount = z
+  .union([z.string(), z.number()])
+  .transform((value) => toSafeInteger(value))
+  .pipe(z.number().int().nonnegative())
