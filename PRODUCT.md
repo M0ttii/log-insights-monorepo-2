@@ -10,9 +10,9 @@ web
 
 This is a concise product context record for Impeccable. It summarizes existing decisions; it does not introduce a parallel requirements or UI specification.
 
-- [Product concept](docs/concept.md) v3.3: requirements A-01–A-38, role playbooks, answer contract, rules R-01–R-11, priorities, acceptance cases S-01–S-16, open points. Follows the published challenge brief.
+- [Product concept](docs/concept.md) v3.4: requirements A-01–A-38, role playbooks, answer contract, rules R-01–R-11, priorities, acceptance cases S-01–S-16, open points. Follows the published challenge brief.
 - [UI concept](docs/ui-concept.md) v2.3: navigation (Ask, Overview, Logs, Corpus), role comparison, interactions, states, accessibility, and visual direction.
-- [Technical specification](docs/technical.md) v2.4: data model, loader, tool contracts, fact IDs, receipts, MCP server, web chat, verification, work packages and dependencies.
+- [Technical specification](docs/technical.md) v2.5: data model, loader, tool contracts, fact IDs, receipts, MCP server, web chat, verification, work packages and dependencies.
 - [Architecture summary](docs/architecture.md): overview; detailed contracts take precedence.
 - [Improvements backlog](docs/improvements.md): bonus tracks and deferred features; not requirements.
 - [Project conventions](AGENTS.md): implementation conventions and dependency choices.
@@ -63,6 +63,8 @@ The working name is **Log Insights**. Communication is precise, understandable a
 ## Evidence on Hand
 
 The repository contains planning documents and tooling only. No query has run against the real corpus yet. Examples in the documents describe intended behavior, not verified findings.
+
+Planned verification compares simple role guidance with full playbooks under equal conditions, using independently authored holdout questions released after a configuration freeze. The first holdout round is reported separately; inspected questions become regression tests. Predeclared repeated trials report quality, total duration, calls, tokens and estimated API costs from saved run artifacts, including failures. Product corpus claims still require receipts. The comparison need not show a playbook win; a separate experiment on historical evidence remains optional (I-21). See concept A-21 and technical.md § 13.
 
 Do not fabricate benchmarks, business impact, live results or completed acceptance checks. Synthetic fixtures must be labelled. A recorded demo must be identified as a recording.
 

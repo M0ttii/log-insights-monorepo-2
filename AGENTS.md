@@ -13,10 +13,10 @@ tools, connectors, or API, for this repository.
 
 Read only the relevant sections in the docs/ directory before changing behavior:
 
-1. [concept.md](docs/concept.md) v3.3: product requirements A-01–A-38, role playbooks,
+1. [concept.md](docs/concept.md) v3.4: product requirements A-01–A-38, role playbooks,
    answer contract, rules R-01–R-11, priorities, and acceptance cases S-01–S-16.
    It follows the published challenge brief, which wins on conflict.
-2. [technical.md](docs/technical.md) v2.4: data model, loader, tool contracts, fact IDs,
+2. [technical.md](docs/technical.md) v2.5: data model, loader, tool contracts, fact IDs,
    receipts, MCP server, web chat, verification, and work packages with dependencies.
 3. [ui-concept.md](docs/ui-concept.md) v2.3: navigation, interaction, visual direction,
    and UI states; authoritative for UI structure where technical.md summarizes it.
@@ -365,6 +365,18 @@ domain code independent of Next.js, React, database drivers, and provider SDKs.
   and database timeouts.
 - Golden queries for a tool are written by a different agent than the tool's
   implementer; eval ratings come from someone who did not write the playbooks.
+- Holdout questions are independently authored and withheld until the eval
+  configuration is frozen. Report the first holdout round separately; after
+  inspection, those questions are regression tests and a new holdout needs fresh
+  questions. Compare simple role guidance with full playbooks under equal model,
+  data, tool and execution limits; prevent indirect playbook delivery to the
+  baseline. This variant is eval-only; production role guidance remains required.
+- Predeclare repeated trials and retain every attempt, including failures. Report
+  answer quality, end-to-end duration, calls, tokens and estimated API costs
+  separately, with saved run artifacts and pricing provenance. Corpus figures
+  still require receipts; eval metadata is not evidence of business impact.
+  Outperforming the baseline and the optional historical-evidence experiment I-21
+  are not acceptance requirements; follow concept A-21 and technical.md § 13.
 - Preserve S-01–S-16 and the role eval with its pass threshold described in
   technical.md § 13.
 - Inspect package scripts before running commands. Run checks relevant to the
