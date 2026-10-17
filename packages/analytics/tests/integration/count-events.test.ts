@@ -23,7 +23,12 @@ import { createDatabase, type Database } from "../../src/db.ts"
 import { FileReceiptStore } from "../../src/receipts.ts"
 import { createRegistry, type Registry } from "../../src/registry.ts"
 import { countEvents } from "../../src/tools/count-events.ts"
-import { buildCountFixtures, countFixtureConnection } from "./count-fixtures.ts"
+import {
+  buildCountFixtures,
+  COMPARE_BASELINE,
+  COMPARE_CURRENT,
+  countFixtureConnection,
+} from "./count-fixtures.ts"
 import { loadEnv, samplesConnection, temporaryDir } from "./helpers.ts"
 
 loadEnv()
@@ -82,6 +87,12 @@ async function window(from: string, to: string) {
     .total
 }
 
+/** The expected failure of a call, or null when it succeeds. */
+async function error(input: Record<string, unknown>) {
+  const outcome = await registry.runTool("count_events", input, call())
+  return outcome.ok ? null : outcome.error
+}
+
 /** Groups as [values…, events] for compact comparison. */
 async function groups(input: Record<string, unknown>, on = registry) {
   const { data } = await count(input, on)
@@ -134,16 +145,17 @@ describe("whole corpus", () => {
   })
 
   it("counts unowned components as their own team (S-05, fixtures)", async () => {
-    // Fixture rows: 3 KERNEL and 2 SERV_NET (no ownership row) in BGL, 1 nova-api in OpenStack.
+    // Fixture rows: 130 KERNEL (3 + 127 comparison rows) and 2 SERV_NET (no
+    // ownership row) in BGL, 1 nova-api in OpenStack.
     const result = await count({ group_by: ["dataset", "team"] }, fixtures)
     expect(
       result.data.groups.map((g) => [g.dataset, g.team, g.events])
     ).toEqual([
-      ["bgl", "Compute Platform", 3],
+      ["bgl", "Compute Platform", 130],
       ["bgl", "unowned", 2],
       ["openstack", "API Gateway", 1],
     ])
-    expect(result.data.total).toBe(6)
+    expect(result.data.total).toBe(133)
     expect(
       result.facts.find((fact) => fact.path === "/result/groups/1/events")
     ).toMatchObject({
@@ -176,7 +188,10 @@ describe("groups and other", () => {
       top_n: 3,
     })
     // Shares are unrounded doubles; their sum is 1 up to floating-point error.
-    const shares = result.data.groups.reduce((sum, g) => sum + g.share, 0)
+    const shares = result.data.groups.reduce(
+      (sum, g) => sum + (g.share ?? 0),
+      0
+    )
     expect(shares + (result.data.other?.share ?? 0)).toBeCloseTo(1, 12)
     expect(result.receipt).toMatchObject({
       rows_returned: 3,
@@ -352,6 +367,262 @@ describe("API accesses", () => {
     expect(outcome.ok ? null : outcome.error).toMatchObject({
       code: "invalid_input",
       issues: [{ path: "group_by" }],
+    })
+  })
+})
+
+describe("compare", () => {
+  const august = {
+    group_by: ["component"],
+    dataset: "bgl",
+    from: "2005-08-01T00:00:00Z",
+    to: "2005-09-01T00:00:00Z",
+    compare: "previous_period",
+  }
+
+  it("compares a month with the previous one per component (A-09)", async () => {
+    // August 2005 (C) against July 2005 (B, 31 days as well): KERNEL 123 /
+    // 696, APP 22 / 3, DISCOVERY 21 / 3, MMCS 9 / 0, HARDWARE 2 / 0.
+    const result = await count(august)
+    expect(
+      result.data.groups.map((g) => [
+        g.component,
+        g.events,
+        g.baseline,
+        g.delta,
+        g.classification,
+      ])
+    ).toEqual([
+      ["KERNEL", 123, 696, -573, null],
+      // +19: more than doubled, but fewer than 20 additional events.
+      ["APP", 22, 3, 19, null],
+      ["DISCOVERY", 21, 3, 18, null],
+      ["MMCS", 9, 0, 9, "first observed in this comparison"],
+      ["HARDWARE", 2, 0, 2, "first observed in this comparison"],
+    ])
+    expect(result.data.groups[0]?.pct_change).toBeCloseTo(
+      (100 * -573) / 696,
+      12
+    )
+    expect(result.data.groups[1]?.pct_change).toBeCloseTo((100 * 19) / 3, 12)
+    expect(result.data.groups[3]?.pct_change).toBeNull()
+    expect(result.data).toMatchObject({
+      total: 177,
+      group_count: 5,
+      comparison: {
+        reference: "previous_period",
+        coverage: { current: "full", baseline: "full" },
+        determinable: true,
+        baseline: 702,
+        delta: -525,
+        classification: null,
+      },
+    })
+    expect(result.data.comparison?.pct_change).toBeCloseTo(
+      (100 * -525) / 702,
+      12
+    )
+    expect(result.receipt.scope.windows).toEqual([
+      {
+        dataset: "bgl",
+        from: "2005-08-01T00:00:00Z",
+        to: "2005-09-01T00:00:00Z",
+        period: "current",
+      },
+      {
+        dataset: "bgl",
+        from: "2005-07-01T00:00:00.000000Z",
+        to: "2005-08-01T00:00:00.000000Z",
+        period: "baseline",
+      },
+    ])
+  })
+
+  it("classifies a significant increase of error events", async () => {
+    // BGL error events: August 45, July 8 (+37, more than doubled).
+    const result = await count({
+      ...august,
+      group_by: ["dataset"],
+      only_errors: true,
+    })
+    expect(result.data.comparison).toMatchObject({
+      baseline: 8,
+      delta: 37,
+      classification: "significantly increased",
+    })
+    expect(result.data.groups[0]).toMatchObject({
+      dataset: "bgl",
+      events: 45,
+      baseline: 8,
+      classification: "significantly increased",
+    })
+  })
+
+  it("applies the R-06 boundaries exactly (fixtures)", async () => {
+    const result = await count(
+      {
+        group_by: ["level"],
+        dataset: "bgl",
+        ...COMPARE_CURRENT,
+        compare: COMPARE_BASELINE,
+      },
+      fixtures
+    )
+    expect(
+      result.data.groups.map((g) => [
+        g.level,
+        g.events,
+        g.baseline,
+        g.delta,
+        g.pct_change,
+        g.classification,
+      ])
+    ).toEqual([
+      ["FATAL", 40, 20, 20, 100, "significantly increased"],
+      ["ERROR", 38, 19, 19, 100, null],
+      ["FAILURE", 0, 5, -5, -100, null],
+      ["SEVERE", 3, 0, 3, null, "first observed in this comparison"],
+    ])
+    // Events exactly at the end of C and 1 µs before B are in neither period.
+    expect(result.data).toMatchObject({
+      total: 81,
+      comparison: { reference: "custom", baseline: 44, delta: 37 },
+    })
+    const fact = result.facts.find(
+      (candidate) => candidate.path === "/result/groups/2/baseline"
+    )
+    expect(fact).toMatchObject({
+      value: 5,
+      metric: "events_baseline",
+      unit: "log_events",
+      group: { level: "FAILURE" },
+    })
+  })
+
+  it("labels a scope without events in either period", async () => {
+    const result = await count(
+      {
+        group_by: ["level"],
+        dataset: "bgl",
+        ...COMPARE_CURRENT,
+        compare: "previous_period",
+        levels: ["WARNING"],
+      },
+      fixtures
+    )
+    expect(result.data).toMatchObject({
+      total: 0,
+      groups: [],
+      comparison: {
+        determinable: true,
+        baseline: 0,
+        delta: 0,
+        pct_change: null,
+        classification: "not observed in either period",
+      },
+    })
+  })
+
+  it("marks a baseline outside the data span as not determinable (§ 13)", async () => {
+    // OpenStack sample: 2017-05-16T00:00:00.008 to 00:14:47.687. The
+    // previous 10 minutes lie before the first event.
+    const result = await count({
+      group_by: ["level"],
+      dataset: "openstack",
+      from: "2017-05-16T00:00:00Z",
+      to: "2017-05-16T00:10:00Z",
+      compare: "previous_period",
+    })
+    expect(result.data.comparison).toEqual({
+      reference: "previous_period",
+      coverage: { current: "partial", baseline: "none" },
+      determinable: false,
+      baseline: null,
+      delta: null,
+      pct_change: null,
+      classification: null,
+    })
+    for (const group of result.data.groups)
+      expect(group).toMatchObject({
+        baseline: null,
+        delta: null,
+        pct_change: null,
+        classification: null,
+      })
+    expect(
+      result.facts.filter((fact) => fact.metric === "events_baseline")
+    ).toEqual([])
+    expect(result.notes).toContain(
+      "The comparison is not determinable: the baseline lies outside the openstack data span (2017-05-16T00:00:00.008000Z to 2017-05-16T00:14:47.687000Z). B, delta, pct_change and classification are null: no data is not an observed zero (R-03)."
+    )
+  })
+
+  it("marks a baseline partly outside the data span as partial", async () => {
+    // July 2005 against [2005-05-31, 2005-07-01); BGL samples start on
+    // 2005-06-03. KERNEL 696 / 487, APP 3 / 9, DISCOVERY 3 / 1.
+    const result = await count({
+      ...august,
+      from: "2005-07-01T00:00:00Z",
+      to: "2005-08-01T00:00:00Z",
+    })
+    expect(result.data.comparison).toMatchObject({
+      coverage: { current: "full", baseline: "partial" },
+      determinable: true,
+      baseline: 497,
+      delta: 205,
+    })
+    expect(
+      result.data.groups.map((g) => [g.component, g.events, g.baseline])
+    ).toEqual([
+      ["KERNEL", 696, 487],
+      ["APP", 3, 9],
+      ["DISCOVERY", 3, 1],
+    ])
+    expect(result.notes).toContain(
+      `The baseline is only partly covered by data (bgl data span ${BGL_FIRST} to 2006-01-03T15:13:09.127918Z): B counts only the observed part, so the change is limited and may overstate an increase.`
+    )
+  })
+
+  it("rejects unequal references, two dimensions and two datasets", async () => {
+    expect(
+      await error({
+        ...august,
+        compare: { from: "2005-07-01T00:00:00Z", to: "2005-07-31T00:00:00Z" },
+      })
+    ).toMatchObject({
+      code: "invalid_input",
+      issues: [
+        {
+          path: "compare",
+          message:
+            "The reference must be as long as [from, to) (R-06): 31 d expected, 30 d given.",
+        },
+      ],
+    })
+    expect(
+      await error({ ...august, group_by: ["component", "level"] })
+    ).toMatchObject({ issues: [{ path: "group_by" }] })
+    const { dataset: _dataset, ...withoutDataset } = august
+    expect(await error(withoutDataset)).toMatchObject({
+      issues: [
+        {
+          path: "dataset",
+          message:
+            "compare needs exactly one dataset: comparisons run within one dataset; BGL and OpenStack share no time axis.",
+        },
+      ],
+    })
+  })
+
+  it("is reproducible: same digest on a second run and on rerun", async () => {
+    const first = await count(august)
+    const second = await count(august)
+    expect(second.receipt.result_digest).toBe(first.receipt.result_digest)
+    const rerun = await registry.rerun(first.receipt.receipt_id, call())
+    expect(rerun.ok ? rerun.matches : rerun.error).toEqual({
+      signature: true,
+      data_version: true,
+      result_digest: true,
     })
   })
 })
