@@ -1,21 +1,10 @@
 import { readFile } from "node:fs/promises"
 
-import { Client, types, type ClientConfig } from "pg"
+import type { Client, ClientConfig } from "pg"
 
+import { openClient } from "../src/db.ts"
 import { fillPlaceholders, splitSqlScript } from "../src/sql-script.ts"
 import type { GateConfig } from "./config.ts"
-
-/** OIDs of TIMESTAMP and TIMESTAMPTZ. Both cross the driver as raw text (technical.md § 6.1). */
-const RAW_TEXT_OIDS = new Set([1114, 1184])
-
-const rawTimestampTypes = {
-  getTypeParser(oid: number, format?: "text" | "binary") {
-    if (RAW_TEXT_OIDS.has(oid)) return (value: string) => value
-    return format === "binary"
-      ? types.getTypeParser(oid, "binary")
-      : types.getTypeParser(oid, "text")
-  },
-} as const
 
 type Row = Record<string, unknown>
 
@@ -33,15 +22,7 @@ export async function connect(
   config: GateConfig,
   overrides: Partial<ClientConfig> = {}
 ): Promise<Db> {
-  const client = new Client({
-    ...config.connection,
-    types: rawTimestampTypes,
-    ...overrides,
-  })
-  await client.connect()
-  // A startup `options=-c TimeZone=UTC` is ignored by SereneDB (G1), so the
-  // session time zone is set explicitly on every connection.
-  await client.query("SET TimeZone = 'UTC'")
+  const client = await openClient(config.connection, overrides)
 
   const rows = async (sql: string, values?: unknown[]) =>
     (await client.query<Row>(sql, values)).rows

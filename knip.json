@@ -4,7 +4,10 @@
     "packages/eslint-config": {
       "ignoreDependencies": ["next"]
     },
-    "packages/ui": {}
+    "packages/ui": {},
+    "packages/corpus": {
+      "entry": ["tests/integration/print-times.ts"]
+    }
   },
   "ignoreIssues": {
     "packages/ui/src/components/**": ["exports", "types"]

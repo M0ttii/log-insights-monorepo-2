@@ -15,12 +15,14 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,css}\"",
     "typecheck": "turbo typecheck",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run --project packages",
+    "test:integration": "vitest run --project corpus-integration --no-file-parallelism",
+    "test:watch": "vitest --project packages",
     "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
     "knip": "knip",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm deps:check && pnpm knip && pnpm test",
-    "gate": "pnpm --filter @workspace/corpus gate"
+    "gate": "pnpm --filter @workspace/corpus gate",
+    "data:setup": "pnpm --filter @workspace/corpus data:setup"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",
