@@ -127,16 +127,6 @@ versions before using an API, and never infer an installation from a plan.
   behavior with the `serenedb-docs` MCP (or `sdb_docs.search`) before writing or
   changing SQL. Gate results and required rewrites are in technical.md § 5.2; rerun
   `pnpm gate` after any image change (a `DIFF` means documented behavior changed).
-- SereneDB computes, TypeScript does not (technical.md § 5.3): every analytical value
-  and every rule outcome (R-05 flag, R-06 classification, R-08 order, R-09
-  dominance, R-10 status, zero buckets inside the data span) comes from SQL.
-  TypeScript validates input, assembles allowlisted SQL, assigns fact IDs, writes
-  receipts and checks claims; the pure functions in `domain/rules/` serve as test
-  oracles, not as the computation. Before writing generic SQL or computing outside
-  SereneDB, search the SereneDB docs (`sdb_docs.search`, the docs MCP or Context7
-  `/serenedb/serenedb`) for a SereneDB-native function, and record each one used or
-  rejected in technical.md § 5.3 with its gate probe or reason. SereneDB AI
-  functions in SQL (`ai_*`) and vector search on them are not used (concept 3.2).
 - Each process owns one lazily created `pg` pool (at most four connections, never at
   import or build time), disposed at shutdown and in test teardown; account for dev
   reloads. Every query has a 10 s limit enforced by the pool: SereneDB accepts
@@ -164,6 +154,16 @@ versions before using an API, and never infer an installation from a plan.
   `receipt_unavailable`. The eight default tools never write to SereneDB; only the
   index tools create and drop their own indexes. Tools return the derived values
   answers need (shares, deltas, rates, totals, ratios) so the model never computes.
+- SereneDB computes, TypeScript does not (technical.md § 5.3): every analytical value
+  and every rule outcome (R-05 flag, R-06 classification, R-08 order, R-09
+  dominance, R-10 status, zero buckets inside the data span) comes from SQL.
+  TypeScript validates input, assembles allowlisted SQL, assigns fact IDs, writes
+  receipts and checks claims; the pure functions in `domain/rules/` serve as test
+  oracles, not as the computation. Before writing generic SQL or computing outside
+  SereneDB, search the SereneDB docs (`sdb_docs.search`, the docs MCP or Context7
+  `/serenedb/serenedb`) for a SereneDB-native function, and record each one used or
+  rejected in technical.md § 5.3 with its gate probe or reason. SereneDB AI
+  functions in SQL (`ai_*`) and vector search on them are not used (concept 3.2).
 - Every row-returning query ends its `ORDER BY` in a unique key, so result digests
   are reproducible. Episodes are computed after the full scope is filtered, never
   from precomputed global gaps.
