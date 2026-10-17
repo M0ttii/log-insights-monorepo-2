@@ -1,0 +1,269 @@
+# Development questions of the role eval (technical.md § 13.1), written in
+# U03 (LOG-12) from the profiling results. These are development and
+# regression questions, never holdout: the author of this file writes no
+# holdout questions and does not see them (U16).
+#
+# Per question: role (null = asked without a role prompt, A-37/S-14), scope,
+# required evidence, the expected distinguishing check, allowed tool
+# sequences and the acceptance cases it covers. `reference` holds profiling
+# results for orientation of raters; they come from the queries in
+# packages/corpus/sql/profiling/ on data_version dv_263e378cd8560c4a and are
+# not expected values for the tools (those come from receipts at run time).
+# `demo` marks the questions rehearsed for the live demo (concept 11.1);
+# rehearsed questions never count as holdout.
+
+version: 1
+data_version: dv_263e378cd8560c4a
+
+questions:
+  # ---------------------------------------------------------------- engineer
+  - id: dev-eng-01
+    role: engineer
+    demo: true
+    covers: [S-02, S-15]
+    question: >-
+      On BGL in June 2005, ciod repeatedly failed to read the message prefix
+      on the control stream. Is this one bad node or something job-wide, and
+      what should I check next?
+    scope: { dataset: bgl, from: "2005-06-01T00:00:00Z", to: "2005-07-01T00:00:00Z" }
+    required_evidence:
+      - total matches of the failure text (search_logs, total_matches, not hits)
+      - neighbourhood of one occurrence (get_log_context mode event)
+      - breadth by node and rack (count_events group_by node or rack)
+      - precursor analysis over episode starts (get_log_context mode aggregate)
+      - dataset label APPREAD named as a dataset label, not a finding
+    distinguishing_check: >-
+      Breadth per episode (hundreds of I/O nodes in 16–32 racks within
+      seconds) rules out a single bad node; the precursor analysis shows
+      "ciod: LOGIN chdir(<PATH>) failed" before most episode starts against a
+      low base rate. The hypothesis "job start fails, the job's control
+      streams then fail" is supported, not a proven cause (R-07, R-11).
+    allowed_tool_sequences:
+      - [search_logs, get_log_context, count_events, get_log_context, check_claims]
+      - [search_logs, count_events, get_log_context, get_log_context, check_claims]
+    reference:
+      pattern_id: 287312f13c189c4d
+      events: 5983
+      episodes: 7
+      nodes: 512
+      racks: 32
+      precursor: "chdir failed before 6 of 7 episode starts, 0.5–1.3 s earlier; base rate 0.0027 of 10-min windows"
+
+  - id: dev-eng-02
+    role: engineer
+    covers: [S-15]
+    question: >-
+      "data TLB error interrupt" is the most frequent kernel alert on BGL.
+      Is it local to a few nodes or systemic?
+    scope: { dataset: bgl }
+    required_evidence:
+      - events and episodes of the pattern (recurring_patterns)
+      - concentration by node (count_events group_by node, top_n)
+      - one occurrence with neighbourhood on the same node (get_log_context same_node)
+    distinguishing_check: >-
+      Count by node: one node carries almost all events in a single long
+      episode; the other episodes are small. Local for the volume; the many
+      small episodes stay an open question.
+    allowed_tool_sequences:
+      - [recurring_patterns, count_events, get_log_context, check_claims]
+      - [search_logs, count_events, get_log_context, check_claims]
+    reference:
+      pattern_id: d7c28809f189ee67
+      events: 152734
+      episodes: 22
+      largest_episode: "152,182 events on 1 node, 2005-06-12, 382 min"
+
+  - id: dev-eng-03
+    role: engineer
+    covers: [S-06]
+    question: Show me the parity errors on BGL.
+    scope: { dataset: bgl }
+    required_evidence:
+      - exact total_matches with truncated true and at most 50 hits
+      - frequency statements only from count_events, never from the hits
+    distinguishing_check: >-
+      Split by message (count_events group_by pattern or component) before
+      calling them errors: most parity lines are corrected cache parity
+      messages at level INFO.
+    allowed_tool_sequences:
+      - [search_logs, count_events, check_claims]
+    reference:
+      full_text_matches_parity: 121498
+
+  - id: dev-eng-04
+    role: engineer
+    covers: [S-07]
+    question: Did nova-compute log any segmentation fault?
+    scope: { dataset: openstack, component: nova-compute }
+    required_evidence:
+      - explicit "no matching events" with the scope searched
+    distinguishing_check: >-
+      None needed beyond the empty search; the answer names what was searched
+      and does not invent evidence.
+    allowed_tool_sequences:
+      - [search_logs]
+      - [search_logs, count_events]
+    reference:
+      matches: 0
+
+  - id: dev-eng-05
+    role: engineer
+    demo: true
+    covers: [S-02]
+    question: >-
+      Why did the OpenStack API return 503 on 17 May 2017 around 06:25 UTC?
+    scope: { dataset: openstack, from: "2017-05-17T06:00:00Z", to: "2017-05-17T07:00:00Z" }
+    required_evidence:
+      - 5xx accesses with numerator and denominator (latency_stats group_by status)
+      - the request's other lines (get_log_context scope same_request)
+      - latency in the hour versus the rest of the day (latency_stats group_by hour)
+    distinguishing_check: >-
+      Same request ID: token validation against the identity service failed
+      (ERROR, WARNING, CRITICAL) milliseconds before the 503. The same
+      sequence occurs at 06:25 on 16 May; the identity service's own logs are
+      not in the corpus, so its cause is unknown.
+    allowed_tool_sequences:
+      - [latency_stats, search_logs, get_log_context, check_claims]
+      - [search_logs, get_log_context, latency_stats, check_claims]
+    reference:
+      api_accesses_total: 98733
+      status_5xx_total: 2
+      request_id: req-abcdb287-429c-40a5-8e79-d490d4fb7410
+
+  # --------------------------------------------------------------- team lead
+  - id: dev-tl-01
+    role: team_lead
+    demo: true
+    covers: [S-03]
+    question: >-
+      Which recurring problems did Workload Runtime have on BGL in June 2005,
+      and what should the team investigate first?
+    scope: { dataset: bgl, team: Workload Runtime, from: "2005-06-01T00:00:00Z", to: "2005-07-01T00:00:00Z" }
+    required_evidence:
+      - recurring patterns with episodes, active days and breadth (recurring_patterns)
+      - weekly trend of the leading pattern (event_trend bucket week)
+      - recommendation names the team and the check to run
+    distinguishing_check: >-
+      Recurring (two or more episodes) versus a single burst: many lines in
+      one episode is not recurring (A-10).
+    allowed_tool_sequences:
+      - [recurring_patterns, event_trend, check_claims]
+      - [count_events, recurring_patterns, event_trend, check_claims]
+
+  - id: dev-tl-02
+    role: team_lead
+    covers: [S-03]
+    question: >-
+      For Compute Platform on BGL, compare 14–28 November 2005 with the two
+      weeks before. What is escalating?
+    scope: { dataset: bgl, team: Compute Platform, from: "2005-11-14T00:00:00Z", to: "2005-11-28T00:00:00Z" }
+    required_evidence:
+      - comparison with C, B, C − B and the R-06 classification (count_events compare)
+      - pattern status per R-10 (recurring_patterns)
+    distinguishing_check: >-
+      "Significantly increased" only at B > 0, at least doubling and at least
+      20 more events; first observed patterns are named as such.
+    allowed_tool_sequences:
+      - [count_events, recurring_patterns, check_claims]
+      - [recurring_patterns, count_events, check_claims]
+
+  - id: dev-tl-03
+    role: team_lead
+    covers: [S-03]
+    question: >-
+      Which OpenStack warnings and errors recur, and which team owns them?
+    scope: { dataset: openstack }
+    required_evidence:
+      - recurring error and warning patterns with episodes and team (recurring_patterns)
+      - distribution by team (count_events group_by team)
+    distinguishing_check: >-
+      Traceback lines of one failure form several patterns with identical
+      episode counts; the answer treats them as one failure pass, not as
+      separate problems.
+    allowed_tool_sequences:
+      - [recurring_patterns, count_events, check_claims]
+    reference:
+      image_cache_manager_pass_errors: "8 occurrences, each its own episode"
+
+  - id: dev-tl-04
+    role: null
+    covers: [S-14]
+    question: >-
+      My team runs the API gateway. What keeps coming back in OpenStack, and
+      what should we look at this week?
+    scope: { dataset: openstack, team: API Gateway }
+    required_evidence:
+      - role recognised as team lead from the question (playbook core sections)
+      - recurring patterns for the team (recurring_patterns)
+    distinguishing_check: Recurring versus one-off, as dev-tl-01.
+    allowed_tool_sequences:
+      - [describe_corpus, recurring_patterns, latency_stats, check_claims]
+      - [recurring_patterns, latency_stats, check_claims]
+
+  # ----------------------------------------------------------------- manager
+  - id: dev-mgr-01
+    role: manager
+    demo: true
+    covers: [S-04, S-16]
+    question: What should we investigate first on BGL? At most three priorities.
+    scope: { dataset: bgl }
+    required_evidence:
+      - investigation order with rank basis, candidates checked, leader per dimension (recurring_patterns rank investigation_order)
+      - episodes, events, breadth, change and team per priority, separately
+      - the R-09 limit and "business impact unknown"
+    distinguishing_check: >-
+      The pattern with the most log lines (data TLB error interrupt) has few
+      episodes and ranks low by episodes; the trade-off is named (R-09).
+      Breadth drops from the rank basis when a candidate carries no node.
+    allowed_tool_sequences:
+      - [recurring_patterns, check_claims]
+      - [describe_corpus, recurring_patterns, count_events, check_claims]
+    reference:
+      most_lines: "data TLB error interrupt: 152,734 events, 22 episodes, rank 218 by episodes"
+      most_episodes: "instruction address: <ADDR>: 289 episodes, 22,791 nodes"
+
+  - id: dev-mgr-02
+    role: manager
+    covers: [S-10]
+    question: How much downtime and money did the BGL kernel errors cost us?
+    scope: { dataset: bgl, component: KERNEL }
+    required_evidence:
+      - measurable frequency and breadth only (count_events, recurring_patterns)
+      - downtime, cost and customer effect named as unknown
+    distinguishing_check: No business figure is derived from log counts.
+    allowed_tool_sequences:
+      - [count_events, recurring_patterns, check_claims]
+      - [recurring_patterns, check_claims]
+
+  - id: dev-mgr-03
+    role: manager
+    covers: [S-05]
+    question: How many events does each team have across all our logs?
+    scope: { dataset: [bgl, openstack] }
+    required_evidence:
+      - counts per dataset and team over each full span, with unowned (count_events group_by dataset, team)
+      - spans named; no combined trend across datasets
+    distinguishing_check: >-
+      Totals per dataset, labelled as totals over each full span (BGL
+      2005–2006, OpenStack 2017).
+    allowed_tool_sequences:
+      - [count_events, check_claims]
+      - [describe_corpus, count_events, check_claims]
+
+  - id: dev-mgr-04
+    role: null
+    covers: [S-14]
+    question: >-
+      I have a leadership review tomorrow. Where should engineering effort go
+      first on OpenStack?
+    scope: { dataset: openstack }
+    required_evidence:
+      - role recognised as manager from the question
+      - investigation order with trade-off and limit (recurring_patterns rank investigation_order)
+      - API error rate with numerator and denominator (latency_stats)
+    distinguishing_check: >-
+      Breadth is not determinable for OpenStack error candidates (no instance
+      on their lines) and drops from the rank basis; the answer says so.
+    allowed_tool_sequences:
+      - [recurring_patterns, latency_stats, check_claims]
+      - [describe_corpus, recurring_patterns, latency_stats, check_claims]

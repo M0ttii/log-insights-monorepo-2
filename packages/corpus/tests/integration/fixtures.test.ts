@@ -445,12 +445,12 @@ describe("OpenStack layouts", () => {
       {
         event_id: "10000001",
         pattern:
-          '<IP> "GET /v2/<ID>/servers/detail?all_tenants=True HTTP/<NUM>" status: 200 len: <NUM> time: <NUM>',
+          '<IP> "GET /v2/<ID>/servers/detail?<QUERY> HTTP/1.1" status: 200 len: <NUM> time: <NUM>',
       },
       {
         event_id: "10000002",
         pattern:
-          '<IP>,<IP> "GET /openstack/<NUM>-<NUM>-<NUM>/user_data HTTP/<NUM>" status: 404 len: <NUM> time: <NUM>',
+          '<IP>,<IP> "GET /openstack/2013-10-17/user_data HTTP/1.1" status: 404 len: <NUM> time: <NUM>',
       },
       {
         event_id: "10000003",

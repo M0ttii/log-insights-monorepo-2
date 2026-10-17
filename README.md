@@ -6,9 +6,10 @@ searches and computes; Claude explains and recommends; every number has a query
 receipt.
 
 > **Status:** SereneDB runs via Docker Compose and passed the compatibility
-> gate (`pnpm gate`); `pnpm data:setup` loads the corpus. Two of the eight
-> tools exist (`describe_corpus`, `search_logs`); the other tools, the MCP
-> server and the web chat are not implemented yet.
+> gate (`pnpm gate`); `pnpm data:setup` loads the corpus, and the data
+> decisions below come from profiling it (`pnpm data:profile`). Two of the
+> eight tools exist (`describe_corpus`, `search_logs`); the other tools, the
+> MCP server and the web chat are not implemented yet.
 
 ## Requirements
 
@@ -45,7 +46,8 @@ created; to change it later, run `ALTER ROLE` or recreate the volume
 |---|---|
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
 | `pnpm data:setup [--samples]` | Load BGL and OpenStack into SereneDB (idempotent); `--samples` loads the Loghub 2k samples into the database `log_insights_samples` instead |
-| `pnpm test:integration` | Loader and tool tests against SereneDB with the 2k samples and fixtures (needs Docker and `.env`) |
+| `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
+| `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
 | `pnpm gate [G1 …] [--keep]` | SereneDB compatibility gate (technical spec § 5.2) against the running container; full-corpus probes need `.data/raw/BGL.log` and are skipped without it |
 
 ## Tools
@@ -77,6 +79,8 @@ Load balance of `pnpm data:setup` (17.10.2026):
 | BGL | 4,747,963 | 4,747,963 | 4,747,945 | 18 |
 | OpenStack | 207,820 | 207,820 | 207,820 | 0 |
 
+Patterns: BGL 684 (43 with a single event, 6.3 %), OpenStack 106 (3, 2.8 %).
+
 The 18 rejected BGL lines have no node and carry fragments of other messages
 or binary bytes before `RAS KERNEL INFO`, so their fields cannot be determined;
 they are kept verbatim in the table `load_rejects`. Per-file figures are in
@@ -89,14 +93,40 @@ until 30 Oct 2005, 8 h after). OpenStack timestamps carry no zone and are
 assumed to be UTC. BGL (2005–2006) and OpenStack (2017) share no time axis.
 
 Labels belong to the datasets, not to this system: BGL alert categories in the
-first column, and for OpenStack four instance IDs with injected anomalies
-(`anomaly_labels.txt`), which mark 100 lines.
+first column (41 categories, 348,460 lines), and for OpenStack four instance
+IDs with injected anomalies (`anomaly_labels.txt`), which mark 100 lines. The
+OpenStack labels mark instances, not error lines: no error, warning or 5xx
+line names an instance, so they serve as per-instance context only.
+
+### Errors, HTTP status and patterns
+
+Levels are counted as logged. An error event has one of these levels:
+
+| Dataset | Error levels | Other observed levels |
+|---|---|---|
+| BGL | `FATAL` 855,501, `ERROR` 112,355, `SEVERE` 19,213, `FAILURE` 1,714 | `INFO` 3,735,805, `WARNING` 23,357 |
+| OpenStack | `ERROR` 194, `CRITICAL` 2 | `INFO` 204,506, `WARNING` 3,118 |
+
+Every BGL alert line has an error level. OpenStack API accesses (98,733 lines
+with an HTTP status, 9,196 of them without request ID) contain 2 server
+errors (5xx, both `503`) and 3,969 client errors (4xx, all `404`); rates
+always name numerator and denominator.
+
+A pattern is the message with variable values replaced by typed placeholders
+(`<NODE>`, `<PATH>`, `<ADDR>`, `<NUM>`, …) within one dataset and component;
+diagnostic codes such as HTTP status, termination reasons and exit codes
+stay. The masks are in `packages/corpus/sql/20_patterns.sql`. They produce
+684 BGL and 106 OpenStack patterns; on the Loghub 2k samples no pattern
+merges two Loghub templates (checked in CI). Episodes start after at least
+30 minutes without an event of the same pattern.
 
 ### Ownership (fictional)
 
 Teams are an invented organisation, "Serene Platform", so that answers can be
-grouped by team; the real owners are unknown. Draft until profiling (U03).
-Components without a team are counted as `unowned` (currently BGL `SERV_NET`).
+grouped by team; the real owners are unknown. Every component observed in the
+corpus is listed; `SERV_NET` (3 events) is deliberately left `unowned`, so
+counts by team show that category on real data. The reason for each
+assignment is stored in the `reason` column of the `ownership` table.
 
 | Team | BGL components | OpenStack components |
 |---|---|---|
@@ -105,6 +135,7 @@ Components without a team are counted as `unowned` (currently BGL `SERV_NET`).
 | Control Plane | `MMCS`, `BGLMASTER`, `CMCS` | `nova-scheduler` |
 | Hardware Operations | `HARDWARE`, `LINKCARD`, `MONITOR`, `DISCOVERY` | – |
 | API Gateway | – | `nova-api` |
+| `unowned` | `SERV_NET` | – |
 
 ## Superset workspaces
 
@@ -140,8 +171,10 @@ and [port management](https://docs.superset.sh/ports).
 
 ```text
 apps/                       applications (none yet; apps/mcp and apps/web are planned)
-packages/corpus             pnpm data:setup (loader, SQL, integration tests) and the SereneDB gate
 packages/analytics          pool, filter compiler, receipts, tool registry and tools
+packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
+packages/domain             pure Zod contracts, fact IDs and rule functions
+packages/evals              role eval questions (development set)
 packages/ui                 shadcn primitives (Base UI), design tokens, cn()
 packages/eslint-config      shared ESLint presets
 packages/typescript-config  shared tsconfig presets

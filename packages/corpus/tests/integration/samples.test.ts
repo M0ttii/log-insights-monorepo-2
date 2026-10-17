@@ -348,19 +348,31 @@ describe("helper tables", () => {
       "openstack:nova-scheduler",
     ])
     expect(teams.every((row) => typeof row["team"] === "string")).toBe(true)
-    expect(await rows(client, "SELECT DISTINCT note FROM ownership")).toEqual([
-      { note: "fictional (Serene Platform); draft until U03" },
+    // Every row is labelled fictional and gives its reason (concept 5.3).
+    expect(
+      await rows(
+        client,
+        `SELECT note, count(*) AS rows_, count(*) FILTER (WHERE reason IS NULL OR reason = '') AS without_reason
+         FROM ownership GROUP BY note`
+      )
+    ).toEqual([
+      { note: "fictional (Serene Platform)", rows_: "12", without_reason: "0" },
     ])
   })
 
   it("records checksums, image digest and versions in the manifest", async () => {
     const [manifest] = await rows(
       client,
-      "SELECT data_version, source, files, image, pattern_rules_version FROM load_manifest"
+      `SELECT data_version, source, files, image, pattern_rules_version,
+         ownership_version, rules_version FROM load_manifest`
     )
     expect(manifest).toMatchObject({
       data_version: dataVersionOf(firstOutput),
       source: "samples",
+      // Final after U03 (LOG-12).
+      pattern_rules_version: "1.0.0",
+      ownership_version: "1.0.0",
+      rules_version: "concept-3.5",
       files: [
         {
           path: "loghub-2k/BGL_2k.log",

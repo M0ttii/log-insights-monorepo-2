@@ -80,7 +80,10 @@ SELECT
   NULLIF(regexp_extract(node, '^(R\d{2}-M\d)(?:-|$)', 1), '') AS midplane,
   NULLIF(label, '-') AS alert_label,
   label <> '-' AS is_alert,
-  -- R-02, provisional until U03 confirms the observed levels (O-07).
+  -- R-02, confirmed by profiling (U03, sql/profiling/10_levels.sql): six
+  -- levels occur (INFO, WARNING, SEVERE, ERROR, FATAL, FAILURE); the four
+  -- below are errors, and every alert line has one of them. Levels are taken
+  -- as logged, also where the text reads benign.
   level IN ('ERROR', 'SEVERE', 'FATAL', 'FAILURE') AS is_error,
   message
 FROM fields

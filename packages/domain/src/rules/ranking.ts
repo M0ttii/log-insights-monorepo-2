@@ -21,7 +21,10 @@ export type RankCandidate = {
   pattern_id: string
   /** R-05 episodes in the window. */
   episodes: number
-  /** Affected units (BGL nodes, OpenStack instances or requests); null when not determinable. */
+  /**
+   * Affected units: BGL nodes, OpenStack instances (concept R-08, U03). Null
+   * when not every event of the candidate in scope carries the unit.
+   */
   breadth: number | null
   /** Absolute increase C − B (R-06); null without a determinable reference. */
   increase: number | null
