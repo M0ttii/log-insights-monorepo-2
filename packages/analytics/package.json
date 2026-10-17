@@ -12,7 +12,8 @@
     "./config": "./src/config.ts",
     "./db": "./src/db.ts",
     "./receipts": "./src/receipts.ts",
-    "./registry": "./src/registry.ts"
+    "./registry": "./src/registry.ts",
+    "./resources": "./src/resources.ts"
   },
   "dependencies": {
     "@workspace/domain": "workspace:*",

@@ -24,6 +24,9 @@
     "gate": "pnpm --filter @workspace/corpus gate",
     "data:setup": "pnpm --filter @workspace/corpus data:setup",
     "data:profile": "pnpm --filter @workspace/corpus data:profile",
+    "mcp": "pnpm --silent --dir apps/mcp start",
+    "mcp:desktop-config": "pnpm --silent --dir apps/mcp run desktop-config",
+    "test:mcp": "pnpm --filter @workspace/mcp test:smoke",
     "test:golden": "pnpm --filter @workspace/analytics test:golden"
   },
   "devDependencies": {

@@ -3,6 +3,16 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   test: {
     projects: [
+      {
+        test: {
+          name: "mcp-smoke",
+          root: import.meta.dirname,
+          environment: "node",
+          include: ["apps/mcp/tests/**/*.test.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
+        },
+      },
       // Author: Codex root (LOG-13). Full corpus, explicit opt-in only; never CI.
       {
         test: {
@@ -19,7 +29,10 @@ export default defineConfig({
         test: {
           name: "packages",
           environment: "node",
-          include: ["packages/*/src/**/*.test.{ts,tsx}"],
+          include: [
+            "packages/*/src/**/*.test.{ts,tsx}",
+            "apps/mcp/src/**/*.test.ts",
+          ],
         },
       },
       // Loader against a running SereneDB (Compose, .env): `pnpm test:integration`.

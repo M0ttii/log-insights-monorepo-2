@@ -15,6 +15,25 @@ const FUNCTIONAL_AREAS =
 module.exports = {
   forbidden: [
     {
+      name: "mcp-only-agent-playbooks",
+      severity: "error",
+      comment: "MCP may load agent/playbooks only, never its AI SDK adapter.",
+      from: { path: "^apps/mcp/" },
+      to: {
+        path: "^packages/agent/",
+        pathNot: "^packages/agent/src/playbooks(?:/|\\.ts$)",
+      },
+    },
+    {
+      name: "no-next-react-in-server-workspaces",
+      severity: "error",
+      comment: "Node server workspaces run independently of Next and React.",
+      from: {
+        path: "^(apps/mcp|packages/(domain|analytics|agent|corpus|evals))/",
+      },
+      to: { path: "node_modules/(next|react|react-dom|server-only)/" },
+    },
+    {
       name: "no-circular",
       severity: "error",
       comment:
