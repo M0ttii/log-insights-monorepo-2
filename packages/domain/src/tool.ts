@@ -149,7 +149,11 @@ export type ToolDef<I, O> = {
   description: string
   input: z.ZodType<I>
   output: z.ZodType<O>
-  factSpecs: readonly FactSpec[]
+  /**
+   * Fact specs, or a function of the validated input for tools whose group
+   * keys follow the input (count_events: `groupKeys` = `group_by`).
+   */
+  factSpecs: readonly FactSpec[] | ((input: I) => readonly FactSpec[])
   annotations: ToolAnnotations
   /** Cross-field checks JSON Schema cannot express; run after the schema parse. */
   validate?: (input: I) => ToolError | null

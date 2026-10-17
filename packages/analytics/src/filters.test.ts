@@ -1,7 +1,11 @@
 import { FILTER_FIELDS } from "@workspace/domain/filters"
 import { describe, expect, it } from "vitest"
 
-import { compileFilter, dimensionExpression } from "./filters.ts"
+import {
+  apiAccessCondition,
+  compileFilter,
+  dimensionExpression,
+} from "./filters.ts"
 import { SqlParams } from "./sql.ts"
 
 const ALL = FILTER_FIELDS
@@ -203,5 +207,14 @@ describe("dimensionExpression", () => {
       RangeError
     )
     expect(() => dimensionExpression("level", "e.x")).toThrow(RangeError)
+  })
+})
+
+describe("apiAccessCondition", () => {
+  it("repeats the api_access view condition on the given relation", () => {
+    expect(apiAccessCondition("log_events_idx")).toBe(
+      "log_events_idx.dataset = 'openstack' AND log_events_idx.http_status IS NOT NULL"
+    )
+    expect(() => apiAccessCondition("e; DROP")).toThrow(RangeError)
   })
 })
