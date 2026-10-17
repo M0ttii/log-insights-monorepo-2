@@ -153,11 +153,19 @@ from another working directory against the Loghub 2k samples. It also starts the
 generated Desktop command. CI runs this after loading samples. Unit tests in
 `pnpm test` cover cancellation routing and playbook-source registration. The smoke
 also checks all three prompts, Initialize instructions and persisted corpus
-guidance against the same playbook source. Actual Claude Code and Desktop
-sessions with `claude-opus-5-5` remain a separate acceptance check: instruction
-uptake and answers with/without prompts have not yet been established in either
-client. Claude Code was not signed in and no API key was configured during the
-initial U15 check; transport tests do not establish model behavior.
+guidance against the same playbook source. Actual model behavior remains a
+separate acceptance check. Desktop development probes (UI model: Opus 5.5)
+retrieved all three prompts and produced distinct role cores with and without
+prompt selection. Initialize instructions alone did not reliably guide the
+model; complete result text and repeated instructions improved role uptake, but
+some runs still skipped the initial `describe_corpus` call. Bundle 1.0.2 narrowed
+the observed per-node generalization and preserved signed offsets in a repeated
+Engineer probe and elicited a perspective question for an unclear request;
+unsupported broader conclusions and uncited quantities remained.
+Full answer-contract acceptance is still open. Probe chat links, receipt IDs and
+observed gaps are recorded in Linear LOG-39, without formal U16 scoring. Claude
+Code was not signed in and no API key was configured during these checks, so
+its model probes remain pending; transport tests do not establish model behavior.
 
 ## Tools
 

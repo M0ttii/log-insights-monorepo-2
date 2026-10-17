@@ -1,5 +1,6 @@
-# Development questions of the role eval (technical.md § 13.1), written in
-# U03 (LOG-12) from the profiling results. These are development and
+# Development questions of the role eval (technical.md § 13.1). The initial
+# corpus questions came from U03 (LOG-12) profiling; U15 adds an ambiguous
+# routing question that needs no corpus figures. These are development and
 # regression questions, never holdout: the author of this file writes no
 # holdout questions and does not see them (U16).
 #
@@ -16,6 +17,23 @@ version: 1
 data_version: dv_263e378cd8560c4a
 
 questions:
+  # ----------------------------------------------------------- clarification
+  - id: dev-clarify-01
+    role: null
+    covers: [S-14]
+    question: I need an analysis of the BGL logs.
+    scope: { dataset: bgl }
+    required_evidence:
+      - a clarification of the user's perspective or decision before a role answer
+      - no analytical recommendation before that clarification
+    distinguishing_check: >-
+      The request names a corpus but gives no diagnostic, team-review or
+      allocation goal. Ask which perspective is needed rather than selecting
+      a role without enough information.
+    allowed_tool_sequences:
+      - [describe_corpus]
+      - []
+
   # ---------------------------------------------------------------- engineer
   - id: dev-eng-01
     role: engineer
