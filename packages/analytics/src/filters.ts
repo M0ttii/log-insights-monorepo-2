@@ -41,6 +41,7 @@ const EQUALS: Partial<Record<FilterField, string>> = {
 const IN_LIST: Partial<Record<FilterField, string>> = {
   components: "component",
   levels: "level",
+  endpoints: "endpoint",
 }
 
 /** Grouping dimensions (§ 8.1) and the SQL they read. */
@@ -173,6 +174,14 @@ export function compileFilter(
         case "only_alerts":
           if (filter.only_alerts === true) conditions.push(`${q}.is_alert`)
           break
+        case "http_status": {
+          const range = filter.http_status
+          if (range === undefined) throw new TypeError("http_status is unset")
+          conditions.push(
+            `${q}.http_status BETWEEN ${params.add(range.min)} AND ${params.add(range.max)}`
+          )
+          break
+        }
         case "text":
           conditions.push(
             `${q}.message @@ plainto_tsquery(${params.add(stringValue(filter, field))})`
