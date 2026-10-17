@@ -22,6 +22,17 @@ export default defineConfig({
           hookTimeout: 300_000,
         },
       },
+      // Registry, pool and describe_corpus against the 2k samples loaded by
+      // `pnpm data:setup --samples`; part of `pnpm test:integration`.
+      {
+        test: {
+          name: "analytics-integration",
+          environment: "node",
+          include: ["packages/analytics/tests/integration/**/*.test.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
+        },
+      },
     ],
   },
 })

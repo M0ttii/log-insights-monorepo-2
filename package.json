@@ -16,7 +16,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,css}\"",
     "typecheck": "turbo typecheck",
     "test": "vitest run --project packages",
-    "test:integration": "vitest run --project corpus-integration --no-file-parallelism",
+    "test:integration": "vitest run --project corpus-integration --project analytics-integration --no-file-parallelism",
     "test:watch": "vitest --project packages",
     "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
     "knip": "knip",
