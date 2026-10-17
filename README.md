@@ -140,6 +140,8 @@ not inspect the client's final answer. Optional index tools follow in U21, so en
 Successful tool calls include the complete validated JSON result in a text block
 as well as structured content, so clients that expose only text to the model
 still receive dataset/group labels, role guidance, evidence and all fact IDs.
+The same playbook instructions also accompany successful tool results, covering
+clients that omit Initialize instructions from the model's context.
 If a local Desktop extension launches this checkout, its MCPB manifest must allow
 the server's generated prompts (`prompts_generated: true`); an older launcher
 manifest can list prompts yet block their retrieval. See the

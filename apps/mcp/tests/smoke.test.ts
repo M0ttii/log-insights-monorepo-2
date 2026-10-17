@@ -208,6 +208,10 @@ describe("MCP stdio smoke against Loghub 2k samples", () => {
       },
     })
     const wire = await callTool(session.client, "describe_corpus", {})
+    expect(wire.content).toContainEqual({
+      type: "text",
+      text: source.instructions,
+    })
     const payload = wire.content.at(-1)
     if (payload?.type !== "text") throw new Error("Missing MCP text payload")
     expect(JSON.parse(payload.text)).toEqual(wire.structuredContent)

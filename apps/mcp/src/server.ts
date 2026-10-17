@@ -41,13 +41,16 @@ export function createMcpServer(options: {
       if (!outcome.ok) return toToolErrorResult(outcome.error)
       const entry = registry.tools.find((tool) => tool.name === name)
       const text = entry?.summarize(outcome.result) ?? summarize(outcome.result)
+      const content: CallToolResult["content"] = [{ type: "text", text }]
+      // Desktop may omit Initialize instructions from the model's context.
+      // Deliver the same source with results so direct questions still route.
+      if (playbooks !== undefined)
+        content.push({ type: "text", text: playbooks.instructions })
+      content.push({ type: "text", text: JSON.stringify(outcome.result) })
       return {
         // Some clients expose only content to the model. Keep the complete
         // validated result there too, including groups, guidance and fact IDs.
-        content: [
-          { type: "text", text },
-          { type: "text", text: JSON.stringify(outcome.result) },
-        ],
+        content,
         structuredContent: { ...outcome.result },
       }
     } catch {
