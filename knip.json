@@ -9,7 +9,10 @@
       "entry": ["tests/integration/print-times.ts"]
     },
     "packages/analytics": {
-      "entry": ["tests/integration/print-times.ts"],
+      "entry": [
+        "tests/integration/print-times.ts",
+        "tests/integration/print-trend.ts"
+      ],
       "ignoreDependencies": ["tsx"]
     }
   },

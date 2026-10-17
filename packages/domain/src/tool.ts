@@ -151,7 +151,8 @@ export type ToolDef<I, O> = {
   output: z.ZodType<O>
   /**
    * Fact specs, or a function of the validated input for tools whose group
-   * keys follow the input (count_events: `groupKeys` = `group_by`).
+   * keys follow the input (count_events: `groupKeys` = `group_by`;
+   * event_trend: the split dimension).
    */
   factSpecs: readonly FactSpec[] | ((input: I) => readonly FactSpec[])
   annotations: ToolAnnotations

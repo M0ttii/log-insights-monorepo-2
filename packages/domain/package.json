@@ -18,6 +18,7 @@
     "./time": "./src/time.ts",
     "./tool": "./src/tool.ts",
     "./tools/count-events": "./src/tools/count-events.ts",
+    "./tools/event-trend": "./src/tools/event-trend.ts",
     "./tools/search-logs": "./src/tools/search-logs.ts",
     "./version": "./src/version.ts",
     "./rules/compare": "./src/rules/compare.ts",

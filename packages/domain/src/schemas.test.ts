@@ -15,6 +15,10 @@ import {
   countEventsOutputSchema,
 } from "./tools/count-events.ts"
 import {
+  eventTrendInputSchema,
+  eventTrendOutputSchema,
+} from "./tools/event-trend.ts"
+import {
   searchLogsInputSchema,
   searchLogsOutputSchema,
 } from "./tools/search-logs.ts"
@@ -53,6 +57,8 @@ const schemas = {
   searchLogsOutput: searchLogsOutputSchema,
   countEventsInput: countEventsInputSchema,
   countEventsOutput: countEventsOutputSchema,
+  eventTrendInput: eventTrendInputSchema,
+  eventTrendOutput: eventTrendOutputSchema,
 }
 
 type JsonObject = Record<string, unknown>
@@ -110,6 +116,17 @@ describe("JSON Schema export", () => {
     })
     expect(property(input, "from").description).toMatch(/inclusive/)
     expect(property(input, "to").description).toMatch(/exclusive/)
+  })
+
+  it("requires exactly one dataset and a bucket for event_trend", () => {
+    const input = z.toJSONSchema(eventTrendInputSchema, { io: "input" })
+    expect(input.additionalProperties).toBe(false)
+    expect(input.required).toEqual(["dataset", "bucket"])
+    expect(property(input, "dataset")).toMatchObject({
+      type: "string",
+      enum: ["bgl", "openstack"],
+    })
+    expect(property(input, "bucket").description).toMatch(/Monday/)
   })
 
   it("exports describe_corpus as an empty strict object", () => {
