@@ -454,8 +454,9 @@ merged pull request.
 
 1. **Start:** read the Linear ticket with its description, acceptance criteria,
    relations, sub-issues and comments. Set its status to `In Progress`.
-2. **Branch:** create a branch for the ticket before the first change, from `main`
-   (or from the unmerged branch it builds on, noted in the ticket). Name it
+2. **Branch:** create a branch for the ticket before the first change, from
+   `origin/main` after `git fetch` (or from the unmerged branch it builds on,
+   noted in the ticket). Name it
    `log-<number>-<short-english-summary>` in lowercase kebab case, for example
    `log-123-bgl-loader`; use the ID of the ticket or sub-issue being worked on.
    Use this format, not the branch name Linear suggests.
@@ -471,9 +472,9 @@ merged pull request.
    fix the cause in a new commit on the branch and push again; never skip, disable
    or weaken a check to get green.
 6. **Merge:** once every required check is green and the branch has no conflicts,
-   merge with `gh pr merge --merge --delete-branch` (merge commit, as in the
-   existing history), then update the local `main` (`git switch main && git pull
-   --ff-only`). Do not merge with failing or pending checks, never push directly
+   merge with `gh pr merge <number> --merge` (merge commit, as in the existing
+   history) and delete the remote branch (`git push origin --delete <branch>`).
+   Do not merge with failing or pending checks, never push directly
    to `main`, never force-push a shared branch, and do not bypass branch
    protection. A pull request that builds on an unmerged branch is merged only
    after its base. Stop and ask instead of merging if the change needs a decision
