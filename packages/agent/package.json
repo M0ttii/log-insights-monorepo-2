@@ -4,20 +4,27 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./playbooks": "./src/playbooks.ts"
+    "./playbooks": "./src/playbooks.ts",
+    "./ai-sdk": "./src/ai-sdk/index.ts"
   },
   "scripts": {
+    "agent:ask": "node --env-file-if-exists=../../.env --import tsx src/ai-sdk/cli.ts",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@workspace/domain": "workspace:*"
+    "@ai-sdk/anthropic": "4.0.82",
+    "@workspace/analytics": "workspace:*",
+    "@workspace/domain": "workspace:*",
+    "ai": "7.0.143",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^10",
+    "tsx": "4.23.15",
     "typescript": "^5",
     "vitest": "5.0.5"
   }

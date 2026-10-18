@@ -13,8 +13,11 @@ receipt.
 > `rank: investigation_order`, `latency_stats`, `check_claims`). The stdio MCP
 > server exposes the registry and shared role playbooks to Claude clients. A preliminary web workspace provides role-aware question drafts,
 > live corpus analytics, log search, event context and shared query receipts.
-> The streaming web chat and role comparison remain unconnected; real-client role
-> acceptance is still pending.
+> The agent `runInvestigation` (`@workspace/agent/ai-sdk`, AI SDK 7) runs the
+> phases preflight, investigate, coverage, answer, gate and one revision and is
+> callable through `pnpm --silent agent:ask`; the streaming web chat and role
+> comparison are not connected to it yet, and real-client role acceptance is
+> still pending.
 
 ## Requirements
 
@@ -97,6 +100,7 @@ in the technical spec (§ 5.1).
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
 | `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
 | `pnpm --silent mcp` | Run the stdio MCP server over the shared tool registry |
+| `pnpm --silent agent:ask --role <role> [--variant baseline] [--effort high] "<question>"` | Run one `runInvestigation` (`engineer`, `team_lead`, `manager` or `auto`) against the loaded corpus; prints the final answer and the run record path (`.data/runs/<run_id>.json`) on stdout, diagnostics on stderr; needs `ANTHROPIC_API_KEY` |
 | `pnpm --silent mcp:desktop-config` | Print the Claude Desktop configuration with absolute paths |
 | `pnpm test:mcp` | MCP stdio smoke and shutdown checks against the loaded 2k samples |
 | `pnpm test:golden [file-filter …]` | Independent, read-only SQL comparisons for all eight tools against the full corpus, plus raw-file/load reconciliation; local only, excluded from `pnpm test` and CI |
@@ -372,7 +376,8 @@ apps/mcp                    stdio MCP server, resources, playbook interface, des
 apps/web                    preliminary Next.js workspace; streaming chat pending
 packages/analytics          pool, filter compiler, receipts, tool registry and tools
 packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
-packages/domain             pure Zod contracts, fact IDs and rule functions
+packages/agent              role playbooks (./playbooks) and the AI SDK agent runInvestigation with run records (./ai-sdk)
+packages/domain             pure Zod contracts, fact IDs, rule functions and answer markings (./answer)
 packages/evals              role eval questions (development set)
 packages/ui                 shadcn primitives (Base UI), design tokens, cn()
 packages/eslint-config      shared ESLint presets
