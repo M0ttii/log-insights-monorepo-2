@@ -6,23 +6,26 @@ explicitly analyst-written case views and excerpts from actual Claude answers.
 It is not a live model run. [Provenance](walkthrough/manifest.json) retains exact
 narration, timing and source hashes. The answer-excerpt card is editable in
 [Typst](walkthrough/agent-excerpts.typ), using [original quotations](walkthrough/quotes.json).
-The five-minute challenge presentation can use the six main slides below; a
-separate live stage rehearsal has not been timed.
+The video follows the earlier six-slide story; the five-minute challenge
+presentation uses the nine main slides below. A live stage rehearsal has not
+been timed.
 
 ## Worked-investigation presentation
 
 The [editable Typst deck](worked-investigation.typ) and
-[compiled PDF](worked-investigation.pdf) present the
+[compiled PDF](worked-investigation.pdf) are the challenge pitch, built around the
 [English APPREAD investigation](../submission/worked-investigation.md). The deck
-has six main slides and three reserve slides, with Urbanist and the SereneDB
-colors from `DESIGN.md`.
+has nine main slides and three reserve slides, with Urbanist and the SereneDB
+colors from `DESIGN.md`. A web screenshot lives in `assets/`.
 
-This is a known development case: archived real tool calls, original log evidence
-and analyst-written role views. The footer says **KNOWN CASE / QUERY EVIDENCE**.
-It is not a new Claude answer, a live client test or a model-quality benchmark.
-Formal baseline, holdout and independent ratings are deferred optional work; no
-quality improvement is claimed. Actual Claude examples are indexed separately in
-[the archived agent examples](../submission/agent-examples/README.md).
+Figures come from the checked claim ledger or directly from original receipts
+(claim-check totals, database durations, executed SQL, re-run matches); a missing
+fact stops compilation. The role slide is labelled as analyst-written views from
+real tool calls. The Claude slide quotes [actual answers](../submission/agent-examples/README.md)
+from `walkthrough/quotes.json`. OTel figures on the execution slide are the
+single local observations recorded in the main README. Neither the case nor the
+selected answers is a blinded benchmark; formal baseline, holdout and independent
+ratings are deferred and no quality improvement is claimed.
 
 ## Build the worked deck
 
@@ -48,18 +51,21 @@ merge. Signed-out public access remains to be verified.
 
 ## Story and recording
 
-1. Known BGL job-start case and the three roles.
-2. Shared registry, SereneDB computation and receipts.
-3. Retrieval and full-population aggregation for BGL and OpenStack, on separate
-   time axes.
-4. Engineer diagnosis, team investigation and manager allocation decisions.
-5. Initial hypothesis, executed precursor check and the changed next step.
-6. Unknowns and reviewable evidence.
+1. Title: every number has a receipt; full BGL and OpenStack populations.
+2. Why not chat over logs: four failure modes and how the design avoids them.
+3. SereneDB does the work: parse, normalize, index and analyze in SQL.
+4. Worked case: four queries (search, episodes, context, precursor) change the
+   next step.
+5. Same case, three roles, three decisions.
+6. Actual Claude answers through MCP, with fact IDs.
+7. Receipt, `check_claims` mismatch detection and registry re-runs.
+8. Clean-clone start, MCP server and remote OTel Parquet at scale.
+9. Close and repository link.
 
-The reserve slides contain original SQL, the tool catalog and verification limits.
+The reserve slides contain original SQL, the tool catalog and the stated limits.
 The [English narration and action sequence](../submission/demo-script.md) budgets
-about 150 seconds for an edited walkthrough of the six main slides and archived
-queries. It must be labelled **Edited walkthrough: archived queries and
+about 150 seconds for an edited walkthrough of the earlier six-slide story and
+archived queries. It must be labelled **Edited walkthrough: archived queries and
 analyst-written role views**. Actual Claude examples are separate evidence.
 
 The challenge allows at most five minutes for the presentation/demo. The separate
