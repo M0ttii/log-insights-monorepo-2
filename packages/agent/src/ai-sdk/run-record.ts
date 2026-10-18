@@ -3,6 +3,7 @@ import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises"
 import { isAbsolute, join, resolve } from "node:path"
 
 import { findWorkspaceRoot } from "@workspace/analytics/config"
+import { gateFindingSchema } from "@workspace/domain/answer"
 import { z } from "zod"
 
 /**
@@ -105,11 +106,11 @@ export const checkClaimsSummarySchema = z.strictObject({
 })
 
 /**
- * Gate findings per draft. domain/answer (LOG-46) does not exist yet, so the
- * placeholder is `z.array(z.unknown())` named `gateFindings`. The next stage
- * (after domain/answer lands) switches this to the real `gateFindingSchema`.
+ * Gate findings for one draft: the deterministic `gateFindingSchema` from
+ * `@workspace/domain/answer` (LOG-46). `gate_findings` holds one array per
+ * draft (the first draft, then the revision when one ran).
  */
-export const gateFindingsSchema = z.array(z.unknown())
+export const gateFindingsSchema = z.array(gateFindingSchema)
 
 export const runRecordSchema = z.strictObject({
   run_id: runIdSchema,

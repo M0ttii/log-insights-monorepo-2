@@ -1,13 +1,40 @@
 /**
- * The `@workspace/agent/ai-sdk` entry (technical.md § 4, § 11.1). It builds the
- * AI SDK pieces on top of the registry and playbooks: the model and provider
- * options, the registry → AI SDK tool adapter, the run record store and the
- * coverage evaluation. The phase machine `runInvestigation` and its CLI wiring
- * land in a later stage; this half exports the building blocks they consume.
+ * The `@workspace/agent/ai-sdk` entry (technical.md § 4, § 11, § 11.1). It
+ * builds the AI SDK pieces on top of the registry and playbooks: the phase
+ * machine `runInvestigation`, its input schema and types, the registry → AI SDK
+ * tool adapter, the model and provider options, the run record store, the
+ * coverage helpers, the baseline instruction texts, and the CLI.
  *
  * This entry never imports `next`, `react`, `server-only` or the MCP SDK
  * (AGENTS.md, technical.md § 4, enforced by dependency-cruiser).
  */
+
+export {
+  convertToModelMessages,
+  DEFAULT_LIMITS,
+  investigationInputSchema,
+  investigationRoleSchema,
+  investigationScopeSchema,
+  investigationVariantSchema,
+  runInvestigation,
+  type InvestigationDeps,
+  type InvestigationInput,
+  type InvestigationLimits,
+  type InvestigationPlaybooks,
+  type InvestigationResult,
+  type InvestigationRole,
+  type InvestigationScope,
+  type InvestigationUIMessage,
+  type InvestigationVariant,
+  type PhasePrompt,
+} from "./investigation.ts"
+
+export {
+  BASELINE_INSTRUCTIONS,
+  baselineRegistryGuidance,
+  baselineRoleInstruction,
+  type BaselineRole,
+} from "./baseline.ts"
 
 export {
   CHAT_DISABLED_MESSAGE,
