@@ -76,6 +76,7 @@ describe("MCP registry adapter", () => {
     )
     expect(tools).toHaveLength(8)
     for (const tool of tools) {
+      const { _meta: metadata } = tool
       expect(tool.annotations).toEqual({
         readOnlyHint: true,
         destructiveHint: false,
@@ -83,6 +84,11 @@ describe("MCP registry adapter", () => {
         openWorldHint: false,
       })
       expect(tool.outputSchema).toBeDefined()
+      expect(metadata).toEqual(
+        tool.name === "describe_corpus"
+          ? { "anthropic/maxResultSizeChars": 200_000 }
+          : undefined
+      )
     }
     expect(client.getInstructions()).toBeUndefined()
     expect(client.getServerCapabilities()?.prompts).toBeUndefined()

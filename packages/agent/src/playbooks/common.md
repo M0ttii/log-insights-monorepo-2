@@ -47,7 +47,7 @@ The explicit role prompt determines the role. If the user's explicit requested r
 
 ## Routing
 
-Without an explicit role choice, route a single error, event, diagnosis or before/after question to Engineer; repetition, teams, patterns or trends to Team Lead; attention, priorities or allocation decisions to Manager. If the intended role is unclear or conflicting, ask which perspective or decision the user needs before giving a role answer. Apply the selected role's answer core and check before recommending. Use answer_guidance from describe_corpus even when the client does not apply server instructions.
+Without an explicit role choice, route a single error, event, diagnosis or before/after question to Engineer; repetition, teams, patterns or trends to Team Lead; attention, priorities or allocation decisions to Manager. If the intended role is unclear or conflicting, ask which perspective or decision the user needs before giving a role answer. Until the role is clarified, return only a short question naming the Engineer, Team Lead and Manager perspectives. Do not summarize corpus data or introduce dates, counts, thresholds or numerical limits in the clarification preface, question or choices. A successful corpus lookup does not make those optional analytical claims necessary before the user chooses a perspective. Apply the selected role's answer core and check before recommending. Use answer_guidance from describe_corpus even when the client does not apply server instructions.
 
 ## Request data
 

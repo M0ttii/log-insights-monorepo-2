@@ -1,0 +1,54 @@
+## Scope
+- **Dataset:** BGL, using the public Loghub corpus.
+- **Window:** [2005-06-01 [r_360a44dd.f12], 2005-07-01 [r_360a44dd.f13]) UTC. BGL data only starts at 2005-06-03T22:42:50Z [r_88f3469d.f30], so nothing before that is counted.
+- **Search condition:** the message terms `ciod failed to read message prefix on control stream`.
+- **Missing metadata:** `describe_corpus` ran, but its output was too large to read in this session. I haven't seen its field guide or answer_guidance; I used the tool schemas instead.
+
+## Answer
+**This is not one bad node. The failure looks job-wide or caused by a shared component.** In the selected burst, the same message hit every rack in the scope within a single minute. Across the month, no single node stands out. Where the failure comes from is still open: one shared component, such as the control-stream endpoint all the messages name, could produce these broad symptoms.
+
+### Evidence
+- **Population:** 5,983 log events match the condition [r_360a44dd.f11]. Only the first 10 hits by time were shown, so the list is truncated.
+- **Selected event:** `14738`, at 2005-06-04T07:24:32Z [r_ac1295db.f1]. Component APP, level FATAL, node `R23-M1-N8-I:J18-U11`, dataset label APPREAD (a dataset label, not our finding). The message, verbatim:
+  `ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399`
+- Every hit shown names the same peer, `172.16.96.116`, with different ports. That is 10 example lines, not a count.
+
+### Timeline (event `14738`, ±10 min, whole dataset)
+- **Before:** only 2 log events [r_ac1295db.f16]. The nearest is a FATAL `ciod: LOGIN chdir(/p/gb2/draeger/benchmark/dat32k_060205) failed: No such file or directory` on `R23-M0-N4-I:J18-U11`, at −838.005 ms [r_ac1295db.f12].
+- **After:** 1,021 log events [r_ac1295db.f17]. The first is the same prefix error on rack `R04`, at +33.908 ms [r_ac1295db.f2].
+
+### Narrowing
+| Check | Result |
+|---|---|
+| Racks with the error, June | 32 rack groups [r_fb7ef9f9.f1]; `R00` has 240 events [r_fb7ef9f9.f2]; the 22 racks not shown have 3,583 events [r_fb7ef9f9.f22] |
+| Nodes with the error, June | 512 node groups [r_9153bdac.f1]; the top node `R00-M0-N0-I:J18-U01` has only 15 events [r_9153bdac.f2] |
+| Same minute (07:24–07:25 on 06-04) | 510 events [r_1450cafe.f15] across 32 rack groups [r_1450cafe.f1]; `R00` has 16 [r_1450cafe.f2] |
+| Daily trend: days with the error | 06-04: 2,040 [r_88f3469d.f3] · 06-09: 124 [r_88f3469d.f8] · 06-13: 1,017 [r_88f3469d.f12] · 06-16: 2,040 [r_88f3469d.f15] · 06-20: 762 [r_88f3469d.f19] |
+| `chdir` failures in the same minute | 2 events [r_1df53713.f4], all in rack `R23` [r_1df53713.f2] |
+| `chdir` failures, June | 2,178 events [r_11a60181.f34]; 1,408 on 06-08 [r_11a60181.f7], a day with 0 prefix errors [r_88f3469d.f7] |
+
+### Hypotheses
+| Explanation | Status | For / against | Check run |
+|---|---|---|---|
+| Symptoms limited to one bad node | **contradicted** | This assumes only one node logs the error. Instead it hit many nodes and every rack in the scope within one minute | Rack/node counts and the same-minute count [r_9153bdac.f1] [r_1450cafe.f1] |
+| Cause comes from one node or one shared component (e.g. the endpoint `172.16.96.116`, or the job/partition itself) | **open** | For: the failure appears at the same moment everywhere, and the examples name one peer. Against: nothing yet. Wide symptoms don't rule out a single cause | Same-minute rack count [r_1450cafe.f15]; no check yet tests the cause |
+| Job-level problem (the `chdir` failure on a missing directory sets off the stream errors) | **open** (weak) | For: it comes just before the anchor [r_ac1295db.f12]. Against: it appeared in one rack only [r_1df53713.f2], and on its biggest day there were no prefix errors at all [r_11a60181.f7] [r_88f3469d.f7]. Timing alone isn't a cause | Daily trend comparison |
+| Repeats rather than one burst | **supported** (within June only) | Separate active days with quiet days in between (see trend table) | Daily event_trend; episodes weren't available |
+
+### Next check
+- **What to look at:** the job/partition logs and the service at `172.16.96.116`, outside this corpus. Check for a job kill, a control-stream disconnect, or a restart of that service around 2005-06-04T07:24:32Z [r_ac1295db.f1] and the other active days.
+- **If a matching job end or service event exists on each active day:** the shared-component hypothesis gains support but is still not proven. A separate test (e.g. that service's own error log) would be needed to tell it apart from a normal job teardown.
+- **If no such event exists:** the shared-endpoint idea gets weaker, but the job/partition explanation stays open.
+- **In the corpus:** an hourly event_trend on each active day, split by rack, to see whether every burst starts at the same moment everywhere.
+
+## Unknown
+- The root cause, and any job or business impact.
+- Episodes, history/status and precursor-vs-baseline ratios weren't available. recurring_patterns, the aggregate context mode and compare were excluded from this test, so I didn't use event volume as a stand-in for them.
+- No tool groups by midplane.
+- Both breakdowns were truncated: top 10 of 32 racks, top 5 of 512 nodes.
+- I couldn't read the full `describe_corpus` output.
+
+## Verification
+- First pass: 27 claims checked [r_19d4bf3d.f1] · 7 mismatch [r_19d4bf3d.f2] · 0 unresolved [r_19d4bf3d.f3]. All 7 mismatches were bucket timestamps I had shortened.
+- Re-check of those 7 with the exact group: 7 claims checked [r_643100df.f1] · 0 mismatch [r_643100df.f2] · 0 unresolved [r_643100df.f3].
+- These checks cover the submitted numbers only, not the explanations.

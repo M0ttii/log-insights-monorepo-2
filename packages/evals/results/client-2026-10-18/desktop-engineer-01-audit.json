@@ -1,0 +1,724 @@
+{
+  "client": "Claude Desktop",
+  "visible_model": "Opus 5.5",
+  "visible_effort": "Mittel",
+  "chat_url": "https://claude.ai/chat/d379235f-4a40-4451-a3bb-b2259abbe0b0",
+  "role": "engineer",
+  "prompt": "engineer_investigation_text, selected via local connector prompt UI",
+  "question": "Review the recurring BGL ciod control-stream message-prefix failures in June 2005. What does the evidence establish and what should happen next?",
+  "scope": {
+    "dataset": "bgl",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z"
+  },
+  "source_commit": "82f058537e2840f2234dd4bac73dcf952d1897d7",
+  "source_dirty": true,
+  "guidance_version": "1.0.8",
+  "data_version": "dv_5663ee75e955ec1d",
+  "answer_capture": "Original assistant Copy button -> native TextEdit plain UTF-8 save, without edits. Includes preface.",
+  "answer_sha256": "9d3d66f6e6deedd9d9462630b8bfc54b3d7354f6427ef6336c11081adcb66255",
+  "findings": [
+    {
+      "kind": "uncited",
+      "value": "2005",
+      "start": 81,
+      "end": 85,
+      "excerpt": "I'll run the Engineer investigation on BGL ciod control-stream failures for June 2005 using the Log Insights tools, starting with the corpus description."
+    },
+    {
+      "kind": "uncited",
+      "value": "10",
+      "start": 1248,
+      "end": 1250,
+      "excerpt": "| Matching log events in the window (exact count; 10 shown, so the hit list is truncated) | 5,983 [r_edc6b835.f11] |"
+    },
+    {
+      "kind": "uncited",
+      "value": "240",
+      "start": 3116,
+      "end": 3119,
+      "excerpt": "- By rack, the top groups each show 240 events (example: `R00` with 240 [r_c22b06ea.f2]). The remaining 22 racks [r_c22b06ea.f23] together account for 3,583 ev…"
+    },
+    {
+      "kind": "uncited",
+      "value": "3",
+      "start": 4234,
+      "end": 4235,
+      "excerpt": "| It was a one-off burst | Contradicted, within the observed window only | The required assumption is a single burst. That is refuted by 7 bursts [r_695ba837.f…"
+    },
+    {
+      "kind": "uncited",
+      "value": "10",
+      "start": 5004,
+      "end": 5006,
+      "excerpt": "| One shared component (e.g. the service-side peer `172.16.96.116`, or the control system) is the common origin | Open | For: every displayed hit names the sam…"
+    }
+  ],
+  "uncited": [
+    {
+      "value": "2005",
+      "start": 81,
+      "end": 85,
+      "excerpt": "I'll run the Engineer investigation on BGL ciod control-stream failures for June 2005 using the Log Insights tools, starting with the corpus description."
+    },
+    {
+      "value": "10",
+      "start": 1248,
+      "end": 1250,
+      "excerpt": "| Matching log events in the window (exact count; 10 shown, so the hit list is truncated) | 5,983 [r_edc6b835.f11] |"
+    },
+    {
+      "value": "240",
+      "start": 3116,
+      "end": 3119,
+      "excerpt": "- By rack, the top groups each show 240 events (example: `R00` with 240 [r_c22b06ea.f2]). The remaining 22 racks [r_c22b06ea.f23] together account for 3,583 ev…"
+    },
+    {
+      "value": "3",
+      "start": 4234,
+      "end": 4235,
+      "excerpt": "| It was a one-off burst | Contradicted, within the observed window only | The required assumption is a single burst. That is refuted by 7 bursts [r_695ba837.f…"
+    },
+    {
+      "value": "10",
+      "start": 5004,
+      "end": 5006,
+      "excerpt": "| One shared component (e.g. the service-side peer `172.16.96.116`, or the control system) is the common origin | Open | For: every displayed hit names the sam…"
+    }
+  ],
+  "citations": [
+    {
+      "kind": "fact",
+      "id": "r_edc6b835.f12",
+      "receiptId": "r_edc6b835",
+      "start": 216,
+      "end": 230
+    },
+    {
+      "kind": "fact",
+      "id": "r_edc6b835.f13",
+      "receiptId": "r_edc6b835",
+      "start": 247,
+      "end": 261
+    },
+    {
+      "kind": "fact",
+      "id": "r_30c113da.f198",
+      "receiptId": "r_30c113da",
+      "start": 316,
+      "end": 331
+    },
+    {
+      "kind": "fact",
+      "id": "r_edc6b835.f11",
+      "receiptId": "r_edc6b835",
+      "start": 1297,
+      "end": 1311
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f1",
+      "receiptId": "r_8ffd835c",
+      "start": 1404,
+      "end": 1417
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f11",
+      "receiptId": "r_695ba837",
+      "start": 1480,
+      "end": 1494
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f16",
+      "receiptId": "r_8ffd835c",
+      "start": 1841,
+      "end": 1855
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f17",
+      "receiptId": "r_8ffd835c",
+      "start": 1891,
+      "end": 1905
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f12",
+      "receiptId": "r_8ffd835c",
+      "start": 2060,
+      "end": 2074
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f14",
+      "receiptId": "r_8ffd835c",
+      "start": 2093,
+      "end": 2107
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f2",
+      "receiptId": "r_8ffd835c",
+      "start": 2222,
+      "end": 2235
+    },
+    {
+      "kind": "fact",
+      "id": "r_30c113da.f9",
+      "receiptId": "r_30c113da",
+      "start": 2366,
+      "end": 2379
+    },
+    {
+      "kind": "fact",
+      "id": "r_30c113da.f44",
+      "receiptId": "r_30c113da",
+      "start": 2405,
+      "end": 2419
+    },
+    {
+      "kind": "fact",
+      "id": "r_30c113da.f72",
+      "receiptId": "r_30c113da",
+      "start": 2447,
+      "end": 2461
+    },
+    {
+      "kind": "fact",
+      "id": "r_30c113da.f93",
+      "receiptId": "r_30c113da",
+      "start": 2489,
+      "end": 2503
+    },
+    {
+      "kind": "fact",
+      "id": "r_30c113da.f121",
+      "receiptId": "r_30c113da",
+      "start": 2529,
+      "end": 2544
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f1",
+      "receiptId": "r_2705cdb6",
+      "start": 2614,
+      "end": 2627
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f6",
+      "receiptId": "r_2705cdb6",
+      "start": 2722,
+      "end": 2735
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f7",
+      "receiptId": "r_2705cdb6",
+      "start": 2786,
+      "end": 2799
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f9",
+      "receiptId": "r_2705cdb6",
+      "start": 2832,
+      "end": 2845
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f12",
+      "receiptId": "r_695ba837",
+      "start": 2956,
+      "end": 2970
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f13",
+      "receiptId": "r_695ba837",
+      "start": 2985,
+      "end": 2999
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f8",
+      "receiptId": "r_695ba837",
+      "start": 3029,
+      "end": 3042
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f5",
+      "receiptId": "r_695ba837",
+      "start": 3064,
+      "end": 3077
+    },
+    {
+      "kind": "fact",
+      "id": "r_c22b06ea.f2",
+      "receiptId": "r_c22b06ea",
+      "start": 3153,
+      "end": 3166
+    },
+    {
+      "kind": "fact",
+      "id": "r_c22b06ea.f23",
+      "receiptId": "r_c22b06ea",
+      "start": 3194,
+      "end": 3208
+    },
+    {
+      "kind": "fact",
+      "id": "r_c22b06ea.f22",
+      "receiptId": "r_c22b06ea",
+      "start": 3245,
+      "end": 3259
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f12",
+      "receiptId": "r_695ba837",
+      "start": 3794,
+      "end": 3808
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f13",
+      "receiptId": "r_695ba837",
+      "start": 3824,
+      "end": 3838
+    },
+    {
+      "kind": "fact",
+      "id": "r_8ffd835c.f2",
+      "receiptId": "r_8ffd835c",
+      "start": 3909,
+      "end": 3922
+    },
+    {
+      "kind": "fact",
+      "id": "r_695ba837.f8",
+      "receiptId": "r_695ba837",
+      "start": 4166,
+      "end": 4179
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f6",
+      "receiptId": "r_2705cdb6",
+      "start": 4569,
+      "end": 4582
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f1",
+      "receiptId": "r_2705cdb6",
+      "start": 4590,
+      "end": 4603
+    },
+    {
+      "kind": "fact",
+      "id": "r_2705cdb6.f9",
+      "receiptId": "r_2705cdb6",
+      "start": 4641,
+      "end": 4654
+    },
+    {
+      "kind": "receipt",
+      "id": "r_2705cdb6",
+      "receiptId": "r_2705cdb6",
+      "start": 4794,
+      "end": 4804
+    },
+    {
+      "kind": "fact",
+      "id": "r_face094c.f1",
+      "receiptId": "r_face094c",
+      "start": 7101,
+      "end": 7114
+    },
+    {
+      "kind": "fact",
+      "id": "r_face094c.f2",
+      "receiptId": "r_face094c",
+      "start": 7130,
+      "end": 7143
+    },
+    {
+      "kind": "fact",
+      "id": "r_face094c.f3",
+      "receiptId": "r_face094c",
+      "start": 7161,
+      "end": 7174
+    }
+  ],
+  "checks": [
+    {
+      "receipt_id": "r_face094c",
+      "summary": {
+        "checked": 27,
+        "verified": 27,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "27 claims checked · 0 mismatch · 0 unresolved"
+      }
+    }
+  ],
+  "receipt_metadata": [
+    {
+      "receipt_id": "r_d31002cf",
+      "sha256": "b8c7cc18d486cb127e0f338330737bbaabe4e36f6ed90e7c39c82f6ae35e1e8c",
+      "tool": "describe_corpus",
+      "created_at": "2026-10-18T18:32:06.798Z",
+      "input": {},
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "b74a982cf1265d25d8f2534ede590f776976f44189e3a417b15fbb90130f04f2",
+      "result_digest": "99c22803d639b7940fa657be7b905e7d2930b9bf973a0f246cb7da428ce68af5"
+    },
+    {
+      "receipt_id": "r_edc6b835",
+      "sha256": "f8030a5936937a9d450b20acc455534255de0aa423e4bbbd048e37004eb4362d",
+      "tool": "search_logs",
+      "created_at": "2026-10-18T18:32:37.455Z",
+      "input": {
+        "query": "ciod failed to read message prefix on control stream",
+        "match": "terms",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "sort": "time_asc",
+        "limit": 10
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "e91fb389e0d9852d41a3a519f191ef08822dc0aa43d720ce044b313760fcc7dc",
+      "result_digest": "a9ddc243216d17b5d927851c8785ff4956e9edbd3b285a20c7c57fbc1395524f"
+    },
+    {
+      "receipt_id": "r_8ffd835c",
+      "sha256": "f5dcaeff24fd83600784a6158ff9c5d94db1b79aa21be497da8dcdc8ccd8d3f7",
+      "tool": "get_log_context",
+      "created_at": "2026-10-18T18:33:03.372Z",
+      "input": {
+        "mode": "event",
+        "window_minutes": 10,
+        "event_id": "14738",
+        "before": 8,
+        "after": 5,
+        "scope": "dataset"
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "501652ff3206dd94c66f516796b529b596798ec5085e7ec7867dcd9611a0db71",
+      "result_digest": "4691b380b0ff882b51a0d345efb44e2855c63b2cbdf592d8bc9c32b2da29da97"
+    },
+    {
+      "receipt_id": "r_c22b06ea",
+      "sha256": "78aea0916ef31fa0e83ae97c0fa9637b3a9b6005fcae2cc4bf78cf51036da265",
+      "tool": "count_events",
+      "created_at": "2026-10-18T18:33:41.910Z",
+      "input": {
+        "group_by": ["rack"],
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "top_n": 10
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "0a441d8ebd900e8af1bf85e76f5312923721eee4a58c4e0e0263ef4c5a0865fc",
+      "result_digest": "ad1709a80fc2496d66f19908768a0c3cfeaadc85b8d6cda727790a989812560f"
+    },
+    {
+      "receipt_id": "r_695ba837",
+      "sha256": "a3218ed04732f55f41b4424c80373cb990470cd4545cfc8e4d6eadc3e60b2527",
+      "tool": "recurring_patterns",
+      "created_at": "2026-10-18T18:34:17.008Z",
+      "input": {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "rank": "episodes",
+        "limit": 5
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "2771db01105f2e8d4983161cf0525c9ba90104065e9da3168014eaf454031e9c",
+      "result_digest": "240cb4ab705bd8cef869421966b927a3526e96669e177d8e635e654195777ee4"
+    },
+    {
+      "receipt_id": "r_2705cdb6",
+      "sha256": "367ad33fccc9c256e1ba753749d9ca5c6b7b3513fb3fa53e2725a89e0166e11a",
+      "tool": "get_log_context",
+      "created_at": "2026-10-18T18:36:37.006Z",
+      "input": {
+        "mode": "aggregate",
+        "window_minutes": 10,
+        "pattern_id": "287312f13c189c4d",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "direction": "before",
+        "top_n": 5
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "0fe66bf0f8e9d81e99a39718ac998e322618699190ed44ec530ee999ba5e806b",
+      "result_digest": "f2b31164b07510028fbf23caa22a25d9f16e17981326afdf1aa123511c43975b"
+    },
+    {
+      "receipt_id": "r_30c113da",
+      "sha256": "2ed797cabd889a79a9d522c572c3468299abaee1f489255b178c6cc388bcd7cf",
+      "tool": "event_trend",
+      "created_at": "2026-10-18T18:36:54.266Z",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "pattern_id": "287312f13c189c4d",
+        "split_by": "rack"
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "67bedc92f520714857cbf276624c92d261575b211580550c78c733bfaffcff3b",
+      "result_digest": "c45a5c94f98bc5c6f75226d21c65ce329e9301e3ace1ac66122f4b18de1ad467"
+    },
+    {
+      "receipt_id": "r_face094c",
+      "sha256": "ff3d99b0a94f4b18569e11a725d816f0ebf7daf6c299c29dd72c04ab67416834",
+      "tool": "check_claims",
+      "created_at": "2026-10-18T18:37:33.168Z",
+      "input": {
+        "claims": [
+          {
+            "fact": "r_edc6b835.f12",
+            "value": "2005-06-01",
+            "metric": "window_start",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_edc6b835.f13",
+            "value": "2005-07-01",
+            "metric": "window_end",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_30c113da.f198",
+            "value": "2005-06-03T22:42Z",
+            "metric": "data_span_start",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_edc6b835.f11",
+            "value": "5,983",
+            "metric": "matches",
+            "group": {}
+          },
+          {
+            "fact": "r_8ffd835c.f1",
+            "value": "2005-06-04T07:24Z",
+            "metric": "event_time",
+            "group": {
+              "event_id": "14738"
+            }
+          },
+          {
+            "fact": "r_8ffd835c.f12",
+            "value": -838.005,
+            "metric": "offset",
+            "group": {
+              "event_id": "14736"
+            }
+          },
+          {
+            "fact": "r_8ffd835c.f14",
+            "value": -803.828,
+            "metric": "offset",
+            "group": {
+              "event_id": "14737"
+            }
+          },
+          {
+            "fact": "r_8ffd835c.f2",
+            "value": 33.908,
+            "metric": "offset",
+            "group": {
+              "event_id": "14739"
+            }
+          },
+          {
+            "fact": "r_8ffd835c.f16",
+            "value": 2,
+            "metric": "events_in_window",
+            "group": {
+              "direction": "before"
+            }
+          },
+          {
+            "fact": "r_8ffd835c.f17",
+            "value": "1,021",
+            "metric": "events_in_window",
+            "group": {
+              "direction": "after"
+            }
+          },
+          {
+            "fact": "r_695ba837.f12",
+            "value": 512,
+            "metric": "nodes",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_695ba837.f13",
+            "value": 32,
+            "metric": "racks",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_695ba837.f8",
+            "value": 7,
+            "metric": "episodes",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_695ba837.f5",
+            "value": 5,
+            "metric": "active_days",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_695ba837.f11",
+            "value": "2005-06-20T08:42Z",
+            "metric": "last_seen",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_c22b06ea.f2",
+            "value": 240,
+            "metric": "events",
+            "group": {
+              "rack": "R00"
+            }
+          },
+          {
+            "fact": "r_c22b06ea.f22",
+            "value": "3,583",
+            "metric": "other_events",
+            "group": {}
+          },
+          {
+            "fact": "r_c22b06ea.f23",
+            "value": 22,
+            "metric": "other_groups",
+            "group": {}
+          },
+          {
+            "fact": "r_30c113da.f9",
+            "value": "2,040",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_30c113da.f44",
+            "value": 124,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-09T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_30c113da.f72",
+            "value": "1,017",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-13T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_30c113da.f93",
+            "value": "2,040",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-16T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_30c113da.f121",
+            "value": 762,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-20T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_2705cdb6.f1",
+            "value": 7,
+            "metric": "anchors",
+            "group": {}
+          },
+          {
+            "fact": "r_2705cdb6.f6",
+            "value": 6,
+            "metric": "anchors_with_pattern",
+            "group": {
+              "pattern_id": "bdec89f666f62cf9",
+              "direction": "before"
+            }
+          },
+          {
+            "fact": "r_2705cdb6.f7",
+            "value": "0.0059",
+            "metric": "base_rate",
+            "group": {
+              "pattern_id": "bdec89f666f62cf9",
+              "direction": "before"
+            }
+          },
+          {
+            "fact": "r_2705cdb6.f9",
+            "value": "145.19",
+            "metric": "precursor_ratio",
+            "group": {
+              "pattern_id": "bdec89f666f62cf9",
+              "direction": "before"
+            }
+          }
+        ]
+      },
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "8309ca5f79642240d5ac25b0a1c1cb190c522473c73a6f4c6156c40419b396d6",
+      "result_digest": "92b6047341489f48c3999ce3f62567386f7d263a03d01b925843c69daeb915ab"
+    }
+  ],
+  "semantic_findings": [
+    "Opening says 'not a single-node fault' although executed breadth tests refute only confined symptoms, not a single-node causal origin.",
+    "A named rack fact does not verify the uncited claim that all displayed top groups each had 240 events.",
+    "All matching nodes carry -I: identifiers overgeneralizes from displayed sample unless separately measured.",
+    "Next check treats multiple unrelated jobs or service-node fault as weakening launch-side association without a necessary discriminating causal test; later caveats do not erase the earlier implication.",
+    "Manual coverage check: five backticked day labels in the trend table have no adjacent time fact citation. The canonical scanner excludes code spans and does not detect these omissions; the 27 submitted claims check event counts, not these bucket dates."
+  ],
+  "acceptance": "failed",
+  "note": "Development client probe, not a U16 paid experiment, independent rubric score or holdout. Number checker green for submitted subset does not establish whole answer."
+}

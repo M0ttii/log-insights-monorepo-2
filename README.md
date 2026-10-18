@@ -334,8 +334,12 @@ Engineer probe and elicited a perspective question for an unclear request;
 unsupported broader conclusions and uncited quantities remained.
 Full answer-contract acceptance is still open. Probe chat links, receipt IDs and
 observed gaps are recorded in Linear LOG-39, without formal U16 scoring. Claude
-Code was not signed in and no API key was configured during these checks, so
-its model probes remain pending; transport tests do not establish model behavior.
+Code is now signed in through the existing claude.ai subscription. The
+[retained client probes](packages/evals/results/client-2026-10-18/README.md)
+include a real restricted M1 Code run and a full Desktop Engineer run. Both still
+fail whole-answer acceptance. Guidance 1.0.8 passes the observed ambiguous-role
+clarification without optional corpus quantities; the rest of the client matrix
+remains open. No API key or paid U16 experiment was used.
 
 The [focused S-15 regression](packages/evals/results/s15-2026-10-18-r5/report.json)
 passes all three predeclared valid Desktop attempts with guidance bundle 1.0.5.
