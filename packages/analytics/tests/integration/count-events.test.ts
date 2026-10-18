@@ -647,7 +647,7 @@ describe("receipt", () => {
     expect(stored.sql[0]).toContain("FROM corpus_stats")
     expect(stored.sql[1]).toContain("FROM corpus_stats")
     expect(stored.sql[2]).toMatch(/^WITH grouped AS/)
-    expect(stored.params).toEqual([["bgl"], ["openstack"], [2]])
+    expect(stored.params).toEqual([["bgl"], ["openstack"], [2, 2, 20]])
     // BGL errors: Compute Platform 240, Workload Runtime 107, Control Plane 35, Hardware Operations 13.
     expect(stored.population).toEqual({ count: 395, unit: "log_events" })
     expect(stored.scope.filters).toEqual({ only_errors: true })

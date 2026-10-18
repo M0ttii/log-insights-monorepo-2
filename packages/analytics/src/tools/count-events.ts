@@ -13,8 +13,7 @@ import {
 } from "@workspace/domain/filters"
 import type { CountingUnit, Scope } from "@workspace/domain/receipt"
 import {
-  classifyChange,
-  comparisonCoverage,
+  changeLabelSchema,
   referencePeriod,
   type ComparisonCoverage,
 } from "@workspace/domain/rules/compare"
@@ -53,6 +52,7 @@ import {
 } from "@workspace/domain/tools/count-events"
 import { z } from "zod"
 
+import { comparisonCoverageSql } from "../comparison.ts"
 import { corpusNotLoaded, getDataSpan } from "../corpus.ts"
 import {
   apiAccessCondition,
@@ -128,6 +128,7 @@ const summaryRow = z.object({
   baseline: exactCount.nullable(),
   delta: exactInteger.nullable(),
   pct_change: z.number().nullable(),
+  classification: changeLabelSchema,
   group_count: exactCount,
   other_groups: exactCount,
   other_events: exactCount,
@@ -144,6 +145,7 @@ const groupRow = z.object({
   baseline: exactCount.nullable(),
   delta: exactInteger.nullable(),
   pct_change: z.number().nullable(),
+  classification: changeLabelSchema,
 })
 
 /** Parser of a dimension value as SereneDB returns it. */
@@ -171,7 +173,7 @@ type Periods = {
 export const countEvents = defineTool({
   name: "count_events",
   title: "Count events",
-  version: "1.1.0",
+  version: "1.2.0",
   description: renderDescription({
     purpose:
       "Counts log events (or OpenStack API accesses) over the stated scope, grouped by one or two dimensions, with exact total, share per group and the remaining groups summed in other. Without from/to the whole corpus is counted. With compare it also counts an equally long reference period and reports what changed (R-06).",
@@ -236,7 +238,12 @@ export const countEvents = defineTool({
       periods = {
         current,
         baseline: reference.baseline,
-        coverage: comparisonCoverage(current, reference.baseline, span),
+        coverage: await comparisonCoverageSql(
+          ctx,
+          current,
+          reference.baseline,
+          span
+        ),
         span,
       }
       windows = [
@@ -296,6 +303,11 @@ export const countEvents = defineTool({
     const compared = periods?.coverage.determinable === true
     const sumOf = (column: string) =>
       compared ? `coalesce(${column}, 0)` : column
+
+    const factor = `${params.add(SIGNIFICANT_INCREASE_FACTOR)}::BIGINT`
+    const minimum = `${params.add(SIGNIFICANT_INCREASE_MIN_EVENTS)}::BIGINT`
+    const change = (b: string, c: string, prefix = "") =>
+      changeSql(b, c, factor, minimum, prefix)
 
     const counted = await ctx.db.query(
       [
@@ -357,10 +369,10 @@ export const countEvents = defineTool({
               },
               determinable: compared,
               ...changeOf({
-                events: summary.events,
                 baseline: summary.baseline,
                 delta: summary.delta,
                 pct_change: summary.pct_change,
+                classification: summary.classification,
               }),
             },
       truncated: summary.other_groups > 0,
@@ -391,23 +403,30 @@ export const countEvents = defineTool({
  * current expression. NULL baselines (no determinable comparison) stay NULL
  * through the arithmetic.
  */
-function change(baseline: string, current: string, prefix = ""): string {
-  return `${baseline}::BIGINT AS ${prefix}baseline, (${current} - ${baseline})::BIGINT AS ${prefix}delta, 100 * (${current} - ${baseline})::DOUBLE / NULLIF(${baseline}, 0) AS ${prefix}pct_change`
+function changeSql(
+  baseline: string,
+  current: string,
+  factor: string,
+  minimum: string,
+  prefix = ""
+): string {
+  const classification =
+    prefix === ""
+      ? `, CASE WHEN ${baseline} IS NULL THEN NULL WHEN ${baseline} = 0 AND ${current} > 0 THEN 'first observed in this comparison' WHEN ${baseline} = 0 THEN 'not observed in either period' WHEN ${current} >= ${factor} * ${baseline} AND ${current} - ${baseline} >= ${minimum} THEN 'significantly increased' END AS classification`
+      : ""
+  return `${baseline}::BIGINT AS ${prefix}baseline, (${current} - ${baseline})::BIGINT AS ${prefix}delta, 100 * (${current} - ${baseline})::DOUBLE / NULLIF(${baseline}, 0) AS ${prefix}pct_change${classification}`
 }
 
-/** The R-06 fields of a row; the label comes from the pure rule, the numbers from SereneDB. */
+/** R-06 fields already computed by SereneDB. */
 function changeOf(row: {
-  events: number
   baseline: number | null
   delta: number | null
   pct_change: number | null
+  classification: import("@workspace/domain/rules/compare").ChangeLabel
 }) {
   return {
     ...changeFields(row.baseline, row.delta, row.pct_change),
-    classification:
-      row.baseline === null
-        ? null
-        : classifyChange(row.events, row.baseline).label,
+    classification: row.classification,
   }
 }
 
