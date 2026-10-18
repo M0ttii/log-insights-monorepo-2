@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 import type { Filter } from "@workspace/domain/filters"
 import type { Brief } from "@/server/brief"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import {
   InputGroup,
   InputGroupAddon,
@@ -167,14 +167,13 @@ export function InvestigationView({
             <MessageSquarePlus />
             <span className="hidden sm:inline">New chat</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
+          <Link
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
             aria-label="How it works"
-            render={<Link href="/datasets#connect" />}
+            href="/datasets#connect"
           >
             <CircleHelp />
-          </Button>
+          </Link>
         </div>
       </header>
 

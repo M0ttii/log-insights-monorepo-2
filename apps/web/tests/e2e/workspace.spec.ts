@@ -20,6 +20,9 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
 }, testInfo) => {
   const errors: string[] = []
   page.on("pageerror", (error) => errors.push(error.message))
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text())
+  })
   await page.goto("/investigations/new")
   await expect(
     page.getByRole("heading", { name: "What do you need to know?" })

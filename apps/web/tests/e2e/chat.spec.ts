@@ -188,6 +188,9 @@ test("recorded SDK revision, fact chips, independent checks and accessible compo
 }, testInfo) => {
   const errors: string[] = []
   page.on("pageerror", (error) => errors.push(error.message))
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text())
+  })
   const requests = await mockChat(page, recording)
   await page.route("**/api/receipts/r_deadbeef", (route) =>
     route.fulfill({

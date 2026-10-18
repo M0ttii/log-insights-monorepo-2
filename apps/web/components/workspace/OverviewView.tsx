@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Button } from "@workspace/ui/components/button"
+import { buttonVariants } from "@workspace/ui/components/button"
 import { ToolPanel } from "@/components/results/ToolPanel"
 import { ReceiptLink } from "@/components/evidence/ReceiptLink"
 import { ToolErrorNotice } from "./ToolErrorNotice"
@@ -57,10 +57,13 @@ export function OverviewView({
             The shape of your data, directly from SereneDB.
           </p>
         </div>
-        <Button variant="outline" size="sm" render={<Link href="/logs" />}>
+        <Link
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+          href="/logs"
+        >
           Explore logs
           <ArrowRight />
-        </Button>
+        </Link>
       </div>
       <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
         <Clock3 className="mt-0.5 size-3.5 shrink-0" />
@@ -147,14 +150,13 @@ export function OverviewView({
                       </>
                     )}
                   </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    render={<Link href={`/logs?dataset=${dataset}`} />}
+                  <Link
+                    className={buttonVariants({ variant: "ghost", size: "sm" })}
+                    href={`/logs?dataset=${dataset}`}
                   >
                     Search {datasetTitle(dataset)}
                     <ArrowRight />
-                  </Button>
+                  </Link>
                 </CardContent>
               </Card>
             )
