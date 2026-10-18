@@ -345,6 +345,26 @@ describe("match phrase", () => {
 })
 
 describe("match fuzzy", () => {
+  it("persists resolved fuzzy defaults with one signature and reruns the stored input", async () => {
+    const input = { query: "parrity", match: "fuzzy", dataset: "bgl" }
+    const implicit = await search(input)
+    const explicit = await search({ ...input, max_edits: 1 })
+    const store = new FileReceiptStore(dir)
+    const implicitReceipt = await store.get(implicit.receipt.receipt_id)
+    const explicitReceipt = await store.get(explicit.receipt.receipt_id)
+    expect(implicitReceipt?.input).toMatchObject({ ...input, max_edits: 1 })
+    expect(implicitReceipt?.input).toEqual(explicitReceipt?.input)
+    expect(implicit.receipt.signature).toBe(explicit.receipt.signature)
+    expect(implicit.receipt.result_digest).toBe(explicit.receipt.result_digest)
+    const repeated = await registry.rerun(implicit.receipt.receipt_id, call())
+    expect(repeated.ok).toBe(true)
+    if (!repeated.ok) return
+    expect(repeated.result.receipt.signature).toBe(implicit.receipt.signature)
+    expect(repeated.result.receipt.result_digest).toBe(
+      implicit.receipt.result_digest
+    )
+  })
+
   it("finds a term with one typo, case-insensitively; count equals the hit list", async () => {
     // parrity → parity (one edit): the 48 parity lines.
     const result = await search({ query: "PARRITY", match: "fuzzy", limit: 50 })

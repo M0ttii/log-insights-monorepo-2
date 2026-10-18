@@ -89,6 +89,19 @@ const toolCalls = (calls: Call[]) =>
   calls.filter((call) => !call.sql.includes("load_manifest"))
 
 describe("search_logs SQL", () => {
+  it("stores the same normalized input and signature for implicit and explicit fuzzy defaults", async () => {
+    const { stored, search } = setup({ tokens: ["parrity"] })
+    const input = { query: "parrity", match: "fuzzy", dataset: "bgl" }
+    expect((await search(input)).ok).toBe(true)
+    expect((await search({ ...input, max_edits: 1 })).ok).toBe(true)
+    expect(stored).toHaveLength(2)
+    expect(stored[0]?.input).toMatchObject({ ...input, max_edits: 1 })
+    expect(stored[0]?.input).toEqual(stored[1]?.input)
+    expect(stored[0]?.signature).toBe(stored[1]?.signature)
+    expect(stored[0]?.params).toEqual(stored[1]?.params)
+    expect(stored[0]?.result_digest).toBe(stored[1]?.result_digest)
+  })
+
   it("counts and lists with the same condition; the list adds only the limit", async () => {
     const { calls, search } = setup()
     const outcome = await search({
@@ -183,15 +196,18 @@ describe("search_logs SQL", () => {
 })
 
 describe("search_logs validation", () => {
-  it("allows max_edits only with fuzzy", async () => {
-    const { calls, search } = setup()
-    const outcome = await search({ query: "parity", max_edits: 1 })
-    expect(outcome.ok ? null : outcome.error).toMatchObject({
-      code: "invalid_input",
-      issues: [{ path: "max_edits" }],
-    })
-    expect(calls).toEqual([])
-  })
+  it.each([undefined, "terms", "phrase"])(
+    "rejects max_edits with match %s",
+    async (match) => {
+      const { calls, search } = setup()
+      const outcome = await search({ query: "parity", match, max_edits: 1 })
+      expect(outcome.ok ? null : outcome.error).toMatchObject({
+        code: "invalid_input",
+        issues: [{ path: "max_edits" }],
+      })
+      expect(calls).toEqual([])
+    }
+  )
 
   it("rejects OpenStack-only filters with dataset bgl and reversed windows", async () => {
     const { search } = setup()

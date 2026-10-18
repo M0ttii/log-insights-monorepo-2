@@ -59,36 +59,44 @@ export const searchSortSchema = z
 
 export type SearchSort = z.infer<typeof searchSortSchema>
 
-export const searchLogsInputSchema = z.strictObject({
-  query: z
-    .string()
-    .min(1)
-    .max(SEARCH_MAX_QUERY_LENGTH)
-    .describe(
-      `Search text (1–${SEARCH_MAX_QUERY_LENGTH} characters), matched case-insensitively against whole message tokens without stemming. Operators, quotes and * are not evaluated; they are only split into words. Must contain at least one searchable word.`
-    ),
-  match: matchModeSchema.default("terms"),
-  max_edits: z
-    .number()
-    .int()
-    .min(1)
-    .max(FUZZY_MAX_EDITS)
-    .optional()
-    .describe(
-      `Only with match "fuzzy": edits allowed per term (1–${FUZZY_MAX_EDITS}; insertion, deletion, substitution or swap of two adjacent characters). Default: ${FUZZY_DEFAULT_EDITS}.`
-    ),
-  ...SEARCH_FILTER.shape,
-  sort: searchSortSchema.default("relevance"),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(SEARCH_MAX_LIMIT)
-    .default(SEARCH_DEFAULT_LIMIT)
-    .describe(
-      `Hits to return (1–${SEARCH_MAX_LIMIT}). Default: ${SEARCH_DEFAULT_LIMIT}. total_matches is exact regardless.`
-    ),
-})
+export const searchLogsInputSchema = z
+  .strictObject({
+    query: z
+      .string()
+      .min(1)
+      .max(SEARCH_MAX_QUERY_LENGTH)
+      .describe(
+        `Search text (1–${SEARCH_MAX_QUERY_LENGTH} characters), matched case-insensitively against whole message tokens without stemming. Operators, quotes and * are not evaluated; they are only split into words. Must contain at least one searchable word.`
+      ),
+    match: matchModeSchema.default("terms"),
+    max_edits: z
+      .number()
+      .int()
+      .min(1)
+      .max(FUZZY_MAX_EDITS)
+      .optional()
+      .describe(
+        `Only with match "fuzzy": edits allowed per term (1–${FUZZY_MAX_EDITS}; insertion, deletion, substitution or swap of two adjacent characters). Default: ${FUZZY_DEFAULT_EDITS}.`
+      ),
+    ...SEARCH_FILTER.shape,
+    sort: searchSortSchema.default("relevance"),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(SEARCH_MAX_LIMIT)
+      .default(SEARCH_DEFAULT_LIMIT)
+      .describe(
+        `Hits to return (1–${SEARCH_MAX_LIMIT}). Default: ${SEARCH_DEFAULT_LIMIT}. total_matches is exact regardless.`
+      ),
+  })
+  // Resolve the mode-specific default before receipt persistence; overwrite
+  // preserves the object schema that MCP clients need.
+  .overwrite((input) =>
+    input.match === "fuzzy" && input.max_edits === undefined
+      ? { ...input, max_edits: FUZZY_DEFAULT_EDITS }
+      : input
+  )
 
 export type SearchLogsInput = z.infer<typeof searchLogsInputSchema>
 
