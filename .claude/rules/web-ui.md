@@ -106,6 +106,9 @@ packages/ui/          # shadcn primitives (src/components), hooks (src/hooks),
   `.dark` on `<html>`, light is a full theme. Never import the kit's `theme.css`
   or components (Radix), and never give a kit token another meaning; map it in
   `@theme inline` instead (DESIGN.md, Source).
+- Violet text uses `text-link`, never `text-primary` (a fill colour, below 4.5:1
+  as text on the dark ground); primary hover is `bg-primary-hover`, not an
+  alpha fade.
 - Shared tokens instead of scattered colors and arbitrary spacing. Level, tool
   state, hypothesis status, pattern status (R-10) and verification are separate
   status token sets; hypothesis status never uses success or error colors.

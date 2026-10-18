@@ -3,20 +3,24 @@ name: Log Insights
 description: The SereneDB console look for evidence work, where every number leads to its receipt.
 colors:
   serene-violet: "#895af8"
-  action-violet: "#764dd5"
+  action-violet: "#6f48cb"
+  action-hover: "#5838a3"
   on-violet: "#ffffff"
   console-ground: "#1c1c1c"
   console-surface: "#212121"
   console-rail: "#151515"
+  console-rail-hover: "#2a2a2a"
+  console-muted: "#2e2e2e"
   console-ink: "#ffffff"
   console-secondary: "oklch(0.707 0.022 261.325)"
   console-secondary-text: "#bbbbbb"
-  console-hover: "#303030"
-  console-border: "rgb(255 255 255 / 10%)"
+  console-hover: "#313131"
+  console-border: "oklch(1 0 0 / 10%)"
   console-control-border: "#6b6b6b"
   console-link: "#b59cff"
   paper-ground: "#ffffff"
   paper-rail: "#f0f2f5"
+  paper-muted: "#f0f2f5"
   paper-ink: "#11121d"
   paper-secondary: "#506182"
   paper-border: "#e7e7e7"
@@ -155,7 +159,7 @@ components:
     padding: "0 10px"
     height: "28px"
   button-ghost-hover:
-    backgroundColor: "{colors.console-hover}"
+    backgroundColor: "{colors.console-muted}"
   card:
     backgroundColor: "{colors.console-surface}"
     textColor: "{colors.console-ink}"
@@ -179,14 +183,14 @@ components:
     height: "22px"
     typography: "{typography.mono}"
   feature-chip:
-    backgroundColor: "{colors.console-rail}"
+    backgroundColor: "{colors.console-muted}"
     textColor: "{colors.console-secondary}"
     rounded: "{rounded.sm}"
     padding: "0 6px"
     height: "20px"
     typography: "{typography.label}"
   nav-item-active:
-    backgroundColor: "{colors.console-hover}"
+    backgroundColor: "{colors.console-rail-hover}"
     textColor: "{colors.console-ink}"
     rounded: "{rounded.md}"
     height: "36px"
@@ -212,7 +216,7 @@ The look is the one of the SereneDB desktop app and console: a dark, quiet worki
 
 - **Used:** `src/styles/tokens.css` (palette, light on `:root`, dark under `.dark`) and `src/styles/fonts.css` (Urbanist, SIL OFL 1.1), both imported by `globals.css` before our layer.
 - **Not used:** the kit's `theme.css` (it forces square corners and brings its own base layer) and its React components (`Button`, `Select`, `Popover`, `PlatformHeader`, `ThemeProvider`), because they build on Radix. Primitives stay shadcn on Base UI (`base-nova`).
-- **Mapping:** two kit names mean something else than in shadcn. The kit's `--primary` is the neutral surface and `--thirdly` is the SereneDB violet, so shadcn's `primary` reads `--action`. The kit's `--accent` is a blue whose foreground is the same blue, so shadcn's `accent` (hover and selected rows) reads `--surface-hover`. Secondary text, control borders, links, sidebar and all status families are our layer on top of the kit.
+- **Mapping:** two kit names mean something else than in shadcn. The kit's `--primary` is the neutral surface and `--thirdly` is the SereneDB violet, so shadcn's `primary` reads `--action`. The kit's `--accent` is a blue whose foreground is the same blue, so shadcn's `accent` (hover and selected rows) reads `--surface-hover`. The kit's dark `--muted` is darker than the ground (it is the rail), while shadcn uses `muted` for hover fills and raised wells, so shadcn's `muted` reads `--surface-muted`, raised above the ground in dark; the rail keeps the kit value through `--sidebar`. Secondary text, control borders, links, sidebar and all status families are our layer on top of the kit.
 - **Updating:** `git submodule update --remote vendor/serene-design` moves the pin; commit the pointer on its own, naming the kit change, and rerun the contrast check of this file's status pairs. `pnpm install` initialises the submodule, CI checks it out recursively, and `vendor/` is excluded from Prettier, oxlint and knip.
 
 ## Overview
@@ -242,13 +246,15 @@ Dark is the default because the SereneDB desktop app and console are dark and th
 
 ### Primary
 - **Serene Violet** (`serene-violet`, kit `--thirdly`): focus ring, caret, selection tint, the terminal spine node, the first chart series and the logo tile. It means "this is the path" or "act here".
-- **Action Violet** (`action-violet`, `--action`): the fill of primary buttons, the violet deepened in OKLab so white text clears 4.5:1 in both themes.
+- **Action Violet** (`action-violet`, `--action`): the fill of primary buttons, the violet deepened 14% toward black in OKLab so white text reaches 6:1 in both themes.
+- **Action Hover** (`action-hover`, `--action-hover`, utility `bg-primary-hover`): the primary fill on hover, a further 15% darker. Hover darkens instead of fading, because an 80% alpha fade over a white ground drops white text below 4.5:1.
 - **Violet text** (`console-link` / `paper-link`): links in answer prose and the `running` and `new` badges; lighter in dark, deeper in light, so text on the ground clears 4.5:1.
 
 ### Neutral
 - **Console Ground** (`console-ground`, kit `--background`): the page behind all content.
 - **Console Surface** (`console-surface`, kit `--card`): cards, popovers, the Evidence Drawer, tool results.
-- **Console Rail** (`console-rail`, kit `--muted`): the sidebar and icon rail, wells for SQL and log messages, feature chips. One step darker than the ground, as in the desktop app.
+- **Console Rail** (`console-rail`, kit `--muted`, via `--sidebar`): the sidebar and icon rail, one step darker than the ground, as in the desktop app. Its hover and active fill is **Rail Hover** (`console-rail-hover`, `--sidebar-accent`).
+- **Muted** (`console-muted` / `paper-muted`, `--surface-muted`, shadcn `muted`): raised wells for SQL and log messages, feature chips, tab lists, skeletons, and the hover fill of ghost buttons and table rows (half strength in dark, as shadcn's own dark theme does). Raised above the ground in dark; the kit's light muted in light.
 - **Console Ink** (`console-ink`): primary text. There is exactly one ink per theme.
 - **Console Secondary** (`console-secondary`, kit `--muted-foreground`): descriptions, metadata, captions, timestamps. At least 4.5:1 on ground, surface and rail.
 - **Console Hover** (`console-hover`, `--surface-hover`): hover and selected rows, the active navigation item.
@@ -341,10 +347,11 @@ Borders are hairlines. Rows inside a card are separated by dividers rather than 
 ### Buttons
 Quiet until needed.
 - **Shape:** 6px corners. Heights are 32px for default and 28px for `sm` and icon `sm`.
-- **Primary:** Action Violet fill with white text, hover at 85% opacity. One per view at most (Send, Run, Re-run), placed at the bottom right of its area.
-- **Secondary:** Console Surface fill with a hairline and Console Secondary text that turns to ink on hover (`Ask as Team Lead`, `Export run`, `Test`-style actions).
-- **Ghost:** transparent, Console Hover on hover; used in the header bar, the rail and for row-level disclosure.
-- **Focus / active:** a 3px Serene Violet ring at 50% plus the global 2px outline with 3px offset.
+- **Primary:** Action Violet fill with white text, Action Hover on hover. One per view at most (Send, Run, Re-run), placed at the bottom right of its area.
+- **Secondary:** Console Surface fill (kit `--secondary`) with Console Secondary Text, 5% lighter toward ink on hover (`Ask as Team Lead`, `Export run`, `Test`-style actions).
+- **Ghost:** transparent, Muted on hover (half strength in dark); used in the header bar and for row-level disclosure. Navigation items use Rail Hover instead.
+- **Link:** violet text (`text-link`: `console-link` / `paper-link`), never `text-primary`, which is a fill colour and falls below 4.5:1 as text on the dark ground.
+- **Focus / active:** shadcn components draw a 3px Serene Violet ring at 50% and suppress the outline; every other focusable element gets the global 2px violet outline with 3px offset.
 
 ### Status badge
 The system's most important component. Its colour encodes meaning, and it is never the only carrier of that meaning.
@@ -367,7 +374,7 @@ A dotted underline in `verification-uncited-fg` under a number or time without a
 One line per tool call on the spine, from the AI Elements `Trace` pattern: tool name in Mono, the mode in plain words ("precursor analysis"), a one-line input summary, the run-state badge, "SereneDB 41 ms" in Label, the receipt chip and up to three feature chips. Expanding a row reveals the tool's result view and its validated input. A `check_claims` row shows its summary with its own fact chips.
 
 ### Feature chip
-A 20px Console Rail chip in Label type naming a SereneDB function found in the receipt's SQL (`BM25 ranking`, `Phrase search`, `Row pattern matching`, `Percentiles` …), with a tooltip that explains what the function did. It never appears without the function in the SQL.
+A 20px Muted chip in Label type naming a SereneDB function found in the receipt's SQL (`BM25 ranking`, `Phrase search`, `Row pattern matching`, `Percentiles` …), with a tooltip that explains what the function did. It never appears without the function in the SQL.
 
 ### Cards / Containers
 - **Corner style:** 8.4px.
@@ -382,7 +389,7 @@ A 20px Console Rail chip in Label type naming a SereneDB function found in the r
 
 ### Navigation
 - **Rail and sidebar:** Console Rail with the 26px violet logo tile at the top, then Ask, Overview, Logs and Corpus; theme toggle and help at the bottom, as in the desktop app.
-- **States:** items are 36px high. Hover and active fill with Console Hover; the active item adds ink text, medium weight and `aria-current="page"`.
+- **States:** items are 36px high. Hover and active fill with Rail Hover; the active item adds ink text, medium weight and `aria-current="page"`.
 - **Collapsed:** the icon rail, in which every item keeps a tooltip and its accessible name.
 - **Mobile:** the sidebar becomes a sheet that closes on selection and on Escape.
 
@@ -405,7 +412,7 @@ One line on Console Surface inside a hairline, filled only from `count_events` w
 One clear series per meaning from the kit's chart palette, named units and buckets, and an equivalent table. Observed zeros sit on the zero line. Partial buckets are hatched and labelled; capture gaps break the line and are labelled "no data captured"; ranges outside the data span stay empty. Grid lines use the kit's `--grid-line`.
 
 ### Log message and SQL
-Verbatim text in Geist Mono in a Console Rail well, never rendered as HTML. Matches from `match_ranges` use `mark` with Match Highlight and an underline. A cut message ends in "(cut)". SQL in the drawer uses the same well with line numbers in Console Secondary, like the desktop app's query editor.
+Verbatim text in Geist Mono in a Muted well, never rendered as HTML. Matches from `match_ranges` use `mark` with Match Highlight and an underline. A cut message ends in "(cut)". SQL in the drawer uses the same well with line numbers in Console Secondary, like the desktop app's query editor.
 
 ## Do's and Don'ts
 

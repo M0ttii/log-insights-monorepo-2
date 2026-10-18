@@ -22,6 +22,9 @@
  * SereneDB violet, so shadcn's primary reads --action (the violet, deepened
  * for white text); the kit's --accent is a blue whose foreground is the same
  * blue, so shadcn's accent (hover and selected rows) reads --surface-hover.
+ * The kit's dark --muted is darker than the ground (the rail), while shadcn
+ * uses muted for hover fills and raised wells, so shadcn's muted reads
+ * --surface-muted and the rail keeps the kit value through --sidebar.
  */
 @theme inline {
   --font-heading: var(--font-sans);
@@ -49,11 +52,13 @@
   --color-accent-foreground: var(--foreground);
   --color-accent: var(--surface-hover);
   --color-muted-foreground: var(--text-secondary);
-  --color-muted: var(--muted);
+  --color-muted: var(--surface-muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--thirdly-foreground);
   --color-primary: var(--action);
+  /* Darker on hover in both themes, so white text keeps 4.5:1 (an alpha fade would not). */
+  --color-primary-hover: var(--action-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -91,9 +96,11 @@
     var(--font-geist-mono, ui-monospace), ui-monospace, SFMono-Regular, Menlo,
     Monaco, Consolas, monospace;
   --action: color-mix(in oklab, var(--thirdly) 86%, black);
+  --action-hover: color-mix(in oklab, var(--action) 85%, black);
   --link: #6a3fd6;
   --text-secondary: var(--secondary-foreground);
   --surface-hover: color-mix(in srgb, var(--foreground) 5%, var(--background));
+  --surface-muted: var(--muted);
   /* Outline of inputs and unfilled controls, at least 3:1 on the ground. */
   --control-border: #858fa1;
   --sidebar: var(--muted);
@@ -182,6 +189,8 @@
   --link: #b59cff;
   --text-secondary: var(--muted-foreground);
   --surface-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
+  /* Raised above the ground like shadcn's dark muted; half of it still reads as a hover. */
+  --surface-muted: color-mix(in srgb, var(--foreground) 8%, var(--background));
   --control-border: #6b6b6b;
   --sidebar-accent: color-mix(in srgb, var(--foreground) 9%, var(--sidebar));
 
