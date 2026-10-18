@@ -123,7 +123,7 @@ describe("versioned role playbooks", () => {
         { label: "check_claims", anyOf: [{ tool: "check_claims" }] },
       ],
     })
-    expect(source.version).toBe("1.0.6")
+    expect(source.version).toBe("1.0.7")
     expect(source.common).not.toContain("## Coverage")
     expect(source.sharedRules).not.toContain("## Coverage")
     expect(source.instructions).not.toContain("## Coverage")

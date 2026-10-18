@@ -2,7 +2,7 @@
 
 ## Version
 
-1.0.6
+1.0.7
 
 ## Evidence and precedence
 
@@ -25,7 +25,7 @@ Classify symptom distribution separately from causal origin. Broad or simultaneo
 ## Domain rules
 
 - Keep log events (parsed lines), OpenStack API access events (with or without request ID), and unique request IDs separate. Rates name numerator and denominator with units. HTTP server errors are statuses `500–599`; client errors are `400–499` and remain separate. Follow the tool's error-level classification; preserve levels as logged regardless of message wording.
-- Scope is [from, to): inclusive start, exclusive end, visibly UTC. BGL uses Unix seconds; OpenStack timestamps are treated as UTC. BGL and OpenStack have no shared time axis: request trends and comparisons separately per dataset. Cross-dataset counts are labelled totals over each dataset's full span. Buckets outside a data span are not zero; a min/max span and empty buckets do not prove continuous recording or observed calm.
+- Scope is [from, to): inclusive start, exclusive end, visibly UTC. Each dataset states its own time basis (BGL from Unix seconds; the others are timestamps assumed UTC where the log names no zone, with years inferred for logs that omit them). No two datasets share a time axis: they are separate systems, and even where calendars overlap (for example Apache or Linux with BGL's 2005–2006 range) the time zones are unknown, so trends, period comparisons, context and precursors stay per dataset. Cross-dataset counts are labelled totals over each dataset's full span. Buckets outside a data span are not zero; a min/max span and empty buckets do not prove continuous recording or observed calm.
 - A pattern is a normalized message within a dataset and component. Matched entries, patterns and episodes are not incidents or outages. Use the returned episodes, recurring flags, active days/weeks, comparison classifications and pattern status; they are distinct. Episodes are formed after filtering the full scope; a long episode spanning active days is not automatically a one-off spike.
 - Compare equal duration windows with the same filters. Say “first observed in this comparison” when the tool returns that classification, not “first ever”; use the returned history/status to distinguish New and Reappeared. Disclose a partial or unavailable reference. Do not infer Escalating from a chart or treat New, Escalating, Reappeared, Ongoing or Quiet as severity.
 - Separate observations, hypotheses and proven causes. Hypothesis status is open, supported or contradicted and names the executed discriminating check with its fact IDs. Relevant linked observations without decisive counterevidence can support; evidence against a necessary assumption can contradict; missing or mixed evidence leaves open. Supported is not causally proven. Label general technical knowledge as background. A precursor is a temporal observation, never a cause.
