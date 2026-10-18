@@ -1,0 +1,46 @@
+Scope
+BGL, June 2005: [2005-06-01T00:00:00Z [r_5d9b1309.f22], 2005-07-01T00:00:00Z [r_5d9b1309.f23]) UTC. Only part of that window has data, because the BGL data starts at 2005-06-03T22:42:50Z [r_3d527280.f13]. Query: failed to read message prefix on control stream.
+
+Answer
+This is not one bad node. The symptom shows up across the whole machine at the same time, job by job.
+It hit 512 distinct nodes [r_99e19bf7.f12] in 32 racks [r_99e19bf7.f13]. Within a single second, many racks report it together. All of the affected nodes are I/O nodes (-I:J18-U01/U11). In the sampled lines, every one is talking to the same peer, 172.16.96.116. The strongest lead points to the job being launched, not to the hardware. Most episodes start right after ciod: LOGIN chdir(...) failed: No such file or directory. That means a job was launched with a working directory that didn’t exist, for example /p/gb2/draeger/benchmark/dat32k_060205. My background reading, which the logs don’t prove: ciod fails the login, the control socket to the front end then closes, and every I/O node in the partition logs the read failure.
+
+Evidence
+Observation | Value
+Matching log events | 5,983 [r_5d9b1309.f21]
+Distinct nodes / racks | 512 [r_99e19bf7.f12] / 32 [r_99e19bf7.f13]
+Largest single node (R00-M0-N0-I:J18-U01, tied with others) | 15 events [r_a99a599e.f2]
+Rack R00 (top racks are tied) | 240 events [r_b6c51d94.f2]
+Episodes / active days | 7 [r_99e19bf7.f8] / 5 [r_99e19bf7.f5]
+Episode starts preceded by LOGIN chdir failure (within 5 min) | 6 [r_1c1a646d.f6] of 7 [r_1c1a646d.f1]
+How much more often chdir failure appears before episodes than at a random time | 267.2× [r_1c1a646d.f9]
+
+Timeline
+• First occurrence: 2005-06-04T07:24:32Z [r_99e19bf7.f10].
+  ◦ The chdir failure appears −838.005 ms before it [r_4d178563.f8].
+  ◦ The next node on a different rack follows at +33.908 ms [r_4d178563.f2].
+  ◦ 1,021 events land in the next 10 minutes [r_4d178563.f13].
+• Last occurrence: 2005-06-20T08:42:45Z [r_99e19bf7.f11].
+• One episode with no chdir lead-in: that start was preceded only by a LINKCARD bit-sparing message, seen once [r_1c1a646d.f11]. This is unexplained, but it doesn’t show a second cause.
+
+Hypotheses
+• The problem stays on one node: contradicted. That idea requires the errors to come from one node, and the node count above refutes it [r_99e19bf7.f12].
+• A job launch failure (bad working directory) closes the control stream across the partition: supported, not proven. The evidence is the strong precursor association.
+• A problem on the shared peer or service node (172.16.96.116) or its network: open. A single shared component could also produce simultaneous errors across the machine, and this check didn’t rule that out.
+
+Next check
+• Line up each episode with its chdir failure. For each episode start, search LOGIN chdir in the minute before and compare the paths and users.
+  ◦ If the same paths and users appear each time, the job-setup hypothesis gets stronger.
+  ◦ It still doesn’t prove cause, because a dying front end could also break the login.
+• Look at the episode without a chdir lead-in. Inspect the 10 minutes before it.
+  ◦ If the peer IP differs, or there are MMCS or BGLMASTER errors, the shared-service explanation gets more weight.
+• Outside the logs: check 172.16.96.116’s own logs and job-scheduler records for those times. That is the evidence that can actually tell the two explanations apart.
+
+Unknown
+• What actually caused it, and whether jobs failed or users were affected.
+• The other racks’ counts aren’t listed, so I can’t say every rack is equal.
+• A May baseline isn’t available, so there’s no before/after comparison.
+• Team names come from a fictional ownership table.
+
+Verification
+20 claims checked [r_bd483f40.f1] · 0 mismatch [r_bd483f40.f2] · 0 unresolved [r_bd483f40.f3]. Only the numbers were checked, not the explanations.

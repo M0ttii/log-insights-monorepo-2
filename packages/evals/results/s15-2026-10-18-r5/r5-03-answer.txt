@@ -1,0 +1,49 @@
+Scope
+BGL dataset, window [2005-06-01T00:00Z [r_f9df5d39.f12], 2005-07-01T00:00Z [r_f9df5d39.f13]) UTC. The BGL data only begins on 2005-06-03T22:42:50Z [r_7aa82f5d.f20], so early June isn’t covered. Filter: the phrase “failed to read message prefix on control stream”.
+
+Answer
+The symptoms are machine-wide, not confined to one node. The same FATAL ciod message appears on 512 I/O nodes [r_a53a577a.f12] across 32 racks [r_a53a577a.f13]. It arrives in synchronized bursts, and every line points at the same control-stream peer, 172.16.96.116. Almost every burst is preceded by a ciod: LOGIN chdir(...) failed: No such file or directory error. That pattern points to a job-launch or shared-filesystem/service-node issue rather than a bad compute or I/O node. The logs only show that association, though; they don’t prove the cause. A single failing component, such as the host at 172.16.96.116, could still produce symptoms this broad.
+
+Evidence
+Observation | Value
+Matching log events | 5,983 [r_f9df5d39.f11]
+Of those naming peer 172.16.96.116, all FATAL | 5,983 [r_565d6655.f4] / 5,983 FATAL [r_565d6655.f2]
+Distinct nodes / racks | 512 [r_a53a577a.f12] / 32 [r_a53a577a.f13]
+Example node R00-M0-N0-I:J18-U01 | 15 events [r_eac2edc5.f2] (top-5 listed nodes all equal; the rest weren’t listed individually)
+Example rack R00 | 240 events [r_c28a72d0.f2] (top-10 listed racks all equal)
+Episodes / active days | 7 [r_a53a577a.f8] / 5 [r_a53a577a.f5]
+Burst starts preceded within 10 min by LOGIN chdir … failed | 6 [r_324ac096.f6] of 7 [r_324ac096.f1], about 145.2× its base rate [r_324ac096.f9]
+
+Timeline (UTC, per day)
+• 2005-06-04: 2,040 [r_7aa82f5d.f3]. This is the first observation, at 2005-06-04T07:24Z [r_a53a577a.f10].
+• 2005-06-09: 124 [r_7aa82f5d.f8]
+• 2005-06-13: 1,017 [r_7aa82f5d.f12]
+• 2005-06-16: 2,040 [r_7aa82f5d.f15]
+• 2005-06-20: 762 [r_7aa82f5d.f19]. This is the last observation, at 2005-06-20T08:42Z [r_a53a577a.f11].
+There were no matches on any other day in the period. The bursts are discrete, which looks more like failed job starts than steady degradation.
+
+Hypotheses
+• Symptoms confined to one bad node: contradicted. This assumes the errors come from a single node. The breadth check found 512 nodes [r_a53a577a.f12], which refutes that.
+• Job launch fails because the working directory is missing or unreachable (filesystem/mount problem), so ciod’s control connection breaks: supported, not proven. The evidence for it is the LOGIN chdir precursor in 6 [r_324ac096.f6] of 7 [r_324ac096.f1] burst starts. Against it, one burst had no such precursor, and only 1 [r_324ac096.f11] burst start had a LINKCARD bit-sparing event before it instead.
+• The peer host at 172.16.96.116 (front-end or service node) dropped the control streams: open. Every line names that peer, but these logs contain no health data for it.
+• A single failing node or component is the root cause despite the broad symptoms: open. No check so far refutes it.
+
+What to check next
+• The chdir path and its filesystem. Search LOGIN chdir failed around event 14736 with get_log_context (scope dataset).
+  ◦ If one path or mount recurs, the filesystem hypothesis gains support. The next step is that filesystem server’s logs, which aren’t in this corpus.
+  ◦ If the paths vary, it looks more like a user or job-script issue.
+  ◦ Either way, the peer-host hypothesis stays open.
+• The host at 172.16.96.116. Check its own logs from scheduler, mpirun/front-end and NFS clients at each burst start.
+  ◦ If it shows a restart or error at those times, the peer hypothesis gains support.
+  ◦ If it’s clean, the job and filesystem explanation gains weight.
+  ◦ Timing alone won’t confirm either.
+• The burst without a chdir precursor. Open its context to see what preceded it. A different neighbour weakens the association for that burst, but doesn’t show there’s a second cause.
+
+Unknown
+• The actual root cause, job IDs and user impact. The corpus has no scheduler or job records.
+• Health of the peer host and the filesystem server.
+• Per-node counts beyond the listed top groups.
+• Any comparison with May, which lies outside the data span.
+
+Verification
+23 claims checked [r_3317ba7d.f1] · 0 mismatch [r_3317ba7d.f2] · 0 unresolved [r_3317ba7d.f3]. Only the numbers were checked, not the reasoning.

@@ -1,0 +1,64 @@
+{
+  "trial_id": "r4-01",
+  "capture_kind": "Receipt excerpts; original complete receipts remain in .data/receipts, pinned by file SHA-256. describe_corpus includes versions only.",
+  "answer_sha256": "f0176d4d4738eecdb53d900705cd5c2c4129ae1109b136ee4179224beefc7a29",
+  "chat_url": "https://claude.ai/chat/db197742-e091-4229-91f4-f4b8401f1888",
+  "tool_calls": [
+    {
+      "receipt_id": "r_7fc7eb33",
+      "created_at": "2026-10-18T11:00:52.854Z",
+      "client": "mcp",
+      "tool": "describe_corpus",
+      "tool_version": "1.0.0",
+      "input": {},
+      "signature": "407df2e074a0a25742dda7d3ec5c5b0de43f4c299af9753d797a4e67f1c2835b",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT dataset, lines_read, events, rejected, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_event, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_event, error_events, patterns, single_event_patterns, time_basis, label_source, levels, components, labels, api_accesses, api_accesses_without_request_id, requests FROM corpus_stats ORDER BY dataset",
+        "SELECT dataset, component, team, note FROM ownership ORDER BY team, dataset, component",
+        "SELECT data_version, source, loader_version, parser_version, pattern_rules_version, ownership_version, rules_version FROM load_manifest"
+      ],
+      "params": [[], [], []],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-03T22:42:50.363779Z",
+            "to": "2006-01-04T16:00:05.233640Z"
+          },
+          {
+            "dataset": "openstack",
+            "from": "2017-05-14T19:39:01.445000Z",
+            "to": "2017-05-17T12:02:35.320001Z"
+          }
+        ],
+        "filters": {}
+      },
+      "population": {
+        "count": 4955765,
+        "unit": "log_events"
+      },
+      "rows_returned": 15,
+      "truncated": false,
+      "row_limit": null,
+      "duration_ms": 14.98,
+      "result_digest": "3879a5d24010b2f338e1bfacc66efac5a25a3ad90e7715ec7f8beb24feaf8f58",
+      "receipt_file": ".data/receipts/r_7fc7eb33.json",
+      "receipt_file_sha256": "c00a1d9df4b1a456e33f8be45087859a1fe6ffa4bbcf8dd8f65f232003fed8e0",
+      "cited_facts": [],
+      "result": {
+        "versions": {
+          "data_version": "dv_7ea6fcb2c9eb6882",
+          "source": "corpus",
+          "loader_version": "1.0.0",
+          "parser_version": "1.0.0",
+          "pattern_rules_version": "1.0.0",
+          "ownership_version": "1.0.0",
+          "rules_version": "concept-3.5",
+          "contract_version": "2.9.0"
+        },
+        "guidance_version": "1.0.4"
+      }
+    }
+  ]
+}

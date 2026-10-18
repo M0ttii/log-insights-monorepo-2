@@ -1,0 +1,99 @@
+{
+  "run_id": "s15-2026-10-18-r5",
+  "frozen_at": "2026-10-18T11:05:41.114883+00:00",
+  "scope": "LOG-21 acceptance 3 / LOG-19; focused S-15 development evaluation only",
+  "split": "regression",
+  "question_id": "dev-eng-01",
+  "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+  "role": "engineer",
+  "variant": "production_playbook",
+  "client": "Claude Desktop",
+  "model_requested": "claude-opus-5-5",
+  "model_ui": "Opus 5.5 Mittel",
+  "served_model_id": null,
+  "served_model_note": "Desktop exposes a display label, not an API response model ID.",
+  "prompt_selection": false,
+  "retry_policy": "No corrective follow-ups, replacements, or retries; retain every planned attempt, including failures.",
+  "execution_limits": {
+    "client_default": true,
+    "steps": null,
+    "context_tokens": null,
+    "output_tokens": null,
+    "note": "Desktop owns provider limits and retries; unavailable fields remain null."
+  },
+  "acceptance": [
+    "A real get_log_context aggregate check executes before recommendation.",
+    "The answer names the discriminating check and grounds its hypothesis status in its fact IDs.",
+    "Temporal precursors are explicitly separated from proven causes."
+  ],
+  "review": "Independent reviewer did not author the production playbooks. All attempts are rated.",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "Causal effect of guidance changes in a controlled comparison"
+  ],
+  "telemetry": {
+    "tokens": null,
+    "estimated_api_cost": null,
+    "pricing_provenance": null,
+    "reason": "Not exposed by the subscription Desktop UI; no fabricated API estimate."
+  },
+  "baseline_code_commit": "c58285bce791e3d50f68593e9eb75c3963df86bc",
+  "source_sha256": {
+    "packages/agent/src/playbooks/common.md": "4ad7e8be81e9f30e6576134f9657d438aff674e0cd5bb5f8e2066bf9502f13d7",
+    "packages/agent/src/playbooks/engineer.md": "9c6ce0f64d16ca5065787c598f12a9a3478ec5a0248ea15f4d5c8d0848fc4f09",
+    "packages/agent/src/playbooks/manager.md": "524f8d2ef9c3423eb5a6c3ba8d60e8f77028cd9afd653e557f50b6cb27f207b2",
+    "packages/agent/src/playbooks/team-lead.md": "d2ad074bfe64a9da1c7fb6ecd611cef93b4736dfaa5ddc78261e1fff5ca20ea1",
+    "packages/agent/src/playbooks.test.ts": "54b2d20d9c7a77da35b6e6454b49001c4159564402d2be108abec942617e6d00",
+    "packages/agent/src/playbooks.ts": "89c9bd9a0182888dd6307bfcdb4e4e6eb3d88a2eec76ca528464c02bfa3340fe"
+  },
+  "execution_status": "all_planned_trials_completed",
+  "approval_gate": {
+    "result": "Two unstarted slots from the three-trial1.0.5 allowance, plus one explicitly approved replacement for the retained invalid infrastructure attempt. All three planned here before any valid1.0.5 answer is seen.",
+    "new_model_attempts_started": 3
+  },
+  "time_measurement_note": "UI observation timestamps bound capture, not exact provider latency. Tool durations are taken from receipts; Desktop end-to-end generation time/tokens are not instrumented.",
+  "prior_round": "../s15-2026-10-18-r4",
+  "guidance_diff_sha256": "f918ec9c9e1b7b655e956effa246688cade5956f34787e962f7c1ee6ef971cc4",
+  "guidance_version_requested": "1.0.5",
+  "runtime_source_note": "After the separately retained invalid infrastructure attempt, Desktop was fully quit through the app menu and relaunched. Exact single input and fresh chat were checked before sending; first receipt r_8e49fe46 attests1.0.5/2.9.0. No tuning within this round.",
+  "guidance_commit": "4e5c863943cbee717a2cd48d75077dc66d25750e",
+  "trials": [
+    {
+      "id": "r5-01",
+      "fresh_chat": true,
+      "same_question": true,
+      "started_at": "2026-10-18T11:06:28.114951+00:00",
+      "chat_url": "https://claude.ai/chat/f7e29b25-a106-4cd2-88c4-b595e313d96d",
+      "completed_at": "2026-10-18T11:10:02.813081+00:00",
+      "answer": "r5-01-answer.txt",
+      "capture": "Accessibility transcription; visible completed answer text preserved, including opening before Scope, layout normalized."
+    },
+    {
+      "id": "r5-02",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T11:10:29.396823+00:00",
+      "chat_url": "https://claude.ai/chat/83079755-6298-4c14-b533-b34cb26f4502",
+      "completed_at": "2026-10-18T11:14:18.801476+00:00",
+      "answer": "r5-02-answer.txt",
+      "capture": "Accessibility transcription; visible completed answer preserved, layout normalized."
+    },
+    {
+      "id": "r5-03",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T11:14:44.515234+00:00",
+      "chat_url": "https://claude.ai/chat/4fc897eb-3752-40cc-afba-e30ae4ed9317",
+      "completed_at": "2026-10-18T11:19:23.440437+00:00",
+      "answer": "r5-03-answer.txt",
+      "capture": "Accessibility transcription; visible completed answer preserved, layout normalized."
+    }
+  ],
+  "prior_evaluated_round": "../s15-2026-10-18-r3",
+  "runtime_contract_version_observed": "2.9.0",
+  "runtime_guidance_version_observed": "1.0.5"
+}

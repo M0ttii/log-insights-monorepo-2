@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "s15-2026-10-18-r4",
+  "assessed_at": "2026-10-18T11:06:55.133424+00:00",
+  "reviewer": "/root/rate_s15",
+  "assessment_type": "Infrastructure classification; no valid candidate-model quality or S-15 judgment.",
+  "classification": "invalid_infrastructure_attempt",
+  "planned_attempts": 3,
+  "started_attempts": 1,
+  "invalid_infrastructure_attempts": 1,
+  "unstarted_attempts": 2,
+  "trials": [
+    {
+      "id": "r4-01",
+      "classification": "invalid_infrastructure_attempt",
+      "s15_status": "not_rateable",
+      "rubric": null,
+      "reason": "Frozen candidate guidance1.0.5 was not served: the only executed receipt attests1.0.4. Submitted question is duplicated according to the recorded manifest. The operator then declined search and stopped the attempt before any target-specific diagnostic check or answer. These deviations prevent a candidate1.0.5 behavioral judgment.",
+      "requested_guidance_version": "1.0.5",
+      "observed_guidance_version": "1.0.4",
+      "observed_contract_version": "2.9.0",
+      "same_question_as_frozen": false,
+      "operator_stopped": true,
+      "tool_call_count": 1,
+      "only_receipt_id": "r_7fc7eb33",
+      "answer_file": "r4-01-answer.txt",
+      "answer_sha256": "f0176d4d4738eecdb53d900705cd5c2c4129ae1109b136ee4179224beefc7a29",
+      "receipt_file": ".data/receipts/r_7fc7eb33.json",
+      "receipt_file_sha256": "c00a1d9df4b1a456e33f8be45087859a1fe6ffa4bbcf8dd8f65f232003fed8e0",
+      "evidence_file": "r4-01-evidence.json",
+      "artifact_hashes_validated": true
+    },
+    {
+      "id": "r4-02",
+      "classification": "not_started_after_infrastructure_abort",
+      "s15_status": "not_rateable",
+      "rubric": null
+    },
+    {
+      "id": "r4-03",
+      "classification": "not_started_after_infrastructure_abort",
+      "s15_status": "not_rateable",
+      "rubric": null
+    }
+  ],
+  "evidence_boundaries": [
+    "The receipt independently establishes the runtime mismatch.",
+    "Duplicated input and stale/disagreeing Desktop accessibility/screenshot states are recorded by the operator in the manifest; this reviewer did not independently operate or replay that UI.",
+    "The retained stop answer confirms only corpus overview was read and the next search was declined.",
+    "The stop response contains corpus statements, but it is not treated as candidate1.0.5 quality evidence or as successful numerical/S-15 verification."
+  ],
+  "reporting": {
+    "retain_attempt_and_failure_history": true,
+    "hide_or_replace_original_attempt": false,
+    "candidate_1_0_5_s15_passes": null,
+    "candidate_1_0_5_s15_failures": null,
+    "reason_for_null_counts": "No valid candidate1.0.5 attempt completed in this round. Invalid infrastructure and unstarted slots are reported separately, not as model passes or failures.",
+    "next_round": "s15-2026-10-18-r5",
+    "next_round_authorization": "Parent reports two unstarted slots plus one explicitly user-approved replacement, with three valid attempts separately frozen before valid1.0.5 output.",
+    "not_established": [
+      "S-15 acceptance",
+      "Full U16 acceptance",
+      "Baseline comparison",
+      "Holdout result",
+      "Claude Code acceptance",
+      "Whole-answer numerical correctness",
+      "A causal effect of guidance changes"
+    ]
+  },
+  "independence": {
+    "did_not_author_production_playbooks": true,
+    "production_playbook_source_or_rationale_inspected": false,
+    "model_generation_or_external_export_performed": false
+  }
+}

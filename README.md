@@ -167,19 +167,19 @@ observed gaps are recorded in Linear LOG-39, without formal U16 scoring. Claude
 Code was not signed in and no API key was configured during these checks, so
 its model probes remain pending; transport tests do not establish model behavior.
 
-Focused S-15 evidence is retained in the
-[initial development round](packages/evals/results/s15-2026-10-18/report.json) and
-[second regression round](packages/evals/results/s15-2026-10-18-r2/report.json).
-All planned Desktop attempts, answer transcriptions, receipt excerpts and independent
-ratings are saved. Both rounds fail the scoped status-grounding requirement;
-the initial overgenerous rating is preserved with its criterion audit. Bundle
-1.0.4 requires a refuted necessary assumption for every contradicted hypothesis
-and separates symptom distribution from causal origin throughout the answer.
-The [third round](packages/evals/results/s15-2026-10-18-r3/report.json) passes two
-attempts and fails one proposed causal-trigger inference. Bundle 1.0.5 separates
-observable outcomes, hypothesis-status changes and remaining causal alternatives;
-its model behavior is pending evaluation. This focused check does not establish
-the full U16 threshold, a baseline comparison or a holdout result.
+The [focused S-15 regression](packages/evals/results/s15-2026-10-18-r5/report.json)
+passes all three predeclared valid Desktop attempts with guidance bundle 1.0.5.
+Each executes the real precursor check and separates temporal association,
+symptom distribution and unproven causal origin, including proposed next checks.
+The [initial round](packages/evals/results/s15-2026-10-18/report.json),
+[second round](packages/evals/results/s15-2026-10-18-r2/report.json),
+[third round](packages/evals/results/s15-2026-10-18-r3/report.json) and
+[invalid infrastructure attempt](packages/evals/results/s15-2026-10-18-r4/report.json)
+remain available with all answers, receipt excerpts and independent ratings. The
+initial overgenerous rating is preserved with its correction audit. Material
+broader answer defects remain documented: this focused result does not establish
+the full U16 threshold, whole-answer numerical correctness, a baseline comparison
+or a holdout result.
 
 ## Tools
 
