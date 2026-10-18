@@ -179,7 +179,9 @@ remain available with all answers, receipt excerpts and independent ratings. The
 initial overgenerous rating is preserved with its correction audit. Material
 broader answer defects remain documented: this focused result does not establish
 the full U16 threshold, whole-answer numerical correctness, a baseline comparison
-or a holdout result.
+or a holdout result. The saved model runs pin contract 2.9.0; the report separately
+records checks of the combined 2.10.0 code after integrating current main. The
+playbooks and `get_log_context` source were unchanged by that integration.
 
 ## Tools
 

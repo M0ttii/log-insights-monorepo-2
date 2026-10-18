@@ -71,5 +71,38 @@
   },
   "time_measurement_note": "UI observation timestamps bound capture, not exact provider latency. Tool durations are taken from receipts; Desktop end-to-end generation time/tokens are not instrumented.",
   "evidence": "All complete answer transcriptions,26 receipt excerpts with exact tool inputs/SQL/parameters/results and cited facts, original complete receipt hashes/paths, frozen source pins and independent ratings are retained. describe_corpus excerpts contain runtime versions; complete original receipts remain in .data/receipts.",
-  "source_freeze_verified": true
+  "source_freeze_verified": true,
+  "post_eval_integration": {
+    "upstream_main": "8df2e42235ba18d3e8e685ee30e62bd90a99b3d0",
+    "integration_commit": "83ed22029e516c28a2a3e0981862c230bdbb561e",
+    "upstream_pull_requests": [26, 27],
+    "contract_version": "2.10.0",
+    "playbooks_and_get_log_context_unchanged_from": "4e5c863943cbee717a2cd48d75077dc66d25750e",
+    "checks": [
+      {
+        "command": "pnpm check",
+        "result": "passed",
+        "unit_tests": 401
+      },
+      {
+        "command": "pnpm test:integration",
+        "result": "passed",
+        "tests": 323
+      },
+      {
+        "command": "pnpm test:mcp",
+        "result": "passed",
+        "tests": 12
+      },
+      {
+        "command": "pnpm test:golden",
+        "result": "passed",
+        "tests": 64,
+        "timing_file": ".data/golden/1792323097086-cbc02842-83ff-45f2-92b4-0f0bafea1902.jsonl",
+        "timing_file_sha256": "c6268f75286fa0922623427269635471c84ebd7a6ad325378a7aa82546e9da41"
+      }
+    ],
+    "model_calls_repeated": false,
+    "note": "The saved model evaluation remains pinned to contract2.9.0 and guidance commit4e5c863. Current main adds index match ranges and moves other rule calculations into SQL with parity coverage; the playbooks and get_log_context source are unchanged. The combined2.10.0 code passes the checks above. This does not retag old receipts or claim new model behavior under2.10.0."
+  }
 }
