@@ -91,7 +91,7 @@ const hitRow = z.object({
 export const searchLogs = defineTool({
   name: "search_logs",
   title: "Search logs",
-  version: "1.0.0",
+  version: "1.0.1",
   description: renderDescription({
     purpose:
       "Full-text search over log messages with BM25 ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message.",
