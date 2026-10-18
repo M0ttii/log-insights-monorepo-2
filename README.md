@@ -167,6 +167,15 @@ observed gaps are recorded in Linear LOG-39, without formal U16 scoring. Claude
 Code was not signed in and no API key was configured during these checks, so
 its model probes remain pending; transport tests do not establish model behavior.
 
+Focused S-15 development evidence is retained under
+[`packages/evals/results/s15-2026-10-18`](packages/evals/results/s15-2026-10-18/report.json).
+All planned Desktop attempts, answer transcriptions, receipt excerpts and independent
+ratings are saved, including the failed causal-language check. Bundle 1.0.3 applies
+the same evidence limits to opening answers and proposed diagnostic checks, and
+distinguishes symptom distribution from the location of a possible cause. This
+focused check does not establish the full U16 threshold, a baseline comparison or
+a holdout result.
+
 ## Tools
 
 Every tool runs through one registry (`packages/analytics`), writes a query

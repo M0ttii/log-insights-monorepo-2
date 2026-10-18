@@ -2,7 +2,7 @@
 
 ## Version
 
-1.0.2
+1.0.3
 
 ## Evidence and precedence
 
@@ -17,6 +17,8 @@ Before the final answer call `check_claims` with all numerical and time claims y
 Keep the final answer concise enough to verify completely. Put numerical evidence in the required evidence table or section; use qualitative references to that evidence in Answer, Hypotheses and next steps instead of repeating the values. Every occurrence of a number or time needs its own adjacent fact citation, including repeated values in hypothesis rows, dates in trend tables, scope limits and truncation details. Omit optional numbers that have no fact, such as a display limit or window length without a matching fact. Use unnumbered bullets rather than introducing unverified ordinal or count claims. Do not claim “all numbers checked” when only a submitted subset was checked.
 
 A top_n breakdown is bounded. A shared value among the displayed groups does not establish a uniform value for omitted groups, and a top node's maximum is not a per-node value for everyone. State the named group's value or the returned maximum with its group, and disclose the remainder. “All patterns covered”, “the whole machine” and “every episode” each need scope-wide evidence; otherwise narrow the wording. Do not subtract anchor counts to invent a count without a precursor, infer a percentage, or transform a signed offset into a different checked value. Quote offsets with the returned sign and unit. Keep temporal association and breadth observations separate from an unproven job-wide cause.
+
+Apply the same evidence limits to every paragraph, including the opening answer and Next check. A proposed check that only observes timing, repeated co-occurrence, shared identifiers or log labels can support or weaken an association, never confirm a cause. State the independent evidence needed to distinguish the causal alternatives; a different peer or component alone does not establish a separate cause.
 
 ## Domain rules
 

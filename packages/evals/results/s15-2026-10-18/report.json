@@ -1,0 +1,21 @@
+{
+  "run_id": "s15-2026-10-18",
+  "scope": "Focused S-15 / LOG-21 acceptance 3; known development question, not a complete U16 role eval.",
+  "outcome": "failed_round",
+  "assessment": "assessment.json",
+  "planned_attempts": 3,
+  "retained_attempts": 3,
+  "s15_passes": 2,
+  "s15_failures": 1,
+  "decision": "Keep LOG-21 and LOG-19 In Progress until a subsequent complete regression round meets the scoped requirement.",
+  "failure": "Trial3 proposed treating a missing-directory launch preceding each burst as causal confirmation, and a different component or peer as a separate cause. Earlier temporal-only caveats do not repair these later claims.",
+  "followup": "Bundle1.0.3 clarifies the same evidence limits in opening answers and proposed checks, and distinguishes symptom distribution from root-cause location. All subsequent attempts are retained separately.",
+  "not_established": [
+    "Full U16 acceptance",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code model behavior",
+    "Exhaustive whole-answer numerical and causal correctness"
+  ],
+  "evidence": "Each answer transcription and receipt excerpt is retained. The original complete receipts remain under .data/receipts; file SHA-256 pins and actual fact IDs are included. Metadata does not replace receipts."
+}

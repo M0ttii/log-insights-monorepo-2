@@ -1,0 +1,43 @@
+Short answer: this is not one bad node. The failure is job-wide. It shows up as synchronized bursts across hundreds of I/O nodes at once. In most episodes it comes right after a ciod: LOGIN chdir(...) failed: No such file or directory. That points first at the job launch or working directory, not at hardware.
+
+Scope
+BGL dataset, window [2005-06-01T00:00:00Z [r_3f220b76.f15], 2005-07-01T00:00:00Z [r_3f220b76.f16]) UTC, with text filter “failed to read message prefix on control stream”. BGL data only starts at 2005-06-03T22:42:50 [r_99deb2d0.f13], so the earlier part of June has no data.
+
+Answer
+Every match falls into one pattern (287312f13c189c4d, APP, fictional owner Workload Runtime). It is spread evenly across the machine instead of being concentrated anywhere. Every failing socket in the sampled burst points at the same remote host, 172.16.96.116. That host is the common factor, not any node on the BG/L side.
+
+Evidence
+Measure | Value
+Matching log events | 5,983 [r_3f220b76.f9]
+Distinct nodes | 512 [r_3f220b76.f12]
+Distinct racks | 32 [r_3f220b76.f13]
+Episodes (≥30 min gap) | 7 [r_3f220b76.f8] across 5 active days [r_3f220b76.f5]
+Busiest listed node, e.g. R00-M0-N0-I:J18-U01 | 15 events [r_44451ccc.f2]
+Nodes outside top-20 list | 492 groups [r_44451ccc.f43], 5,683 events [r_44451ccc.f42]
+All affected nodes are I/O nodes (-I:J18-U01 / -U11 pairs), and both nodes in each pair fail together.
+
+Timeline
+- First seen 2005-06-04T07:24:32 [r_3f220b76.f10], last seen 2005-06-20T08:42:45 [r_3f220b76.f11].
+- Daily counts: Jun 4: 2,040 [r_ac0a38ec.f9]; Jun 9: 124 [r_ac0a38ec.f44]; Jun 13: 1,017 [r_ac0a38ec.f72]; Jun 16: 2,040 [r_ac0a38ec.f93]; Jun 20: 762 [r_ac0a38ec.f121]. There were no events on the days between.
+- On burst days the racks shown get identical counts (e.g. R00 64 [r_ac0a38ec.f11] on Jun 4). That uniform pattern looks like a whole-partition job failure, not drift on individual components.
+- In the first burst, the anchor at 2005-06-04T07:24:32 [r_864b4e0c.f1] is followed within about a second by matching failures on R04, R35 and R36 (last shown at +953.76 ms [r_864b4e0c.f16]). The 5 minutes after it contain 1,021 log events [r_864b4e0c.f23].
+
+Hypotheses
+- Single faulty node or rack: contradicted. The node and rack breadth check found the failure spread over 512 nodes [r_3f220b76.f12] and 32 racks [r_3f220b76.f13]. No node stands out.
+- Job launch failed because the working directory was missing, and ciod then dropped its control connections: supported, not proven. The precursor check found ciod: LOGIN chdir(<PATH>) failed: No such file or directory in the 10 minutes before 6 [r_b7fe135c.f6] of 7 [r_b7fe135c.f1] episode starts. That is about 145.2× [r_b7fe135c.f9] its base rate. In the sampled burst it appears at −838.005 ms [r_864b4e0c.f18], for path /p/gb2/draeger/benchmark/dat32k_060205. This is a temporal association only. One episode had no such precursor, so the hypothesis doesn’t explain every burst.
+- Problem on the front-end/service host 172.16.96.116: open. All sampled sockets go to that host, but I haven’t run a check that separates “the host dropped the connections” from “the job died and the host closed them”.
+- Hardware: open, weak. Corrected DDR and L3 errors appear after some bursts, but only at roughly their background rate. They don’t look like a driver.
+
+Next check
+- Directory hypothesis. Search ciod LOGIN chdir failed sorted by time for each of the 7 bursts. Check whether the path is always the same /p/gb2/... benchmark directory, from the same user. It is confirmed if each burst follows a launch into a missing or unmounted directory. It is weakened if the chdir failures name different, valid paths.
+- The outlier episode. Find the one burst that had no chdir precursor, most likely the Jun 9 one with no top-5 rack involvement. Open it with get_log_context (scope=dataset). If it shows MMCS or BGLMASTER events, or a different peer IP, it is a separate cause.
+- Host side. Count the events grouped by the IP in the message to see whether every burst points at 172.16.96.116. If so, check the logs and filesystem mounts on that front-end around these timestamps. That host is outside this corpus.
+
+Unknown
+- Which job, user or partition each burst belongs to. The logs have no job IDs.
+- Whether /p/gb2 was unmounted or the path was simply wrong.
+- Logs from the front-end host.
+- Any baseline before Jun 3, since data starts there. Business impact is also unknown.
+
+Verification
+27 claims checked · 0 mismatch · 0 unresolved [r_da3bc138.f1][r_da3bc138.f2][r_da3bc138.f3]. This covers the numbers only, not the reasoning.

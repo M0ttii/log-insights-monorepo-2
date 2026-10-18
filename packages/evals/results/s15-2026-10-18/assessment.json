@@ -1,0 +1,739 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "s15-2026-10-18",
+  "assessed_at": "2026-10-18T10:18:53.248288+00:00",
+  "scope": "Independent focused development evaluation of LOG-21 aggregate-check acceptance and LOG-19 S-15 on dev-eng-01; not full U16 acceptance.",
+  "reviewer": {
+    "agent": "/root/rate_s15",
+    "did_not_author_production_playbooks": true,
+    "production_playbook_source_inspected": false,
+    "production_playbook_design_rationale_inspected": false,
+    "read_material": [
+      "AGENTS.md",
+      ".claude/rules/evals.md",
+      "Relevant acceptance/rubric sections in docs/concept.md and docs/technical.md",
+      "manifest.json",
+      "All three complete answer transcriptions and pinned receipt evidence; original receipt result/fact objects"
+    ],
+    "limitations": [
+      "Variant/client identity was visible; this is not a blinded variant comparison.",
+      "No human rating sample was performed in this focused review.",
+      "Only the final answer and receipt order were independently reviewed; the UI capture does not provide a full timestamped interim prose transcript."
+    ]
+  },
+  "method": {
+    "all_predeclared_attempts_included": true,
+    "planned_attempts": 3,
+    "rated_attempts": 3,
+    "retry_or_replacement_used": false,
+    "scoring_scale": {
+      "0": "Absent or materially wrong on this dimension.",
+      "1": "Partially meets the dimension, with material omissions or overclaims.",
+      "2": "Meets the dimension with specific relevant support."
+    },
+    "scoring_scale_note": "Operational anchors used by this reviewer; the repository specifies 0–2 dimensions and reasons but not finer canonical anchor descriptions.",
+    "fact_grounding_policy": "A hypothesis must be traceably grounded in the executed discriminating check’s real facts. Repeating a fact ID in the status sentence is not required when the answer unambiguously links the same hypothesis to its adjacent cited check; this contextual case is explicitly identified for trial 1.",
+    "causality_policy": "Read the full answer, including proposed next-check confirmation rules. A temporal-only caveat does not permit another passage to promote the same precursor to a confirmed cause.",
+    "check_claims_is_not_s15_proxy": true,
+    "receipt_and_answer_hash_validation": "All three answer SHA-256 values and every original receipt-file SHA-256 in the exported evidence matched at assessment time."
+  },
+  "criteria": [
+    {
+      "file": "docs/concept.md",
+      "line": 578,
+      "criterion": "S-15: execute a discriminating local-vs-systemic check, justify hypothesis status with its fact IDs, never call a precursor a cause."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 387,
+      "criterion": "A-17(3): execute the check before assigning hypothesis status."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 552,
+      "criterion": "R-07: supported requires linked relevant observations; missing or mixed evidence leaves open; precursor may support but cannot prove causality."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 556,
+      "criterion": "R-11: episode-start anchors, bounded before/after windows and baseline comparison are temporal observations, not causes."
+    },
+    {
+      "file": "docs/technical.md",
+      "line": 641,
+      "criterion": "Five independent 0–2 rubric dimensions with reasons."
+    },
+    {
+      "file": "docs/technical.md",
+      "line": 639,
+      "criterion": "Whole-answer numerical/product checks include uncited or unsubmitted numbers and claim scope, beyond green check_claims."
+    },
+    {
+      "file": "docs/technical.md",
+      "line": 643,
+      "criterion": "Full U16 threshold includes all answers, required evidence/sections/checks, numerical correctness, role mean and S-13; this focused run cannot establish it."
+    },
+    {
+      "source": "Parent task and manifest acceptance",
+      "criterion": "LOG-21 additionally requires get_log_context mode=aggregate itself to serve as the real check before recommendation."
+    }
+  ],
+  "trials": [
+    {
+      "id": "s15-01",
+      "answer_file": "s15-01-answer.txt",
+      "evidence_file": "s15-01-evidence.json",
+      "answer_sha256": "10a09e477f315a20deb9ca7bbf17d63c5a5f8a5769f369f667e7c0cfa4d5948e",
+      "chat_url": "https://claude.ai/chat/2aad5f5b-4014-4e93-901b-367d27f877dd",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool_call_count": 9,
+      "tool_duration_ms_total": 191.4,
+      "call_order": [
+        {
+          "receipt_id": "r_ae1a5574",
+          "tool": "describe_corpus",
+          "mode": null,
+          "created_at": "2026-10-18T10:02:08.236Z"
+        },
+        {
+          "receipt_id": "r_4930a324",
+          "tool": "search_logs",
+          "mode": null,
+          "created_at": "2026-10-18T10:02:43.492Z"
+        },
+        {
+          "receipt_id": "r_72540196",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T10:03:01.440Z"
+        },
+        {
+          "receipt_id": "r_76d19629",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T10:03:22.895Z"
+        },
+        {
+          "receipt_id": "r_a674fc90",
+          "tool": "recurring_patterns",
+          "mode": null,
+          "created_at": "2026-10-18T10:03:33.005Z"
+        },
+        {
+          "receipt_id": "r_ebd8234b",
+          "tool": "event_trend",
+          "mode": null,
+          "created_at": "2026-10-18T10:03:43.146Z"
+        },
+        {
+          "receipt_id": "r_4a025704",
+          "tool": "get_log_context",
+          "mode": "aggregate",
+          "created_at": "2026-10-18T10:03:57.431Z"
+        },
+        {
+          "receipt_id": "r_bfb103b0",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T10:03:58.937Z"
+        },
+        {
+          "receipt_id": "r_99539bc6",
+          "tool": "check_claims",
+          "mode": null,
+          "created_at": "2026-10-18T10:04:46.918Z"
+        }
+      ],
+      "aggregate_check": {
+        "receipt_id": "r_4a025704",
+        "created_at": "2026-10-18T10:03:57.431Z",
+        "input": {
+          "mode": "aggregate",
+          "window_minutes": 10,
+          "pattern_id": "287312f13c189c4d",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z",
+          "direction": "both",
+          "top_n": 6
+        },
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-01T00:00:00Z",
+              "to": "2005-07-01T00:00:00Z"
+            }
+          ],
+          "filters": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "matched_events": 5983,
+        "anchors": 7,
+        "chdir_before_anchors": 6,
+        "chdir_before_ratio": 145.1925465838509,
+        "fact_ids": ["r_4a025704.f1", "r_4a025704.f6", "r_4a025704.f9"],
+        "executed_before_final_answer_and_recommendation": true,
+        "order_evidence": "Aggregate receipt precedes check_claims and the final answer capture; the recommendation is in that final answer. Interim unrecorded prose was not independently assessed.",
+        "correct_scope": true,
+        "scope_reason": "The aggregate spans BGL [2005-06-01, 2005-07-01) and selects the target pattern or a query whose 5,983 matched events agree with the target-pattern result. Baseline grid starts at actual corpus availability, not before it."
+      },
+      "check_claims": {
+        "receipt_id": "r_99539bc6",
+        "checked": 21,
+        "verified": 21,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "21 claims checked · 0 mismatch · 0 unresolved",
+        "all_answer_cited_fact_ids_resolve": true,
+        "non_verification_cited_fact_ids_not_submitted": [
+          "r_a674fc90.f15",
+          "r_a674fc90.f16",
+          "r_ebd8234b.f30"
+        ],
+        "submitted_fact_ids_not_cited": ["r_4930a324.f1"],
+        "whole_answer_numeric_acceptance": "not established"
+      },
+      "s15_status": "pass",
+      "s15_reason": "The June BGL precursor check executed before the final answer. Narrowing names the check and gives its facts; the matching launch hypothesis is supported with timing-only and not-proof qualifiers. The fact link is contextual across adjacent sections, rather than repeated inside the status bullet. This scoped pass does not validate every other inference in the answer.",
+      "hypothesis_fact_link": "Narrowing cites r_4a025704.f1, f6, f9 and f17; the launch hypothesis explicitly reuses the chdir-before-burst observation. The local manifestation hypothesis also refers to the breadth evidence above, citing r_a674fc90.f12/f13 there.",
+      "causality_evidence": [
+        {
+          "answer_file": "s15-01-answer.txt",
+          "line": 33,
+          "excerpt": "This is timing only, not proof."
+        },
+        {
+          "answer_file": "s15-01-answer.txt",
+          "line": 43,
+          "excerpt": "The precursor association is temporal only."
+        }
+      ],
+      "rubric": {
+        "correct_question_and_scope": {
+          "score": 1,
+          "reason": "Correct BGL June window, target message and data-start limit. However the opening upgrades broad observed symptoms to job-wide and machine-wide scope without job/partition identity or a machine denominator."
+        },
+        "relevant_evidence": {
+          "score": 1,
+          "reason": "Uses node/rack aggregation, episodes, daily trend and a strong precursor association. It overgeneralizes truncated top groups into an even distribution and all-node properties, and overstates simultaneous breadth from a small time-ordered sample."
+        },
+        "specific_next_action_with_team_or_object": {
+          "score": 2,
+          "reason": "Names actual chdir paths, the peer host 172.16.96.116, burst timestamps and its front-end logs/mount or network evidence as diagnostic objects. No fictional team is needed when the object is specific."
+        },
+        "discriminating_result_or_missing_information": {
+          "score": 2,
+          "reason": "Uses broad distribution and the precursor comparison, then identifies missing peer-side/job evidence and gives confirmatory or weakening observations to obtain next."
+        },
+        "observation_hypothesis_cause_separation": {
+          "score": 1,
+          "reason": "The precursor is explicitly temporal and the causal explanation is labelled hypothesis/background, but the opening is categorical and ruling out a single node or rack as a cause is broader than ruling out an isolated local manifestation."
+        }
+      },
+      "material_broader_defects": [
+        {
+          "kind": "scope_and_simultaneity_overclaim",
+          "answer_file": "s15-01-answer.txt",
+          "line": 1,
+          "excerpt": "It’s job-wide (really machine-wide), not one bad node.",
+          "reason": "Month-wide 512-node/32-rack breadth does not identify a job or prove machine-wide involvement. The time-ordered search sample shows several racks close in time, not hundreds of nodes simultaneously.",
+          "receipt_ids": ["r_a674fc90", "r_4930a324"]
+        },
+        {
+          "kind": "truncated_distribution_overgeneralized",
+          "answer_file": "s15-01-answer.txt",
+          "line": 1,
+          "excerpt": "spread evenly across racks",
+          "reason": "Rack top 10 and node top 5 lists are truncated. Equal top counts do not establish evenness across every omitted group. No truncation notice appears in the answer.",
+          "receipt_ids": ["r_72540196", "r_76d19629"]
+        },
+        {
+          "kind": "cause_exclusion_too_strong",
+          "answer_file": "s15-01-answer.txt",
+          "line": 31,
+          "excerpt": "The breadth and even spread above rule this out.",
+          "reason": "Broad effects contradict an isolated local manifestation; they do not logically exclude one shared service node or rack as an initiating cause.",
+          "receipt_ids": ["r_a674fc90", "r_72540196", "r_76d19629"]
+        },
+        {
+          "kind": "hardware_dismissal_overstated",
+          "answer_file": "s15-01-answer.txt",
+          "line": 28,
+          "excerpt": "The DDR/EDRAM corrected-error messages near the bursts are close to their usual rate",
+          "reason": "EDRAM ratio is near one, but the returned DDR-family after-window ratios are about 2.13 to 2.15. A blanket near-baseline description is not an accurate account of all returned hardware evidence.",
+          "receipt_ids": ["r_4a025704"]
+        },
+        {
+          "kind": "unchecked_cited_scope_values",
+          "answer_file": "s15-01-answer.txt",
+          "line": 45,
+          "excerpt": "Verification: 21 claims checked",
+          "reason": "The cited scope endpoints r_a674fc90.f15/f16 and corpus-start r_ebd8234b.f30 were not submitted among the 21 claims. Green check_claims covers only submitted claims. The uncited ten-minute window and about-a-second comparison also prevent claiming an exhaustive whole-answer numerical check.",
+          "receipt_ids": ["r_99539bc6", "r_a674fc90", "r_ebd8234b"]
+        }
+      ],
+      "s15_criteria": {
+        "executed_discriminating_check_before_final_recommendation": "pass",
+        "log21_aggregate_used_as_check": "pass",
+        "hypothesis_status_grounded_in_check_facts": "pass",
+        "no_precursor_promoted_to_cause": "pass"
+      },
+      "rubric_total": 7,
+      "rubric_maximum": 10,
+      "rubric_mean": 1.4
+    },
+    {
+      "id": "s15-02",
+      "answer_file": "s15-02-answer.txt",
+      "evidence_file": "s15-02-evidence.json",
+      "answer_sha256": "241b75398903866f3b8c86cd5969c1913e8277442babf7ff3302492e7187df37",
+      "chat_url": "https://claude.ai/chat/85b837e7-b968-4e49-bb24-96ca8bb02249",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool_call_count": 9,
+      "tool_duration_ms_total": 443.63,
+      "call_order": [
+        {
+          "receipt_id": "r_5930f079",
+          "tool": "describe_corpus",
+          "mode": null,
+          "created_at": "2026-10-18T10:06:58.381Z"
+        },
+        {
+          "receipt_id": "r_cc0143a9",
+          "tool": "search_logs",
+          "mode": null,
+          "created_at": "2026-10-18T10:08:17.046Z"
+        },
+        {
+          "receipt_id": "r_cfc55f52",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T10:08:18.692Z"
+        },
+        {
+          "receipt_id": "r_371fa0b7",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T10:09:03.547Z"
+        },
+        {
+          "receipt_id": "r_6b12267c",
+          "tool": "recurring_patterns",
+          "mode": null,
+          "created_at": "2026-10-18T10:09:38.327Z"
+        },
+        {
+          "receipt_id": "r_ae15e9ef",
+          "tool": "event_trend",
+          "mode": null,
+          "created_at": "2026-10-18T10:09:39.874Z"
+        },
+        {
+          "receipt_id": "r_5c5968b2",
+          "tool": "get_log_context",
+          "mode": "aggregate",
+          "created_at": "2026-10-18T10:09:41.752Z"
+        },
+        {
+          "receipt_id": "r_a50782b8",
+          "tool": "get_log_context",
+          "mode": "event",
+          "created_at": "2026-10-18T10:10:12.563Z"
+        },
+        {
+          "receipt_id": "r_e3d3d31f",
+          "tool": "check_claims",
+          "mode": null,
+          "created_at": "2026-10-18T10:11:14.156Z"
+        }
+      ],
+      "aggregate_check": {
+        "receipt_id": "r_5c5968b2",
+        "created_at": "2026-10-18T10:09:41.752Z",
+        "input": {
+          "mode": "aggregate",
+          "window_minutes": 10,
+          "query": "failed read message prefix control stream",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z",
+          "direction": "before",
+          "top_n": 5
+        },
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-01T00:00:00Z",
+              "to": "2005-07-01T00:00:00Z"
+            }
+          ],
+          "filters": {
+            "text": "failed read message prefix control stream"
+          }
+        },
+        "matched_events": 5983,
+        "anchors": 7,
+        "chdir_before_anchors": 6,
+        "chdir_before_ratio": 145.1925465838509,
+        "fact_ids": ["r_5c5968b2.f1", "r_5c5968b2.f6", "r_5c5968b2.f9"],
+        "executed_before_final_answer_and_recommendation": true,
+        "order_evidence": "Aggregate receipt precedes check_claims and the final answer capture; the recommendation is in that final answer. Interim unrecorded prose was not independently assessed.",
+        "correct_scope": true,
+        "scope_reason": "The aggregate spans BGL [2005-06-01, 2005-07-01) and selects the target pattern or a query whose 5,983 matched events agree with the target-pattern result. Baseline grid starts at actual corpus availability, not before it."
+      },
+      "check_claims": {
+        "receipt_id": "r_e3d3d31f",
+        "checked": 23,
+        "verified": 23,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "23 claims checked · 0 mismatch · 0 unresolved",
+        "all_answer_cited_fact_ids_resolve": true,
+        "non_verification_cited_fact_ids_not_submitted": [],
+        "submitted_fact_ids_not_cited": [],
+        "whole_answer_numeric_acceptance": "not established"
+      },
+      "s15_status": "pass",
+      "s15_reason": "A real aggregate precursor check ran in the correct June BGL scope before recommendation. The supported launch hypothesis directly names the before-episode check and cites its actual anchor count, matching-anchor count and ratio facts. It explicitly says timing association only and not proven.",
+      "hypothesis_fact_link": "The launch hypothesis directly cites r_5c5968b2.f6 (six before anchors), r_5c5968b2.f1 (seven anchors) and r_5c5968b2.f9 (precursor ratio); local breadth cites r_6b12267c.f12/f13.",
+      "causality_evidence": [
+        {
+          "answer_file": "s15-02-answer.txt",
+          "line": 32,
+          "excerpt": "supported, not proven."
+        },
+        {
+          "answer_file": "s15-02-answer.txt",
+          "line": 32,
+          "excerpt": "This is a timing association only."
+        },
+        {
+          "answer_file": "s15-02-answer.txt",
+          "line": 41,
+          "excerpt": "a precursor is not proof of causation."
+        }
+      ],
+      "rubric": {
+        "correct_question_and_scope": {
+          "score": 1,
+          "reason": "Correct requested dataset/month/message and explicitly acknowledges partial June coverage. Whole-partition/all-node synchronized language exceeds the identity and timing scope actually measured."
+        },
+        "relevant_evidence": {
+          "score": 1,
+          "reason": "Node/rack counts, episodes, trend, aggregate precursor and one local context are relevant. Full flatness, all-peer-host identity and a local-fault exclusion are not established by those results."
+        },
+        "specific_next_action_with_team_or_object": {
+          "score": 2,
+          "reason": "Specifies raw chdir paths, scheduler records and mount/NFS state on the named service host, with June and burst times as the inspection scope."
+        },
+        "discriminating_result_or_missing_information": {
+          "score": 1,
+          "reason": "The path comparison and missing scheduler/job information are useful. However the proposed outlier investigation falsely identifies June 9 as the anchor lacking chdir; the aggregate supplies no per-anchor absence map."
+        },
+        "observation_hypothesis_cause_separation": {
+          "score": 1,
+          "reason": "Consistently labels the launch explanation supported/not proven and the precursor temporal. Broad all-node assertions and using zero prior events on one sampled node to contradict a local cause still overstate what observations exclude."
+        }
+      },
+      "material_broader_defects": [
+        {
+          "kind": "scope_and_simultaneity_overclaim",
+          "answer_file": "s15-02-answer.txt",
+          "line": 5,
+          "excerpt": "The errors are spread across the whole partition and arrive in synchronized bursts on all I/O nodes at once.",
+          "reason": "The corpus query has no job/partition identifier, the node/rack counts cover the month, and sampled lines do not prove all-node simultaneity.",
+          "receipt_ids": ["r_6b12267c", "r_cc0143a9"]
+        },
+        {
+          "kind": "truncated_distribution_overgeneralized",
+          "answer_file": "s15-02-answer.txt",
+          "line": 27,
+          "excerpt": "The distribution is flat across nodes and racks",
+          "reason": "Only the top ten groups per dimension are individually returned; equal top values do not establish a flat complete distribution, although the answer later discloses these top-group limits.",
+          "receipt_ids": ["r_cfc55f52", "r_371fa0b7"]
+        },
+        {
+          "kind": "peer_identity_overgeneralized",
+          "answer_file": "s15-02-answer.txt",
+          "line": 15,
+          "excerpt": "All hits are from I/O nodes",
+          "reason": "A ten-line search sample and ten node groups do not independently prove all 5,983 messages have the same peer or every omitted node has the asserted type. This trial has no peer-filtered full-count check.",
+          "receipt_ids": ["r_cc0143a9", "r_cfc55f52"]
+        },
+        {
+          "kind": "absence_not_cause_exclusion",
+          "answer_file": "s15-02-answer.txt",
+          "line": 31,
+          "excerpt": "the sampled node had no local precursor",
+          "reason": "No events in one node’s ten-minute before window is not proof against an unlogged local initiating fault or a shared service-node cause.",
+          "receipt_ids": ["r_a50782b8"]
+        },
+        {
+          "kind": "unsupported_anchor_identity",
+          "answer_file": "s15-02-answer.txt",
+          "line": 37,
+          "excerpt": "inspect the 9 June burst manually",
+          "reason": "Six of seven aggregate anchors having the precursor does not identify the missing anchor. The daily-count outlier cannot supply that missing per-anchor evidence.",
+          "receipt_ids": ["r_5c5968b2", "r_ae15e9ef"]
+        },
+        {
+          "kind": "verification_not_exhaustive",
+          "answer_file": "s15-02-answer.txt",
+          "line": 48,
+          "excerpt": "This covers the numbers and times only, not the reasoning.",
+          "reason": "All non-verification fact IDs cited here were submitted, but the text also includes uncited query/rule parameters and the unverified June-9/other-six anchor assignment. This is not whole-answer numerical acceptance.",
+          "receipt_ids": ["r_e3d3d31f"]
+        }
+      ],
+      "s15_criteria": {
+        "executed_discriminating_check_before_final_recommendation": "pass",
+        "log21_aggregate_used_as_check": "pass",
+        "hypothesis_status_grounded_in_check_facts": "pass",
+        "no_precursor_promoted_to_cause": "pass"
+      },
+      "rubric_total": 6,
+      "rubric_maximum": 10,
+      "rubric_mean": 1.2
+    },
+    {
+      "id": "s15-03",
+      "answer_file": "s15-03-answer.txt",
+      "evidence_file": "s15-03-evidence.json",
+      "answer_sha256": "b6408be06958050ceac9f71ae10e5a8b08eb3b542728778783ed71d6e0547421",
+      "chat_url": "https://claude.ai/chat/be2b6188-d1cc-4bd2-8732-b63c3e0bfdf4",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool_call_count": 7,
+      "tool_duration_ms_total": 206.51,
+      "call_order": [
+        {
+          "receipt_id": "r_99deb2d0",
+          "tool": "describe_corpus",
+          "mode": null,
+          "created_at": "2026-10-18T10:12:58.290Z"
+        },
+        {
+          "receipt_id": "r_3f220b76",
+          "tool": "recurring_patterns",
+          "mode": null,
+          "created_at": "2026-10-18T10:13:28.756Z"
+        },
+        {
+          "receipt_id": "r_44451ccc",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T10:13:30.062Z"
+        },
+        {
+          "receipt_id": "r_ac0a38ec",
+          "tool": "event_trend",
+          "mode": null,
+          "created_at": "2026-10-18T10:13:59.739Z"
+        },
+        {
+          "receipt_id": "r_b7fe135c",
+          "tool": "get_log_context",
+          "mode": "aggregate",
+          "created_at": "2026-10-18T10:14:12.038Z"
+        },
+        {
+          "receipt_id": "r_864b4e0c",
+          "tool": "get_log_context",
+          "mode": "event",
+          "created_at": "2026-10-18T10:14:13.592Z"
+        },
+        {
+          "receipt_id": "r_da3bc138",
+          "tool": "check_claims",
+          "mode": null,
+          "created_at": "2026-10-18T10:14:49.810Z"
+        }
+      ],
+      "aggregate_check": {
+        "receipt_id": "r_b7fe135c",
+        "created_at": "2026-10-18T10:14:12.038Z",
+        "input": {
+          "mode": "aggregate",
+          "window_minutes": 10,
+          "pattern_id": "287312f13c189c4d",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z",
+          "direction": "both",
+          "top_n": 8
+        },
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-01T00:00:00Z",
+              "to": "2005-07-01T00:00:00Z"
+            }
+          ],
+          "filters": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "matched_events": 5983,
+        "anchors": 7,
+        "chdir_before_anchors": 6,
+        "chdir_before_ratio": 145.1925465838509,
+        "fact_ids": ["r_b7fe135c.f1", "r_b7fe135c.f6", "r_b7fe135c.f9"],
+        "executed_before_final_answer_and_recommendation": true,
+        "order_evidence": "Aggregate receipt precedes check_claims and the final answer capture; the recommendation is in that final answer. Interim unrecorded prose was not independently assessed.",
+        "correct_scope": true,
+        "scope_reason": "The aggregate spans BGL [2005-06-01, 2005-07-01) and selects the target pattern or a query whose 5,983 matched events agree with the target-pattern result. Baseline grid starts at actual corpus availability, not before it."
+      },
+      "check_claims": {
+        "receipt_id": "r_da3bc138",
+        "checked": 27,
+        "verified": 27,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "27 claims checked · 0 mismatch · 0 unresolved",
+        "all_answer_cited_fact_ids_resolve": true,
+        "non_verification_cited_fact_ids_not_submitted": [],
+        "submitted_fact_ids_not_cited": ["r_b7fe135c.f17"],
+        "whole_answer_numeric_acceptance": "not established"
+      },
+      "s15_status": "fail",
+      "s15_reason": "The real aggregate check, scope, timing and direct fact-grounded supported hypothesis satisfy the execution and grounding portions. The full answer then says the causal directory hypothesis is confirmed merely if bursts follow launches into missing/unmounted directories, and declares other nearby component events or a different peer a separate cause. Those causal conclusions are not established by the proposed temporal/identity observations. Earlier temporal-only disclaimers do not repair this later failure of S-15/R-11.",
+      "hypothesis_fact_link": "The supported launch/working-directory/control-connection chain directly cites r_b7fe135c.f6/f1/f9, with a sampled chdir offset r_864b4e0c.f18. The front-end hypothesis is appropriately left open for lack of a discriminating host-vs-job check.",
+      "causality_evidence": [
+        {
+          "answer_file": "s15-03-answer.txt",
+          "line": 27,
+          "excerpt": "This is a temporal association only."
+        },
+        {
+          "answer_file": "s15-03-answer.txt",
+          "line": 32,
+          "excerpt": "It is confirmed if each burst follows a launch into a missing or unmounted directory."
+        },
+        {
+          "answer_file": "s15-03-answer.txt",
+          "line": 33,
+          "excerpt": "If it shows MMCS or BGLMASTER events, or a different peer IP, it is a separate cause."
+        }
+      ],
+      "rubric": {
+        "correct_question_and_scope": {
+          "score": 1,
+          "reason": "Correct BGL June target and data-start limit. The opening nonetheless declares job-wide synchronized hundreds-of-node scope, while Unknown admits job and partition identities are missing."
+        },
+        "relevant_evidence": {
+          "score": 1,
+          "reason": "Provides breadth, top-node remainder, rack-split daily trend, aggregate precursors and genuine dataset event context. It overgeneralizes these into all-node pairing/evenness/simultaneity and understates returned hardware evidence."
+        },
+        "specific_next_action_with_team_or_object": {
+          "score": 2,
+          "reason": "Gives raw directory/user checks, a dataset-context inspection, peer-address counts and front-end mount/log inspection as specific diagnostic objects."
+        },
+        "discriminating_result_or_missing_information": {
+          "score": 1,
+          "reason": "The open host-vs-job alternative and missing front-end/job records are useful. The June-9 missing-precursor guess lacks anchor evidence, and proposed confirmation criteria cannot establish the causal chain."
+        },
+        "observation_hypothesis_cause_separation": {
+          "score": 0,
+          "reason": "The hypothesis paragraph explicitly says temporal-only, but the final next-check rule treats temporal succession as confirmation and component/peer differences as a separate cause. This materially violates the causal boundary being evaluated."
+        }
+      },
+      "material_broader_defects": [
+        {
+          "kind": "scope_and_simultaneity_overclaim",
+          "answer_file": "s15-03-answer.txt",
+          "line": 1,
+          "excerpt": "The failure is job-wide.",
+          "reason": "Unknown concedes that job and partition identity are absent. Month-wide node breadth and a short sample across several racks do not prove synchronized involvement of hundreds of nodes in a single job.",
+          "receipt_ids": ["r_3f220b76", "r_864b4e0c"]
+        },
+        {
+          "kind": "all_node_properties_overgeneralized",
+          "answer_file": "s15-03-answer.txt",
+          "line": 17,
+          "excerpt": "All affected nodes are I/O nodes",
+          "reason": "Only twenty individual node groups and a short event sample are exposed. Those do not prove every omitted node’s type or that every pair fails together.",
+          "receipt_ids": ["r_44451ccc", "r_864b4e0c"]
+        },
+        {
+          "kind": "truncated_and_merged_distribution_overgeneralized",
+          "answer_file": "s15-03-answer.txt",
+          "line": 7,
+          "excerpt": "It is spread evenly across the machine",
+          "reason": "The node list is truncated, and the trend explicitly shows only five rack series with 27 other rack values merged. The answer names top-20 node remainder but does not disclose that the rack display is a selected five-series view.",
+          "receipt_ids": ["r_44451ccc", "r_ac0a38ec"]
+        },
+        {
+          "kind": "unsupported_anchor_identity",
+          "answer_file": "s15-03-answer.txt",
+          "line": 33,
+          "excerpt": "most likely the Jun 9 one with no top-5 rack involvement",
+          "reason": "No displayed-series involvement on June 9 is evidence of different rack distribution, not evidence that this is the one anchor without chdir. Aggregate counts do not identify that anchor.",
+          "receipt_ids": ["r_b7fe135c", "r_ac0a38ec"]
+        },
+        {
+          "kind": "causal_confirmation_from_temporal_association",
+          "answer_file": "s15-03-answer.txt",
+          "line": 32,
+          "excerpt": "It is confirmed if each burst follows a launch into a missing or unmounted directory.",
+          "reason": "Repeated temporal association can strengthen support; it does not confirm the full missing-directory-to-job-failure-to-closed-control-stream causal chain.",
+          "receipt_ids": ["r_b7fe135c", "r_864b4e0c"]
+        },
+        {
+          "kind": "cause_from_component_or_peer_identity",
+          "answer_file": "s15-03-answer.txt",
+          "line": 33,
+          "excerpt": "If it shows MMCS or BGLMASTER events, or a different peer IP, it is a separate cause.",
+          "reason": "Different nearby components or peer identifiers can motivate another hypothesis, but cannot by themselves establish a separate cause.",
+          "receipt_ids": ["r_b7fe135c", "r_864b4e0c"]
+        },
+        {
+          "kind": "hardware_dismissal_overstated",
+          "answer_file": "s15-03-answer.txt",
+          "line": 29,
+          "excerpt": "Corrected DDR and L3 errors appear after some bursts, but only at roughly their background rate.",
+          "reason": "Returned DDR ratios are about 2.13–2.15. The returned L3-directory-corrected-error pattern has an after-window ratio about 50.60, whereas L3 EDRAM is about 1.06. The blanket near-baseline statement conceals this mixed evidence; none of these ratios proves a hardware cause either.",
+          "receipt_ids": ["r_b7fe135c"]
+        },
+        {
+          "kind": "verification_not_exhaustive",
+          "answer_file": "s15-03-answer.txt",
+          "line": 43,
+          "excerpt": "This covers the numbers only, not the reasoning.",
+          "reason": "All non-verification cited fact IDs were submitted, but uncited window/gap/series parameters and the unsupported June-9 anchor attribution remain outside an exhaustive whole-answer check. A submitted after-anchor count is not actually cited in the final text.",
+          "receipt_ids": ["r_da3bc138"]
+        }
+      ],
+      "s15_criteria": {
+        "executed_discriminating_check_before_final_recommendation": "pass",
+        "log21_aggregate_used_as_check": "pass",
+        "hypothesis_status_grounded_in_check_facts": "pass",
+        "no_precursor_promoted_to_cause": "fail"
+      },
+      "rubric_total": 5,
+      "rubric_maximum": 10,
+      "rubric_mean": 1.0
+    }
+  ],
+  "conclusion": {
+    "focused_s15_passes": 2,
+    "focused_s15_failures": 1,
+    "focused_log21_aggregate_execution_passes": 3,
+    "all_three_planned_attempts_satisfy_s15": false,
+    "focused_acceptance_result": "Not fully demonstrated: trials 1 and 2 pass the scoped S-15 behavior; trial 3 fails the full-answer causal boundary. Aggregate execution alone succeeds in all three.",
+    "can_s15_pass_while_broader_u16_fails": true,
+    "criterion_relationship": "S-15 is a scoped conjunction of executed discriminating check, fact-grounded hypothesis status and no precursor-as-cause. A-21/technical §13 separately require comprehensive numerical correctness, full role suites, sections, repeated/holdout runs and S-13. Therefore a particular S-15 pass does not grant U16 acceptance. This distinction does not excuse the causal contradiction in trial 3, which fails S-15 itself.",
+    "not_established": [
+      "Full U16 pass threshold",
+      "Baseline comparison or benefit over baseline",
+      "Holdout or first-holdout result",
+      "Claude Code acceptance",
+      "Whole-answer numerical correctness",
+      "General reliability beyond this one development question",
+      "Exact served API model ID, tokens, API cost or exact provider latency"
+    ],
+    "required_reporting": "Retain all three answers, pinned evidence and this failure. Do not report three S-15 passes or equate green numeric checks with recommendation/causal correctness."
+  }
+}
