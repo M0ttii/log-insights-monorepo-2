@@ -11,8 +11,10 @@ receipt.
 > tools exist (`describe_corpus`, `search_logs`, `get_log_context`,
 > `count_events` with `compare`, `event_trend`, `recurring_patterns` with
 > `rank: investigation_order`, `latency_stats`, `check_claims`). The stdio MCP
-> server exposes the registry and shared role playbooks to Claude clients. The web
-> chat is not implemented yet; real-client role acceptance is still pending.
+> server exposes the registry and shared role playbooks to Claude clients. A preliminary web workspace provides role-aware question drafts,
+> live corpus analytics, log search, event context and shared query receipts.
+> The streaming web chat and role comparison remain unconnected; real-client role
+> acceptance is still pending.
 
 ## Requirements
 
@@ -45,6 +47,25 @@ The password seeds the SereneDB superuser when its data volume is first
 created; to change it later, run `ALTER ROLE` or recreate the volume
 (`docker compose down -v`, which deletes all loaded data).
 
+### Preliminary web workspace
+
+Run `pnpm dev` and open [Log Insights](http://127.0.0.1:3000). The app reads the
+repository `.env` and uses the same analytics registry and `.data/receipts/` as
+MCP. It binds to loopback only. Ask offers editable drafts and examples from the
+shared playbooks; sending, role comparison and recorded-run import/export are
+not connected yet. Overview, Logs, Corpus and receipts use real tools; no demo
+findings are substituted when the database is unavailable.
+
+The shell, sidebar, composer, timeline and receipt presentation adapt the earlier
+`log-insights` demo. Its fixtures, investigation history and quality pages are
+not included. Themes use the SereneDB kit, with Urbanist and locally hosted Geist
+Mono. The production build uses Next's supported webpack bundler.
+
+Run `pnpm build` before `pnpm test:e2e` (install Chromium once with
+`pnpm --filter web exec playwright install chromium`). Browser checks cover
+1280 × 800, 1920 × 1080 and a narrow mobile viewport. Without database
+configuration the app shows recoverable unavailable states.
+
 ### SereneDB image
 
 The project runs SereneDB 26.10.1 (source tag `v26.10.1`, commit `3d12e1a8`).
@@ -68,6 +89,9 @@ in the technical spec (§ 5.1).
 
 | Script | Purpose |
 |---|---|
+| `pnpm dev` | Start the preliminary web workspace on 127.0.0.1:3000 |
+| `pnpm build` | Build the web workspace |
+| `pnpm test:e2e` | Browser and accessibility checks against a production build |
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
 | `pnpm data:setup [--samples]` | Load BGL and OpenStack into SereneDB (idempotent); `--samples` loads the Loghub 2k samples into the database `log_insights_samples` instead |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
@@ -323,11 +347,11 @@ The gitignored `docs/` directory is also copied if the workspace has none.
 Missing optional files are fine; dependency installation failures stop setup.
 Copies are independent snapshots, not symlinks or ongoing synchronization.
 
-Click **Run** to launch the `web` dev task through `pnpm dev`. The planned Next.js
+Click **Run** to launch the `web` dev task through `pnpm dev`. The Next.js
 server binds to `127.0.0.1` with `--port 0`, letting the OS select a free port even
 when workspaces start simultaneously. Open the URL printed in the terminal or
 shown in Superset's Ports panel. Stop it from Superset or with Ctrl+C.
-**Currently `apps/web` does not exist, so Run exits with an explanatory message.**
+The preliminary `apps/web` workspace now starts through this task.
 
 Setup starts no background services, so `teardown` is empty. No database,
 corpus, receipts, or `node_modules` are copied from the main checkout.
@@ -345,7 +369,7 @@ and [port management](https://docs.superset.sh/ports).
 
 ```text
 apps/mcp                    stdio MCP server, resources, playbook interface, desktop config and smoke tests
-apps/web                    planned web chat (not created yet)
+apps/web                    preliminary Next.js workspace; streaming chat pending
 packages/analytics          pool, filter compiler, receipts, tool registry and tools
 packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
 packages/domain             pure Zod contracts, fact IDs and rule functions
