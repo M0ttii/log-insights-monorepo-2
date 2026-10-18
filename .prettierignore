@@ -13,3 +13,5 @@ pnpm-lock.yaml
 playwright-report/
 test-results/
 blob-report/
+# git submodule with its own formatting (serene-design kit)
+vendor/

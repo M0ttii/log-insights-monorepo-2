@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive # vendor/serene-design (DESIGN.md)
       - uses: pnpm/action-setup@v4 # version comes from packageManager in package.json
       - uses: actions/setup-node@v4
         with:
@@ -52,6 +54,8 @@ jobs:
       SERENEDB_CI_IMAGE: serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive # vendor/serene-design (DESIGN.md)
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

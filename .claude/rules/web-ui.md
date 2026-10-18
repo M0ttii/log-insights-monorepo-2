@@ -101,6 +101,11 @@ packages/ui/          # shadcn primitives (src/components), hooks (src/hooks),
 
 ## Tokens, accessibility and states
 
+- Theme: the SereneDB design kit (`vendor/serene-design`, CSS only) under the
+  token layer in `packages/ui/src/styles/globals.css`; dark is the default via
+  `.dark` on `<html>`, light is a full theme. Never import the kit's `theme.css`
+  or components (Radix), and never give a kit token another meaning; map it in
+  `@theme inline` instead (DESIGN.md, Source).
 - Shared tokens instead of scattered colors and arbitrary spacing. Level, tool
   state, hypothesis status, pattern status (R-10) and verification are separate
   status token sets; hypothesis status never uses success or error colors.
