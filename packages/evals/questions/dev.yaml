@@ -4,22 +4,35 @@
 # regression questions, never holdout: the author of this file writes no
 # holdout questions and does not see them (U16).
 #
-# Per question: role (null = asked without a role prompt, A-37/S-14), scope,
-# required evidence, the expected distinguishing check, allowed tool
-# sequences and the acceptance cases it covers. `reference` holds profiling
-# results for orientation of raters; they come from the queries in
-# packages/corpus/sql/profiling/ on data_version dv_263e378cd8560c4a and are
-# not expected values for the tools (those come from receipts at run time).
+# Per question: kind, role (null = no role prompt), effective_role (expected
+# routing result, null for the ambiguous routing control), scope, required
+# evidence, distinguishing check, allowed tool sequences and acceptance cases.
+# effective_role and every expectation below are rater metadata, never agent
+# input. Auto questions must infer the role without receiving effective_role.
+# `reference` preserves historical profiling annotations, with provenance pinned
+# below. They were not rerun on the current data and are never numerical pass
+# expectations or answer evidence. Some original annotations use a wider scope
+# than the question; see audit.md. Current numbers and hypotheses require the
+# current run's receipts and their actual scope, population and truncation.
 # `demo` marks the questions rehearsed for the live demo (concept 11.1);
 # rehearsed questions never count as holdout.
 
-version: 1
-data_version: dv_263e378cd8560c4a
+version: 2
+reference_data_version: dv_263e378cd8560c4a
+reference_status: historical_unverified
+reference_provenance:
+  - a72f40f336aa4a3bfece96e5490469588c7927f5:packages/evals/questions/dev.yaml
+  - a72f40f336aa4a3bfece96e5490469588c7927f5:packages/corpus/sql/profiling/20_http.sql
+  - a72f40f336aa4a3bfece96e5490469588c7927f5:packages/corpus/sql/profiling/40_episodes.sql
+  - a72f40f336aa4a3bfece96e5490469588c7927f5:packages/corpus/sql/profiling/50_breadth.sql
+  - a72f40f336aa4a3bfece96e5490469588c7927f5:packages/corpus/sql/profiling/80_cases.sql
 
 questions:
   # ----------------------------------------------------------- clarification
   - id: dev-clarify-01
+    kind: routing_control
     role: null
+    effective_role: null
     covers: [S-14]
     question: I need an analysis of the BGL logs.
     scope: { dataset: bgl }
@@ -36,7 +49,9 @@ questions:
 
   # ---------------------------------------------------------------- engineer
   - id: dev-eng-01
+    kind: role_answer
     role: engineer
+    effective_role: engineer
     demo: true
     covers: [S-02, S-15]
     question: >-
@@ -49,13 +64,20 @@ questions:
       - neighbourhood of one occurrence (get_log_context mode event)
       - breadth by node and rack (count_events group_by node or rack)
       - precursor analysis over episode starts (get_log_context mode aggregate)
+      - anchor and baseline scope, window and truncation from the executed aggregate receipt
+      - each hypothesis status justified by the discriminating check's fact IDs
       - dataset label APPREAD named as a dataset label, not a finding
     distinguishing_check: >-
-      Breadth per episode (hundreds of I/O nodes in 16–32 racks within
-      seconds) rules out a single bad node; the precursor analysis shows
-      "ciod: LOGIN chdir(<PATH>) failed" before most episode starts against a
-      low base rate. The hypothesis "job start fails, the job's control
-      streams then fail" is supported, not a proven cause (R-07, R-11).
+      Use the executed June-scoped node/rack counts to test symptom
+      confinement. Broad emitting-node distribution can contradict symptoms
+      confined to one node; it cannot exclude a single initiating node or
+      shared component. Month totals do not establish per-episode synchrony.
+      Execute aggregate context for the requested June anchors and baseline,
+      preserving the receipt's window. A precursor and its relative frequency
+      can support a temporal association, never prove a cause or refute an
+      initiating origin. Missing or mixed causal evidence leaves that origin
+      open. Do not assign precursor counts to particular anchors without
+      per-anchor evidence; proposed next checks also obey R-07/R-11.
     allowed_tool_sequences:
       - [search_logs, get_log_context, count_events, get_log_context, check_claims]
       - [search_logs, count_events, get_log_context, get_log_context, check_claims]
@@ -68,23 +90,27 @@ questions:
       precursor: "chdir failed before 6 of 7 episode starts, 0.5–1.3 s earlier; base rate 0.0027 of 10-min windows"
 
   - id: dev-eng-02
+    kind: role_answer
     role: engineer
+    effective_role: engineer
     covers: [S-15]
     question: >-
-      "data TLB error interrupt" is the most frequent kernel alert on BGL.
-      Is it local to a few nodes or systemic?
+      For BGL's "data TLB error interrupt", is the event volume concentrated
+      on a few nodes or spread across the system?
     scope: { dataset: bgl }
     required_evidence:
       - events and episodes of the pattern (recurring_patterns)
       - concentration by node (count_events group_by node, top_n)
       - one occurrence with neighbourhood on the same node (get_log_context same_node)
     distinguishing_check: >-
-      Count by node: one node carries almost all events in a single long
-      episode; the other episodes are small. Local for the volume; the many
-      small episodes stay an open question.
+      Use node counts with their total and any unlisted remainder to test
+      concentration of the event volume. Use scoped episode evidence to
+      distinguish one burst from repeated observations. Limit the conclusion
+      to the observed symptom distribution; neither concentration nor broad
+      distribution alone establishes the initiating cause.
     allowed_tool_sequences:
       - [recurring_patterns, count_events, get_log_context, check_claims]
-      - [search_logs, count_events, get_log_context, check_claims]
+      - [search_logs, recurring_patterns, count_events, get_log_context, check_claims]
     reference:
       pattern_id: d7c28809f189ee67
       events: 152734
@@ -92,40 +118,52 @@ questions:
       largest_episode: "152,182 events on 1 node, 2005-06-12, 382 min"
 
   - id: dev-eng-03
+    kind: role_answer
     role: engineer
+    effective_role: engineer
     covers: [S-06]
     question: Show me the parity errors on BGL.
     scope: { dataset: bgl }
     required_evidence:
-      - exact total_matches with truncated true and at most 50 hits
+      - search limit 50, exact total_matches, returned hits and truncation from the receipt; S-06 requires more than 50 matches in this run
       - frequency statements only from count_events, never from the hits
     distinguishing_check: >-
-      Split by message (count_events group_by pattern or component) before
-      calling them errors: most parity lines are corrected cache parity
-      messages at level INFO.
+      Aggregate the matching scope by pattern and level before calling the
+      matches errors. Preserve the observed levels and corrected-message
+      distinction; do not assume that parity means error or infer a majority
+      from the returned search examples. If this data version has no more
+      than 50 matches, report the S-06 scenario as unexercised.
     allowed_tool_sequences:
       - [search_logs, count_events, check_claims]
     reference:
       full_text_matches_parity: 121498
 
   - id: dev-eng-04
-    role: engineer
-    covers: [S-07]
+    kind: role_answer
+    role: null
+    effective_role: engineer
+    covers: [S-07, S-14]
     question: Did nova-compute log any segmentation fault?
     scope: { dataset: openstack, component: nova-compute }
     required_evidence:
+      - role recognised as engineer from the diagnostic question without a role prompt
       - explicit "no matching events" with the scope searched
     distinguishing_check: >-
-      None needed beyond the empty search; the answer names what was searched
-      and does not invent evidence.
+      The executed search determines whether the requested text is absent
+      from nova-compute in the stated OpenStack scope. Report the actual
+      result and scope without inventing evidence or treating absence as proof
+      that no fault occurred. If matches exist, do not force the historical
+      zero: report S-07 as unexercised on this data version.
     allowed_tool_sequences:
-      - [search_logs]
-      - [search_logs, count_events]
+      - [search_logs, check_claims]
+      - [search_logs, count_events, check_claims]
     reference:
       matches: 0
 
   - id: dev-eng-05
+    kind: role_answer
     role: engineer
+    effective_role: engineer
     demo: true
     covers: [S-02]
     question: >-
@@ -136,13 +174,14 @@ questions:
       - the request's other lines (get_log_context scope same_request)
       - latency in the hour versus the rest of the day (latency_stats group_by hour)
     distinguishing_check: >-
-      Same request ID: token validation against the identity service failed
-      (ERROR, WARNING, CRITICAL) milliseconds before the 503. The same
-      sequence occurs at 06:25 on 16 May; the identity service's own logs are
-      not in the corpus, so its cause is unknown.
+      Check the actual same-request context for identity-validation errors
+      before the 503, keeping context scope separate from the hourly API
+      population and the comparison period. State only the returned temporal
+      association. The identity service's own cause remains unknown without
+      its evidence; a repeated sequence on another day needs its own query.
     allowed_tool_sequences:
-      - [latency_stats, search_logs, get_log_context, check_claims]
-      - [search_logs, get_log_context, latency_stats, check_claims]
+      - [latency_stats, search_logs, get_log_context, latency_stats, check_claims]
+      - [search_logs, get_log_context, latency_stats, latency_stats, check_claims]
     reference:
       api_accesses_total: 98733
       status_5xx_total: 2
@@ -150,7 +189,9 @@ questions:
 
   # --------------------------------------------------------------- team lead
   - id: dev-tl-01
+    kind: role_answer
     role: team_lead
+    effective_role: team_lead
     demo: true
     covers: [S-03]
     question: >-
@@ -169,7 +210,9 @@ questions:
       - [count_events, recurring_patterns, event_trend, check_claims]
 
   - id: dev-tl-02
+    kind: role_answer
     role: team_lead
+    effective_role: team_lead
     covers: [S-03]
     question: >-
       For Compute Platform on BGL, compare 14–28 November 2005 with the two
@@ -186,7 +229,9 @@ questions:
       - [recurring_patterns, count_events, check_claims]
 
   - id: dev-tl-03
+    kind: role_answer
     role: team_lead
+    effective_role: team_lead
     covers: [S-03]
     question: >-
       Which OpenStack warnings and errors recur, and which team owns them?
@@ -195,16 +240,21 @@ questions:
       - recurring error and warning patterns with episodes and team (recurring_patterns)
       - distribution by team (count_events group_by team)
     distinguishing_check: >-
-      Traceback lines of one failure form several patterns with identical
-      episode counts; the answer treats them as one failure pass, not as
-      separate problems.
+      Repeated traceback patterns may describe the same failure pass.
+      Identical episode counts alone do not establish that relationship:
+      inspect event context before grouping them, or keep the possible link
+      open. Report patterns and episodes as those units, never as a count of
+      incidents or independent causes. Ownership is fictional.
     allowed_tool_sequences:
       - [recurring_patterns, count_events, check_claims]
+      - [recurring_patterns, count_events, search_logs, get_log_context, check_claims]
     reference:
       image_cache_manager_pass_errors: "8 occurrences, each its own episode"
 
   - id: dev-tl-04
+    kind: role_answer
     role: null
+    effective_role: team_lead
     covers: [S-14]
     question: >-
       My team runs the API gateway. What keeps coming back in OpenStack, and
@@ -220,7 +270,9 @@ questions:
 
   # ----------------------------------------------------------------- manager
   - id: dev-mgr-01
+    kind: role_answer
     role: manager
+    effective_role: manager
     demo: true
     covers: [S-04, S-16]
     question: What should we investigate first on BGL? At most three priorities.
@@ -230,9 +282,12 @@ questions:
       - episodes, events, breadth, change and team per priority, separately
       - the R-09 limit and "business impact unknown"
     distinguishing_check: >-
-      The pattern with the most log lines (data TLB error interrupt) has few
-      episodes and ranks low by episodes; the trade-off is named (R-09).
-      Breadth drops from the rank basis when a candidate carries no node.
+      Compare the event-volume leader with the executed investigation order,
+      naming the observed episode/breadth trade-off and ranking basis (R-09).
+      Use the returned leader and candidate evidence, not a search sample or
+      the historical reference rank. Breadth drops from the whole rank basis
+      if any candidate lacks a node on any event. If this data version does
+      not show the S-16 contrast, report the scenario as unexercised.
     allowed_tool_sequences:
       - [recurring_patterns, check_claims]
       - [describe_corpus, recurring_patterns, count_events, check_claims]
@@ -241,7 +296,9 @@ questions:
       most_episodes: "instruction address: <ADDR>: 289 episodes, 22,791 nodes"
 
   - id: dev-mgr-02
+    kind: role_answer
     role: manager
+    effective_role: manager
     covers: [S-10]
     question: How much downtime and money did the BGL kernel errors cost us?
     scope: { dataset: bgl, component: KERNEL }
@@ -254,7 +311,9 @@ questions:
       - [recurring_patterns, check_claims]
 
   - id: dev-mgr-03
+    kind: role_answer
     role: manager
+    effective_role: manager
     covers: [S-05]
     question: How many events does each team have across all our logs?
     scope: { dataset: [bgl, openstack] }
@@ -269,7 +328,9 @@ questions:
       - [describe_corpus, count_events, check_claims]
 
   - id: dev-mgr-04
+    kind: role_answer
     role: null
+    effective_role: manager
     covers: [S-14]
     question: >-
       I have a leadership review tomorrow. Where should engineering effort go
@@ -280,8 +341,10 @@ questions:
       - investigation order with trade-off and limit (recurring_patterns rank investigation_order)
       - API error rate with numerator and denominator (latency_stats)
     distinguishing_check: >-
-      Breadth is not determinable for OpenStack error candidates (no instance
-      on their lines) and drops from the rank basis; the answer says so.
+      Use the executed candidate-coverage result: when instance breadth is
+      not determinable for every candidate it drops from the whole rank
+      basis, and the answer explains why. Preserve the API error-rate
+      numerator and denominator and name the technical ranking's limits.
     allowed_tool_sequences:
       - [recurring_patterns, latency_stats, check_claims]
       - [describe_corpus, recurring_patterns, latency_stats, check_claims]

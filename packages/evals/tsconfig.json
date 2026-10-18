@@ -6,6 +6,6 @@
     "lib": ["es2023"],
     "types": ["node"]
   },
-  "include": ["u26"],
+  "include": ["u26", "src"],
   "exclude": ["node_modules"]
 }

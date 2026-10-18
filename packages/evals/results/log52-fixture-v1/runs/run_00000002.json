@@ -1,0 +1,36 @@
+{
+  "run_id": "run_00000002",
+  "started_at": "2026-10-18T00:00:00.000Z",
+  "finished_at": "2026-10-18T00:00:00.010Z",
+  "duration_ms": 10,
+  "status": "completed",
+  "variant": "playbook",
+  "role": {
+    "requested": "auto",
+    "effective": "auto"
+  },
+  "question": "I need an analysis of the BGL logs.",
+  "scope": {
+    "dataset": "bgl"
+  },
+  "model_id": "claude-opus-5-5",
+  "effort": "high",
+  "guidance_version": "fixture_only",
+  "contract_version": "3.0.0",
+  "data_version": "fixture_only",
+  "instruction_texts": [],
+  "phases": [],
+  "model_calls": 0,
+  "answer_versions": [],
+  "coverage_requests": [],
+  "gate_findings": [],
+  "usage": {
+    "input": null,
+    "output": null,
+    "cache_read": null,
+    "cache_write": null
+  },
+  "final_text": "Which perspective do you need: diagnosing a failure, reviewing recurring problems, or setting priorities?",
+  "check_claims": [],
+  "error_kind": null
+}

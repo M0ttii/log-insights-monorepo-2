@@ -8,7 +8,8 @@ import {
   type GateFinding,
   type SubmittedCheck,
 } from "@workspace/domain/answer"
-import { filterSchema } from "@workspace/domain/filters"
+import { DATASET_IDS } from "@workspace/domain/datasets"
+import { datasetSchema, filterSchema } from "@workspace/domain/filters"
 import {
   checkClaimsOutputSchema,
   type CheckClaimsOutput,
@@ -42,6 +43,7 @@ import type { ModelConfig } from "./model.ts"
 import {
   newRunId,
   runRecordSchema,
+  type AnswerVersion,
   type RunPhase,
   type RunRecord,
   type RunStatus,
@@ -96,6 +98,22 @@ export type InvestigationVariant = z.infer<typeof investigationVariantSchema>
 export const investigationScopeSchema = filterSchema
   .pick({ dataset: true, from: true, to: true })
   .extend({
+    dataset: z
+      .union([
+        datasetSchema,
+        z
+          .array(datasetSchema)
+          .min(1)
+          .max(DATASET_IDS.length)
+          .refine(
+            (datasets) => new Set(datasets).size === datasets.length,
+            "Question scope datasets must be unique."
+          ),
+      ])
+      .optional()
+      .describe(
+        "One dataset or separate datasets named by the question; no shared time axis."
+      ),
     filters: filterSchema
       .omit({ dataset: true, from: true, to: true })
       .optional()
@@ -247,6 +265,7 @@ class PhaseMachine {
 
   /** Combined abort: the caller's signal OR the 180 s timeout. */
   private readonly controller = new AbortController()
+  private readonly onCallerAbort: () => void
   private readonly timer: ReturnType<typeof setTimeout>
   private timedOut = false
 
@@ -264,7 +283,13 @@ class PhaseMachine {
   private readonly checks: SubmittedCheck[] = []
   private readonly coverageSteps: CoverageStep[] = []
   private readonly coverageRequests: string[] = []
+  private readonly instructionMessages: string[] = []
   private readonly gateFindingsPerDraft: GateFinding[][] = []
+  private readonly answerVersions: AnswerVersion[] = []
+  private activePhase: RunPhase["kind"] = "preflight"
+  private toolSequence = 0
+  private readonly completedSequences = new Set<number>()
+  private modelCalls = 0
 
   private stepsUsed = 0
   private readonly usageTotal: RunUsage = {
@@ -288,20 +313,17 @@ class PhaseMachine {
     private readonly input: ParsedInput,
     private readonly deps: InvestigationDeps,
     private readonly limits: InvestigationLimits,
-    signal: AbortSignal,
+    private readonly callerSignal: AbortSignal,
     private readonly now: () => Date
   ) {
     this.startedAt = now()
 
     // Combine the caller's signal with the run's own timeout: either aborts
     // the model and the tools. A pre-aborted caller signal aborts at once.
-    if (signal.aborted) this.controller.abort(signal.reason)
+    this.onCallerAbort = () => this.controller.abort(callerSignal.reason)
+    if (callerSignal.aborted) this.onCallerAbort()
     else
-      signal.addEventListener(
-        "abort",
-        () => this.controller.abort(signal.reason),
-        { once: true }
-      )
+      callerSignal.addEventListener("abort", this.onCallerAbort, { once: true })
     this.timer = setTimeout(() => {
       this.timedOut = true
       this.controller.abort(new Error("investigation timeout"))
@@ -309,7 +331,10 @@ class PhaseMachine {
     this.timer.unref?.()
 
     this.system = buildSystem(input, deps.playbooks)
-    this.tools = buildTools(deps.registry, deps.callContext)
+    this.tools = buildTools(
+      { ...deps.registry, runTool: this.runTool.bind(this) },
+      deps.callContext
+    )
   }
 
   run(): InvestigationResult {
@@ -321,6 +346,7 @@ class PhaseMachine {
           await this.execute(writer)
         } finally {
           clearTimeout(this.timer)
+          this.callerSignal.removeEventListener("abort", this.onCallerAbort)
           const record = this.buildRecord()
           await this.deps.runs.put(record).catch(() => undefined)
           this.emitFinalize(writer, record)
@@ -367,11 +393,7 @@ class PhaseMachine {
     // describe_corpus runs in code through the registry: Opus 5.5 rejects a
     // forced tool choice, but the entry after common.md is mandatory (§ 11.1).
     const call = this.deps.callContext(this.controller.signal)
-    const outcome = await this.deps.registry.runTool(
-      "describe_corpus",
-      {},
-      call
-    )
+    const outcome = await this.runTool("describe_corpus", {}, call)
     const toolCallId = `preflight_describe_corpus_${this.runId}`
 
     writer.write({
@@ -394,13 +416,6 @@ class PhaseMachine {
     let contextLine: string
     if (outcome.ok) {
       const { receipt } = outcome.result
-      this.recordStep("preflight", {
-        tool: "describe_corpus",
-        input: {},
-        receipt_id: receipt.receipt_id,
-        duration_ms: receipt.duration_ms,
-        error_kind: null,
-      })
       this.coverageSteps.push({ tool: "describe_corpus", input: {}, ok: true })
       // The run's data version is the preflight describe_corpus receipt's.
       this.recordDataVersion(receipt.data_version)
@@ -411,13 +426,6 @@ class PhaseMachine {
       // model (technical.md § 11.1).
       contextLine = JSON.stringify(modelView(outcome.result))
     } else {
-      this.recordStep("preflight", {
-        tool: "describe_corpus",
-        input: {},
-        receipt_id: null,
-        duration_ms: 0,
-        error_kind: outcome.error.code,
-      })
       this.coverageSteps.push({ tool: "describe_corpus", input: {}, ok: false })
       contextLine = `describe_corpus could not run (${outcome.error.code}): ${outcome.error.hint}`
     }
@@ -539,7 +547,10 @@ class PhaseMachine {
   ): GateFinding[] {
     const findings = answerFindings({
       text,
-      role: this.resolvedAnswerRole(),
+      // Role-core templates are playbook content. Feeding their missing
+      // section names into baseline revision would leak the answer template.
+      role:
+        this.input.variant === "baseline" ? null : this.resolvedAnswerRole(),
       checks: this.checks,
     })
     this.gateFindingsPerDraft.push(findings)
@@ -592,6 +603,8 @@ class PhaseMachine {
     this.throwIfAborted()
     this.requireModelBudget()
     const remaining = this.limits.maxSteps - this.stepsUsed
+    this.activePhase = kind
+    let version: AnswerVersion | undefined
 
     const prompt: PhasePrompt = {
       system: this.system,
@@ -607,6 +620,38 @@ class PhaseMachine {
       system: this.system,
       messages: this.messages,
       tools: this.tools,
+      // A failed provider request is counted once and never silently retried.
+      maxRetries: 0,
+      onLanguageModelCallStart: () => {
+        this.modelCalls += 1
+        // A tool-loop continuation is another assistant message. Preserve its
+        // own first-text boundary rather than joining it to earlier prose.
+        version = undefined
+      },
+      onChunk: ({ chunk }) => {
+        if (chunk.type === "tool-call" && chunk.dynamic && chunk.invalid) {
+          this.recordRejectedTool(chunk.toolName, chunk.input)
+          return
+        }
+        if (kind === "investigate" || chunk.type !== "text-delta") return
+        if (version === undefined) {
+          const startedAt = this.now().toISOString()
+          const completed = [...this.completedSequences].toSorted(
+            (a, b) => a - b
+          )
+          version = {
+            text: "",
+            phase: kind,
+            started_at: startedAt,
+            completed_at: startedAt,
+            after_sequence: completed.at(-1) ?? 0,
+            completed_sequences: completed,
+          }
+          this.answerVersions.push(version)
+        }
+        version.text += chunk.text
+        version.completed_at = this.now().toISOString()
+      },
       allowSystemInMessages: true,
       // The provider options are the typed Anthropic options from model.ts.
       // streamText types `providerOptions` as a plain JSON record; the typed
@@ -629,7 +674,7 @@ class PhaseMachine {
 
     const outcome = await this.readPhase(result)
     this.messages.push(...outcome.responseMessages)
-    this.recordOutcome(kind, outcome)
+    this.recordOutcome(outcome)
 
     if (outcome.aborted) this.throwIfAborted()
     if (outcome.errored || modelErrored) {
@@ -672,18 +717,11 @@ class PhaseMachine {
     }
   }
 
-  private recordOutcome(kind: PhaseKind, outcome: ModelPhaseOutcome): void {
+  private recordOutcome(outcome: ModelPhaseOutcome): void {
     addUsage(this.usageTotal, outcome.usage)
     this.stepsUsed += Math.max(1, outcome.modelSteps)
     for (const step of outcome.steps) {
       const view = stepView(step.output)
-      this.recordStep(kind, {
-        tool: step.toolName,
-        input: step.input as RunStep["input"],
-        receipt_id: view.receiptId,
-        duration_ms: 0,
-        error_kind: view.errorKind,
-      })
       this.coverageSteps.push({
         tool: step.toolName,
         input: step.input,
@@ -734,7 +772,17 @@ class PhaseMachine {
       contract_version: CONTRACT_VERSION,
       data_version: this.dataVersion,
       instruction_texts: this.instructionTexts(),
+      instruction_messages: this.instructionMessages,
       phases: this.phases,
+      model_calls: this.modelCalls,
+      answer_versions: this.answerVersions,
+      limits: {
+        max_steps: this.limits.maxSteps,
+        max_follow_ups: this.limits.maxFollowUps,
+        max_revisions: this.limits.maxRevisions,
+        timeout_ms: this.limits.timeoutMs,
+        max_retries: 0,
+      },
       coverage_requests: this.coverageRequests,
       gate_findings: this.gateFindingsPerDraft.map((findings) =>
         findings.map((finding) => gateFindingSchema.parse(finding))
@@ -771,6 +819,63 @@ class PhaseMachine {
 
   // --- helpers ------------------------------------------------------------
 
+  /** Records execution as it happens; SDK phase-end results lose chronology. */
+  private async runTool(
+    name: string,
+    input: unknown,
+    call: CallContext
+  ): ReturnType<Registry["runTool"]> {
+    const startedAt = this.now()
+    this.toolSequence += 1
+    const sequence = this.toolSequence
+    const step: RunStep = {
+      sequence,
+      started_at: startedAt.toISOString(),
+      tool: name,
+      input: z.json().parse(input),
+      input_validated: true,
+      receipt_id: null,
+      duration_ms: 0,
+      error_kind: null,
+    }
+    this.recordStep(this.activePhase, step)
+    try {
+      const outcome = await this.deps.registry.runTool(name, input, call)
+      if (outcome.ok) {
+        step.input = z.json().parse(outcome.result.receipt.input)
+        step.receipt_id = outcome.result.receipt.receipt_id
+      } else step.error_kind = outcome.error.code
+      return outcome
+    } catch (error) {
+      step.error_kind = call.signal.aborted ? "cancelled" : "db_unavailable"
+      throw error
+    } finally {
+      const finishedAt = this.now()
+      step.finished_at = finishedAt.toISOString()
+      step.duration_ms = Math.max(0, finishedAt.getTime() - startedAt.getTime())
+      this.completedSequences.add(sequence)
+    }
+  }
+
+  /** SDK schema errors never enter the registry but still count as attempts. */
+  private recordRejectedTool(name: string, input: unknown): void {
+    const timestamp = this.now().toISOString()
+    this.toolSequence += 1
+    const parsed = z.json().safeParse(input)
+    this.recordStep(this.activePhase, {
+      sequence: this.toolSequence,
+      started_at: timestamp,
+      finished_at: timestamp,
+      tool: name,
+      input: parsed.success ? parsed.data : null,
+      input_validated: false,
+      receipt_id: null,
+      duration_ms: 0,
+      error_kind: "invalid_input",
+    })
+    this.completedSequences.add(this.toolSequence)
+  }
+
   private recordStep(kind: RunPhase["kind"], step: RunStep): void {
     const last = this.phases.at(-1)
     if (last !== undefined && last.kind === kind) last.steps.push(step)
@@ -778,6 +883,7 @@ class PhaseMachine {
   }
 
   private pushSystem(text: string): void {
+    this.instructionMessages.push(text)
     // Anthropic accepts textual mid-conversation system messages only after
     // a user turn (SDK tool results serialize as a user turn). A completed
     // answer therefore needs a new continuation turn before revision hints.

@@ -58,12 +58,14 @@ export {
 } from "./tools.ts"
 
 export {
+  answerVersionSchema,
   checkClaimsSummarySchema,
   FileRunStore,
   gateFindingsSchema,
   newRunId,
   phaseKindSchema,
   resolveRunsDir,
+  runLimitsSchema,
   runPhaseSchema,
   runRecordSchema,
   runRolesSchema,
@@ -74,6 +76,7 @@ export {
   runVariantSchema,
   RUN_ID_PATTERN,
   runIdSchema,
+  type AnswerVersion,
   type PhaseKind,
   type RunPhase,
   type RunRecord,

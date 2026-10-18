@@ -69,10 +69,28 @@ export const phaseKindSchema = z.enum([
 
 export type PhaseKind = z.infer<typeof phaseKindSchema>
 
-/** One tool call inside a phase. `input` is the validated input (no SQL, no params). */
+/** One attempted tool call. Rejected SDK arguments are marked as unvalidated. */
 export const runStepSchema = z.strictObject({
+  sequence: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Invocation order within the run, including preflight."),
+  started_at: z.string().optional(),
+  finished_at: z.string().optional(),
   tool: z.string(),
-  input: z.json().describe("Validated tool input; never SQL or bound params."),
+  input: z
+    .json()
+    .describe(
+      "Tool arguments; validated unless input_validated is false. No executed SQL or bound params."
+    ),
+  input_validated: z
+    .boolean()
+    .optional()
+    .describe(
+      "False only for arguments the SDK rejected before registry execution."
+    ),
   receipt_id: z.string().nullable(),
   duration_ms: z.number().nonnegative(),
   error_kind: z
@@ -113,6 +131,37 @@ export const checkClaimsSummarySchema = z.strictObject({
  */
 export const gateFindingsSchema = z.array(gateFindingSchema)
 
+/** Each answer/revision assistant message retains its first-text boundary. */
+export const answerVersionSchema = z.strictObject({
+  text: z.string(),
+  phase: z.enum(["answer", "revise"]),
+  started_at: z.string(),
+  completed_at: z.string(),
+  after_sequence: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe(
+      "Latest tool invocation completed before the first text chunk of this version."
+    ),
+  completed_sequences: z
+    .array(z.number().int().positive())
+    .optional()
+    .describe(
+      "Exact completed invocations at first text, including when parallel calls finish out of order."
+    ),
+})
+
+export type AnswerVersion = z.infer<typeof answerVersionSchema>
+
+export const runLimitsSchema = z.strictObject({
+  max_steps: z.number().int().positive(),
+  max_follow_ups: z.number().int().nonnegative(),
+  max_revisions: z.number().int().nonnegative(),
+  timeout_ms: z.number().positive(),
+  max_retries: z.number().int().nonnegative(),
+})
+
 export const runRecordSchema = z.strictObject({
   run_id: runIdSchema,
   started_at: z.string().describe("ISO-8601 UTC start of the run."),
@@ -135,7 +184,24 @@ export const runRecordSchema = z.strictObject({
   instruction_texts: z
     .array(z.string())
     .describe("Instruction texts of the variant; no other prompt content."),
+  instruction_messages: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Code-owned phase, coverage and gate system messages sent during this run, in order."
+    ),
   phases: z.array(runPhaseSchema),
+  // Optional so earlier persisted records and web exports remain readable.
+  model_calls: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe(
+      "Provider calls started, including failed calls and tool-loop continuations."
+    ),
+  limits: runLimitsSchema.optional(),
+  answer_versions: z.array(answerVersionSchema).optional(),
   coverage_requests: z
     .array(z.string())
     .describe("The coverage hint texts sent back to the model, in order."),
