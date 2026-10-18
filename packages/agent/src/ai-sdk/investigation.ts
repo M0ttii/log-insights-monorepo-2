@@ -19,6 +19,7 @@ import {
   createUIMessageStream,
   streamText,
   type LanguageModel,
+  type InferUIMessageChunk,
   type ModelMessage,
   type StopCondition,
   type StreamTextResult,
@@ -122,7 +123,7 @@ export const investigationInputSchema = z.strictObject({
 export type InvestigationInput = z.input<typeof investigationInputSchema>
 type ParsedInput = z.output<typeof investigationInputSchema>
 
-/** The loaded playbooks plus the optional LOG-47 coverage data (absent today). */
+/** Shared role instructions and parsed coverage from the playbook loader. */
 export type InvestigationPlaybooks = {
   version: string
   instructions: string
@@ -136,7 +137,7 @@ export type InvestigationPlaybooks = {
    */
   sharedRules: string
   /**
-   * LOG-47 (not merged): per-role required evidence. When absent, only
+   * Per-role required evidence. When absent for an injected caller, only
    * `mismatch`/`unresolved` in the last check_claims trigger a follow-up —
    * there is no coverage requirement to miss.
    */
@@ -165,6 +166,8 @@ export type InvestigationDeps = {
   model: ModelConfig
   callContext: (signal: AbortSignal) => CallContext
   limits?: Partial<InvestigationLimits>
+  /** Trusted, server-restored model history, including signed thinking. */
+  history?: ModelMessage[]
   /** Injectable clock for the run record timestamps (tests). */
   now?: () => Date
 }
@@ -173,6 +176,8 @@ export type InvestigationDeps = {
 type PhaseBoundary = {
   kind: "preflight" | "investigate" | "answer" | "revise"
   draft: "draft" | "final"
+  /** Public, bounded coverage labels/check summary; never the system hint. */
+  requirement?: string
 }
 type InvestigationDataParts = {
   phase: PhaseBoundary
@@ -195,7 +200,7 @@ export type InvestigationUIMessage = UIMessage<
 type Writer = UIMessageStreamWriter<InvestigationUIMessage>
 
 export type InvestigationResult = {
-  stream: ReadableStream<unknown>
+  stream: ReadableStream<InferUIMessageChunk<InvestigationUIMessage>>
   done: Promise<RunRecord>
 }
 
@@ -227,6 +232,7 @@ export function runInvestigation(
 type ModelPhaseOutcome = {
   finishReason: string
   responseMessages: ModelMessage[]
+  modelSteps: number
   steps: { toolName: string; input: unknown; output: unknown }[]
   usage: RunUsage
   aborted: boolean
@@ -322,7 +328,7 @@ class PhaseMachine {
         }
       },
       onError: () => "An error occurred during the investigation.",
-    }) as unknown as ReadableStream<unknown>
+    })
 
     return { stream, done: gate.promise }
   }
@@ -353,7 +359,9 @@ class PhaseMachine {
     })
 
     // Prior UI history is passed through unchanged as the conversation prefix.
-    if (this.input.history !== undefined && this.input.history.length > 0)
+    if (this.deps.history !== undefined)
+      this.messages.push(...this.deps.history.map(cloneMessage))
+    else if (this.input.history !== undefined && this.input.history.length > 0)
       this.messages.push(...(await convertToModelMessages(this.input.history)))
 
     // describe_corpus runs in code through the registry: Opus 5.5 rejects a
@@ -424,22 +432,32 @@ class PhaseMachine {
 
   private async investigateWithCoverage(writer: Writer): Promise<void> {
     let followUps = 0
+    let requirement: string | undefined
     for (;;) {
-      await this.runInvestigatePhase(writer)
+      await this.runInvestigatePhase(writer, requirement)
       if (this.budgetExhausted()) return
 
-      const hint = this.coverageFollowUp()
-      if (hint === null || followUps >= this.limits.maxFollowUps) return
+      const followUp = this.coverageFollowUp()
+      if (followUp === null || followUps >= this.limits.maxFollowUps) return
       followUps += 1
-      this.coverageRequests.push(hint)
-      this.pushSystem(hint)
+      this.coverageRequests.push(followUp.hint)
+      this.pushSystem(followUp.hint)
+      requirement = followUp.requirement
     }
   }
 
-  private async runInvestigatePhase(writer: Writer): Promise<void> {
+  private async runInvestigatePhase(
+    writer: Writer,
+    requirement?: string
+  ): Promise<void> {
+    this.requireModelBudget()
     writer.write({
       type: "data-phase",
-      data: { kind: "investigate", draft: "draft" },
+      data: {
+        kind: "investigate",
+        draft: "draft",
+        ...(requirement === undefined ? {} : { requirement }),
+      },
     })
     await this.runModelPhase(writer, "investigate")
   }
@@ -451,7 +469,7 @@ class PhaseMachine {
    * gate and the one revision are shared, coverage is playbook content). The
    * `mismatch`/`unresolved` follow-up is decided below.
    */
-  private coverageFollowUp(): string | null {
+  private coverageFollowUp(): { hint: string; requirement: string } | null {
     if (this.input.variant === "baseline") {
       // Documented choice (§ 13.2): the baseline shares the gate and the one
       // revision but NOT the coverage follow-up. The follow-up round (fetch
@@ -466,9 +484,28 @@ class PhaseMachine {
     const coverage = this.roleCoverage()
     const missing =
       coverage === null ? [] : missingCoverage(coverage, this.coverageSteps)
-    const parts = [coverageHint(missing), claimsHint(lastCheck(this.checks))]
+    const check = lastCheck(this.checks)
+    const parts = [coverageHint(missing), claimsHint(check)]
     const present = parts.filter((part): part is string => part !== null)
-    return present.length === 0 ? null : present.join(" ")
+    if (present.length === 0) return null
+    // The model never supplies this line: only code-owned coverage labels and
+    // validated check counts are public. Keep the full corrective hint private.
+    const labels = missing.map((item) => item.label)
+    if (check !== null) {
+      if (check.summary.mismatch > 0)
+        labels.push(
+          `${check.summary.mismatch} claim(s) mismatch their cited fact`
+        )
+      if (check.summary.unresolved > 0)
+        labels.push(
+          `${check.summary.unresolved} claim(s) cite an unknown fact or receipt`
+        )
+    }
+    const label = labels.join("; ").replace(/\s+/g, " ").trim()
+    return {
+      hint: present.join(" "),
+      requirement: label.length <= 1000 ? label : `${label.slice(0, 997)}...`,
+    }
   }
 
   private roleCoverage(): RoleCoverage | null {
@@ -480,6 +517,7 @@ class PhaseMachine {
   // --- answer -------------------------------------------------------------
 
   private async answerPhase(writer: Writer): Promise<string> {
+    this.requireModelBudget()
     writer.write({
       type: "data-phase",
       data: { kind: "answer", draft: "draft" },
@@ -515,6 +553,7 @@ class PhaseMachine {
     writer: Writer,
     findings: GateFinding[]
   ): Promise<string> {
+    this.requireModelBudget()
     writer.write({
       type: "data-phase",
       data: { kind: "revise", draft: "final" },
@@ -551,7 +590,8 @@ class PhaseMachine {
    */
   private async runModelPhase(writer: Writer, kind: PhaseKind): Promise<void> {
     this.throwIfAborted()
-    const remaining = Math.max(1, this.limits.maxSteps - this.stepsUsed)
+    this.requireModelBudget()
+    const remaining = this.limits.maxSteps - this.stepsUsed
 
     const prompt: PhasePrompt = {
       system: this.system,
@@ -561,6 +601,7 @@ class PhaseMachine {
     this.prompts.push(prompt)
     this.previousPrompt = prompt
 
+    let modelErrored = false
     const result = streamText({
       model: this.deps.model.model as LanguageModel,
       system: this.system,
@@ -574,7 +615,12 @@ class PhaseMachine {
       providerOptions: this.deps.model
         .providerOptions as StreamTextProviderOptions,
       abortSignal: this.controller.signal,
-      stopWhen: stopCondition(remaining),
+      stopWhen: stopCondition(kind, remaining),
+      // The SDK default logs raw provider errors with headers and payloads.
+      // Only the sanitized run status may leave this adapter.
+      onError: () => {
+        modelErrored = true
+      },
     }) as StreamTextResult<ToolSet, never, never>
 
     writer.merge(
@@ -586,11 +632,18 @@ class PhaseMachine {
     this.recordOutcome(kind, outcome)
 
     if (outcome.aborted) this.throwIfAborted()
-    if (outcome.errored) {
+    if (outcome.errored || modelErrored) {
       this.status = "error"
       this.errorKind = "model_error"
+      throw new Error("The model call failed.")
     }
-    if (outcome.finishReason === "content-filter") this.status = "refusal"
+    if (outcome.finishReason === "content-filter") {
+      this.status = "refusal"
+      throw new Error("The model declined the request.")
+    }
+    // A tool-only last step still needs a continuation to write the answer.
+    // At the global cap it remains an incomplete run, including in revision.
+    if (outcome.finishReason === "tool-calls") this.requireModelBudget()
   }
 
   /** Reads the finished model phase; an abort surfaces as `aborted`, not a throw. */
@@ -607,6 +660,7 @@ class PhaseMachine {
       return {
         finishReason,
         responseMessages: responseMessages as ModelMessage[],
+        modelSteps: steps.length,
         steps: flattenToolResults(steps),
         usage: mapUsage(usage),
         aborted: this.controller.signal.aborted,
@@ -620,7 +674,7 @@ class PhaseMachine {
 
   private recordOutcome(kind: PhaseKind, outcome: ModelPhaseOutcome): void {
     addUsage(this.usageTotal, outcome.usage)
-    this.stepsUsed += Math.max(1, outcome.steps.length)
+    this.stepsUsed += Math.max(1, outcome.modelSteps)
     for (const step of outcome.steps) {
       const view = stepView(step.output)
       this.recordStep(kind, {
@@ -687,6 +741,7 @@ class PhaseMachine {
       ),
       usage: this.usageTotal,
       final_text: stoppedOrTimedOut ? null : this.finalText,
+      model_history: this.messages.map(cloneMessage),
       check_claims: this.checks.map((check) => ({
         receipt_id: check.receipt_id,
         summary: check.output.summary,
@@ -723,12 +778,29 @@ class PhaseMachine {
   }
 
   private pushSystem(text: string): void {
+    // Anthropic accepts textual mid-conversation system messages only after
+    // a user turn (SDK tool results serialize as a user turn). A completed
+    // answer therefore needs a new continuation turn before revision hints.
+    // Append both; never rewrite the signed thinking/history prefix.
+    const previous = this.messages.at(-1)
+    if (previous?.role !== "user" && previous?.role !== "tool")
+      this.messages.push({
+        role: "user",
+        content: "Continue the investigation.",
+      })
     const message: SystemModelMessage = { role: "system", content: text }
     this.messages.push(message)
   }
 
   private budgetExhausted(): boolean {
     return this.stepsUsed >= this.limits.maxSteps
+  }
+
+  private requireModelBudget(): void {
+    if (!this.budgetExhausted()) return
+    this.status = "error"
+    this.errorKind = "limit_exceeded"
+    throw new Error("The investigation step limit was reached.")
   }
 
   private resolvedAnswerRole(): AnswerRole | null {
@@ -753,6 +825,7 @@ class PhaseMachine {
       this.status = "stopped"
       return
     }
+    if (this.status === "refusal" || this.status === "error") return
     this.status = "error"
     this.errorKind = error instanceof Error ? error.name || "error" : "error"
   }
@@ -802,17 +875,20 @@ function firstUserMessage(input: ParsedInput, contextLine: string): string {
   ].join("\n\n")
 }
 
-/** Stops a phase after check_claims has run anywhere in its steps. */
+/** Ends investigation once claims are checked; answer/revision still need text. */
 const STOP_AFTER_CHECK_CLAIMS: StopCondition<ToolSet> = ({ steps }) =>
   steps.some((step) =>
     step.toolCalls.some((call) => call.toolName === "check_claims")
   )
 
-/** Stop after check_claims has run, or at the remaining step cap for this phase. */
-function stopCondition(remainingSteps: number): StopCondition<ToolSet>[] {
+/** Every phase shares the remaining cap; only investigate stops at a check. */
+function stopCondition(
+  kind: PhaseKind,
+  remainingSteps: number
+): StopCondition<ToolSet>[] {
   const stepCap: StopCondition<ToolSet> = ({ steps }) =>
     steps.length >= remainingSteps
-  return [STOP_AFTER_CHECK_CLAIMS, stepCap]
+  return kind === "investigate" ? [STOP_AFTER_CHECK_CLAIMS, stepCap] : [stepCap]
 }
 
 /** Flattens the SDK steps into tool (name, input, output) triples in order. */
@@ -955,6 +1031,7 @@ function emptyOutcome(aborted: boolean, errored: boolean): ModelPhaseOutcome {
   return {
     finishReason: aborted ? "other" : "error",
     responseMessages: [],
+    modelSteps: 0,
     steps: [],
     usage: { input: null, output: null, cache_read: null, cache_write: null },
     aborted,

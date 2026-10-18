@@ -5,6 +5,7 @@ import { isAbsolute, join, resolve } from "node:path"
 import { findWorkspaceRoot } from "@workspace/analytics/config"
 import { gateFindingSchema } from "@workspace/domain/answer"
 import { z } from "zod"
+import { modelMessageSchema } from "ai"
 
 /**
  * Run record (technical.md § 11.1, "Laufprotokoll"): one JSON file per run in
@@ -143,6 +144,9 @@ export const runRecordSchema = z.strictObject({
     .describe("Gate findings per draft (one array per draft/revision)."),
   usage: runUsageSchema,
   final_text: z.string().nullable(),
+  // Private, authoritative continuation state. Never included in web exports.
+  // Optional for records written before full-history persistence was added.
+  model_history: z.array(modelMessageSchema).optional(),
   check_claims: z.array(checkClaimsSummarySchema),
   error_kind: z.string().nullable(),
 })
