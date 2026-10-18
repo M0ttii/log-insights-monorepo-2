@@ -4,8 +4,11 @@
  * names make the change readable in receipts.
  */
 export const VERSIONS = {
-  /** Download, verification and execution order (src/load.ts). */
-  loader: "1.1.0",
+  /**
+   * Download, verification and execution order (src/load.ts); 1.2.0 adds
+   * the remote otel steps (HEAD pins, fixtures, LOG-35).
+   */
+  loader: "1.2.0",
   /**
    * Field rules of sql/05_read.sql and the parsers 10–14; 1.1.0 adds the
    * extension parsers (U26), BGL and OpenStack rules unchanged.
@@ -23,4 +26,10 @@ export const VERSIONS = {
    * the thresholds they were profiled with (R-05 30 min, R-08 breadth).
    */
   rules: "concept-3.8",
+  /**
+   * Column mapping of the remote OpenTelemetry Parquet files (catalog
+   * sourceColumns, sql/61_otel_reference.sql, analytics relations.ts),
+   * the half-open assigned ranges and the reference window (LOG-35).
+   */
+  otelMapping: "1.0.0",
 } as const

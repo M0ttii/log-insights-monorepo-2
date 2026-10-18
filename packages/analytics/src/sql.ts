@@ -36,13 +36,3 @@ export const exactCount = z
   .union([z.string(), z.number()])
   .transform((value) => toSafeInteger(value))
   .pipe(z.number().int().nonnegative())
-
-/**
- * The five extension columns of an event row (U26), qualified by `q`; the
- * tool keeps only those the row's dataset carries (extensionAttributes).
- */
-export function extensionSelect(q: string): string {
-  return ["host", "process_id", "client_ip", "thread", "block_id"]
-    .map((column) => `${q}.${column}`)
-    .join(", ")
-}

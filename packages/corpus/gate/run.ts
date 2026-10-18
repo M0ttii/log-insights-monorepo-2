@@ -35,6 +35,7 @@ import { g09Precursors } from "./probes/g09-precursors.ts"
 import { g10PhraseFuzzy } from "./probes/g10-phrase-fuzzy.ts"
 import { g11MatchRecognize } from "./probes/g11-match-recognize.ts"
 import { g12IndexFunctions } from "./probes/g12-index-functions.ts"
+import { g13OtelCounts } from "./probes/g13-otel-counts.ts"
 
 const PROBES: readonly Probe[] = [
   g01Driver,
@@ -49,6 +50,7 @@ const PROBES: readonly Probe[] = [
   g10PhraseFuzzy,
   g11MatchRecognize,
   g12IndexFunctions,
+  g13OtelCounts,
 ]
 
 const isSkip = (entry: Check | Skip | Info): entry is Skip => "skipped" in entry

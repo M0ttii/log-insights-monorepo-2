@@ -29,12 +29,16 @@ const HIT = {
   node: "R02-M1-N0",
   alert_label: null,
   request_id: null,
-  // The five extension columns SereneDB always selects; null for a BGL hit.
+  // The eight attribute columns SereneDB always selects (five extension
+  // columns, three OpenTelemetry columns); null for a BGL hit.
   host: null,
   process_id: null,
   client_ip: null,
   thread: null,
   block_id: null,
+  trace_id: null,
+  span_id: null,
+  severity_number: null,
   message: "instruction cache parity error corrected",
   message_truncated: false,
   match_offsets: [18, 24],

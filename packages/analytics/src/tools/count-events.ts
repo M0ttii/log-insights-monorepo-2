@@ -6,18 +6,27 @@ import {
 } from "@workspace/domain/errors"
 import {
   datasetsWithColumn,
+  DATASETS,
+  isExternal,
+  REMOTE_SCAN_MAX_SECONDS,
   SPECIFIC_DIMENSION_COLUMNS,
   type SpecificDimension,
 } from "@workspace/domain/datasets"
 import {
   datasetSchema,
   filterDatasets,
+  patternsUnsupported,
   presentSpecificFilters,
+  remoteScanError,
   validateFilter,
   type Dataset,
   type Dimension,
 } from "@workspace/domain/filters"
-import type { CountingUnit, Scope } from "@workspace/domain/receipt"
+import type {
+  CountingUnit,
+  ReceiptSource,
+  Scope,
+} from "@workspace/domain/receipt"
 import {
   changeLabelSchema,
   referencePeriod,
@@ -29,6 +38,7 @@ import {
 } from "@workspace/domain/rules/thresholds"
 import {
   coverage,
+  formatInstant,
   MAX_FRACTION_DIGITS,
   parseInstant,
   type DataSpan,
@@ -64,10 +74,14 @@ import {
   compileFilter,
   dimensionExpression,
 } from "../filters.ts"
+import type { Relation } from "../relations.ts"
+import { openReference, openScan, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
 import {
   LOADED,
   describeFilters,
   describeWindows,
+  excludedNote,
   resolveWindows,
   scopeFilters,
   unknownErrorsNote,
@@ -177,10 +191,10 @@ type Periods = {
 export const countEvents = defineTool({
   name: "count_events",
   title: "Count events",
-  version: "1.2.0",
+  version: "1.3.0",
   description: renderDescription({
     purpose:
-      "Counts log events (or OpenStack API accesses) over the stated scope, grouped by one or two dimensions, with exact total, share per group and the remaining groups summed in other. Without from/to the whole corpus is counted. With compare it also counts an equally long reference period and reports what changed (R-06).",
+      "Counts log events (or OpenStack API accesses) over the stated scope, grouped by one or two dimensions, with exact total, share per group and the remaining groups summed in other. Without from/to the whole corpus is counted. With compare it also counts an equally long reference period and reports what changed (R-06). For dataset otel (remote OpenTelemetry Parquet) it counts a bounded window read in place from the files.",
     useWhen:
       "the question asks how often something happened or how events are distributed, e.g. errors per team, per component, per level, per node, per HTTP status, across the whole corpus or a window. Group by dataset when both datasets are in scope, so their totals stay apart. Use compare for what changed versus the previous period or a chosen reference, first occurrences and escalation.",
     doNotUseWhen: [
@@ -199,7 +213,7 @@ export const countEvents = defineTool({
       },
       { situation: "you need example log lines", use: "search_logs" },
     ],
-    inputs: `group_by (1–${COUNT_MAX_DIMENSIONS} distinct dimensions: dataset, team, component, level, alert_label, rack, node, pattern, http_status, endpoint), top_n (1–${COUNT_MAX_TOP_N}, default ${COUNT_DEFAULT_TOP_N}), from/to as ISO-8601 with Z or offset, [from, to); without them each dataset counts over its full data span. text is a full-text condition on the message (all words must occur, case-insensitive whole tokens). http_status and endpoint count OpenStack API accesses and cannot be combined with node, rack, alert_label, only_alerts or dataset bgl. team uses the fictional ownership table; unmapped components are 'unowned'. compare: "previous_period" (the equally long period right before [from, to)) or {from, to} (a reference of the same length, not overlapping); needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ ${COMPARE_MAX_TOP_N}; both periods use the same filters.`,
+    inputs: `group_by (1–${COUNT_MAX_DIMENSIONS} distinct dimensions: dataset, team, component, level, alert_label, rack, node, pattern, http_status, endpoint), top_n (1–${COUNT_MAX_TOP_N}, default ${COUNT_DEFAULT_TOP_N}), from/to as ISO-8601 with Z or offset, [from, to); without them each dataset counts over its full data span. text is a full-text condition on the message (all words must occur, case-insensitive whole tokens). http_status and endpoint count OpenStack API accesses and cannot be combined with node, rack, alert_label, only_alerts or dataset bgl. team uses the fictional ownership table; unmapped components are 'unowned'. compare: "previous_period" (the equally long period right before [from, to)) or {from, to} (a reference of the same length, not overlapping); needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ ${COMPARE_MAX_TOP_N}; both periods use the same filters. Without dataset every log_events dataset is counted, never otel. dataset otel: without text a direct scan of the remote files, from and to required and at most ${REMOTE_SCAN_MAX_SECONDS} s apart (more is limit_exceeded, outside the data span invalid_input), touching at most two files; with text the indexed reference window only (from/to default to it and must stay inside it); group_by dataset, team, component or level; no compare, no pattern; source_changed when a remote file no longer matches its load-time pin.`,
     filters: COUNT_FILTER.summary,
     outputs:
       "total (exact population in scope; with compare C), group_count, groups[] with the group_by values, events and share (fraction of total, 0–1), other (groups, events, share of the groups beyond top_n, or null), comparison (null without compare), unit, truncated and top_n. With compare every group and other also carry baseline (B), delta (C − B), pct_change (percent, null when B = 0) and classification (R-06); comparison has the same for the totals, the coverage of both periods and determinable (false when a period lies outside the data span: then B and the change are null, not 0). A missing dimension value is its own category null. Cite every number by its fact ID; shares, differences and percentages are computed, do not compute your own.",
@@ -216,10 +230,59 @@ export const countEvents = defineTool({
   async run(ctx, input) {
     const api = countsApiAccesses(input.group_by)
     const unit: CountingUnit = api ? "api_accesses" : "log_events"
+    const params = new SqlParams()
 
     let windows: ResolvedWindow[]
     let periods: Periods | null = null
-    if (input.compare === undefined) {
+    let excluded: Dataset[] = []
+    let source: ReceiptSource | undefined
+    // The relation and its filter: otel reads the reference index (text) or
+    // a bounded direct scan (LOG-35); everything else log_events.
+    let remote: { rel: Relation; filter: typeof input } | null = null
+    if (input.dataset === "otel_replay") {
+      // The OTLP replay (LOG-35): its index snapshot, over the data span.
+      const opened = await openReplay(ctx.db, ctx.signal)
+      if (!opened.ok) return opened
+      const resolved = await resolveWindows(
+        ctx.db,
+        [input.dataset],
+        input,
+        ctx.signal
+      )
+      if (!resolved.ok) return resolved
+      windows = resolved.windows
+      source = opened.opened.source
+      remote = { rel: opened.opened.rel, filter: input }
+    } else if (input.dataset !== undefined && isExternal(input.dataset)) {
+      if (input.text !== undefined) {
+        const opened = await openReference(
+          ctx.db,
+          input,
+          "A text condition",
+          ctx.signal
+        )
+        if (!opened.ok) return opened
+        const { window } = opened.opened
+        source = opened.opened.source
+        remote = {
+          rel: opened.opened.rel,
+          filter: { ...input, from: window.from, to: window.to },
+        }
+        windows = [{ window, span: spanOf(opened.opened.reference) }]
+      } else {
+        const { from, to } = input
+        if (from === undefined || to === undefined)
+          throw new Error("direct scan without window passed validation")
+        const opened = await openScan(ctx.db, { from, to }, ctx.signal)
+        if (!opened.ok) return opened
+        source = opened.opened.source
+        remote = {
+          rel: opened.opened.relation(params),
+          filter: { ...input, from: undefined, to: undefined },
+        }
+        windows = [{ window: opened.opened.window, span: opened.opened.span }]
+      }
+    } else if (input.compare === undefined) {
       const datasets: readonly Dataset[] | typeof LOADED =
         input.dataset !== undefined
           ? [input.dataset]
@@ -229,6 +292,7 @@ export const countEvents = defineTool({
       const resolved = await resolveWindows(ctx.db, datasets, input, ctx.signal)
       if (!resolved.ok) return resolved
       windows = resolved.windows
+      excluded = resolved.excluded
     } else {
       // validateCount guarantees dataset, from, to and a valid reference.
       const { dataset, from, to } = input
@@ -260,16 +324,17 @@ export const countEvents = defineTool({
       ]
     }
 
-    const params = new SqlParams()
     // With compare the window becomes two period conditions below.
     const filter =
-      periods === null ? input : { ...input, from: undefined, to: undefined }
+      remote?.filter ??
+      (periods === null ? input : { ...input, from: undefined, to: undefined })
     const compiled = compileFilter(filter, {
       accepted: COUNT_FILTER.fields,
       params,
+      ...(remote === null ? {} : { relation: remote.rel }),
     })
     if (!compiled.ok) return compiled
-    const { relation } = compiled.filter
+    const { relation, rel } = compiled.filter
     const conditions = [
       ...(compiled.filter.where === "TRUE" ? [] : [compiled.filter.where]),
       ...(api ? [apiAccessCondition(relation)] : []),
@@ -278,8 +343,8 @@ export const countEvents = defineTool({
     const keys = DIMENSION_KEYS.slice(0, input.group_by.length)
     const values = keys.map((key) => `${key} ASC NULLS LAST`).join(", ")
     const inRange = (range: TimeRange) =>
-      `${relation}.ts >= ${params.add(range.from)}::TIMESTAMPTZ AND ${relation}.ts < ${params.add(range.to)}::TIMESTAMPTZ`
-    let counts = "count(*) AS events, NULL::BIGINT AS baseline"
+      `${rel.col("ts")} >= ${rel.bound(params.add(range.from))} AND ${rel.col("ts")} < ${rel.bound(params.add(range.to))}`
+    let counts = `${rel.countRows} AS events, NULL::BIGINT AS baseline`
     let order = `events DESC, ${values}`
     if (periods !== null) {
       const inCurrent = inRange(periods.current)
@@ -297,8 +362,7 @@ export const countEvents = defineTool({
     const topN = params.add(input.top_n)
     const selected = input.group_by
       .map(
-        (dimension, i) =>
-          `${dimensionExpression(dimension, relation)} AS ${keys[i]}`
+        (dimension, i) => `${dimensionExpression(dimension, rel)} AS ${keys[i]}`
       )
       .join(", ")
     const nulls = keys.map((key) => `NULL AS ${key}`).join(", ")
@@ -316,7 +380,7 @@ export const countEvents = defineTool({
 
     const counted = await ctx.db.query(
       [
-        `WITH grouped AS (SELECT ${selected}, ${counts} FROM ${relation} WHERE ${where} GROUP BY ${keys.map((_, i) => i + 1).join(", ")})`,
+        `WITH grouped AS (SELECT ${selected}, ${counts} FROM ${rel.from} WHERE ${where} GROUP BY ${keys.map((_, i) => i + 1).join(", ")})`,
         `, ranked AS (SELECT ${keys.join(", ")}, events, baseline, row_number() OVER (ORDER BY ${order}) AS rank, sum(events) OVER () AS total FROM grouped)`,
         `, summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) ${beyond} AS other_n, coalesce(sum(events) ${beyond}, 0) AS other_c, sum(baseline) ${beyond} AS other_b FROM ranked)`,
         ` SELECT 0::BIGINT AS rank, ${nulls}, c::BIGINT AS events, NULL::DOUBLE AS share, ${change(sumOf("b"), "c")}, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, ${change(sumOf("other_b"), "other_c", "other_")} FROM summary`,
@@ -397,11 +461,23 @@ export const countEvents = defineTool({
         rows_returned: groups.length,
         truncated: data.truncated,
         row_limit: input.top_n,
-        notes: notesFor(input, data, scope, windows, periods),
+        notes: [
+          ...notesFor(input, data, scope, windows, periods),
+          ...excludedNote(excluded),
+          ...(source === undefined ? [] : sourceNotes(source)),
+        ],
+        ...(source === undefined ? {} : { source }),
       },
     }
   },
 })
+
+/** The reference window as the span its index covers (for coverage notes). */
+function spanOf(reference: { window_from: string; window_to: string }) {
+  const end = parseInstant(reference.window_to)
+  if (end === null) throw new RangeError("reference window end")
+  return { first: reference.window_from, last: formatInstant(end - 1n) }
+}
 
 /**
  * B, C − B and the change in percent as SQL columns, from a baseline and a
@@ -512,8 +588,30 @@ function validateCount(input: CountEventsInput): ToolError | null {
     }
   }
 
+  // Remote datasets (LOG-35): no patterns, no period comparison, and a
+  // bounded direct scan without text.
+  const dataset = input.dataset
+  if (dataset !== undefined && isExternal(dataset)) {
+    if (input.group_by.includes("pattern") && !DATASETS[dataset].patterns)
+      issues.push(patternsUnsupported(dataset, "group_by"))
+    if (input.compare !== undefined)
+      issues.push({
+        path: "compare",
+        message:
+          dataset === "otel"
+            ? `compare is not available for dataset ${dataset}: its counts read a bounded window of remote files; call count_events once per window instead (each at most ${REMOTE_SCAN_MAX_SECONDS} s).`
+            : `compare is not available for dataset ${dataset}: it is a replay of one millisecond of records, too short for a period comparison; call count_events once per window instead.`,
+      })
+    const scan = remoteScanError(input)
+    if (scan?.code === "invalid_input") issues.push(...scan.issues)
+    else if (scan !== null && issues.length === 0) return scan
+  }
+
   const compareIssues =
-    input.compare === undefined ? [] : validateCompare(input)
+    input.compare === undefined ||
+    (dataset !== undefined && isExternal(dataset))
+      ? []
+      : validateCompare(input)
   issues.push(...compareIssues)
 
   // With API dimensions the non-OpenStack fields were reported above.

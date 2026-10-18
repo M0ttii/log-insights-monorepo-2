@@ -24,6 +24,7 @@ const adapterErrorSchema = z.object({
         "db_unavailable",
         "receipt_unavailable",
         "limit_exceeded",
+        "source_changed",
       ]),
       message: z.string(),
       hint: z.string(),

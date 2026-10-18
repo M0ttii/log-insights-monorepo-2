@@ -423,6 +423,7 @@ async function runDefinition<I, O>(
       result: data,
       result_digest: digest,
       facts,
+      ...(run.source === undefined ? {} : { source: run.source }),
     })
     try {
       await receipts.put(receipt)
@@ -455,6 +456,7 @@ function summarize(receipt: Receipt): ReceiptSummary {
     truncated: receipt.truncated,
     duration_ms: receipt.duration_ms,
     result_digest: receipt.result_digest,
+    ...(receipt.source === undefined ? {} : { source: receipt.source }),
   }
 }
 

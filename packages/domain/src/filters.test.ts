@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 
-import { filterSchema, pickFilter, validateFilter } from "./filters.ts"
+import {
+  filterSchema,
+  pickFilter,
+  remoteScanError,
+  validateFilter,
+} from "./filters.ts"
 
 const window = { from: "2005-06-03T00:00:00Z", to: "2005-06-04T00:00:00Z" }
 
@@ -187,5 +192,53 @@ describe("pickFilter", () => {
     expect(
       input.safeParse({ dataset: "bgl", limit: 5, node: "x" }).success
     ).toBe(false)
+  })
+})
+
+describe("remote datasets (LOG-35)", () => {
+  it("rejects pattern_id and dataset-specific fields without meaning for otel", () => {
+    expect(
+      issuePaths({ dataset: "otel", pattern_id: "0123456789abcdef" })
+    ).toEqual(["pattern_id"])
+    expect(issuePaths({ dataset: "otel", node: "R02" })).toEqual(["node"])
+    expect(issuePaths({ dataset: "bgl", trace_id: "abc" })).toEqual([
+      "trace_id",
+    ])
+    expect(issuePaths({ dataset: "otel", trace_id: "abc" })).toEqual([])
+  })
+
+  it("needs from and to for a direct scan without text, and nothing else", () => {
+    const missing = remoteScanError({ dataset: "otel", from: window.from })
+    expect(missing?.code).toBe("invalid_input")
+    expect(missing?.code === "invalid_input" && missing.issues).toEqual([
+      expect.objectContaining({ path: "to" }),
+    ])
+    // Full text runs on the reference index; log_events datasets never scan.
+    expect(remoteScanError({ dataset: "otel", text: "cache" })).toBeNull()
+    expect(remoteScanError({ dataset: "bgl" })).toBeNull()
+    expect(remoteScanError({})).toBeNull()
+  })
+
+  it("limits a direct scan to 60 s, exclusive end, with a concrete narrower window", () => {
+    expect(
+      remoteScanError({
+        dataset: "otel",
+        from: "2025-09-23T00:29:00Z",
+        to: "2025-09-23T00:30:00Z",
+      })
+    ).toBeNull()
+    const error = remoteScanError({
+      dataset: "otel",
+      from: "2025-09-23T00:29:00Z",
+      to: "2025-09-23T00:30:00.000001Z",
+    })
+    expect(error).toMatchObject({
+      code: "limit_exceeded",
+      limit: 60,
+      requested: 61,
+    })
+    expect(error?.hint).toContain(
+      "from 2025-09-23T00:29:00Z to 2025-09-23T00:30:00.000000Z"
+    )
   })
 })

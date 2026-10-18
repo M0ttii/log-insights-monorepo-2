@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "gate": "node --env-file-if-exists=../../.env --import tsx gate/run.ts",
     "data:setup": "node --env-file-if-exists=../../.env --import tsx src/setup.ts",
-    "data:profile": "node --env-file-if-exists=../../.env --import tsx src/profile.ts"
+    "data:profile": "node --env-file-if-exists=../../.env --import tsx src/profile.ts",
+    "otel:replay-fixture": "node --env-file-if-exists=../../.env --import tsx src/replay-fixture.ts"
   },
   "dependencies": {
     "@workspace/domain": "workspace:*",

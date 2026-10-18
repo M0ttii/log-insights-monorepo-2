@@ -21,6 +21,7 @@ import { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js"
 import { findWorkspaceRoot } from "@workspace/analytics/config"
 import { FileReceiptStore } from "@workspace/analytics/receipts"
 import { createRegistry } from "@workspace/analytics/registry"
+import { DATASETS } from "@workspace/domain/datasets"
 import { toolErrorSchema } from "@workspace/domain/errors"
 import { receiptSchema } from "@workspace/domain/receipt"
 import { toolResultSchema } from "@workspace/domain/tool"
@@ -438,6 +439,70 @@ describe("MCP stdio smoke against Loghub 2k samples", () => {
       expect(desktop.protocolErrors).toEqual([])
     } finally {
       await desktop.client.close()
+    }
+  })
+
+  it("advertises and serves both OTel sources through stdio (LOG-35)", async () => {
+    const otel = await startSession({
+      env: samplesEnv({
+        SERENEDB_DATABASE: "log_insights_samples_otel",
+        LOG_INSIGHTS_RECEIPTS_DIR: receiptDir,
+      }),
+    })
+    try {
+      const listed = await otel.client.listTools()
+      const datasetInput = z.object({
+        properties: z.object({
+          dataset: z.object({ enum: z.array(z.string()) }),
+        }),
+      })
+      for (const name of ["search_logs", "count_events", "event_trend"]) {
+        const advertised = listed.tools.find((tool) => tool.name === name)
+        const schema = datasetInput.parse(advertised?.inputSchema)
+        expect(schema.properties.dataset.enum).toEqual(
+          expect.arrayContaining(["otel", "otel_replay"])
+        )
+      }
+      const overview = resultSchema.parse(
+        (await callTool(otel.client, "describe_corpus", {})).structuredContent
+      )
+      const corpus = z
+        .object({
+          datasets: z.array(
+            z.object({ dataset: z.string(), storage: z.string() })
+          ),
+        })
+        .parse(overview.data)
+      expect(
+        corpus.datasets.filter((dataset) => dataset.dataset.startsWith("otel"))
+      ).toEqual([
+        { dataset: "otel", storage: "remote_parquet" },
+        { dataset: "otel_replay", storage: "otlp_replay" },
+      ])
+      const replay = resultSchema.parse(
+        (
+          await callTool(otel.client, "count_events", {
+            dataset: "otel_replay",
+            group_by: ["dataset"],
+          })
+        ).structuredContent
+      )
+      expect(replay.data).toMatchObject({
+        total: DATASETS.otel_replay.replay.fixture.records,
+      })
+      const receipt = receiptSchema.parse(
+        await readJsonResource(
+          otel.client,
+          `receipt://${replay.receipt.receipt_id}`
+        )
+      )
+      expect(receipt.source).toMatchObject({
+        kind: "otlp_replay",
+        fixture: { sha256: DATASETS.otel_replay.replay.fixture.sha256 },
+      })
+      expect(otel.protocolErrors).toEqual([])
+    } finally {
+      await otel.client.close()
     }
   })
 

@@ -1,7 +1,9 @@
 # Log Insights conventions
 
 Log Insights turns the BGL and OpenStack log corpus (optionally extended by five
-more Loghub datasets: HDFS_v1, OpenSSH, Apache, Linux, ZooKeeper, U26) into
+more Loghub datasets: HDFS_v1, OpenSSH, Apache, Linux, ZooKeeper, U26; and by the
+OpenTelemetry logs of the brief, read in place as `otel`, plus a bounded OTLP replay
+`otel_replay`, U21/LOG-35) into
 **question → evidence → recommendation** for three roles: a tool layer on SereneDB, exposed through an MCP
 server (P0) and a web chat (P1). SereneDB searches and computes; Claude explains and
 recommends; every number has a query receipt. `apps/` stays empty until `apps/mcp`
@@ -74,13 +76,35 @@ matching paths):
 - No two datasets share a time axis: BGL (2005–2006) and OpenStack (2017) do not
   overlap, and the extensions are separate systems with unknown time zones even
   where calendars overlap. Trends, comparisons, context and precursors are per
-  dataset; cross-dataset numbers are labelled totals over each full span.
+  dataset; cross-dataset numbers are labelled totals over each full span. `otel`
+  (2025-09-23) and `otel_replay` are never part of dataset-less calls or
+  cross-dataset totals; they require an explicit `dataset`, and outputs say so.
 - The dataset catalog (`packages/domain/src/datasets.ts`) is the one source for
   dataset IDs, sources and checksums, time basis, field meaning, error definition,
   breadth unit, context scopes and capabilities. Never equate fields across
-  datasets without that meaning (no hosts in `node`, no blocks in `request_id`),
+  datasets without that meaning (no hosts in `node`, no blocks in `request_id`, no
+  trace IDs in `request_id`, no pod names in `host`),
   never invent a missing year, zone or level, and answer an unsupported
   dataset/function combination with `invalid_input` and a hint, never a zero.
+- `otel` is a remote dataset read in place over HTTPS (concept 5.6, technical.md
+  § 7.2): only the allowlisted `text_bench/part_000.parquet` … `part_049.parquet`
+  (`part_050` is not in the brief and is not allowlisted); URLs come from the
+  catalog via `otel_sources`, never from input or log text; files are never
+  downloaded. Its pin is a version stamp (size, ETag, Last-Modified, footer facts),
+  not a checksum, and is called that. Full text and context run only in the
+  indexed reference window; `count_events`/`event_trend` direct scans need `from`
+  and `to`, at most 60 s and at most two files; larger or unsupported scans are
+  rejected with a hint, never shrunk silently, and the 10 s pool limit stays.
+  Time filters on the Parquet column compare against `TIMESTAMPTZ_NS` only (no
+  expression on the column); outputs truncate nanoseconds to microseconds with
+  ties ordered by `event_id`. Files are half-open `[ts_min(n), ts_min(n+1))` so a
+  boundary row counts once. No patterns, precursors, latency, API accesses or
+  breadth for `otel`/`otel_replay`; trace and span IDs stand in for no trace,
+  request or latency value.
+- Live ingestion is out of scope except the bounded, reproducible OTLP replay
+  (`otel_replay`) as a load step through SereneDB's built-in OTLP/HTTP listener; no
+  production stream, collector or worker. The replay never resends (SereneDB does
+  not deduplicate) and is labelled a replay.
 - Matched entries, patterns and episodes are not incidents or outages. Follow
   R-01–R-11 rather than inventing other grouping, status or ranking rules.
 - The ownership table is fictional and labelled so; unmapped components are
@@ -158,6 +182,10 @@ versions before using an API, and never infer an installation from a plan.
   alone leaves the query running and the connection unusable. The pool cancels
   server-side (`pg_cancel_backend` or protocol cancel, SQLSTATE `57014` →
   `query_timeout`) and discards the connection.
+- Each connection sets instance-global `http_timeout = 3` and `http_retries = 1`
+  before queries, bounding a hung HTTP connect retry chain (no matching flagfile
+  option). The 10 s pool cancellation stays; HTTP calls can defer server-side
+  cancellation, so it is not a hard server-resource deadline for every network error.
 - Each connection runs `SET TimeZone = 'UTC'` after connecting (the startup option is
   ignored). Timestamps cross the driver as text, never `Date` (process time zone,
   lost microseconds). `BIGINT` stays exact (string or `bigint`) until a range check
@@ -175,7 +203,10 @@ versions before using an API, and never infer an installation from a plan.
   resolved defaults, exact SQL, bound params, scope, data version, population, rows,
   truncated, duration, result, result digest, facts) and returns its summary plus
   the fact list. A run whose receipt cannot be stored fails with
-  `receipt_unavailable`. The eight default tools never write to SereneDB; only the
+  `receipt_unavailable`. Receipts of external datasets add a `source` block (files
+  queried, path, window, mapping version, index freshness; bytes read only as
+  `not_measured` or a labelled footer estimate, never as instrumentation). The
+  eight default tools never write to SereneDB; only the
   index tools create and drop their own indexes. Tools return the derived values
   answers need (shares, deltas, rates, totals, ratios) so the model never computes.
 - SereneDB computes, TypeScript does not (technical.md § 5.3): every analytical value
@@ -195,9 +226,11 @@ versions before using an API, and never infer an installation from a plan.
   The agent never sends SQL. Re-run executes the registered tool with the stored
   validated input, never stored SQL.
 - Expected failures are one discriminated union (`invalid_input`, `not_found`,
-  `query_timeout`, `db_unavailable`, `receipt_unavailable`, `limit_exceeded`),
-  mapped once to MCP errors and route responses with a correction hint. Never expose
-  raw database errors or stacks.
+  `query_timeout`, `db_unavailable`, `receipt_unavailable`, `limit_exceeded`,
+  `source_changed`), mapped once to MCP errors and route responses with a
+  correction hint. `source_changed` means a queried external file no longer matches
+  its loaded size/Last-Modified; a re-run reports it instead of pretending an equal
+  digest. Never expose raw database errors or stacks.
 - `check_claims` verifies each claim against its fact ID (value, metric and required
   group; scope comes from the receipt) and counts unknown fact IDs or receipts as
   unresolved. MCP and web chat share the number format and the check; there is no
@@ -222,11 +255,19 @@ versions before using an API, and never infer an installation from a plan.
   corpus is the default; extensions are chosen with `--with <id,…|all>` (samples
   with extensions go to `log_insights_samples_ext`). A new dataset is a catalog
   entry, a parser SQL file and ownership rows, never a copy of the tool stack.
+  `--with otel` and `--with otel_replay` are chosen explicitly and are not part of
+  `--with all`; with `--samples` they use committed local fixtures only, so CI
+  never needs the network.
 - Validate input sizes, limits and time ranges; bound result sets. Never read a whole
   dataset into React or the model to calculate a total.
 - Logs and model output are untrusted text: render safely, no raw HTML, no unsafe
   link protocols. Log text never changes rules or tool access.
-- SereneDB and the web app bind to loopback only; there is no user system.
+- SereneDB and the web app bind to loopback only; there is no user system. The
+  OTLP/HTTP listener (enabled by the repo-owned `serened.conf`, never a compose
+  `command:`) listens on `0.0.0.0` inside the container but is published only on
+  `127.0.0.1:${SERENEDB_OTLP_PORT}` and the samples listener on
+  `127.0.0.1:${SERENEDB_OTLP_SAMPLES_PORT}`; both require Basic auth. Both variables
+  are set per checkout like `SERENEDB_PORT`.
 - Validate configuration at startup. Secrets stay out of source control, client
   bundles, fixtures, URLs, logs and error responses; commit only `.env.example`.
   Operational logs carry tool name, duration, result size and error kind, never

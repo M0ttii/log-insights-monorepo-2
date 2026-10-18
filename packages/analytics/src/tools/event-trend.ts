@@ -6,7 +6,18 @@ import {
   type ToolError,
 } from "@workspace/domain/errors"
 import type { FactSpec } from "@workspace/domain/facts"
-import { validateFilter, type Filter } from "@workspace/domain/filters"
+import {
+  DATASETS,
+  isExternal,
+  REMOTE_SCAN_MAX_SECONDS,
+} from "@workspace/domain/datasets"
+import {
+  patternsUnsupported,
+  remoteScanError,
+  validateFilter,
+  type Filter,
+} from "@workspace/domain/filters"
+import type { ReceiptSource } from "@workspace/domain/receipt"
 import {
   bucketCount,
   bucketUnitSchema,
@@ -40,7 +51,11 @@ import {
 } from "@workspace/domain/tools/event-trend"
 import { z } from "zod"
 
+import { requireDataSpan } from "../corpus.ts"
 import { compileFilter, dimensionExpression } from "../filters.ts"
+import type { Relation } from "../relations.ts"
+import { openReference, openScan, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
 import { resolveWindows, scopeFilters } from "../scope.ts"
 import { isoTime, SqlParams } from "../sql.ts"
 
@@ -59,10 +74,15 @@ import { isoTime, SqlParams } from "../sql.ts"
  * computed by native range() and LEFT JOINs in SQL.
  */
 
+/** log_events datasets: compileFilter picks the table or its index. */
+const noRelation = (): Relation | undefined => undefined
+
 /** Slot of `other` in the series query: one past the last named series. */
 const OTHER_SLOT = TREND_MAX_SERIES + 1
 
 const COARSER: Record<BucketUnit, BucketUnit | null> = {
+  second: "minute",
+  minute: "hour",
   hour: "day",
   day: "week",
   week: null,
@@ -106,7 +126,7 @@ const cellRow = z.object({
 export const eventTrend = defineTool({
   name: "event_trend",
   title: "Event trend",
-  version: "1.1.0",
+  version: "1.2.0",
   description: renderDescription({
     purpose: `Time series of log events for one dataset in hour, day or week buckets (UTC), optionally split by one dimension into at most ${TREND_MAX_SERIES} series plus other. Shows how a pattern, component, team or error class develops over time.`,
     useWhen:
@@ -127,7 +147,7 @@ export const eventTrend = defineTool({
       },
       { situation: "you need example log lines", use: "search_logs" },
     ],
-    inputs: `dataset (required, exactly one loaded dataset; no two datasets share a time axis, so call once per dataset), bucket (hour | day | week; weeks start on Monday 00:00 UTC), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span, split_by (optional, one of ${TREND_DIMENSIONS.join(", ")}; alert_label, rack and node only for bgl, host for openssh and linux, client_ip for openssh and apache, thread for zookeeper, block_id for hdfs). At most ${TREND_MAX_BUCKETS} buckets per call: a longer range fails with limit_exceeded, whose hint names the next coarser bucket or a shorter window.`,
+    inputs: `dataset (required, exactly one loaded dataset; no two datasets share a time axis, so call once per dataset), bucket (hour | day | week; weeks start on Monday 00:00 UTC), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span, split_by (optional, one of ${TREND_DIMENSIONS.join(", ")}; alert_label, rack and node only for bgl, host for openssh and linux, client_ip for openssh and apache, thread for zookeeper, block_id for hdfs). At most ${TREND_MAX_BUCKETS} buckets per call: a longer range fails with limit_exceeded, whose hint names the next coarser bucket or a shorter window. dataset otel (remote OpenTelemetry Parquet): bucket second or minute; without text a direct scan of the remote files, from and to required and at most ${REMOTE_SCAN_MAX_SECONDS} s apart; with text the indexed reference window only; split_by team, component or level; source_changed when a remote file no longer matches its load-time pin.`,
     filters: TREND_FILTER.summary,
     outputs: `data_span (first and last event of the dataset), effective_range (window ∩ data span, the time the buckets cover; null if the window lies outside the data span – then no buckets are returned), bucket_count, total, series[] (top ${TREND_MAX_SERIES} values by events in scope, then value) with events, other (events and merged_values beyond the top ${TREND_MAX_SERIES}), buckets[] by bucket_start with bucket_end, events, series[] in the same order, other_events, partial (window or data span starts or ends inside the bucket, so less time is covered – a lower count is no drop) and capture_gap (the dataset has no event at all in the bucket, so its zero is not observed calm). Buckets inside the effective range without events are observed zeros; buckets outside the data span are never listed. Cite counts by their fact IDs (group dataset, bucket_start and the split dimension).`,
     truncation: `never truncated: more than ${TREND_MAX_BUCKETS} buckets is an error (limit_exceeded); values beyond the top ${TREND_MAX_SERIES} series are summed in other, so every bucket's series plus other_events equal its events.`,
@@ -141,23 +161,80 @@ export const eventTrend = defineTool({
   validate: validateTrend,
   summary: summarizeEventTrend,
   async run(ctx, input) {
-    const resolved = await resolveWindows(
-      ctx.db,
-      [input.dataset],
-      input,
-      ctx.signal
-    )
-    if (!resolved.ok) return resolved
-    const [first] = resolved.windows
-    if (first === undefined) throw new Error("no window for the dataset")
-    const { span } = first
-    const requested: TimeRange = {
-      from: first.window.from,
-      to: first.window.to,
+    // otel (LOG-35) reads the reference index (text) or a bounded direct
+    // scan; every statement builds its own relation, because a scan binds
+    // its per-file bounds into the statement's parameters.
+    let span: DataSpan
+    let requested: TimeRange
+    let source: ReceiptSource | undefined
+    let relationFor: (params: SqlParams) => Relation | undefined = noRelation
+    if (input.dataset === "otel_replay") {
+      // The OTLP replay (LOG-35): its index snapshot, with or without text.
+      const opened = await openReplay(ctx.db, ctx.signal)
+      if (!opened.ok) return opened
+      const { rel } = opened.opened
+      const resolved = await resolveWindows(
+        ctx.db,
+        [input.dataset],
+        input,
+        ctx.signal
+      )
+      if (!resolved.ok) return resolved
+      const [first] = resolved.windows
+      if (first === undefined) throw new Error("no window for the dataset")
+      span = first.span
+      requested = { from: first.window.from, to: first.window.to }
+      source = opened.opened.source
+      relationFor = () => rel
+    } else if (isExternal(input.dataset)) {
+      if (input.text !== undefined) {
+        const opened = await openReference(
+          ctx.db,
+          input,
+          "A text condition",
+          ctx.signal
+        )
+        if (!opened.ok) return opened
+        const { rel, window } = opened.opened
+        const required = await requireDataSpan(
+          ctx.db,
+          input.dataset,
+          ctx.signal
+        )
+        if (!required.ok) return required
+        span = required.span
+        requested = { from: window.from, to: window.to }
+        source = opened.opened.source
+        relationFor = () => rel
+      } else {
+        const { from, to } = input
+        if (from === undefined || to === undefined)
+          throw new Error("direct scan without window passed validation")
+        const opened = await openScan(ctx.db, { from, to }, ctx.signal)
+        if (!opened.ok) return opened
+        span = opened.opened.span
+        requested = { from, to }
+        source = opened.opened.source
+        relationFor = (params) => opened.opened.relation(params)
+      }
+    } else {
+      const resolved = await resolveWindows(
+        ctx.db,
+        [input.dataset],
+        input,
+        ctx.signal
+      )
+      if (!resolved.ok) return resolved
+      const [first] = resolved.windows
+      if (first === undefined) throw new Error("no window for the dataset")
+      span = first.span
+      requested = { from: first.window.from, to: first.window.to }
     }
     const effective = effectiveRange(requested, span)
     const filters = scopeFilters(input, TREND_FILTER.fields)
     const splitBy = input.split_by ?? null
+    const remote = source === undefined ? [] : sourceNotes(source)
+    const withSource = source === undefined ? {} : { source }
 
     if (effective === null) {
       return {
@@ -186,7 +263,9 @@ export const eventTrend = defineTool({
           notes: [
             BASE_NOTE,
             `The requested range lies outside the data span: ${input.dataset} has events from ${span.first} to ${span.last} only, so [${requested.from}, ${requested.to}) has no buckets; missing data is not zero (R-03).`,
+            ...remote,
           ],
+          ...withSource,
         },
       }
     }
@@ -197,15 +276,27 @@ export const eventTrend = defineTool({
         ok: false,
         error: tooManyBuckets(effective, input.bucket, needed),
       }
-    const grid = await bucketGridSql(ctx, input, effective)
+    const grid = await bucketGridSql(ctx, input, effective, relationFor)
     const params = new SqlParams()
+    const rel = relationFor(params)
     const compiled = compileFilter(
-      { ...filterOf(input), from: effective.from, to: effective.to },
-      { accepted: ["dataset", ...TREND_FILTER.fields], params }
+      {
+        ...filterOf(input),
+        // A direct scan carries its window in the per-file bounds.
+        ...(rel !== undefined && !rel.indexed
+          ? { from: undefined, to: undefined }
+          : { from: effective.from, to: effective.to }),
+      },
+      {
+        accepted: ["dataset", ...TREND_FILTER.fields],
+        params,
+        ...(rel === undefined ? {} : { relation: rel }),
+      }
     )
     if (!compiled.ok) return compiled
-    const { relation, where } = compiled.filter
-    const truncate = `date_trunc('${bucketUnitSchema.parse(input.bucket)}', ${relation}.ts)`
+    const { where } = compiled.filter
+    const relation = compiled.filter.rel
+    const truncate = relation.bucket(bucketUnitSchema.parse(input.bucket))
 
     const counted =
       splitBy === null
@@ -254,7 +345,11 @@ export const eventTrend = defineTool({
         rows_returned: buckets.length,
         truncated: false,
         row_limit: TREND_MAX_BUCKETS,
-        notes: notesFor(input, span, requested, effective, data),
+        notes: [
+          ...notesFor(input, span, requested, effective, data),
+          ...remote,
+        ],
+        ...withSource,
       },
     }
   },
@@ -273,7 +368,7 @@ type Ctx = Pick<ToolContext, "db" | "signal">
 async function countBuckets(
   ctx: Ctx,
   truncate: string,
-  relation: string,
+  relation: Relation,
   where: string,
   params: SqlParams,
   grid: readonly GridRow[],
@@ -281,7 +376,7 @@ async function countBuckets(
   unit: BucketUnit
 ): Promise<Counted> {
   const { rows } = await ctx.db.query(
-    `WITH ${gridCte(params, effective, unit)}, counted AS (SELECT ${truncate} AS bucket, count(*) AS events FROM ${relation} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, coalesce(c.events, 0)::BIGINT AS events, sum(coalesce(c.events, 0)) OVER ()::BIGINT AS total FROM grid g LEFT JOIN counted c ON g.bucket = c.bucket ORDER BY g.bucket`,
+    `WITH ${gridCte(params, effective, unit)}, counted AS (SELECT ${truncate} AS bucket, ${relation.countRows} AS events FROM ${relation.from} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, coalesce(c.events, 0)::BIGINT AS events, sum(coalesce(c.events, 0)) OVER ()::BIGINT AS total FROM grid g LEFT JOIN counted c ON g.bucket = c.bucket ORDER BY g.bucket`,
     params.values,
     ctx.signal
   )
@@ -318,7 +413,7 @@ async function countSeries(
   ctx: Ctx,
   dimension: TrendDimension,
   truncate: string,
-  relation: string,
+  relation: Relation,
   where: string,
   params: SqlParams,
   grid: readonly GridRow[],
@@ -326,7 +421,7 @@ async function countSeries(
   unit: BucketUnit
 ): Promise<Counted> {
   const value = dimensionExpression(dimension, relation)
-  const cte = `WITH ${gridCte(params, effective, unit)}, cells AS (SELECT ${truncate} AS bucket, ${value} AS value, count(*) AS events FROM ${relation} WHERE ${where} GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, ${OTHER_SLOT}) AS slot, CASE WHEN series_rank <= ${TREND_MAX_SERIES} THEN value END AS value, series_rank, events FROM ranked)`
+  const cte = `WITH ${gridCte(params, effective, unit)}, cells AS (SELECT ${truncate} AS bucket, ${value} AS value, ${relation.countRows} AS events FROM ${relation.from} WHERE ${where} GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, ${OTHER_SLOT}) AS slot, CASE WHEN series_rank <= ${TREND_MAX_SERIES} THEN value END AS value, series_rank, events FROM ranked)`
   const seriesResult = await ctx.db.query(
     `${cte} SELECT slot, value, sum(events) AS events, count(DISTINCT series_rank) AS merged_values, sum(sum(events)) OVER () AS total FROM slots GROUP BY slot, value ORDER BY slot`,
     params.values,
@@ -401,17 +496,26 @@ async function countSeries(
 async function bucketGridSql(
   ctx: Ctx,
   input: EventTrendInput,
-  effective: TimeRange
+  effective: TimeRange,
+  relationFor: (params: SqlParams) => Relation | undefined
 ): Promise<GridRow[]> {
   const params = new SqlParams()
+  const rel = relationFor(params)
   const compiled = compileFilter(
-    { dataset: input.dataset, from: effective.from, to: effective.to },
-    { accepted: ["dataset", "from", "to"], params }
+    rel !== undefined && !rel.indexed
+      ? { dataset: input.dataset }
+      : { dataset: input.dataset, from: effective.from, to: effective.to },
+    {
+      accepted: ["dataset", "from", "to"],
+      params,
+      ...(rel === undefined ? {} : { relation: rel }),
+    }
   )
   if (!compiled.ok) throw new Error("capture coverage filter rejected")
-  const { relation, where } = compiled.filter
+  const relation = compiled.filter.rel
+  const { where } = compiled.filter
   const { rows } = await ctx.db.query(
-    `WITH ${gridCte(params, effective, input.bucket)}, captured AS (SELECT date_trunc('${bucketUnitSchema.parse(input.bucket)}', ${relation}.ts) AS bucket FROM ${relation} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, ${isoTime(`g.bucket + ${params.add(`1 ${input.bucket}`)}::INTERVAL`)} AS bucket_end, g.bucket < ${params.add(effective.from)}::TIMESTAMPTZ OR g.bucket + ${params.add(`1 ${input.bucket}`)}::INTERVAL > ${params.add(effective.to)}::TIMESTAMPTZ AS partial, c.bucket IS NULL AS capture_gap FROM grid g LEFT JOIN captured c ON g.bucket = c.bucket ORDER BY g.bucket`,
+    `WITH ${gridCte(params, effective, input.bucket)}, captured AS (SELECT ${relation.bucket(bucketUnitSchema.parse(input.bucket))} AS bucket FROM ${relation.from} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, ${isoTime(`g.bucket + ${params.add(`1 ${input.bucket}`)}::INTERVAL`)} AS bucket_end, g.bucket < ${params.add(effective.from)}::TIMESTAMPTZ OR g.bucket + ${params.add(`1 ${input.bucket}`)}::INTERVAL > ${params.add(effective.to)}::TIMESTAMPTZ AS partial, c.bucket IS NULL AS capture_gap FROM grid g LEFT JOIN captured c ON g.bucket = c.bucket ORDER BY g.bucket`,
     params.values,
     ctx.signal
   )
@@ -438,6 +542,12 @@ function validateTrend(input: EventTrendInput): ToolError | null {
   const filterError = validateFilter(input)
   if (filterError?.code === "invalid_input") issues.push(...filterError.issues)
   else if (filterError !== null) return filterError
+  if (input.split_by === "pattern" && !DATASETS[input.dataset].patterns)
+    issues.push(patternsUnsupported(input.dataset, "split_by"))
+  // Remote datasets (LOG-35): a bounded direct scan without text.
+  const scan = remoteScanError(input)
+  if (scan?.code === "invalid_input") issues.push(...scan.issues)
+  else if (scan !== null && issues.length === 0) return scan
   const datasets =
     input.split_by === undefined ? null : trendDimensionDatasets(input.split_by)
   if (datasets !== null && !datasets.includes(input.dataset)) {

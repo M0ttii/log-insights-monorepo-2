@@ -3,7 +3,13 @@ import { z } from "zod"
 import { invalidInput, type InputIssue, type ToolError } from "../errors.ts"
 import { formatFactValue, type Fact } from "../facts.ts"
 import { EXTENSION_ATTRIBUTES } from "../attributes.ts"
-import { datasetSchema, pickFilter, validateFilter } from "../filters.ts"
+import { DATASETS } from "../datasets.ts"
+import {
+  datasetSchema,
+  patternsUnsupported,
+  pickFilter,
+  validateFilter,
+} from "../filters.ts"
 import {
   EPISODE_GAP_MINUTES,
   PRECURSOR_MIN_ANCHORS_FOR_BASE_RATE,
@@ -84,10 +90,11 @@ export const contextScopeSchema = z
     "same_process",
     "same_client",
     "same_thread",
+    "same_trace",
     "dataset",
   ])
   .describe(
-    "same_node: events on the event's node (BGL, needs a node). same_component: events of its component. same_request: events with its request ID (OpenStack, needs a request ID). same_block: events of its HDFS block. same_process: events of its process ID (OpenSSH, Linux; one sshd process per connection). same_client: events with its remote IP (OpenSSH, Apache). same_thread: events of its ZooKeeper thread. dataset: every event of its dataset. describe_corpus lists the scopes per dataset."
+    "same_node: events on the event's node (BGL, needs a node). same_component: events of its component. same_request: events with its request ID (OpenStack, needs a request ID). same_block: events of its HDFS block. same_process: events of its process ID (OpenSSH, Linux; one sshd process per connection). same_client: events with its remote IP (OpenSSH, Apache). same_thread: events of its ZooKeeper thread. same_trace: records with its OTel TraceId (otel, needs a non-empty trace ID; log records only, no spans). dataset: every event of its dataset. describe_corpus lists the scopes per dataset."
   )
 
 export type ContextScope = z.infer<typeof contextScopeSchema>
@@ -249,6 +256,8 @@ export function validateLogContext(
       "Set dataset to one loaded dataset (describe_corpus); no two datasets share a time axis."
     )
   }
+  if (!DATASETS[input.dataset].patterns)
+    return invalidInput([patternsUnsupported(input.dataset, "dataset")])
   if ((input.pattern_id === undefined) === (input.query === undefined)) {
     issues.push({
       path: input.pattern_id === undefined ? "pattern_id" : "query",
@@ -274,7 +283,10 @@ const eventIdSchema = z
 
 const patternIdSchema = z
   .string()
-  .describe("Pattern ID; pass it to get_log_context mode aggregate.")
+  .nullable()
+  .describe(
+    "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel)."
+  )
 
 const message = z
   .string()
@@ -296,7 +308,7 @@ const eventColumns = {
   component: z
     .string()
     .nullable()
-    .describe("BGL component or OpenStack service."),
+    .describe("BGL component, OpenStack service or OTel service (otel)."),
   level: z.string().nullable().describe("Level as logged."),
   node: z.string().nullable().describe("BGL node; null for OpenStack."),
   alert_label: z
@@ -354,7 +366,7 @@ export const eventContextOutputSchema = z.strictObject({
     .string()
     .nullable()
     .describe(
-      "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP or thread); null for scope dataset."
+      "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP, thread or trace ID); null for scope dataset."
     ),
   window_minutes: z
     .number()
@@ -382,7 +394,9 @@ export const eventContextOutputSchema = z.strictObject({
 export type EventContextOutput = z.infer<typeof eventContextOutputSchema>
 
 export const precursorPatternSchema = z.strictObject({
-  pattern_id: patternIdSchema,
+  pattern_id: z
+    .string()
+    .describe("Pattern ID; pass it to get_log_context mode aggregate."),
   pattern: z
     .string()
     .nullable()

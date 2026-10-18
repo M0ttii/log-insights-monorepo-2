@@ -97,13 +97,16 @@ export function fillPlaceholders(
   script: string,
   values: Readonly<Record<string, string>>
 ): string {
-  return script.replace(/\{\{([A-Z_]+)\}\}/g, (_match, name: string) => {
-    const value = values[name]
-    if (value === undefined) {
-      throw new Error(`No value for placeholder {{${name}}}`)
+  return script.replace(
+    /\{\{([A-Z_][A-Z0-9_]*)\}\}/g,
+    (_match, name: string) => {
+      const value = values[name]
+      if (value === undefined) {
+        throw new Error(`No value for placeholder {{${name}}}`)
+      }
+      return value
     }
-    return value
-  })
+  )
 }
 
 /** A SQL string literal; quotes are doubled, control characters are refused. */

@@ -2,7 +2,10 @@ import { readdir } from "node:fs/promises"
 
 import { describe, expect, it } from "vitest"
 
-import { EXTENSION_DATASETS, type Dataset } from "@workspace/domain/datasets"
+import {
+  EXTENSION_DATASETS,
+  type TableDataset,
+} from "@workspace/domain/datasets"
 
 import { cleanupPlaceholders, loadSteps, readSql, SQL_FILES } from "./plan.ts"
 import { buildSource, CORPUS, SAMPLES } from "./sources.ts"
@@ -37,7 +40,10 @@ describe("SQL plan", () => {
   )
 
   it.each([
-    { kind: "samples" as const, extensions: ["hdfs", "linux"] as Dataset[] },
+    {
+      kind: "samples" as const,
+      extensions: ["hdfs", "linux"] as TableDataset[],
+    },
     { kind: "corpus" as const, extensions: [...EXTENSION_DATASETS] },
   ])(
     "fills every placeholder of the $kind steps with extensions and leaves no placeholder in any statement",
@@ -61,6 +67,103 @@ describe("SQL plan", () => {
         expect(statement).not.toMatch(/\{\{[A-Z_]+\}\}/)
     }
   )
+
+  it.each(["corpus", "samples"] as const)(
+    "fills the otel steps of the %s source from the load facts and reads the files through the catalog",
+    async (kind) => {
+      const source = buildSource(kind, [], ["otel"])
+      const [load] = source.external
+      if (load === undefined) throw new Error("no otel load")
+      const facts = {
+        otelPins: load.files.map((file) => ({
+          file_index: file.file_index,
+          location: file.location,
+          bytes: 100,
+          etag: kind === "corpus" ? '"e"' : null,
+          last_modified: kind === "corpus" ? "2026-03-15T17:44:11.000Z" : null,
+          sha256: kind === "corpus" ? null : "0".repeat(64),
+        })),
+        otelRanges: load.files.map((file, index) => ({
+          file_index: file.file_index,
+          from: `2025-09-23T00:${String(index).padStart(2, "0")}:00.000000000Z`,
+          to:
+            index === load.files.length - 1
+              ? null
+              : `2025-09-23T00:${String(index + 1).padStart(2, "0")}:00.000000000Z`,
+        })),
+        otelIndex: { builtAt: "2026-10-18T16:50:24.548Z", ms: 1234.5 },
+      }
+      const steps = loadSteps(source)
+      const files = steps.map((step) => step.file)
+      // The otel steps sit between the log_events index and the checks.
+      expect(files.slice(files.indexOf("50_index.sql"))).toEqual([
+        "50_index.sql",
+        "60_otel_sources.sql",
+        "61_otel_reference.sql",
+        "62_otel_stats.sql",
+        "90_checks.sql",
+      ])
+      for (const step of steps) {
+        const filled = fillPlaceholders(
+          await readSql(step.file),
+          step.placeholders(timings, facts)
+        )
+        for (const statement of splitSqlScript(filled))
+          expect(statement).not.toMatch(/\{\{[A-Z_]+\}\}/)
+      }
+      const reference = steps
+        .find((step) => step.file === "61_otel_reference.sql")
+        ?.placeholders(timings, facts)
+      // Exactly the reference files, each with its half-open range.
+      expect(reference?.["DEDUPE"]).toBe(
+        `(filename = '${load.files[0]?.globName}' AND "Timestamp" >= '2025-09-23T00:00:00.000000000Z'::TIMESTAMPTZ_NS AND "Timestamp" < '2025-09-23T00:01:00.000000000Z'::TIMESTAMPTZ_NS) OR ` +
+          `(filename = '${load.files[1]?.globName}' AND "Timestamp" >= '2025-09-23T00:01:00.000000000Z'::TIMESTAMPTZ_NS${kind === "samples" ? "" : ` AND "Timestamp" < '2025-09-23T00:02:00.000000000Z'::TIMESTAMPTZ_NS`})`
+      )
+      expect(reference?.["GLOB"]).toBe(
+        kind === "corpus"
+          ? "s3://public-pme/text_bench/part_00[0-1].parquet"
+          : "/data/raw/otel/part_00[0-1].parquet"
+      )
+      const sources = steps
+        .find((step) => step.file === "60_otel_sources.sql")
+        ?.placeholders(timings, facts)
+      expect(sources?.["LOCATIONS"]).toContain(
+        kind === "corpus"
+          ? "'https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_049.parquet'"
+          : "'/data/raw/otel/part_001.parquet'"
+      )
+      // Pins must exist before the first SQL step reads them.
+      expect(() =>
+        steps
+          .find((step) => step.file === "60_otel_sources.sql")
+          ?.placeholders(timings, {})
+      ).toThrow("otel pins")
+    }
+  )
+
+  it("keeps otel out of log_events and puts a samples load with it into its own database", () => {
+    const corpus = buildSource("corpus", [], ["otel"])
+    expect(corpus.database).toBeNull()
+    expect(corpus.datasets.map((entry) => entry.dataset)).toEqual([
+      "bgl",
+      "openstack",
+    ])
+    expect(corpus.external.map((entry) => [entry.dataset, entry.kind])).toEqual(
+      [["otel", "remote"]]
+    )
+    expect(corpus.external[0]?.files).toHaveLength(50)
+    const samples = buildSource("samples", [], ["otel"])
+    expect(samples.database).toBe("log_insights_samples_otel")
+    expect(samples.external[0]?.kind).toBe("fixture")
+    expect(samples.external[0]?.files.map((file) => file.location)).toEqual([
+      "/data/raw/otel/part_000.parquet",
+      "/data/raw/otel/part_001.parquet",
+    ])
+    // A load without otel has no otel step (01_schema.sql drops its objects).
+    expect(loadSteps(SAMPLES).map((step) => step.file)).not.toContain(
+      "60_otel_sources.sql"
+    )
+  })
 
   it("reads each dataset with its files in the declared order", () => {
     const reads = loadSteps(CORPUS)

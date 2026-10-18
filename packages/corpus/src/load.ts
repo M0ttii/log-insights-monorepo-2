@@ -26,10 +26,19 @@ import {
   loadSteps,
   readSql,
   SQL_FILES,
+  type LoadFacts,
   type SqlFile,
   type Timings,
 } from "./plan.ts"
-import type { Source } from "./sources.ts"
+import { ensureFixtures, pinRemoteFiles, type ExternalPin } from "./remote.ts"
+import {
+  newReplayRun,
+  readReplayFixture,
+  replay as runReplay,
+  type ReplayRecord,
+  type ReplayRun,
+} from "./replay.ts"
+import type { ExternalLoad, Source } from "./sources.ts"
 import { fillPlaceholders, splitSqlScript } from "./sql-script.ts"
 import { VERSIONS } from "./versions.ts"
 
@@ -55,6 +64,17 @@ export type LoadReportRow = {
   duration_s: number
 }
 
+type ExternalSummary = {
+  dataset: string
+  kind: ExternalLoad["kind"]
+  files: number
+  footer_rows: string
+  bytes: string
+  reference: Record<string, unknown>
+  index_ms: number
+  index_disk_kib: number | null
+}
+
 export type LoadResult = {
   database: string
   dataVersion: string
@@ -62,6 +82,7 @@ export type LoadResult = {
   checks: LoadCheck[]
   report: LoadReportRow[]
   stats: Array<Record<string, unknown>>
+  external: ExternalSummary[]
   timingsMs: Timings & { index: number; total: number }
 }
 
@@ -183,6 +204,8 @@ type ContainerFacts = {
   imageId: string
   /** Host bindings of container port 7890 as `ip:port`. */
   published: string[]
+  /** Host bindings per container port (`4318/tcp` → `ip:port`). */
+  ports: Record<string, string[]>
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -199,17 +222,26 @@ function parseInspect(json: string): ContainerFacts {
   const imageId = container["Image"]
   const network = container["NetworkSettings"]
   const ports = isRecord(network) ? network["Ports"] : undefined
-  const bindings = isRecord(ports) ? ports["7890/tcp"] : undefined
   if (typeof reference !== "string" || typeof imageId !== "string") {
     throw new Error("docker inspect reports no image for the container")
   }
-  const published = (Array.isArray(bindings) ? bindings : []).map(
-    (binding: unknown) =>
+  const bindingsOf = (value: unknown) =>
+    (Array.isArray(value) ? value : []).map((binding: unknown) =>
       isRecord(binding)
         ? `${String(binding["HostIp"])}:${String(binding["HostPort"])}`
         : "?"
-  )
-  return { reference, imageId, published }
+    )
+  const all = isRecord(ports)
+    ? Object.fromEntries(
+        Object.entries(ports).map(([port, value]) => [port, bindingsOf(value)])
+      )
+    : {}
+  return {
+    reference,
+    imageId,
+    published: all["7890/tcp"] ?? [],
+    ports: all,
+  }
 }
 
 /**
@@ -221,10 +253,10 @@ function parseInspect(json: string): ContainerFacts {
 async function serenedbImage(
   root: string,
   connection: Connection
-): Promise<ImageIdentity> {
+): Promise<{ image: ImageIdentity; ports: Record<string, string[]> }> {
   const id = await docker(root, ["compose", "ps", "-q", "serenedb"])
   if (id === "") throw new Error("The serenedb Compose service is not running")
-  const { reference, imageId, published } = parseInspect(
+  const { reference, imageId, published, ports } = parseInspect(
     await docker(root, ["inspect", id])
   )
   const expected = `127.0.0.1:${String(connection.port)}`
@@ -240,7 +272,44 @@ async function serenedbImage(
         "COMPOSE_PROJECT_NAME in .env"
     )
   }
-  return validateImage({ reference, imageId })
+  return { image: validateImage({ reference, imageId }), ports }
+}
+
+/** Container port of each OTLP listener in serened.conf, by catalog env var. */
+const OTLP_CONTAINER_PORT: Record<string, string> = {
+  SERENEDB_OTLP_PORT: "4318/tcp",
+  SERENEDB_OTLP_SAMPLES_PORT: "4319/tcp",
+}
+
+/**
+ * The listener URL of a replay: its host port from .env, checked against
+ * the container's published binding on 127.0.0.1, so a replay never lands
+ * in another checkout's SereneDB. The corpus listener writes only into
+ * database postgres (serened.conf), so SERENEDB_DATABASE must be postgres.
+ */
+function replayUrl(
+  load: NonNullable<Source["replay"]>,
+  database: string,
+  ports: Record<string, string[]>
+): string {
+  if (database !== load.database)
+    throw new Error(
+      `The OTLP listener for this load writes into database ${load.database} (serened.conf), but the load targets ${database}; set SERENEDB_DATABASE=${load.database} for --with otel_replay`
+    )
+  const raw = process.env[load.portEnv]
+  const port = Number(raw)
+  if (raw === undefined || !Number.isInteger(port) || port < 1 || port > 65_535)
+    throw new Error(
+      `${load.portEnv} is not set to a TCP port; see .env.example`
+    )
+  const container = OTLP_CONTAINER_PORT[load.portEnv]
+  const expected = `127.0.0.1:${String(port)}`
+  const bound = container === undefined ? [] : (ports[container] ?? [])
+  if (bound.length === 0 || !bound.every((binding) => binding === expected))
+    throw new Error(
+      `SereneDB publishes ${container ?? "the OTLP port"} on ${bound.join(", ") || "no host port"}, but ${load.portEnv} is ${String(port)}; recreate the container with \`docker compose up -d serenedb\` (compose.yaml, serened.conf)`
+    )
+  return `http://${expected}/v1/logs`
 }
 
 /** `SELECT version()`, checked against the expectation of a listed local build. */
@@ -287,6 +356,50 @@ async function runScript(
   }
 }
 
+/** Directory of this package, for the committed fixtures (LOG-35). */
+const CORPUS_DIR = new URL("..", import.meta.url).pathname
+
+/**
+ * Disk size of the otel reference index (LOG-35, design D4): view-backed
+ * indexes report 0 in pg_indexes_size, so the engine_search directory of
+ * the view is measured with du inside the container. null when that fails.
+ */
+async function indexDiskKib(
+  root: string,
+  client: Client
+): Promise<number | null> {
+  try {
+    const { rows } = await client.query<{
+      db: string
+      ns: string
+      view: string
+    }>(
+      `SELECT (SELECT oid FROM pg_database WHERE datname = current_database())::VARCHAR AS db,
+         c.relnamespace::VARCHAR AS ns, c.oid::VARCHAR AS view
+       FROM pg_class c WHERE c.relname = 'otel_ref'`
+    )
+    const row = rows[0]
+    if (
+      row === undefined ||
+      ![row.db, row.ns, row.view].every((v) => /^\d+$/.test(v))
+    )
+      return null
+    const out = await docker(root, [
+      "compose",
+      "exec",
+      "-T",
+      "serenedb",
+      "du",
+      "-sk",
+      `/var/lib/serenedb/engine_search/${row.db}/${row.ns}/${row.view}`,
+    ])
+    const kib = Number(out.split(/\s/)[0])
+    return Number.isSafeInteger(kib) ? kib : null
+  } catch {
+    return null
+  }
+}
+
 async function timed(run: () => Promise<void>): Promise<number> {
   const start = performance.now()
   await run()
@@ -320,7 +433,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
   await waitForSereneDb(baseConnection, log)
   if (source.database !== null)
     await ensureDatabase(baseConnection, source.database)
-  const image = await serenedbImage(root, baseConnection)
+  const { image, ports } = await serenedbImage(root, baseConnection)
   const server = await serverVersion(baseConnection, image)
   log(
     `  ${image.reference} (image ID ${image.imageId}), ${server}, database ${connection.database}`
@@ -333,6 +446,46 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       `  ${file.fetched ? "fetched" : "present"}  ${file.path}  ${file.bytes} bytes  sha256 ${file.sha256}`
     )
   }
+  // Remote datasets (LOG-35): pins by HEAD, never a download; or the
+  // committed fixtures with --samples.
+  const pins = new Map<string, ExternalPin[]>()
+  for (const load of source.external) {
+    log(`Remote files (${load.dataset}, ${load.kind})`)
+    pins.set(
+      load.dataset,
+      load.kind === "remote"
+        ? await pinRemoteFiles(load, log)
+        : await ensureFixtures(load, rawDir, CORPUS_DIR, log)
+    )
+  }
+  // OTLP replay (LOG-35): the fixture is read and checked, and the replay
+  // ID and time fixed, before the data version is computed.
+  let replayInput: {
+    records: ReplayRecord[]
+    sourceUrl: string
+    run: ReplayRun
+    url: string
+  } | null = null
+  if (source.replay !== null) {
+    log(`OTLP replay (${source.replay.dataset})`)
+    const fixture = await readReplayFixture(source.replay, CORPUS_DIR)
+    replayInput = {
+      ...fixture,
+      sourceUrl: fixture.source,
+      run: newReplayRun(source.replay.fixture.sha256),
+      url: replayUrl(source.replay, connection.database, ports),
+    }
+    log(
+      `  fixture ${source.replay.fixture.path}: ${fixture.records.length} records, sha256 ${source.replay.fixture.sha256}`
+    )
+  }
+  const externalSources = source.external.map((load) => ({
+    dataset: load.dataset,
+    kind: load.kind,
+    mapping_version: VERSIONS.otelMapping,
+    reference: load.reference,
+    files: pins.get(load.dataset) ?? [],
+  }))
 
   const sources = await Promise.all(
     SQL_FILES.map(async (name) => ({ name, content: await readSql(name) }))
@@ -361,8 +514,27 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     serverVersion: server,
     versions: VERSIONS,
     sqlDigest: sqlDigest(sources),
+    ...(externalSources.length === 0 ? {} : { externalSources }),
+    ...(source.replay === null || replayInput === null
+      ? {}
+      : {
+          replay: {
+            dataset: source.replay.dataset,
+            replay_id: replayInput.run.replayId,
+            replayed_at: replayInput.run.replayedAt,
+            fixture: {
+              path: source.replay.fixture.path,
+              bytes: source.replay.fixture.bytes,
+              sha256: source.replay.fixture.sha256,
+              records: source.replay.fixture.records,
+            },
+            listener: {
+              database: source.replay.database,
+              table: `${source.replay.schema}.${source.replay.table}`,
+            },
+          },
+        }),
   }
-  const version = dataVersion(manifest)
 
   const client = await openClient(connection)
   try {
@@ -376,12 +548,73 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     await client.query(`SET memory_limit = '${LOAD_MEMORY_LIMIT}'`)
     const timings: Timings = { shared: 0 }
     let indexMs = 0
+    const otelPins = pins.get("otel")
+    const facts: LoadFacts = otelPins === undefined ? {} : { otelPins }
+    if (replayInput !== null) {
+      const times = replayInput.records.map((record) =>
+        BigInt(record.time_unix_nano)
+      )
+      const min = times.reduce((a, b) => (b < a ? b : a))
+      const max = times.reduce((a, b) => (b > a ? b : a))
+      facts.replay = {
+        ...replayInput.run,
+        sourceUrl: replayInput.sourceUrl,
+        minNanos: String(min),
+        maxNanos: String(max),
+      }
+    }
+    let builtAt = ""
     for (const step of loadSteps(source)) {
+      if (step.file === "61_otel_reference.sql")
+        builtAt = new Date().toISOString()
+      if (step.file === "63_otel_replay.sql") {
+        const target = source.replay
+        const input = replayInput
+        if (target === null || input === null)
+          throw new Error("replay step without a replay")
+        const replayMs = await timed(() =>
+          runReplay(
+            client,
+            target,
+            input.records,
+            input.run,
+            {
+              url: input.url,
+              user: connection.user,
+              password: connection.password,
+            },
+            log
+          )
+        )
+        timings.otel_replay = (timings.otel_replay ?? 0) + replayMs
+        log(
+          `  ${"OTLP POST + refresh".padEnd(20)} ${(replayMs / 1000).toFixed(1).padStart(6)} s`
+        )
+      }
       const ms = await timed(() =>
-        runScript(client, step.file, sql(step.file), step.placeholders(timings))
+        runScript(
+          client,
+          step.file,
+          sql(step.file),
+          step.placeholders(timings, facts)
+        )
       )
       timings[step.timing] = (timings[step.timing] ?? 0) + ms
       if (step.file === "50_index.sql") indexMs = ms
+      if (step.file === "60_otel_sources.sql")
+        facts.otelRanges = (
+          await client.query<{
+            file_index: number
+            from: string
+            to: string | null
+          }>(
+            `SELECT file_index, strftime(assigned_from, '%Y-%m-%dT%H:%M:%S.%nZ') AS "from",
+               strftime(assigned_to, '%Y-%m-%dT%H:%M:%S.%nZ') AS "to"
+             FROM otel_sources ORDER BY file_index`
+          )
+        ).rows
+      if (step.file === "61_otel_reference.sql")
+        facts.otelIndex = { builtAt, ms }
       log(`  ${step.file.padEnd(20)} ${(ms / 1000).toFixed(1).padStart(6)} s`)
     }
 
@@ -411,6 +644,95 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     }
     if (checks.some((check) => !check.ok)) throw new LoadCheckFailed(checks)
 
+    // Finalize the source snapshot after the build: describe_corpus exposes
+    // freshness, so a changed index snapshot must change data_version too.
+    const external: ExternalSummary[] = []
+    for (const load of source.external) {
+      const { rows } = await client.query<{
+        files: string
+        footer_rows: string
+        bytes: string
+      }>(
+        "SELECT count(*)::VARCHAR AS files, sum(footer_rows)::VARCHAR AS footer_rows, sum(size)::VARCHAR AS bytes FROM otel_sources"
+      )
+      const reference = (
+        await client.query<Record<string, unknown>>(
+          `SELECT index_name, source_glob, strftime(window_from, '%Y-%m-%dT%H:%M:%S.%fZ') AS window_from,
+             strftime(window_to, '%Y-%m-%dT%H:%M:%S.%fZ') AS window_to,
+             strftime(built_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS built_at, build_ms,
+             events::VARCHAR AS events, duplicates_removed::VARCHAR AS duplicates_removed, mapping_version
+           FROM otel_reference`
+        )
+      ).rows[0]
+      const totals = rows[0]
+      if (reference === undefined || totals === undefined)
+        throw new Error("otel tables missing after the checks")
+      external.push({
+        dataset: load.dataset,
+        kind: load.kind,
+        files: Number(totals.files),
+        footer_rows: totals.footer_rows,
+        bytes: totals.bytes,
+        reference,
+        index_ms: facts.otelIndex?.ms ?? 0,
+        index_disk_kib: await indexDiskKib(root, client),
+      })
+    }
+    const footerFacts =
+      externalSources.length === 0
+        ? []
+        : (
+            await client.query<{
+              file_index: number
+              rows: string
+              row_groups: string
+              ts_min: string
+              ts_max: string
+              assigned_from: string
+              assigned_to: string | null
+            }>(`SELECT file_index, footer_rows::VARCHAR AS rows, row_groups::VARCHAR AS row_groups,
+        strftime(ts_min, '%Y-%m-%dT%H:%M:%S.%nZ') AS ts_min,
+        strftime(ts_max, '%Y-%m-%dT%H:%M:%S.%nZ') AS ts_max,
+        strftime(assigned_from, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_from,
+        strftime(assigned_to, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_to
+        FROM otel_sources ORDER BY file_index`)
+          ).rows
+    const externalManifest =
+      externalSources.length === 0
+        ? null
+        : externalSources.map((entry) => {
+            const summary = external.find(
+              (row) => row.dataset === entry.dataset
+            )
+            if (summary === undefined)
+              throw new Error("external index summary missing")
+            return {
+              ...entry,
+              files: entry.files.map((file) => {
+                const footer = footerFacts.find(
+                  (row) => row.file_index === file.file_index
+                )
+                if (footer === undefined)
+                  throw new Error("external footer facts missing")
+                const { file_index: _fileIndex, ...footerValues } = footer
+                return { ...file, footer: footerValues }
+              }),
+              index: {
+                ...summary.reference,
+                build_ms: summary.index_ms,
+                disk_kib: summary.index_disk_kib,
+              },
+            }
+          })
+
+    const version = dataVersion(
+      externalManifest === null
+        ? manifest
+        : {
+            ...manifest,
+            externalSources: externalManifest,
+          }
+    )
     const [manifestStatement, ...extra] = splitSqlScript(sql("95_manifest.sql"))
     if (manifestStatement === undefined || extra.length > 0) {
       throw new Error("95_manifest.sql must hold exactly one statement")
@@ -430,6 +752,8 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       VERSIONS.rules,
       manifest.sqlDigest,
       JSON.stringify(manifest.datasets),
+      externalManifest === null ? null : JSON.stringify(externalManifest),
+      manifest.replay === undefined ? null : JSON.stringify(manifest.replay),
     ])
     await runScript(
       client,
@@ -454,6 +778,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       checks,
       report,
       stats,
+      external,
       timingsMs: {
         ...timings,
         index: indexMs,

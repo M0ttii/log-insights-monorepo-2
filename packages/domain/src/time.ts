@@ -9,6 +9,8 @@ import { z } from "zod"
  */
 
 const MICROS_PER_MS = 1000n
+const MICROS_PER_SECOND = 1_000_000n
+const MICROS_PER_MINUTE = 60_000_000n
 const MICROS_PER_HOUR = 3_600_000_000n
 const MICROS_PER_DAY = 24n * MICROS_PER_HOUR
 const MICROS_PER_WEEK = 7n * MICROS_PER_DAY
@@ -33,7 +35,18 @@ export type DataSpan = { first: string; last: string }
 
 export type Coverage = "full" | "partial" | "none"
 
-export const bucketUnitSchema = z.enum(["hour", "day", "week"])
+/**
+ * Trend bucket units. second and minute serve the bounded windows of remote
+ * datasets (LOG-35: at most 60 s per direct scan); over longer spans they
+ * exceed the bucket limit and the hint names a coarser unit.
+ */
+export const bucketUnitSchema = z.enum([
+  "second",
+  "minute",
+  "hour",
+  "day",
+  "week",
+])
 
 export type BucketUnit = z.infer<typeof bucketUnitSchema>
 
@@ -122,6 +135,10 @@ export function coverage(range: TimeRange, span: DataSpan): Coverage {
 /** Start of the UTC bucket that contains `micros`; weeks start on Monday. */
 export function truncateToBucket(micros: bigint, unit: BucketUnit): bigint {
   switch (unit) {
+    case "second":
+      return floorDiv(micros, MICROS_PER_SECOND) * MICROS_PER_SECOND
+    case "minute":
+      return floorDiv(micros, MICROS_PER_MINUTE) * MICROS_PER_MINUTE
     case "hour":
       return floorDiv(micros, MICROS_PER_HOUR) * MICROS_PER_HOUR
     case "day":
@@ -136,6 +153,10 @@ export function truncateToBucket(micros: bigint, unit: BucketUnit): bigint {
 
 function bucketLength(unit: BucketUnit): bigint {
   switch (unit) {
+    case "second":
+      return MICROS_PER_SECOND
+    case "minute":
+      return MICROS_PER_MINUTE
     case "hour":
       return MICROS_PER_HOUR
     case "day":

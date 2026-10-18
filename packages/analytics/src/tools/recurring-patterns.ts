@@ -6,6 +6,7 @@ import {
   type ToolError,
 } from "@workspace/domain/errors"
 import {
+  patternsUnsupported,
   validateFilter,
   type Dataset,
   type Filter,
@@ -215,7 +216,7 @@ type Periods = {
 export const recurringPatterns = defineTool({
   name: "recurring_patterns",
   title: "Recurring patterns",
-  version: "1.1.0",
+  version: "1.1.1",
   description: renderDescription({
     purpose: `Patterns (normalised messages, R-04) of one dataset with their episodes (R-05: a new episode after at least ${EPISODE_GAP_MINUTES} min without the pattern, computed over the fully filtered scope), active days and weeks, breadth, change against the previous period of the same length and status (new, escalating, reappeared, ongoing, quiet; R-10). With rank investigation_order it ranks the error and alert patterns into a reproducible technical investigation order by episodes and breadth instead of log lines, with the leader per criterion and dominance (R-08, R-09).`,
     useWhen:
@@ -235,7 +236,7 @@ export const recurringPatterns = defineTool({
         use: "event_trend",
       },
     ],
-    inputs: `dataset (required, exactly one loaded dataset), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span; the previous period of the same length is the reference for delta and status, so without a window it lies before the data and is not determinable. rank: episodes (default; episodes, then events), events (log events, then episodes; inflated by bursts), increase (C − B, then events; fails when the previous period lies outside the data span), investigation_order (error events after R-02 and BGL alerts only, for OpenStack also 5xx accesses; not for linux, which has no error definition; order episodes ↓, breadth ↓, increase ↓, events ↓, pattern_id; a criterion not determinable for every candidate is dropped for all). limit 1–${RECURRING_MAX_LIMIT}, default ${RECURRING_DEFAULT_LIMIT}; with investigation_order 1–${INVESTIGATION_MAX_LIMIT}, default ${INVESTIGATION_DEFAULT_LIMIT}, and no ${INVESTIGATION_EXCLUDED_FILTERS.join(", ")}. Episodes depend on the filters: filtering by node can split one episode into two.`,
+    inputs: `dataset (required, exactly one loaded dataset; not otel, whose messages stay in remote files without patterns: invalid_input), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span; the previous period of the same length is the reference for delta and status, so without a window it lies before the data and is not determinable. rank: episodes (default; episodes, then events), events (log events, then episodes; inflated by bursts), increase (C − B, then events; fails when the previous period lies outside the data span), investigation_order (error events after R-02 and BGL alerts only, for OpenStack also 5xx accesses; not for linux, which has no error definition; order episodes ↓, breadth ↓, increase ↓, events ↓, pattern_id; a criterion not determinable for every candidate is dropped for all). limit 1–${RECURRING_MAX_LIMIT}, default ${RECURRING_DEFAULT_LIMIT}; with investigation_order 1–${INVESTIGATION_MAX_LIMIT}, default ${INVESTIGATION_DEFAULT_LIMIT}, and no ${INVESTIGATION_EXCLUDED_FILTERS.join(", ")}. Episodes depend on the filters: filtering by node can split one episode into two.`,
     filters: RECURRING_FILTER.summary,
     outputs: `per pattern pattern_id, pattern, component, team (fictional), events (C), first_seen, last_seen, episodes, recurring (≥ ${RECURRING_MIN_EPISODES} episodes), active_days, active_weeks, breadth (BGL nodes and racks, OpenStack instances and requests, HDFS blocks, OpenSSH and Apache client_ips, none for Linux and ZooKeeper; null when not every event carries the unit), components, baseline (B), delta (C − B, null when B is not determinable), status, first_seen_before_window (same filters except time), example_event_id; totals events, pattern_count, quiet_count; comparison (B window, coverage, determinable); rules (versions, ${EPISODE_GAP_MINUTES}-minute gap, breadth unit). investigation_order adds per candidate share_of_error_events, levels and labels, and investigation with candidates_checked (all candidates, not only the listed), rank_basis (criteria used and dropped with reason), leaders (highest value and holder per criterion), dominance (clear_priority = clear priority 1, or trade_off with the conflicts to name) and limits (the R-09 limit; quote it). Levels, labels and status are no ranking criteria. Cite every number by its fact ID (group pattern_id).`,
     truncation:
@@ -727,6 +728,9 @@ function toPattern(
  * and the shared filter rules.
  */
 function validatePatterns(input: RecurringPatternsInput): ToolError | null {
+  // Remote datasets have no message patterns (LOG-35): never a zero.
+  if (!DATASETS[input.dataset].patterns)
+    return invalidInput([patternsUnsupported(input.dataset, "dataset")])
   const issues: InputIssue[] = []
   if (input.rank === "investigation_order") {
     for (const field of INVESTIGATION_EXCLUDED_FILTERS)

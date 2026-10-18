@@ -17,6 +17,54 @@ export type ManifestInput = {
   serverVersion: string
   versions: typeof VERSIONS
   sqlDigest: string
+  /**
+   * Remote sources (LOG-35): per file the HEAD pin (size, ETag,
+   * Last-Modified) or the fixture's SHA-256, the mapping version and the
+   * reference window. Absent without a remote dataset, so base and
+   * extension loads hash as before apart from the SQL digest.
+   */
+  externalSources?: ReadonlyArray<{
+    dataset: string
+    kind: string
+    mapping_version: string
+    reference: {
+      glob: string
+      files: readonly number[]
+      from: string
+      to: string
+    }
+    files: ReadonlyArray<{
+      file_index: number
+      location: string
+      bytes: number
+      etag: string | null
+      last_modified: string | null
+      sha256: string | null
+      footer?: {
+        rows: string
+        row_groups: string
+        ts_min: string
+        ts_max: string
+        assigned_from: string
+        assigned_to: string | null
+      }
+    }>
+    /** Actual index snapshot, including freshness; available after the build. */
+    index?: Readonly<Record<string, unknown>>
+  }>
+  /**
+   * The OTLP replay (LOG-35, D7): replay ID and time, the fixture pin and
+   * the listener table. Absent without `--with otel_replay`. The replay
+   * time is part of it (it is stored as every record's
+   * observed_timestamp), so every replay load has its own data version.
+   */
+  replay?: {
+    dataset: string
+    replay_id: string
+    replayed_at: string
+    fixture: { path: string; bytes: number; sha256: string; records: number }
+    listener: { database: string; table: string }
+  }
 }
 
 /** JSON with object keys sorted at every level, so equal content hashes equally. */
@@ -38,8 +86,9 @@ export function canonicalJson(value: unknown): string {
 /**
  * data_version: `dv_` + the first 16 hex digits of SHA-256 over the canonical
  * manifest without created_at. The same files, image (reference and image
- * ID), server version, rule versions and SQL give
- * the same version on every run and machine.
+ * ID), server version, rule versions and SQL give the same version when
+ * their full snapshot metadata also agrees. Rebuilding an external index or
+ * replaying records changes freshness/observed times and therefore the version.
  */
 export function dataVersion(input: ManifestInput): string {
   const digest = createHash("sha256").update(canonicalJson(input)).digest("hex")

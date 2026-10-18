@@ -79,6 +79,15 @@ describe("fillPlaceholders", () => {
     ).toBe("read_csv('/data/raw/a.log'), read_csv('/data/raw/b.log')")
   })
 
+  it("substitutes digest placeholders containing digits and rejects unknown digit names", () => {
+    expect(
+      fillPlaceholders("'{{FIXTURE_SHA256}}'", { FIXTURE_SHA256: "abc123" })
+    ).toBe("'abc123'")
+    expect(() => fillPlaceholders("{{SHA256_MISSING}}", {})).toThrow(
+      /SHA256_MISSING/
+    )
+  })
+
   it("fails on an unknown placeholder instead of inserting nothing", () => {
     expect(() =>
       fillPlaceholders("{{MISSING}}", { RAW_DIR: "/data/raw" })

@@ -158,6 +158,8 @@ describe("JSON Schema export", () => {
         "apache",
         "linux",
         "zookeeper",
+        "otel",
+        "otel_replay",
       ],
     })
     expect(property(input, "bucket").description).toMatch(/Monday/)

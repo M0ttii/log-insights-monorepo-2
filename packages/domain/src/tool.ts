@@ -7,6 +7,7 @@ import {
   type Client,
   type Population,
   type Receipt,
+  type ReceiptSource,
   type ReceiptSummary,
   type Scope,
 } from "./receipt.ts"
@@ -122,6 +123,8 @@ export type ToolRun<O> = {
   row_limit: number | null
   /** Caveats such as "counts are log entries, not incidents" or truncation hints. */
   notes: string[]
+  /** Remote files read by the run (LOG-35); becomes the receipt's `source`. */
+  source?: ReceiptSource
 }
 
 export type ToolRunOutcome<O> =

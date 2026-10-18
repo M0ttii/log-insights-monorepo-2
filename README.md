@@ -1,7 +1,8 @@
 # Log Insights
 
 Log Insights turns the BGL and OpenStack log corpus (optionally extended by five
-more Loghub datasets: HDFS_v1, OpenSSH, Apache, Linux and ZooKeeper) into
+more Loghub datasets: HDFS_v1, OpenSSH, Apache, Linux and ZooKeeper, plus explicitly
+selected remote OpenTelemetry logs and a bounded OTLP replay) into
 **question → evidence → recommendation** for three roles: engineer, team lead and manager. SereneDB
 searches and computes; Claude explains and recommends; every number has a query
 receipt.
@@ -18,7 +19,9 @@ receipt.
 > phases preflight, investigate, coverage, answer, gate and one revision and is
 > callable through `pnpm --silent agent:ask` and the streaming Ask chat. Role
 > comparison, complete live acceptance for all three web roles, and full
-> MCP-client role acceptance remain open.
+> MCP-client role acceptance remain open. OTel remote Parquet and a bounded
+> OTLP replay use the same registry when explicitly loaded; web dataset selectors,
+> agent-created indexes (U28/A-33) and trace/metric correlation (U29) remain open.
 
 The tracked [submission evidence and remaining gates](submission/README.md) identify
 what is ready and what still needs final release verification. The
@@ -66,7 +69,8 @@ missing (about 63 MB, 810 MB unpacked; every file is checked against a pinned
 SHA-256), loads them into SereneDB and prints the load balance and data version.
 It needs Docker, Node and pnpm after checkout; its durations depend on download,
 hardware and cache state. A second run with the same source, code and image downloads
-nothing and yields the same data version.
+nothing and yields the same data version for Loghub-only loads. Rebuilding the
+OTel reference index or replaying the fixture creates a new snapshot version.
 
 On Apple Silicon, obtain the matching unpublished image archive before running
 the loader; a clean clone cannot download that image from a registry. See the
@@ -84,7 +88,10 @@ for the demo. Sample counts and data versions are not full-corpus evidence.
 The password seeds the SereneDB superuser when its data volume is first
 created. Changing the `.env` value alone does not update an existing role; use
 `ALTER ROLE` with the current credentials for an existing volume. A second
-checkout needs its own `COMPOSE_PROJECT_NAME`, `SERENEDB_PORT` and data volume.
+checkout needs its own `COMPOSE_PROJECT_NAME`, `SERENEDB_PORT`,
+`SERENEDB_OTLP_PORT`, `SERENEDB_OTLP_SAMPLES_PORT` and data volume. The two OTLP
+ports are required Compose settings even when the replay is not selected; copy
+them from `.env.example` (defaults 4318 and 4319).
 
 ### Web workspace
 
@@ -188,6 +195,9 @@ these calculations happen.
 | `pnpm eval holdout-register …` | Register only independently authored holdout metadata; freeze/release remain separate gated operations with no model calls |
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
 | `pnpm data:setup [--samples] [--with <ids>\|all]` | Load BGL and OpenStack into SereneDB (idempotent); `--with hdfs,openssh,apache,linux,zookeeper` (or `all`) adds the extension datasets; `--samples` loads the Loghub 2k samples into `log_insights_samples` instead (with `--with` into `log_insights_samples_ext`) |
+| `pnpm data:setup [--samples] --with otel,otel_replay` | Add remote Parquet and/or the bounded OTLP replay explicitly; `--samples` uses committed fixtures in `log_insights_samples_otel`, with no S3 requests |
+| `pnpm otel:measure` | Local real-S3 EXPLAIN ANALYZE measurements for named windows; JSONL under `.data/otel-measure/`, excluded from CI |
+| `pnpm --filter @workspace/evals otel` | Real role questions with full text, aggregation, receipts and claim checks; development evidence without a model |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
 | `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
 | `pnpm --silent mcp` | Run the stdio MCP server over the shared tool registry |
@@ -420,7 +430,7 @@ loader integration suite on the official amd64 image as well.
 
 | Candidate | Decision and measured evidence |
 |---|---|
-| Implicit dictionary facets | Selected for a bounded optimization in LOG-41. Nullable `GROUP BY` facets preserve the NULL group, including a dataset filter (`EXPLAIN`: `TsDict:`). Full-base-corpus `level` grouping: 4.41–14.46 ms from the table versus 1.26–2.25 ms from the index, with identical rows. Gains depend on scope: OpenStack-only level grouping was slower through the index (3.30–5.67 versus 1.76–1.91 ms). Preserve the current path for unproven shapes. |
+| Implicit dictionary facets | Eligible only for separately verified shapes without full-text predicates (LOG-41). LOG-35 found grouped `count(*)` under `@@` can use `TsDict:` and miscount; analytical index groups use `count(ts)` instead. G13 records the plan and the loaded OTel counterexample. Nullable `GROUP BY` facets preserve the NULL group, including a dataset filter (`EXPLAIN`: `TsDict:`). Full-base-corpus `level` grouping: 4.41–14.46 ms from the table versus 1.26–2.25 ms from the index, with identical rows. Gains depend on scope: OpenStack-only level grouping was slower through the index (3.30–5.67 versus 1.76–1.91 ms). Preserve the current path for unproven shapes. |
 | Explicit dictionary aggregates and corpus value lists | Rejected as general replacements: `ts_dict_agg`/`ts_dict_count` omit NULL groups and reject time filters outside the index; marginal facets cannot replace two-dimensional groups. `describe_corpus` already reads precomputed tables (level/component/label lists: 0.72–2.29 ms). |
 | `ts_regexp` search mode | Rejected for general identifier/raw-text search: it matches whole analyzed tokens. `r02-m1-n0.*` returns 0 versus 16 raw messages containing that identifier; `0x0054.*` correctly returns 19,740 in 1.18–2.74 ms. Complete ordered lists and counts agree. Invalid `[` silently matches nothing on this image. |
 | Indexing `ts` and `event_id` | Rejected in the current scoring design. Three index rebuilds, compaction off/on/manual and 864 repeated range comparisons agree with the base table; 42 additional full ID-set comparisons also agree. However, indexed time filters change returned BM25 scores (first June BGL `parity` hit: 2.1018991 becomes 4.101899). Search times overlap: 2.06–5.47 versus 2.36–3.91 ms for the top 20. |
@@ -440,7 +450,7 @@ is in `docs/technical.md` § 5.3 (local planning docs are gitignored).
 | `search_logs` | Full-text search over log messages with BM25 ranking; `total_matches` is exact and comes from the same condition as the hits. Modes: `terms` (default, all words in any order), `phrase` (words adjacent and in order), `fuzzy` (one term with `max_edits` 1–2 typos, default 1) | `limit` 1–50 (default 20), `query` ≤ 200 characters, messages cut to 400 Unicode code points, with index-derived `match_ranges` (`start` inclusive, `end` exclusive, zero-based code points, no added markup); `fuzzy` expands a term to at most 50 index terms per index segment (`sdb_levenshtein_max_terms`), and count and hits use the same expansion |
 | `get_log_context` | Temporal context in two modes. `event`: the events right before and after one `event_id` (from `search_logs`) on the `same_node`, in the `same_component`, with the `same_request` (OpenStack) or in the `dataset`, with exact `offset_ms` (microseconds kept, computed in SereneDB); before covers `[anchor − w, anchor)`, after `(anchor, anchor + w]`, ties on the anchor's timestamp are placed by `event_id`, and each side reports the exact number of events in the window. `aggregate` (precursor analysis, R-11): anchors are the episode starts (gap ≥ 30 min) of a `pattern_id` or a `query` (all words) in one `dataset` after all filters, so a burst is one anchor; per pattern in the window before and/or after: anchors with an occurrence, their share of all anchors, the base rate (share of equally long grid windows from the start of the data span in scope that contain the pattern) and the ratio of both, all computed in SereneDB. Precursors are temporal observations, not causes | `event`: `before`/`after` 0–25 (default 10), `window_minutes` 1–60 (default 10), default scope `same_node` for BGL events with a node, else `same_component`; messages cut to 400 characters. `aggregate`: exactly one `dataset`, `top_n` 1–20 per direction (default 10), anchor patterns excluded, base rate and ratio omitted below five anchors; filters select anchors, window events come from the whole dataset |
 | `count_events` | Counts over the stated scope grouped by 1–2 dimensions (`dataset`, `team`, `component`, `level`, `alert_label`, `rack`, `node`, `pattern`, `http_status`, `endpoint`, `host`, `client_ip`, `thread`, `block_id`), with exact `total`, `share` per group (fraction of `total`, computed in SereneDB) and the groups beyond `top_n` summed in `other`. Without `from`/`to` each dataset counts over its full span. A missing value is its own category `null`; unmapped components count as team `unowned`. `http_status` and `endpoint` count OpenStack API accesses, not log events. `compare` (`"previous_period"` or an equally long `{from, to}`) adds per group and in total the baseline B, C − B, the change in percent (none when B = 0) and the R-06 classification; a reference outside the data span makes the comparison not determinable instead of reporting B = 0 | `top_n` 1–50 (default 20), with `compare` ≤ 25; `compare` needs one `dataset`, `from`, `to` and one dimension; BGL-only dimensions and filters cannot be combined with `http_status` or `endpoint` |
-| `event_trend` | Log events per UTC `hour`, `day` or `week` bucket (weeks start on Monday) for exactly one dataset, optionally `split_by` one dimension into the top 5 series plus `other`. Returns the dataset's `data_span` and the `effective_range` (window ∩ span): empty buckets inside it are observed zeros, buckets outside the span are never listed. Edge buckets are marked `partial`, buckets without any event of the dataset `capture_gap` | At most 120 buckets (otherwise `limit_exceeded` naming the next coarser bucket); `dataset` required, no shared time axis; `http_status` and `endpoint` are no split dimensions |
+| `event_trend` | Log events per UTC `second`, `minute`, `hour`, `day` or `week` bucket (weeks start on Monday) for exactly one dataset, optionally `split_by` one dimension into the top 5 series plus `other`. Returns the dataset's `data_span` and the `effective_range` (window ∩ span): empty buckets inside it are observed zeros, buckets outside the span are never listed. Edge buckets are marked `partial`, buckets without any event of the dataset `capture_gap` | At most 120 buckets (otherwise `limit_exceeded` naming the next coarser bucket); `dataset` required, no shared time axis; `http_status` and `endpoint` are no split dimensions |
 | `recurring_patterns` | Patterns of exactly one `dataset` with `events`, `first_seen`/`last_seen`, `episodes` (R-05: a new episode after ≥ 30 min without the pattern, computed after all filters, so filtering by node can split an episode), `recurring` (≥ 2 episodes), `active_days`/`active_weeks`, breadth (BGL `nodes` and `racks`, OpenStack `instances` and `requests`; `null` when not every event carries the unit), C − B against the previous equally long period with the same filters and the R-10 `status` (`new`, `escalating`, `reappeared`, `ongoing`, `quiet`; without a determinable reference only `new`/`ongoing`). `rank`: `episodes` (default), `events`, `increase`, `investigation_order`: the error and alert patterns (OpenStack also 5xx accesses) by episodes, breadth, increase, events, `pattern_id` (R-08), a criterion missing for any candidate dropped for all, with `candidates_checked`, `rank_basis`, the leader per criterion, R-09 dominance (`clear_priority` or `trade_off` with the conflicts, over every candidate checked), levels, labels, share of error events and the R-09 limit; no composite score | `limit` 1–25 (default 10); with `investigation_order` 1–5 (default 3) and no `text`, `request_id` or `pattern_id`; `rank: increase` needs a previous period inside the data span |
 | `latency_stats` | OpenStack API accesses (lines with an HTTP status, with or without request ID) overall or grouped by `endpoint`, `method`, `status`, `component`, UTC `hour` or `day`: `api_access_events`, `without_request_id`, `unique_requests` (a separate counting unit), `p50_ms`/`p90_ms`/`p95_ms`/`p99_ms`/`max_ms` (continuous percentiles, `quantile_cont` with linear interpolation, over the accesses with a latency), `errors_5xx` (500–599) with `rate_5xx` and `errors_4xx` (400–499, client errors, not failures) with `rate_4xx`, each rate over `api_access_events`, computed in SereneDB. A scope without 5xx says so as an observed zero with its denominator; groups beyond `top_n` are aggregated in `other` over their own accesses; time buckets list every bucket of the data span in scope with `partial` and `capture_gap`. Filters `endpoints` (masked paths) and `http_status` (inclusive range) | OpenStack only (`dataset: bgl` is `invalid_input`); `top_n` 1–20 (default 10) only for `endpoint`, `method`, `status`, `component`; at most 120 time buckets |
 | `check_claims` | Checks the numbers of an answer before it is given: per claim it resolves the cited fact ID and compares value, metric and group (required, `{}` for ungrouped facts) with that fact only; a value found in another fact is no evidence. Returns `verified`, `mismatch` with the differing fields, `unknown_fact` or `unknown_receipt` (both count as unresolved) and the line "N claims checked · M mismatch · K unresolved". Number format: comma = thousands separator, dot = decimal point (`1.204` is a decimal); decimals match the fact rounded to the stated places (`0.38` for 0.375), `unit: "percent"` states a ratio in percent, times match as UTC prefix. Checks numbers only, not explanations | 1–30 claims; a malformed fact ID is `unknown_fact` for that claim, not an error for the call; reads receipts only, never the corpus |
@@ -586,13 +596,16 @@ changes because the loader SQL, rule versions and dataset list are part of it.
 Tool applicability (unsupported combinations return `invalid_input` with a
 hint, never a zero):
 
-| Function | bgl | openstack | hdfs | openssh | apache | linux | zookeeper |
-|---|---|---|---|---|---|---|---|
-| search, counts, trends, recurring patterns, precursors | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `only_errors`, `rank: investigation_order` | ✓ | ✓ | ✓ (0 errors) | ✓ | ✓ | – | ✓ |
-| Breadth (R-08) | nodes | instances | blocks | client IPs | client IPs | – | – |
-| Context scopes besides `same_component`, `dataset` (default first) | `same_node` | `same_request` | `same_block` | `same_process`, `same_client` | `same_client` | `same_process` | `same_thread` |
-| API accesses, `latency_stats` | – | ✓ | – | – | – | – | – |
+| Function | bgl | openstack | hdfs | openssh | apache | linux | zookeeper | otel | otel_replay |
+|---|---|---|---|---|---|---|---|---|---|
+| Search, counts, trends | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | bounded paths below | ✓ |
+| Recurring patterns, aggregate context/precursors | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | – |
+| `only_errors` | ✓ | ✓ | ✓ (0 errors) | ✓ | ✓ | – | ✓ | ✓ | ✓ |
+| `rank: investigation_order` | ✓ | ✓ | ✓ (0 errors) | ✓ | ✓ | – | ✓ | – | – |
+| Breadth (R-08) | nodes | instances | blocks | client IPs | client IPs | – | – | – | – |
+| Context scopes besides `same_component`, `dataset` (default first) | `same_node` | `same_request` | `same_block` | `same_process`, `same_client` | `same_client` | `same_process` | `same_thread` | `same_trace` | `same_trace` |
+| API accesses, `latency_stats` | – | ✓ | – | – | – | – | – | – | – |
+| `count_events` compare | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ |
 
 Independent golden tests (`packages/analytics/tests/golden/extensions.test.ts`,
 30 cases, raw-file oracles) cover load balance, search, context, counts, weekly
@@ -600,6 +613,162 @@ trends and episodes for each extension. One role question per extension with its
 tool calls, receipt IDs and a clean `check_claims` is in
 [`packages/evals/u26`](packages/evals/u26/README.md) (development evidence,
 answers composed without a model).
+
+### OpenTelemetry remote Parquet and OTLP replay (LOG-35)
+
+Both datasets require an explicit `dataset`. Dataset-less tool calls and
+cross-dataset totals cover only loaded `log_events` datasets, excluding `otel`
+and `otel_replay`. Select them explicitly at each load; `--with all` continues
+to mean the five Loghub extensions. No full OTel file is downloaded.
+
+```bash
+pnpm data:setup --with otel,otel_replay
+# Hermetic fixtures, separate database log_insights_samples_otel:
+pnpm data:setup --samples --with otel,otel_replay
+```
+
+`otel` allowlists exactly the brief's [part_000.parquet](https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet)
+through [part_049.parquet](https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_049.parquet)
+under `public-pme/text_bench`. `part_050` exists but is not in the brief and is
+not allowlisted. The public bucket's licence is not stated. All 50 footers
+are catalogued; this is not a claim that all their rows were analysed. The
+catalog in `packages/domain/src/datasets.ts` is authoritative.
+
+| Tool field | Source and meaning |
+|---|---|
+| `ts` | `Timestamp`, UTC nanoseconds (`isAdjustedToUTC`); outputs truncate to microseconds, ordering keeps nanoseconds then `event_id` |
+| `component` | `ServiceName`, the OTel service; empty string stays empty |
+| `level`, `severity_number` | `SeverityText` and `SeverityNumber` as logged; `info` differs from `information`, zero means unspecified; errors are `error` or `fatal` text |
+| `message`, `source_type` | Verbatim `Body` and `ScopeName` |
+| `trace_id`, `span_id` | Logged IDs, usable for grouping logs; no trace spans or metrics are loaded |
+
+Resource attributes remain in the source; a Kubernetes pod name is not mapped
+to `host`. The replay keeps only its documented resource keys. Remote event IDs
+are `1,000,000,000,000 + file_index * 10,000,000,000 + file_row_number`;
+replay IDs are `2,000,000,000,000 + fixture_row`. They do not overlap Loghub IDs.
+
+Two access paths keep remote work bounded:
+
+- **Indexed reference:** `otel_ref` and `otel_ref_idx` cover only
+  `[2025-09-23T00:29:14Z, 2025-09-23T00:29:34Z)`, crossing part_000/part_001.
+  The view uses `s3://public-pme/text_bench/part_00[0-1].parquet`, the same two
+  allowlisted HTTPS objects, so the external index retains its Parquet lookup
+  path. Rows stay external. Search, text-filtered counts/trends and event
+  context require this window; context reports its clipping. Files own
+  `[ts_min(n), ts_min(n+1))`, removing one shared boundary duplicate in this
+  reference window. This is a checked boundary, not proof of duplicate content
+  at every other boundary.
+- **Direct scan:** non-text `count_events`/`event_trend` require `from` and `to`,
+  at most 60 seconds and at most two selected allowlisted files. Timestamp
+  comparisons bind `TIMESTAMPTZ_NS` without transforming the column, retaining
+  row-group pruning. Larger windows fail with a narrowing hint. Second and
+  minute buckets serve these short scopes. `compare` is unsupported for `otel`.
+
+Neither dataset supports patterns, episodes, aggregate context/precursors,
+breadth, API accesses or latency. Unsupported requests return `invalid_input`
+with a hint. Services are `unowned`; no fictional owners were added. The pool
+still cancels queries after 10 seconds. HTTPFS connect attempts additionally
+use instance-global `http_timeout=3` and `http_retries=1`, set on connection
+startup by the loader and analytics pool. These SQL settings have no supported
+flagfile option. A connect attempt can delay cancellation until its HTTP retry
+chain ends; this is not a hard 10-second server-resource guarantee for all
+network failures. The scan bounds do not guarantee cold-read latency: the
+10-second two-file error trend returned `query_timeout` immediately after a
+container restart, while the unchanged independent Golden suite passed all
+18 cases with warm data. No remote query remained active after that timeout.
+Narrow the request or use the indexed reference window; do not automatically
+retry the same expensive request.
+
+The loader records HEAD size/ETag/Last-Modified and footer facts per file in
+`otel_sources` and `load_manifest.external_sources`, together with mapping
+version and index freshness. These are version pins, not content checksums. The final data version also
+includes recorded footer and index build facts: rebuilding the reference gives
+a new snapshot version, even if the remote objects did not change.
+Before each remote query, `read_blob` checks size and Last-Modified; a mismatch
+returns `source_changed` with a reload hint. SereneDB does not expose ETag, so
+the runtime cannot detect a replacement that preserves both checked values.
+Source checks precede the query and cannot make the read atomic with an object
+replacement during execution. Receipts name the exact selected files, path,
+window and index snapshot. Normal queries report bytes as `not_measured`;
+footer compressed sizes are explicitly estimates, not measured traffic.
+
+**OTLP replay:** `serened.conf` enables SereneDB's built-in `/v1/logs` listener
+on container ports 4318 (`postgres.otlp`) and 4319
+(`log_insights_samples_otel.otlp`). Compose publishes them only on
+`127.0.0.1:${SERENEDB_OTLP_PORT}` and
+`127.0.0.1:${SERENEDB_OTLP_SAMPLES_PORT}`. Basic auth uses the configured
+SereneDB credentials. `docker compose up -d serenedb` recreates the container
+when configuration changes while preserving its named data volume.
+
+The committed fixture contains 365 public part_000 records from
+`[2025-09-23T00:20:00Z, 2025-09-23T00:20:00.001Z)`, in source row order, with
+email/card/long-number-like content excluded and `LogAttributes` dropped.
+Bodies stay verbatim. Selection, byte size and SHA-256 are pinned in the
+catalog; `pnpm --filter @workspace/corpus otel:replay-fixture` regenerates it
+locally from S3. Loading deletes previous tagged replay rows, posts once,
+refreshes with `VACUUM (REFRESH_TABLE)`, verifies the fixture count and writes
+a fresh replay ID/time into the data version. It never retries an export.
+SereneDB does not deduplicate: an identical second POST stores duplicates,
+covered by an integration test that cleans up its extra rows.
+
+`otel_replay_events` exposes the replay snapshot through `otel_replay_idx`
+with the shared `log_text` analyzer for both hits and counts. Original
+`timeUnixNano` stays nanosecond UTC time in storage (`TIMESTAMP_NS` UTC wall
+clock, explicitly converted to UTC in the view); output truncates to
+microseconds. `observed_timestamp` is the replay time. Empty OTLP IDs and
+unspecified severity zero become NULL in SereneDB. New loads intentionally
+change the replay ID and data version even with the same fixture.
+
+**Real S3 measurements (18 October 2026):** single local observations on the
+ARM64 SereneDB 26.10.1 build, data version `dv_af94ef4d7bb4e343`, made with
+`pnpm otel:measure --container log-insights-log35-serenedb-1 --json-profile`.
+All windows below are on 2025-09-23 UTC and half-open. Severity counts return
+one summary row plus six severity groups. Server/wall times belong to text
+EXPLAIN ANALYZE; the following plain tool query and optional JSON profile are
+separate, warmer executions. No general throughput or cloud cost is inferred. These measurements preceded
+the new 3-second/one-retry HTTP startup policy; final correctness checks use that policy.
+
+| Case / file(s) / UTC window | Result population | SQL rows | Parquet row groups k/n | HTTPFS in (display precision) | GET / HEAD | Server s | Wall s | Footer estimate, all columns (bytes) |
+| --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: |
+| 1 s, part_000, 00:01:00–00:01:01 | 498,344 | 7 | 2 / 1624 | 276.0 KiB | 2 / 1 | 0.315 | 0.590 | 47,100,542 |
+| 10 s, part_000, 00:02:00–00:02:10 | 5,769,387 | 7 | 10 / 1624 | 12.9 MiB | 20 / 1 | 0.717 | 0.957 | 230,810,624 |
+| 60 s, part_000, 00:03:00–00:04:00 | 32,605,195 | 7 | 54 / 1624 | 69.8 MiB | 108 / 1 | 1.57 | 1.794 | 1,255,166,468 |
+| 50 s boundary, part_000/001, 00:29:00–00:29:50 | 29,235,108 | 7 | 49 / 3249 | 62.9 MiB | 98 / 2 | 1.59 | 2.746 | 1,128,980,731 |
+| Reference phrase, part_000/001, 00:29:14–00:29:34 (count) | 676,555 | 1 | not exposed | 0 bytes | 0 / 0 | 0.0102 | 0.016 | not estimated |
+| Reference phrase, part_000/001, 00:29:14–00:29:34 (3 hits) | 676,555 | 3 | not exposed | 56.3 MiB | 72 / 5 | 2.69 | 2.702 | not estimated |
+| Cold 60 s, part_024, 12:00:00–12:01:00 | 33,617,068 | 7 | 56 / 1624 | 72.1 MiB | 112 / 1 | 2.41 | 3.612 | 1,300,908,764 |
+| Warm repeat, part_024, 12:00:00–12:01:00 | 33,617,068 | 7 | 56 / 1624 | 0 bytes | 0 / 1 | 0.117 | 0.318 | 1,300,908,764 |
+
+HTTPFS values such as `72.1 MiB` retain SereneDB's rounded display precision;
+only an integer `0 bytes` is exact. GET/HEAD and row-group counters are exact
+reported counters. Footer values estimate compressed overlapping row groups
+across all columns; they are not network traffic. JSON profiles separately
+retain exact generic I/O counters, which do not expose HTTP verb counts.
+The indexed count uses postings; fetching three hits still reads remote columns.
+
+Part_024 had no cached blocks before its cold case and held 80,177,079 cache
+bytes afterward; its warm repeat used zero GETs. The 1-second case already
+had Timestamp blocks cached; the other cases retain their recorded shared
+cache state and are not claimed cold. No cache reset was used. The existing
+reference index was built by the loader in 6,248.6 ms; read-only `du` measured
+464,496 KiB (475,643,904 allocated bytes). It was not rebuilt by this script.
+Raw plans, SQL/parameters, cache snapshots, source pins and receipts are in
+`.data/otel-measure/2026-10-18T17-48-01.040Z/measurements.jsonl`. New runs get
+new directories. These measurements cover only the files and windows named above.
+
+G13 proves `TsDict:` can be chosen for grouped `count(*)` under `@@`. On this
+reference, `visa cache full` incorrectly produced cart 241, email 66,
+frontend 600,708 and payment 75,347; `count(ts)` and raw phrase SQL agree on
+frontend 601,208 and payment 75,347. The small CI fixture proves the plan shape
+and timestamp coercion, but does not reproduce the miscount. The earlier BGL
+`parity` miscount claim was not reproduced and is not evidence.
+
+Independent remote Golden SQL and hermetic local Parquet/OTLP integration
+checks cover counts, time boundaries, source pins and receipts. Role questions
+with full text, aggregation and clean claim checks are stored in
+[`packages/evals/otel`](packages/evals/otel/README.md) as development evidence
+without a model. Web dataset selectors, agent-created indexes (U28/A-33),
+trace/metric correlation (U29) and full-text across all files remain open.
 
 ### Ownership (fictional)
 

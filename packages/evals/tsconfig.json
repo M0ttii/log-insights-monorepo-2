@@ -6,6 +6,6 @@
     "lib": ["es2023"],
     "types": ["node"]
   },
-  "include": ["u26", "src"],
+  "include": ["u26", "src", "otel"],
   "exclude": ["node_modules"]
 }

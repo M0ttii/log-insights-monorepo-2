@@ -91,7 +91,7 @@ export const countEventsInputSchema = z.strictObject({
     .min(1)
     .max(COUNT_MAX_DIMENSIONS)
     .describe(
-      `1–${COUNT_MAX_DIMENSIONS} distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.`
+      `1–${COUNT_MAX_DIMENSIONS} distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS); for otel only dataset, team, component (service) and level. Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.`
     ),
   ...COUNT_FILTER.shape,
   top_n: z

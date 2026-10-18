@@ -7,16 +7,18 @@ import {
 import {
   extensionAttributes,
   extensionColumnsRow,
+  splitAttributes,
 } from "@workspace/domain/attributes"
 import {
   DATASET_IDS,
   DATASETS,
+  externalDatasetOfEventId,
   SPECIFIC_CONTEXT_SCOPES,
   type SpecificColumn,
   type SpecificContextScope,
 } from "@workspace/domain/datasets"
 import { datasetSchema } from "@workspace/domain/filters"
-import type { Scope } from "@workspace/domain/receipt"
+import type { ReceiptSource, Scope } from "@workspace/domain/receipt"
 import {
   EPISODE_GAP_MINUTES,
   PRECURSOR_MIN_ANCHORS_FOR_BASE_RATE,
@@ -64,12 +66,20 @@ import { z } from "zod"
 import { spanEnd } from "../corpus.ts"
 import { compileFilter, dimensionExpression } from "../filters.ts"
 import {
+  extensionSelect,
+  isoNanos,
+  LOG_EVENTS,
+  type Relation,
+} from "../relations.ts"
+import { openReference, remoteNotes, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
+import {
   describeFilters,
   describeWindows,
   resolveWindows,
   scopeFilters,
 } from "../scope.ts"
-import { exactCount, extensionSelect, isoTime, SqlParams } from "../sql.ts"
+import { exactCount, isoTime, SqlParams } from "../sql.ts"
 import {
   INDEX,
   NO_SEARCHABLE_WORD,
@@ -126,11 +136,13 @@ const anchorRow = z.object({
   node: z.string().nullable(),
   alert_label: z.string().nullable(),
   request_id: z.string().nullable(),
-  pattern_id: z.string(),
+  pattern_id: z.string().nullable(),
   message: z.string().nullable(),
   message_truncated: z.boolean().nullable(),
   ...extensionColumnsRow.shape,
 })
+
+const anchorExactRow = anchorRow.extend({ ts_exact: z.string() })
 
 const neighbourRow = anchorRow
   .omit({ dataset: true })
@@ -161,13 +173,15 @@ const patternRow = z.object({
   example_event_id: exactCount,
 })
 
-const EVENT_COLUMNS = (q: string) =>
-  `${q}.event_id, ${isoTime(`${q}.ts`)} AS ts, ${q}.component, ${q}.level, ${q}.node, ${q}.alert_label, ${q}.request_id, ${extensionSelect(q)}, ${q}.pattern_id, left(${q}.message, ${CONTEXT_TEXT_MAX_CHARS}) AS message, length(${q}.message) > ${CONTEXT_TEXT_MAX_CHARS} AS message_truncated`
+const EVENT_COLUMNS = (rel: Relation) =>
+  `${rel.col("event_id")} AS event_id, ${isoTime(rel.col("ts"))} AS ts, ${rel.col("component")} AS component, ${rel.col("level")} AS level, ${rel.col("node")} AS node, ${rel.col("alert_label")} AS alert_label, ${rel.col("request_id")} AS request_id, ${extensionSelect(rel)}, ${rel.col("pattern_id")} AS pattern_id, left(${rel.col("message")}, ${CONTEXT_TEXT_MAX_CHARS}) AS message, length(${rel.col("message")}) > ${CONTEXT_TEXT_MAX_CHARS} AS message_truncated`
+
+const NANOS_PER_MINUTE = 60_000_000_000n
 
 export const getLogContext = defineTool({
   name: "get_log_context",
   title: "Get log context",
-  version: "1.0.0",
+  version: "1.1.0",
   description: renderDescription({
     purpose:
       "Temporal context of log events, in two modes. event: the events right before and after one event (from search_logs), with exact offsets in milliseconds. aggregate: precursor analysis over every episode start of a pattern or a search condition (R-11): which other patterns occur in the window before or after the anchors, in how many anchors, compared with their base rate over the scope.",
@@ -184,7 +198,7 @@ export const getLogContext = defineTool({
       },
       { situation: "you need a development over time", use: "event_trend" },
     ],
-    inputs: `mode (event | aggregate, required) and window_minutes (both modes, 1–${CONTEXT_WINDOW_MAX_MINUTES}, default ${CONTEXT_WINDOW_DEFAULT_MINUTES}). Mode event: event_id (required), before and after (0–${CONTEXT_MAX_EVENTS} each, default ${CONTEXT_DEFAULT_EVENTS}), scope (same_node | same_component | same_request | same_block | same_process | same_client | same_thread | dataset; the anchor must carry the scope's value: same_node BGL, same_request OpenStack, same_block HDFS, same_process OpenSSH and Linux, same_client OpenSSH and Apache, same_thread ZooKeeper; default same_node for BGL events with a node, same_block for HDFS, same_process for OpenSSH, same_client for Apache events with a client, otherwise same_component). Before covers [anchor − w, anchor), after (anchor, anchor + w]; events at the anchor's timestamp are placed by event_id. Mode aggregate: dataset (required, exactly one), the anchor as pattern_id or query (exactly one; query matches like search_logs terms: all words, ${PRECURSOR_MAX_QUERY_LENGTH} characters at most), direction (before | after | both, default before), top_n (1–${PRECURSOR_MAX_TOP_N}, default ${PRECURSOR_DEFAULT_TOP_N}) and filters. Anchors are the episode starts (gap ≥ ${EPISODE_GAP_MINUTES} min) of the matching events after all filters, so a burst is one anchor; filters select anchors only, window events come from the whole dataset. Fields of the other mode are rejected with invalid_input.`,
+    inputs: `mode (event | aggregate, required) and window_minutes (both modes, 1–${CONTEXT_WINDOW_MAX_MINUTES}, default ${CONTEXT_WINDOW_DEFAULT_MINUTES}). Mode event: event_id (required), before and after (0–${CONTEXT_MAX_EVENTS} each, default ${CONTEXT_DEFAULT_EVENTS}), scope (same_node | same_component | same_request | same_block | same_process | same_client | same_thread | same_trace | dataset; the anchor must carry the scope's value: same_node BGL, same_request OpenStack, same_block HDFS, same_process OpenSSH and Linux, same_client OpenSSH and Apache, same_thread ZooKeeper, same_trace otel (non-empty TraceId); default same_node for BGL events with a node, same_block for HDFS, same_process for OpenSSH, same_client for Apache events with a client, otherwise same_component). Before covers [anchor − w, anchor), after (anchor, anchor + w]; events at the anchor's timestamp are placed by event_id. otel events (remote Parquet) resolve only inside the indexed reference window, and their context is clipped to it; source_changed when a reference file no longer matches its pin. Mode aggregate (not for otel, which has no patterns): dataset (required, exactly one), the anchor as pattern_id or query (exactly one; query matches like search_logs terms: all words, ${PRECURSOR_MAX_QUERY_LENGTH} characters at most), direction (before | after | both, default before), top_n (1–${PRECURSOR_MAX_TOP_N}, default ${PRECURSOR_DEFAULT_TOP_N}) and filters. Anchors are the episode starts (gap ≥ ${EPISODE_GAP_MINUTES} min) of the matching events after all filters, so a burst is one anchor; filters select anchors only, window events come from the whole dataset. Fields of the other mode are rejected with invalid_input.`,
     filters: `Mode aggregate only: ${PRECURSOR_FILTER.summary}`,
     outputs: `Mode event: anchor (the event itself, not in the lists), scope and scope_value, events_before[] and events_after[] ascending by (ts, event_id) with event_id, ts, offset_ms (exact, negative before), component, level, node, alert_label, request_id, the dataset's own fields (host, process_id, client_ip, thread, block_id where it has them), pattern_id and message (verbatim, untrusted), sides[] with in_window (exact count per side), returned and truncated. Mode aggregate: matched_events, anchors, excluded_patterns, base_rate_grid and by_direction[] with window, patterns_found, truncated and patterns[] with pattern_id, pattern, component, team, anchors_with_pattern, anchor_share (of all anchors), base_rate (share of grid windows of the same length from the start of the scope's data span in which the pattern occurs), ratio (anchor_share / base_rate) and example_event_id. Base rate and ratio are null below ${PRECURSOR_MIN_ANCHORS_FOR_BASE_RATE} anchors; ratio is null when the base rate is 0. Cite numbers by their fact IDs.`,
     truncation: `mode event lists at most before/after events per side (truncated per side, in_window stays exact); mode aggregate lists at most top_n patterns per direction (truncated when patterns_found is larger). Messages and patterns are cut to ${CONTEXT_TEXT_MAX_CHARS} characters.`,
@@ -336,25 +350,77 @@ async function runEvent(
   const after = input.after ?? CONTEXT_DEFAULT_EVENTS
   const w = input.window_minutes
 
-  const found = await db.query(
-    `SELECT ${EVENT_COLUMNS("log_events")}, log_events.dataset FROM log_events WHERE log_events.event_id = $1`,
-    [eventId],
-    signal
-  )
+  // otel event IDs (LOG-35) resolve on the reference index: the file
+  // follows from the ID range, the row from file_row_number within the
+  // file's part of the reference window.
+  let rel: Relation = LOG_EVENTS
+  let source: ReceiptSource | undefined
+  let clip: { from: string; to: string } | null = null
+  let found: Awaited<ReturnType<QueryRunner["query"]>>
+  const external = externalDatasetOfEventId(eventId)
+  let notes: string[] = []
+  if (external === "otel_replay") {
+    // The OTLP replay (LOG-35): the event ID is a column of its index.
+    const opened = await openReplay(db, signal)
+    if (!opened.ok) return opened
+    rel = opened.opened.rel
+    source = opened.opened.source
+    notes = sourceNotes(opened.opened.source)
+    found = await db.query(
+      `SELECT ${EVENT_COLUMNS(rel)}, ${rel.col("dataset")} AS dataset, ${isoNanos(rel.col("ts"))} AS ts_exact FROM ${rel.from} WHERE ${rel.col("event_id")} = $1::BIGINT`,
+      [eventId],
+      signal
+    )
+  } else if (external === null) {
+    found = await db.query(
+      `SELECT ${EVENT_COLUMNS(rel)}, log_events.dataset, ${isoTime("log_events.ts")} AS ts_exact FROM log_events WHERE log_events.event_id = $1`,
+      [eventId],
+      signal
+    )
+  } else {
+    const opened = await openReference(db, {}, "Context", signal)
+    if (!opened.ok) return opened
+    const { reference } = opened.opened
+    rel = opened.opened.rel
+    source = opened.opened.source
+    clip = opened.opened.window
+    const { eventIdBase } = DATASETS.otel
+    const { eventIdFileStride } = DATASETS.otel.remote
+    const fileIndex = Math.floor((eventId - eventIdBase) / eventIdFileStride)
+    const row = (eventId - eventIdBase) % eventIdFileStride
+    const file = reference.files.find((entry) => entry.file_index === fileIndex)
+    if (file === undefined)
+      return {
+        ok: false,
+        error: {
+          ...notFound("event", String(eventId)),
+          hint: `otel event IDs resolve only inside the indexed reference window [${reference.window_from}, ${reference.window_to}); use an event_id returned by search_logs with dataset otel.`,
+        },
+      }
+    found = await db.query(
+      `SELECT ${EVENT_COLUMNS(rel)}, ${rel.col("dataset")} AS dataset, ${isoNanos(rel.col("ts"))} AS ts_exact FROM ${rel.from} WHERE ${rel.q}.file_row_number = $1::BIGINT AND ${rel.col("ts")} >= $2::TIMESTAMPTZ_NS AND ${rel.col("ts")} < $3::TIMESTAMPTZ_NS`,
+      [row, file.read_from, file.read_to],
+      signal
+    )
+  }
   const first = found.rows[0]
   if (first === undefined)
-    return { ok: false, error: notFound("event", String(eventId)) }
-  const { host, process_id, client_ip, thread, block_id, ...row } =
-    anchorRow.parse(first)
+    return {
+      ok: false,
+      error:
+        clip === null
+          ? notFound("event", String(eventId))
+          : {
+              ...notFound("event", String(eventId)),
+              hint: `otel event IDs resolve only inside the indexed reference window [${clip.from}, ${clip.to}); use an event_id returned by search_logs with dataset otel.`,
+            },
+    }
+  const [{ ts_exact: anchorExact, ...row }, anchorAttributes] = splitAttributes(
+    anchorExactRow.parse(first)
+  )
   const anchor: ContextAnchor = {
     ...row,
-    ...extensionAttributes(row.dataset, {
-      host,
-      process_id,
-      client_ip,
-      thread,
-      block_id,
-    }),
+    ...extensionAttributes(row.dataset, anchorAttributes),
     message_truncated: row.message_truncated === true,
   }
 
@@ -362,21 +428,47 @@ async function runEvent(
   if (!resolved.ok) return resolved
 
   // One builder per query, so each SQL text gets its own numbered parameters.
-  const sideSql = (params: SqlParams) => {
-    const ts = params.add(anchor.ts)
+  // On the nanosecond otel relation the window edges are bound as exact
+  // nanosecond instants: TIMESTAMPTZ_NS − INTERVAL yields a rounded
+  // microsecond TIMESTAMPTZ on 26.10.1.
+  // Every bound parameter must be used: SereneDB rejects a bind with more
+  // values than the statement references (08P01).
+  const sideSql = (
+    params: SqlParams,
+    need: { before: boolean; after: boolean } = { before: true, after: true }
+  ) => {
+    const tsRef = params.add(anchorExact)
+    const ts = rel.bound(tsRef)
     const id = params.add(anchor.event_id)
-    const width = params.add(`${w} minutes`)
-    const conditions = [`log_events.dataset = ${params.add(anchor.dataset)}`]
+    const tsCol = rel.col("ts")
+    const idCol = rel.col("event_id")
+    let lower = ""
+    let upper = ""
+    if (rel.dataset === null) {
+      const width = params.add(`${w} minutes`)
+      lower = `${ts} - ${width}::INTERVAL`
+      upper = `${ts} + ${width}::INTERVAL`
+    } else {
+      const shift = BigInt(w) * NANOS_PER_MINUTE
+      if (need.before)
+        lower = rel.bound(params.add(shiftNanos(anchorExact, -shift)))
+      if (need.after)
+        upper = rel.bound(params.add(shiftNanos(anchorExact, shift)))
+    }
+    const conditions =
+      rel.dataset === null
+        ? [`${rel.col("dataset")} = ${params.add(anchor.dataset)}`]
+        : []
     if (resolved.column !== null)
       conditions.push(
-        `log_events.${resolved.column} = ${params.add(resolved.value)}`
+        `${rel.col(resolved.column)} = ${params.add(resolved.value)}`
       )
-    const common = conditions.join(" AND ")
+    const common = conditions.length === 0 ? "TRUE" : conditions.join(" AND ")
     return {
       ts,
       common,
-      before: `log_events.ts >= ${ts}::TIMESTAMPTZ - ${width}::INTERVAL AND (log_events.ts < ${ts}::TIMESTAMPTZ OR (log_events.ts = ${ts}::TIMESTAMPTZ AND log_events.event_id < ${id}))`,
-      after: `log_events.ts <= ${ts}::TIMESTAMPTZ + ${width}::INTERVAL AND (log_events.ts > ${ts}::TIMESTAMPTZ OR (log_events.ts = ${ts}::TIMESTAMPTZ AND log_events.event_id > ${id}))`,
+      before: `${tsCol} >= ${lower} AND (${tsCol} < ${ts} OR (${tsCol} = ${ts} AND ${idCol} < ${id}))`,
+      after: `${tsCol} <= ${upper} AND (${tsCol} > ${ts} OR (${tsCol} = ${ts} AND ${idCol} > ${id}))`,
     }
   }
 
@@ -385,7 +477,7 @@ async function runEvent(
   const counts = sideCountsRow.parse(
     (
       await db.query(
-        `SELECT count(*) FILTER (WHERE ${counted.before}) AS before, count(*) FILTER (WHERE ${counted.after}) AS after FROM log_events WHERE ${counted.common} AND ((${counted.before}) OR (${counted.after}))`,
+        `SELECT count(*) FILTER (WHERE ${counted.before}) AS before, count(*) FILTER (WHERE ${counted.after}) AS after FROM ${rel.from} WHERE ${counted.common} AND ((${counted.before}) OR (${counted.after}))`,
         countParams.values,
         signal
       )
@@ -394,34 +486,26 @@ async function runEvent(
 
   const list = async (direction: "before" | "after", limit: number) => {
     const params = new SqlParams()
-    const sql = sideSql(params)
+    const sql = sideSql(params, {
+      before: direction === "before",
+      after: direction === "after",
+    })
+    const tsCol = rel.col("ts")
+    const idCol = rel.col("event_id")
     const order =
       direction === "before"
-        ? "log_events.ts DESC, log_events.event_id DESC"
-        : "log_events.ts, log_events.event_id"
+        ? `${tsCol} DESC, ${idCol} DESC`
+        : `${tsCol}, ${idCol}`
     const { rows } = await db.query(
-      `SELECT ${EVENT_COLUMNS("log_events")}, (epoch_us(log_events.ts) - epoch_us(${sql.ts}::TIMESTAMPTZ))::DOUBLE / 1000 AS offset_ms FROM log_events WHERE ${sql.common} AND ${sql[direction]} ORDER BY ${order} LIMIT ${params.add(limit)}`,
+      `SELECT ${EVENT_COLUMNS(rel)}, (${rel.epochMicros(tsCol)} - ${rel.epochMicros(sql.ts)})::DOUBLE / 1000 AS offset_ms FROM ${rel.from} WHERE ${sql.common} AND ${sql[direction]} ORDER BY ${order} LIMIT ${params.add(limit)}`,
       params.values,
       signal
     )
     return rows.map((raw): ContextEvent => {
-      const {
-        host: eventHost,
-        process_id: eventProcessId,
-        client_ip: eventClientIp,
-        thread: eventThread,
-        block_id: eventBlockId,
-        ...event
-      } = neighbourRow.parse(raw)
+      const [event, attributes] = splitAttributes(neighbourRow.parse(raw))
       return {
         ...event,
-        ...extensionAttributes(anchor.dataset, {
-          host: eventHost,
-          process_id: eventProcessId,
-          client_ip: eventClientIp,
-          thread: eventThread,
-          block_id: eventBlockId,
-        }),
+        ...extensionAttributes(anchor.dataset, attributes),
         message_truncated: event.message_truncated === true,
       }
     })
@@ -436,13 +520,20 @@ async function runEvent(
   ]
   const anchorMicros = micros(anchor.ts)
   const widthMicros = BigInt(w * MICROS_PER_MINUTE)
+  // [anchor − w, anchor + w] as a half-open window; on otel clipped to the
+  // reference window, which is all the index holds.
+  let windowFrom = anchorMicros - widthMicros
+  let windowTo = anchorMicros + widthMicros + 1n
+  if (clip !== null) {
+    windowFrom = bigMax(windowFrom, micros(clip.from))
+    windowTo = bigMin(windowTo, micros(clip.to))
+  }
   const scope: Scope = {
     windows: [
       {
         dataset: anchor.dataset,
-        from: formatInstant(anchorMicros - widthMicros),
-        // [anchor − w, anchor + w] as a half-open window.
-        to: formatInstant(anchorMicros + widthMicros + 1n),
+        from: formatInstant(windowFrom),
+        to: formatInstant(windowTo),
       },
     ],
     filters: resolved.filters,
@@ -467,9 +558,39 @@ async function runEvent(
       rows_returned: eventsBefore.length + eventsAfter.length,
       truncated,
       row_limit: before + after > 0 ? before + after : null,
-      notes: eventNotes(data),
+      notes: [
+        ...eventNotes(data),
+        ...(clip === null
+          ? []
+          : [
+              `otel context covers only the indexed reference window [${clip.from}, ${clip.to}); events of the dataset outside it are not included, so a side can be cut short there.`,
+              ...remoteNotes("indexed_window"),
+            ]),
+        ...notes,
+      ],
+      ...(source === undefined ? {} : { source }),
     },
   }
+}
+
+function bigMax(a: bigint, b: bigint): bigint {
+  return a > b ? a : b
+}
+
+function bigMin(a: bigint, b: bigint): bigint {
+  return a < b ? a : b
+}
+
+/** A nanosecond UTC instant (nine fractional digits) shifted by `delta` ns. */
+function shiftNanos(value: string, delta: bigint): string {
+  const match = /^(.{19})\.(\d{9})Z$/.exec(value)
+  const seconds = match === null ? null : parseInstant(`${match[1]}Z`)
+  if (match === null || seconds === null || match[2] === undefined)
+    throw new RangeError(`not a nanosecond instant: ${value}`)
+  const nanos = seconds * 1000n + BigInt(match[2]) + delta
+  const whole = nanos / 1_000_000_000n - (nanos % 1_000_000_000n < 0n ? 1n : 0n)
+  const fraction = nanos - whole * 1_000_000_000n
+  return `${formatInstant(whole * 1_000_000n).slice(0, 19)}.${fraction.toString().padStart(9, "0")}Z`
 }
 
 function sideOf(
@@ -505,6 +626,7 @@ const SCOPE_NOUN: Record<SpecificContextScope, string> = {
   same_process: "process ID",
   same_client: "client IP",
   same_thread: "thread",
+  same_trace: "trace ID",
 }
 
 /**
@@ -539,7 +661,8 @@ function resolveScope(
     case "dataset":
       return { ok: true, scope, column: null, value: null, filters: {} }
     case "same_component":
-      if (anchor.component === null) {
+      // An empty service name (otel, as logged) cannot be a filter value.
+      if (anchor.component === null || anchor.component === "") {
         return reject(
           `Event ${anchor.event_id} has no component.`,
           'Use scope "dataset".'
@@ -597,6 +720,11 @@ function anchorValue(
     case "thread":
     case "host":
       return anchor[column] ?? null
+    case "trace_id":
+      // The empty string means the record carries no trace (OTel).
+      return anchor.trace_id === undefined || anchor.trace_id === ""
+        ? null
+        : anchor.trace_id
     default:
       return null
   }

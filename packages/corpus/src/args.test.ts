@@ -5,17 +5,23 @@ import { parseArgs, USAGE } from "./args.ts"
 
 describe("parseArgs", () => {
   it("defaults to the base corpus without arguments", () => {
-    expect(parseArgs([])).toEqual({ samples: false, extensions: [] })
+    expect(parseArgs([])).toEqual({
+      samples: false,
+      extensions: [],
+      external: [],
+    })
   })
 
   it("reads --samples on its own and combined with --with", () => {
     expect(parseArgs(["--samples"])).toEqual({
       samples: true,
       extensions: [],
+      external: [],
     })
     expect(parseArgs(["--samples", "--with", "hdfs"])).toEqual({
       samples: true,
       extensions: ["hdfs"],
+      external: [],
     })
   })
 
@@ -23,10 +29,12 @@ describe("parseArgs", () => {
     expect(parseArgs(["--with", "linux"])).toEqual({
       samples: false,
       extensions: ["linux"],
+      external: [],
     })
     expect(parseArgs(["--with=linux"])).toEqual({
       samples: false,
       extensions: ["linux"],
+      external: [],
     })
   })
 
@@ -34,6 +42,7 @@ describe("parseArgs", () => {
     expect(parseArgs(["--with", "hdfs,linux,hdfs"])).toEqual({
       samples: false,
       extensions: ["hdfs", "linux"],
+      external: [],
     })
   })
 
@@ -41,13 +50,31 @@ describe("parseArgs", () => {
     expect(parseArgs(["--with", "all"])).toEqual({
       samples: false,
       extensions: [...EXTENSION_DATASETS],
+      external: [],
+    })
+  })
+
+  it("loads otel only when named, never with all", () => {
+    expect(parseArgs(["--with", "otel"])).toEqual({
+      samples: false,
+      extensions: [],
+      external: ["otel"],
+    })
+    expect(parseArgs(["--samples", "--with", "all,otel"])).toEqual({
+      samples: true,
+      extensions: [...EXTENSION_DATASETS],
+      external: ["otel"],
     })
   })
 
   it("merges repeated --with flags without duplicates", () => {
     expect(
       parseArgs(["--with", "hdfs", "--with=zookeeper", "--with", "hdfs"])
-    ).toEqual({ samples: false, extensions: ["hdfs", "zookeeper"] })
+    ).toEqual({
+      samples: false,
+      extensions: ["hdfs", "zookeeper"],
+      external: [],
+    })
   })
 
   it("rejects an unknown dataset with the usage line", () => {

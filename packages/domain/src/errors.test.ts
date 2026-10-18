@@ -11,6 +11,7 @@ import {
   notFound,
   queryTimeout,
   receiptUnavailable,
+  sourceChanged,
   toolErrorSchema,
   type ToolError,
 } from "./errors.ts"
@@ -22,6 +23,9 @@ const every: ToolError[] = [
   dbUnavailable(),
   receiptUnavailable(),
   limitExceeded("Buckets", 120, 365),
+  sourceChanged("otel", [
+    "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet",
+  ]),
 ]
 
 describe("ToolError", () => {
@@ -33,6 +37,7 @@ describe("ToolError", () => {
       "db_unavailable",
       "receipt_unavailable",
       "limit_exceeded",
+      "source_changed",
     ])
     for (const error of every) {
       expect(toolErrorSchema.parse(error)).toEqual(error)

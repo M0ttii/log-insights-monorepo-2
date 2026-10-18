@@ -8,7 +8,9 @@
  *
  * Pure data without dependencies, so the corpus loader can read it too.
  * Adding a similarly structured source is one entry here, a parser SQL file
- * (packages/corpus/sql/) and ownership rows.
+ * (packages/corpus/sql/) and ownership rows. Remote Parquet datasets
+ * (LOG-35) carry an allowlist instead of checksums; the loader pins each
+ * file's size, ETag and Last-Modified at load time.
  */
 
 export const DATASET_IDS = [
@@ -19,6 +21,8 @@ export const DATASET_IDS = [
   "apache",
   "linux",
   "zookeeper",
+  "otel",
+  "otel_replay",
 ] as const
 
 export type Dataset = (typeof DATASET_IDS)[number]
@@ -42,6 +46,31 @@ export type ExtensionDataset = (typeof EXTENSION_DATASETS)[number]
 
 export function isExtension(dataset: Dataset): dataset is ExtensionDataset {
   return (EXTENSION_DATASETS as readonly Dataset[]).includes(dataset)
+}
+
+/**
+ * Datasets outside log_events (LOG-35): otel is read in place from remote
+ * Parquet (A-32), otel_replay is a bounded OTLP/HTTP replay into SereneDB's
+ * own OTel tables. Never part of `--with all` and never included in a query
+ * without `dataset`. Loaded on request with `--with otel` / `--with
+ * otel_replay`.
+ */
+export const EXTERNAL_DATASETS = [
+  "otel",
+  "otel_replay",
+] as const satisfies readonly Dataset[]
+
+export type ExternalDataset = (typeof EXTERNAL_DATASETS)[number]
+
+export function isExternal(dataset: Dataset): dataset is ExternalDataset {
+  return (EXTERNAL_DATASETS as readonly Dataset[]).includes(dataset)
+}
+
+/** Datasets stored in log_events (base corpus and Loghub extensions). */
+export type TableDataset = Exclude<Dataset, ExternalDataset>
+
+export function isTableDataset(dataset: Dataset): dataset is TableDataset {
+  return !isExternal(dataset)
 }
 
 /** log_events columns whose meaning the catalog states per dataset. */
@@ -68,6 +97,9 @@ export const DATASET_COLUMNS = [
   "client_ip",
   "thread",
   "block_id",
+  "trace_id",
+  "span_id",
+  "severity_number",
 ] as const
 
 export type DatasetColumn = (typeof DATASET_COLUMNS)[number]
@@ -89,6 +121,9 @@ export const SPECIFIC_COLUMNS = [
   "client_ip",
   "thread",
   "block_id",
+  "trace_id",
+  "span_id",
+  "severity_number",
 ] as const satisfies readonly DatasetColumn[]
 
 export type SpecificColumn = (typeof SPECIFIC_COLUMNS)[number]
@@ -103,6 +138,18 @@ export const EXTENSION_COLUMNS = [
 ] as const satisfies readonly SpecificColumn[]
 
 export type ExtensionColumn = (typeof EXTENSION_COLUMNS)[number]
+
+/**
+ * Columns of the OpenTelemetry dataset (LOG-35). They exist only in its
+ * relations, never in log_events, and keep the OTel meaning as logged.
+ */
+export const OTEL_COLUMNS = [
+  "trace_id",
+  "span_id",
+  "severity_number",
+] as const satisfies readonly SpecificColumn[]
+
+export type OtelColumn = (typeof OTEL_COLUMNS)[number]
 
 /** Filter fields bound to a dataset-specific column (technical.md § 8.1). */
 export const SPECIFIC_FILTER_COLUMNS = {
@@ -119,6 +166,7 @@ export const SPECIFIC_FILTER_COLUMNS = {
   process_id: "process_id",
   client_ip: "client_ip",
   thread: "thread",
+  trace_id: "trace_id",
 } as const satisfies Record<string, SpecificColumn>
 
 export type SpecificFilter = keyof typeof SPECIFIC_FILTER_COLUMNS
@@ -149,6 +197,7 @@ export const SPECIFIC_CONTEXT_SCOPES = {
   same_process: "process_id",
   same_client: "client_ip",
   same_thread: "thread",
+  same_trace: "trace_id",
 } as const satisfies Record<string, SpecificColumn>
 
 export type SpecificContextScope = keyof typeof SPECIFIC_CONTEXT_SCOPES
@@ -190,13 +239,16 @@ export type DatasetSource = {
   expectedLinesSource: string
 }
 
-export type DatasetSpec = {
-  id: Dataset
+type CommonSpec = {
   title: string
   /** System and collection, as Loghub describes it. */
   origin: string
   citation: readonly string[]
-  /** First event_id of the dataset; event_id = base + running line number. */
+  /**
+   * First event_id of the dataset; event_id = base + running line number
+   * (log_events) or base + file index · stride + file row number (remote
+   * Parquet, RemoteParquetSource.eventIdFileStride).
+   */
   eventIdBase: number
   /** Stored in corpus_stats.time_basis; names every assumption. */
   timeBasis: string
@@ -217,13 +269,161 @@ export type DatasetSpec = {
   labels: { marks: "line" | "instance" | "block"; source: string } | null
   /** OpenStack API accesses (R-01); only datasets with HTTP access lines. */
   apiAccesses: boolean
+  /**
+   * Message patterns (R-04): pattern_id, recurring_patterns, the pattern
+   * dimension and get_log_context aggregate. False for remote datasets,
+   * whose messages are not normalised at load time (LOG-35).
+   */
+  patterns: boolean
   /** Known term of the dataset for the full-text visibility check (90_checks.sql). */
   probeTerm: string
+}
+
+/** A dataset loaded into log_events from pinned local files. */
+export type TableDatasetSpec = CommonSpec & {
+  id: TableDataset
+  storage: "log_events"
   corpus: DatasetSource
   samples: DatasetSource
 }
 
+/** One allowlisted remote Parquet file; its pins (size, ETag, Last-Modified) come from the loader. */
+export type RemoteParquetFile = {
+  /** Position in the allowlist; part of the event_id. */
+  index: number
+  /** HTTPS URL the direct scans and the source check read. */
+  url: string
+  /** The same object as an s3:// key, used in the reference-window glob. */
+  s3: string
+}
+
+/** A committed Parquet fixture with the real schema, for hermetic CI (D8). */
+export type ParquetFixture = {
+  index: number
+  /** Repository path relative to packages/corpus. */
+  fixture: string
+  /** Copy below .data/raw, POSIX path relative to that directory. */
+  path: string
+  bytes: number
+  sha256: string
+}
+
+/** The indexed reference window (D3.1): one view over a glob plus an inverted index. */
+export type ReferenceWindow = {
+  /** Allowlist indexes the glob matches, in order; nothing else matches it. */
+  files: readonly number[]
+  /** Glob over exactly these files (s3:// for the bucket, a path for samples). */
+  glob: string
+  /** [from, to) in UTC, microseconds; crosses the boundary of the two files. */
+  from: string
+  to: string
+}
+
+export type RemoteParquetSource = {
+  licence: string
+  /** What the loader pins per file instead of a checksum. */
+  pinKind: string
+  /** The allowlist: the only files any query reads. */
+  files: readonly RemoteParquetFile[]
+  /** Files that exist in the bucket but are deliberately not allowlisted. */
+  notAllowlisted: string
+  /** Parquet column of each dataset column (renames only). */
+  sourceColumns: Readonly<
+    Record<
+      | "ts"
+      | "level"
+      | "component"
+      | "source_type"
+      | "message"
+      | "trace_id"
+      | "span_id"
+      | "severity_number",
+      string
+    >
+  >
+  /** SeverityText values that are errors (R-02), as observed in the data. */
+  errorLevels: readonly string[]
+  /** event_id = eventIdBase + file index · stride + file_row_number. */
+  eventIdFileStride: number
+  reference: ReferenceWindow
+  samples: {
+    description: string
+    files: readonly ParquetFixture[]
+    /** Glob relative to .data/raw over exactly the fixture copies. */
+    glob: string
+    from: string
+    to: string
+  }
+}
+
+/** A dataset read in place from remote Parquet files (LOG-35, A-32). */
+export type RemoteParquetSpec = CommonSpec & {
+  id: ExternalDataset
+  storage: "remote_parquet"
+  remote: RemoteParquetSource
+}
+
+/** The committed OTLP replay fixture (LOG-35, design D7). */
+export type ReplayFixture = {
+  /** Repository path relative to packages/corpus. */
+  path: string
+  bytes: number
+  sha256: string
+  records: number
+  /** Allowlist index of the text_bench file the records come from. */
+  sourceFileIndex: number
+  /** [from, to) of the selected rows in the source file, nanosecond UTC. */
+  from: string
+  to: string
+  /** ResourceAttributes keys kept per record (all others are dropped). */
+  resourceKeys: readonly string[]
+  /** Selection and exclusion rule as stated in the fixture file. */
+  selection: string
+}
+
+export type OtlpReplaySource = {
+  licence: string
+  fixture: ReplayFixture
+  /**
+   * SereneDB's OTLP/HTTP listener (serened.conf): the schema its tables
+   * live in and, per load source, the database it writes and the env var
+   * of its host port on 127.0.0.1.
+   */
+  listener: {
+    schema: string
+    table: string
+    corpus: { database: string; portEnv: string }
+    samples: { database: string; portEnv: string }
+  }
+  /** Log record attributes the replayer adds to every record. */
+  attributes: { replayId: string; fixtureRow: string }
+  /** SeverityText values that are errors (R-02), as observed in the data. */
+  errorLevels: readonly string[]
+}
+
+/** A bounded OTLP/HTTP replay of public records into SereneDB (LOG-35, D7). */
+export type OtlpReplaySpec = CommonSpec & {
+  id: ExternalDataset
+  storage: "otlp_replay"
+  replay: OtlpReplaySource
+}
+
+export type DatasetSpec = TableDatasetSpec | RemoteParquetSpec | OtlpReplaySpec
+
+/**
+ * Pre-declared limits of a bounded direct scan over remote Parquet (D3.2):
+ * the window and the number of files one count_events or event_trend call
+ * may read. Measured on part_000 (LOG-35 probe § 3): counts and facets over
+ * 60 s of data stayed below 2 s cold, inside the 10 s pool limit.
+ */
+export const REMOTE_SCAN_MAX_SECONDS = 60
+export const REMOTE_SCAN_MAX_FILES = 2
+
 const ZENODO = "https://zenodo.org/records/8196385/files"
+
+const TEXT_BENCH_HTTPS =
+  "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench"
+const TEXT_BENCH_S3 = "s3://public-pme/text_bench"
 
 /** Loghub commit the 2k samples are pinned to (logpai/loghub, 17.10.2026). */
 export const LOGHUB_COMMIT = "dd61d0952749ee7963bde24220d1be5ede023033"
@@ -266,9 +466,14 @@ const sample = (
   expectedLinesSource: "Loghub 2k samples",
 })
 
-export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
+export const DATASETS: { readonly [K in TableDataset]: TableDatasetSpec } & {
+  readonly otel: RemoteParquetSpec
+  readonly otel_replay: OtlpReplaySpec
+} = {
   bgl: {
     id: "bgl",
+    storage: "log_events",
+    patterns: true,
     title: "BGL",
     origin:
       "BlueGene/L supercomputer at Lawrence Livermore National Labs, 2005–2006.",
@@ -347,6 +552,8 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
   },
   openstack: {
     id: "openstack",
+    storage: "log_events",
+    patterns: true,
     title: "OpenStack",
     origin: "Nova services nova-api, nova-compute, nova-scheduler, 2017.",
     citation: [LOGHUB_PAPER],
@@ -447,6 +654,8 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
   },
   hdfs: {
     id: "hdfs",
+    storage: "log_events",
+    patterns: true,
     title: "HDFS_v1",
     origin:
       "Hadoop Distributed File System in a private cloud under benchmark workloads, November 2008; blocks labelled by handcrafted rules.",
@@ -528,6 +737,8 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
   },
   openssh: {
     id: "openssh",
+    storage: "log_events",
+    patterns: true,
     title: "OpenSSH",
     origin:
       "One OpenSSH server (host LabSZ) in the Loghub lab, 10 Dec to 7 Jan, 28+ days.",
@@ -597,6 +808,8 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
   },
   apache: {
     id: "apache",
+    storage: "log_events",
+    patterns: true,
     title: "Apache",
     origin:
       "Error log of an Apache HTTP server on Linux (Public Security Log Sharing Site), June 2005 to February 2006.",
@@ -663,6 +876,8 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
   },
   linux: {
     id: "linux",
+    storage: "log_events",
+    patterns: true,
     title: "Linux",
     origin:
       "/var/log/messages of one Linux server (host combo, Public Security Log Sharing Site), 260+ days.",
@@ -727,6 +942,8 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
   },
   zookeeper: {
     id: "zookeeper",
+    storage: "log_events",
+    patterns: true,
     title: "ZooKeeper",
     origin:
       "ZooKeeper service of 32 machines in the CUHK lab, aggregated, 26+ days in 2015.",
@@ -790,6 +1007,178 @@ export const DATASETS: Readonly<Record<Dataset, DatasetSpec>> = {
       }
     ),
   },
+  otel: {
+    id: "otel",
+    storage: "remote_parquet",
+    title: "OpenTelemetry logs (text_bench)",
+    origin:
+      "OpenTelemetry demo logs (TextBench) of one UTC day, 2025-09-23, exported as Parquet (ClickHouse otel_logs schema): 50 files of 1,000,000,000 rows each in the public bucket public-pme/text_bench (eu-west-3), read in place over HTTPS, never downloaded.",
+    citation: [
+      "Public bucket public-pme/text_bench listed in the challenge brief (https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet … part_049.parquet); licence not stated.",
+    ],
+    eventIdBase: 1_000_000_000_000,
+    timeBasis:
+      "Timestamp (OTel time_unix_nano, Parquet TIMESTAMP isAdjustedToUTC, nanoseconds); outputs truncate to microseconds, order and ties keep the nanoseconds and then event_id; filters compare the nanosecond column exactly",
+    errorDefinition:
+      "SeverityText error or fatal as logged (lower case; the error texts observed in the data); SeverityNumber is not used",
+    fields: {
+      ts: "Event time (Timestamp), UTC; nanoseconds in the files, truncated to microseconds in outputs.",
+      message: "Body as logged (OTel log body), untrusted text.",
+      level:
+        "SeverityText as logged: info, information, error, trace, warn, fatal; info and information stay distinct.",
+      component:
+        "ServiceName (OTel resource service.name); a record without a service has the empty string as logged.",
+      source_type: "ScopeName (OTel instrumentation scope) as logged.",
+      is_error: "SeverityText error or fatal (R-02).",
+      trace_id:
+        "TraceId as logged (hex); the empty string when the record carries no trace. No traces are loaded: the ID only groups log records.",
+      span_id: "SpanId as logged (hex); the empty string when absent.",
+      severity_number:
+        "SeverityNumber as logged (OTel 1–24, 0 = unspecified, frequent here); never used to derive the level.",
+    },
+    breadth: null,
+    contextScopes: ["same_trace"],
+    defaultsToSpecificScope: false,
+    labels: null,
+    apiAccesses: false,
+    patterns: false,
+    probeTerm: "called",
+    remote: {
+      licence:
+        "Public bucket listed in the challenge brief; licence not stated. Synthetic OpenTelemetry demo data, but bodies and attributes contain email- and card-number-like strings: treat all values as sensitive-looking untrusted text.",
+      pinKind:
+        "Per file at load: Content-Length, ETag and Last-Modified from an HTTP HEAD (Node), footer facts (rows, row groups, Timestamp min/max) from parquet_file_metadata/parquet_metadata (SQL). Not a checksum: the 41 GB files are never downloaded. Tools re-check size and Last-Modified (read_blob) before every query; SereneDB exposes no ETag, so the ETag is compared only at load.",
+      files: Array.from({ length: 50 }, (_, index) => {
+        const name = `part_${String(index).padStart(3, "0")}.parquet`
+        return {
+          index,
+          url: `${TEXT_BENCH_HTTPS}/${name}`,
+          s3: `${TEXT_BENCH_S3}/${name}`,
+        }
+      }),
+      notAllowlisted:
+        "part_050.parquet (94,407,674 rows, 23:57:23.98–23:59:59.99 UTC) exists in the bucket but is not in the brief's file list, so it is not allowlisted; the span therefore ends at part_049's last row.",
+      sourceColumns: {
+        ts: "Timestamp",
+        level: "SeverityText",
+        component: "ServiceName",
+        source_type: "ScopeName",
+        message: "Body",
+        trace_id: "TraceId",
+        span_id: "SpanId",
+        severity_number: "SeverityNumber",
+      },
+      errorLevels: ["error", "fatal"],
+      eventIdFileStride: 10_000_000_000,
+      reference: {
+        files: [0, 1],
+        glob: `${TEXT_BENCH_S3}/part_00[0-1].parquet`,
+        from: "2025-09-23T00:29:14.000000Z",
+        to: "2025-09-23T00:29:34.000000Z",
+      },
+      samples: {
+        description:
+          "Two committed Parquet fixtures with the real text_bench schema (MAP columns included): the rows of part_000 in [00:29:24.037, 00:29:24.0390372] and of part_001 in [00:29:24.0390372, 00:29:24.041) UTC, in file order, without records whose body or attributes contain email-, card- or long-number-like strings. Both keep the boundary row duplicated at 00:29:24.0390372. Row numbers are those of the fixtures, not of the bucket.",
+        files: [
+          {
+            index: 0,
+            fixture: "fixtures/otel/part_000.parquet",
+            path: "otel/part_000.parquet",
+            bytes: 72_106,
+            sha256:
+              "0fed8bd04a669835682be5b5d75adb1c851c698e082bd7ba52ba03a71e6b0957",
+          },
+          {
+            index: 1,
+            fixture: "fixtures/otel/part_001.parquet",
+            path: "otel/part_001.parquet",
+            bytes: 63_427,
+            sha256:
+              "f55de8fb051809dde2398f34c94ce57d531791c2ce7bf819e1b312a98c7546b1",
+          },
+        ],
+        glob: "otel/part_00[0-1].parquet",
+        from: "2025-09-23T00:29:24.037000Z",
+        to: "2025-09-23T00:29:24.041000Z",
+      },
+    },
+  },
+  otel_replay: {
+    id: "otel_replay",
+    storage: "otlp_replay",
+    title: "OpenTelemetry OTLP replay (text_bench sample)",
+    origin:
+      "A bounded, reproducible replay of public text_bench log records (the otel dataset's part_000.parquet, one millisecond of 2025-09-23) from a committed fixture, POSTed once per load as OTLP/JSON to SereneDB's own OTLP/HTTP listener (127.0.0.1 only) and read from its otel_logs table. A replay, not a production stream: no collector, no live sender.",
+    citation: [
+      "Records from the public bucket public-pme/text_bench listed in the challenge brief (part_000.parquet); licence not stated.",
+    ],
+    eventIdBase: 2_000_000_000_000,
+    timeBasis:
+      "timeUnixNano of each replayed record = the text_bench Timestamp (UTC, nanoseconds), stored by SereneDB as TIMESTAMP_NS holding the UTC wall clock; outputs truncate to microseconds, order and ties keep the nanoseconds and then event_id; observed_timestamp is the replay time, not an observation of the source system",
+    errorDefinition:
+      "SeverityText error or fatal as logged (lower case, as in otel); SeverityNumber is not used",
+    fields: {
+      ts: "Original record time (OTLP timeUnixNano = text_bench Timestamp), UTC; nanoseconds stored, truncated to microseconds in outputs. Not the replay time.",
+      message:
+        "Body as replayed, verbatim from text_bench (OTLP stringValue), untrusted text.",
+      level:
+        "SeverityText as logged (info, information, error, …); info and information stay distinct.",
+      component:
+        "service_name, which SereneDB promotes from the resource attribute service.name; null when the record has none (the Parquet source writes the empty string there).",
+      source_type:
+        "scope_name (OTel instrumentation scope) as replayed; null when empty.",
+      is_error: "SeverityText error or fatal (R-02).",
+      trace_id:
+        "TraceId as replayed (hex); null when the record has none (SereneDB stores an empty OTLP traceId as NULL). No traces are loaded: the ID only groups log records.",
+      span_id: "SpanId as replayed (hex); null when absent.",
+      severity_number:
+        "SeverityNumber as replayed; null for 0 (unspecified), which SereneDB stores as NULL; never used to derive the level.",
+    },
+    breadth: null,
+    contextScopes: ["same_trace"],
+    defaultsToSpecificScope: false,
+    labels: null,
+    apiAccesses: false,
+    patterns: false,
+    probeTerm: "called",
+    replay: {
+      licence:
+        "Public bucket listed in the challenge brief; licence not stated. The fixture keeps no LogAttributes and no record with email-, card- or long-number-like strings; Body is verbatim.",
+      fixture: {
+        path: "fixtures/otel-replay/part_000.json",
+        bytes: 232_827,
+        sha256:
+          "a93def09bff4cf51b0531b0cbeb21a9dd1c3d883570f7b3de8536a88806aa42a",
+        records: 365,
+        sourceFileIndex: 0,
+        from: "2025-09-23T00:20:00.000000000Z",
+        to: "2025-09-23T00:20:00.001000000Z",
+        resourceKeys: [
+          "service.name",
+          "service.namespace",
+          "service.version",
+          "k8s.namespace.name",
+          "k8s.pod.name",
+        ],
+        selection:
+          "Every row of text_bench part_000.parquet with Timestamp in [2025-09-23T00:20:00.000000000Z, 2025-09-23T00:20:00.001000000Z), in file_row_number order, except rows whose Body, ScopeName, ScopeVersion, kept ResourceAttributes or LogAttributes contain an email address, a 13–19 digit number, a card-like digit group or one of the words email, credit, card, cvv, password, ssn (case-insensitive). Kept per record: Timestamp (epoch ns), TraceId, SpanId, TraceFlags, SeverityText, SeverityNumber, ServiceName, Body (verbatim), ScopeName, ScopeVersion and the ResourceAttributes service.name, service.namespace, service.version, k8s.namespace.name, k8s.pod.name; LogAttributes are dropped. Built by `pnpm --filter @workspace/corpus otel:replay-fixture` (SereneDB selects the rows).",
+      },
+      listener: {
+        schema: "otlp",
+        table: "otel_logs",
+        corpus: { database: "postgres", portEnv: "SERENEDB_OTLP_PORT" },
+        samples: {
+          database: "log_insights_samples_otel",
+          portEnv: "SERENEDB_OTLP_SAMPLES_PORT",
+        },
+      },
+      attributes: {
+        replayId: "log_insights.replay_id",
+        fixtureRow: "log_insights.fixture_row",
+      },
+      errorLevels: ["error", "fatal"],
+    },
+  },
 }
 
 /** Datasets in catalog order. */
@@ -810,6 +1199,24 @@ export function datasetsWithColumn(column: SpecificColumn): Dataset[] {
 export function datasetsWithErrors(): Dataset[] {
   return DATASET_IDS.filter((id) => DATASETS[id].errorDefinition !== null)
 }
+
+/**
+ * The external dataset that owns an event_id, from the catalog ID ranges
+ * (eventIdBase up to the next 10^12); null for log_events IDs.
+ */
+export function externalDatasetOfEventId(
+  eventId: number
+): ExternalDataset | null {
+  return (
+    EXTERNAL_DATASETS.find((id) => {
+      const base = DATASETS[id].eventIdBase
+      return eventId >= base && eventId < base + EXTERNAL_ID_RANGE
+    }) ?? null
+  )
+}
+
+/** Width of an external dataset's event_id range. */
+export const EXTERNAL_ID_RANGE = 1_000_000_000_000
 
 /** One-line description of every dataset for tool and parameter descriptions. */
 export function datasetList(): string {

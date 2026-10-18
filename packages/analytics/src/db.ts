@@ -193,6 +193,12 @@ export function createDatabase(
       try {
         // A startup option `-c TimeZone=…` is ignored by SereneDB (gate G1).
         await client.query("SET TimeZone = 'UTC'")
+        // HTTPFS connects can ignore pg_cancel_backend (LOG-35 probe § 8).
+        // These engine options are GLOBAL and have no serened.conf flags.
+        // Bound each request's connect/read/retry chain before external reads;
+        // this is not a total query limit (the analytics pool still enforces 10 s).
+        await client.query("SET GLOBAL http_timeout = 3")
+        await client.query("SET GLOBAL http_retries = 1")
         if (stopped !== null) throw new QueryFailure(stopped)
         const { rows } = await client.query<{ pid: unknown }>(
           "SELECT pg_backend_pid() AS pid"

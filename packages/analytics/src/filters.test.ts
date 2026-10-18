@@ -6,6 +6,7 @@ import {
   compileFilter,
   dimensionExpression,
 } from "./filters.ts"
+import { otelIndexRelation, otelScanRelation } from "./relations.ts"
 import { SqlParams } from "./sql.ts"
 
 const ALL = FILTER_FIELDS
@@ -22,7 +23,11 @@ function compile(
     ...(alias === undefined ? {} : { alias }),
   })
   if (!result.ok) throw new Error(result.error.message)
-  return { ...result.filter, params: params.values }
+  return {
+    where: result.filter.where,
+    relation: result.filter.relation,
+    params: params.values,
+  }
 }
 
 const TEAM =
@@ -101,7 +106,7 @@ describe("compileFilter", () => {
       { dataset: "bgl" },
       { accepted: ALL, params, relation: "log_events_idx" }
     )
-    expect(result.ok && result.filter).toEqual({
+    expect(result.ok && result.filter).toMatchObject({
       where: "log_events_idx.dataset = $1",
       relation: "log_events_idx",
     })
@@ -168,7 +173,7 @@ describe("compileFilter", () => {
       { dataset: "openstack" },
       { accepted: ["dataset"], params }
     )
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       ok: true,
       filter: { where: "log_events.dataset = $2", relation: "log_events" },
     })
@@ -201,6 +206,123 @@ describe("compileFilter", () => {
         { accepted: ALL, params: new SqlParams(), alias: "e; DROP" }
       )
     ).toThrow(RangeError)
+  })
+})
+
+describe("compileFilter on the otel relations (LOG-35)", () => {
+  const ranges = [
+    {
+      file_index: 0,
+      from: "2025-09-23T00:00:00.000000000Z",
+      to: "2025-09-23T00:29:24.039037200Z",
+    },
+    { file_index: 1, from: "2025-09-23T00:29:24.039037200Z", to: null },
+  ]
+
+  it("binds the window as TIMESTAMPTZ_NS on the reference index and maps is_error to the catalog levels", () => {
+    const params = new SqlParams()
+    const result = compileFilter(
+      {
+        dataset: "otel",
+        from: "2025-09-23T00:29:20Z",
+        to: "2025-09-23T00:29:30Z",
+        components: ["cart"],
+        only_errors: true,
+        text: "cache full",
+      },
+      {
+        accepted: ALL,
+        params,
+        relation: otelIndexRelation("otel_ref_idx", ranges),
+      }
+    )
+    if (!result.ok) throw new Error(result.error.message)
+    // The dataset condition is dropped: the relation holds otel only.
+    expect(result.filter.where).toBe(
+      "otel_ref_idx.ts >= $1::TIMESTAMPTZ_NS AND otel_ref_idx.ts < $2::TIMESTAMPTZ_NS AND otel_ref_idx.component IN ($3) AND (otel_ref_idx.level IN ('error', 'fatal')) AND otel_ref_idx.message @@ plainto_tsquery($4)"
+    )
+    expect(params.values).toEqual([
+      "2025-09-23T00:29:20Z",
+      "2025-09-23T00:29:30Z",
+      "cart",
+      "cache full",
+    ])
+    expect(result.filter.rel.col("event_id")).toBe(
+      "(CASE WHEN otel_ref_idx.ts >= '2025-09-23T00:29:24.039037200Z'::TIMESTAMPTZ_NS THEN 1010000000000 ELSE 1000000000000 END::BIGINT + otel_ref_idx.file_row_number)"
+    )
+    expect(result.filter.rel.col("node")).toBe("NULL::VARCHAR")
+    expect(result.filter.rel.col("pattern_id")).toBe("NULL::VARCHAR")
+  })
+
+  it("reads each scan file with its own half-open bounds as plain sargable comparisons", () => {
+    const params = new SqlParams()
+    const rel = otelScanRelation(
+      [
+        {
+          file_index: 0,
+          url: "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet",
+          read_from: "2025-09-23T00:29:00.000000000Z",
+          read_to: "2025-09-23T00:29:24.039037200Z",
+        },
+        {
+          file_index: 1,
+          url: "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_001.parquet",
+          read_from: "2025-09-23T00:29:24.039037200Z",
+          read_to: "2025-09-23T00:29:50.000000000Z",
+        },
+      ],
+      params
+    )
+    expect(rel.from).toContain(
+      `FROM read_parquet('https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet', file_row_number = true) WHERE "Timestamp" >= $1::TIMESTAMPTZ_NS AND "Timestamp" < $2::TIMESTAMPTZ_NS UNION ALL SELECT 1010000000000::BIGINT + file_row_number AS event_id`
+    )
+    expect(params.values).toEqual([
+      "2025-09-23T00:29:00.000000000Z",
+      "2025-09-23T00:29:24.039037200Z",
+      "2025-09-23T00:29:24.039037200Z",
+      "2025-09-23T00:29:50.000000000Z",
+    ])
+    const result = compileFilter(
+      { dataset: "otel", levels: ["error"] },
+      { accepted: ALL, params, relation: rel }
+    )
+    expect(result.ok && result.filter.where).toBe("otel_scan.level IN ($5)")
+    expect(rel.bucket("second")).toBe(
+      "date_trunc('second', make_timestamptz(epoch_ns(otel_scan.ts) // 1000))"
+    )
+  })
+
+  it("refuses a Parquet location outside the allowlist and a text filter on a scan", () => {
+    expect(() =>
+      otelScanRelation(
+        [
+          {
+            file_index: 0,
+            url: "https://example.invalid/x.parquet",
+            read_from: "2025-09-23T00:00:00.000000000Z",
+            read_to: "2025-09-23T00:00:01.000000000Z",
+          },
+        ],
+        new SqlParams()
+      )
+    ).toThrow(RangeError)
+    const rel = otelScanRelation(
+      [
+        {
+          file_index: 0,
+          url: "/data/raw/otel/part_000.parquet",
+          read_from: "2025-09-23T00:00:00.000000000Z",
+          read_to: "2025-09-23T00:00:01.000000000Z",
+        },
+      ],
+      new SqlParams()
+    )
+    expect(() =>
+      compileFilter(
+        { dataset: "otel", text: "x" },
+        { accepted: ALL, params: new SqlParams(), relation: rel }
+      )
+    ).toThrow("a text filter needs the full-text index relation")
   })
 })
 
