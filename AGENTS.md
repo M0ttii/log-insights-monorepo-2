@@ -187,7 +187,9 @@ versions before using an API, and never infer an installation from a plan.
 - `check_claims` verifies each claim against its fact ID (value, metric and required
   group; scope comes from the receipt) and counts unknown fact IDs or receipts as
   unresolved. MCP and web chat share the number format and the check; there is no
-  web-only verifier. Answers state how many claims were checked; nothing verifies
+  web-only verifier. The web app only adds syntactic markings: fact IDs not
+  submitted to `check_claims` (`unchecked`) and numbers without a fact ID
+  (`uncited`). Answers state how many claims were checked; nothing verifies
   explanations, and model prose is never the authoritative numerical source.
 - Role playbooks live once in `agent/playbooks/` and feed the MCP prompts, the
   server instructions, `describe_corpus` and the web system prompt. No second copy.
