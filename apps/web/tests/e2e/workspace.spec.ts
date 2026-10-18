@@ -20,6 +20,9 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
 }, testInfo) => {
   const errors: string[] = []
   page.on("pageerror", (error) => errors.push(error.message))
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text())
+  })
   await page.goto("/investigations/new")
   await expect(
     page.getByRole("heading", { name: "What do you need to know?" })
@@ -182,6 +185,41 @@ test("search keeps filter scope in the URL and exposes real evidence or a recove
   })
 })
 
+test("real event context uses the available width and returns keyboard focus", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/logs?dataset=bgl&q=parity")
+  await expect(
+    page.getByRole("region", { name: "Search results" })
+  ).toContainText(/matching log events|unavailable|could not|not loaded/i)
+  const contextButton = page
+    .getByRole("button", { name: /^Open context for event/ })
+    .first()
+  test.fixme(
+    (await contextButton.count()) === 0,
+    "LOG-39: event-context browser coverage requires a loaded corpus; the unavailable state is covered separately."
+  )
+  await contextButton.click()
+  const context = page.getByRole("dialog", { name: "Event context" })
+  await expect(context).toBeVisible()
+  await expect
+    .poll(() =>
+      context.evaluate((element) =>
+        Math.round(element.getBoundingClientRect().width)
+      )
+    )
+    .toBe(testInfo.project.name === "mobile" ? 390 : 768)
+  const accessibility = await new AxeBuilder({ page }).analyze()
+  expect(
+    accessibility.violations.filter(
+      (item) => item.impact === "serious" || item.impact === "critical"
+    )
+  ).toEqual([])
+  await page.getByRole("button", { name: "Back to results" }).click()
+  await expect(context).toBeHidden()
+  await expect(contextButton).toBeFocused()
+})
+
 test("receipt IDs are validated and unresolved receipts are explicit", async ({
   page,
 }, testInfo) => {
@@ -204,6 +242,14 @@ test("receipt IDs are validated and unresolved receipts are explicit", async ({
   await expect(
     page.getByRole("dialog", { name: "Query receipt" })
   ).toBeVisible()
+  const drawer = page.getByRole("dialog", { name: "Query receipt" })
+  await expect
+    .poll(() =>
+      drawer.evaluate((element) =>
+        Math.round(element.getBoundingClientRect().width)
+      )
+    )
+    .toBe(testInfo.project.name === "mobile" ? 390 : 640)
   await expect(page.getByRole("dialog")).toContainText("Receipt unavailable")
   await page.screenshot({
     path: testInfo.outputPath("receipt.png"),

@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 import type { Filter } from "@workspace/domain/filters"
 import type { Brief } from "@/server/brief"
-import { Button } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import {
   InputGroup,
   InputGroupAddon,
@@ -101,8 +101,17 @@ export function InvestigationView({
   const [contexts, setContexts] = useState<Record<string, RunContext>>({})
   const input = useRef<HTMLTextAreaElement>(null)
   const form = useRef<HTMLFormElement>(null)
+  const submittedQuestion = useRef<string | null>(null)
+  function finishQuestion(restore: boolean) {
+    if (restore && submittedQuestion.current !== null)
+      setQuestion(submittedQuestion.current)
+    submittedQuestion.current = null
+    if (form.current?.contains(document.activeElement))
+      input.current?.focus({ preventScroll: true })
+  }
   const chat = useChat({
     transport: chatTransport,
+    onError: () => finishQuestion(true),
     onFinish: ({ message, isAbort, isError, isDisconnect }) => {
       if (isAbort || isDisconnect || isError)
         setInterruptions((previous) => ({
@@ -110,13 +119,12 @@ export function InvestigationView({
           [message.id]: isAbort ? "stopped" : "failed",
         }))
       const completed = projectMessage(message).run?.status
-      if (
-        !isAbort &&
-        !isError &&
-        !isDisconnect &&
-        (!completed || completed === "completed")
+      finishQuestion(
+        isAbort ||
+          isError ||
+          isDisconnect ||
+          (completed !== undefined && completed !== "completed")
       )
-        setQuestion("")
     },
   })
   const busy = chat.status === "submitted" || chat.status === "streaming"
@@ -159,14 +167,13 @@ export function InvestigationView({
             <MessageSquarePlus />
             <span className="hidden sm:inline">New chat</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
+          <Link
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
             aria-label="How it works"
-            render={<Link href="/datasets#connect" />}
+            href="/datasets#connect"
           >
             <CircleHelp />
-          </Button>
+          </Link>
         </div>
       </header>
 
@@ -256,8 +263,11 @@ export function InvestigationView({
           ref={form}
           onSubmit={(event) => {
             event.preventDefault()
-            if (!canSend) return
+            if (!canSend || submittedQuestion.current !== null) return
             chat.clearError()
+            submittedQuestion.current = question
+            setQuestion("")
+            input.current?.focus({ preventScroll: true })
             const id = crypto.randomUUID()
             setContexts((previous) => ({
               ...previous,
