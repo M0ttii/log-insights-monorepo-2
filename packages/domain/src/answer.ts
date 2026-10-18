@@ -506,6 +506,16 @@ function citingExcerpt(
  * ROLE_SECTIONS order). This module never checks a value itself — the mismatch
  * and unresolved findings come straight from the submitted check_claims
  * results (§ 8.3).
+ *
+ * `unchecked` rule: a fact citation is unchecked when it appears in no
+ * submitted check_claims claim — EXCEPT the summary facts of a submitted
+ * check_claims receipt itself. The Verification line cites a check's own
+ * summary (e.g. `N claims checked [r_….f1] · M mismatch [r_….f2] · K
+ * unresolved [r_….f3]`), and common.md states these summary facts come
+ * directly from that check and are deliberately not re-submitted to it. So a
+ * fact whose receipt ID is one of the submitted checks' receipt IDs is exempt
+ * from `unchecked`, while a fact from any other, unsubmitted receipt (even a
+ * check_claims-shaped one that was never submitted here) is still `unchecked`.
  */
 export function answerFindings(input: {
   text: string
@@ -561,14 +571,20 @@ export function answerFindings(input: {
   for (const fact of latest.keys()) emitFact(fact)
 
   // unchecked: fact citations in the text that appear in no submitted claim.
+  // Facts of a submitted check_claims receipt itself (its summary counts, cited
+  // by the Verification line) come directly from that check and are never
+  // re-submitted (common.md), so they are not unchecked.
   const submittedFacts = new Set<string>()
+  const checkReceipts = new Set<string>()
   for (const check of checks) {
+    checkReceipts.add(check.receipt_id)
     for (const result of check.output.claims)
       submittedFacts.add(result.claim.fact)
   }
   for (const citation of citations) {
     if (citation.kind !== "fact") continue
     if (submittedFacts.has(citation.id)) continue
+    if (checkReceipts.has(citation.receiptId)) continue
     findings.push({
       kind: "unchecked",
       fact: citation.id,

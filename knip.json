@@ -16,6 +16,9 @@
         "tests/integration/print-trend.ts"
       ],
       "ignoreDependencies": ["tsx"]
+    },
+    "packages/typescript-config": {
+      "ignoreUnresolved": ["next"]
     }
   },
   "ignore": ["vendor/**"],
