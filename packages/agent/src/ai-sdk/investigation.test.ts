@@ -3,6 +3,7 @@ import type {
   Registry,
   ToolEntry,
 } from "@workspace/analytics/registry"
+import { ROLE_SECTIONS, detectSections } from "@workspace/domain/answer"
 import { invalidInput, notFound } from "@workspace/domain/errors"
 import type { ToolResult } from "@workspace/domain/tool"
 import { simulateReadableStream, type LanguageModel } from "ai"
@@ -734,5 +735,52 @@ describe("baseline instructions", () => {
     const guidance = baselineRegistryGuidance("1.0.0")
     expect(guidance.version).toBe("baseline:1.0.0")
     expect(JSON.stringify(guidance)).not.toContain("PLAYBOOK")
+  })
+
+  it("baseline instructions expose no role-core section heading nor Coverage", async () => {
+    // Direct guard against indirect playbook feed (§ 13.2): the baseline's
+    // recorded instruction texts, and the baseline registry guidance, must
+    // carry none of the role-core SECTION STRUCTURE a playbook would supply.
+    // Detection is by heading / leading-bold form (detectSections), the same
+    // way the gate recognises a section — a prose word like "evidence" inside
+    // a sentence is fine; a "## Evidence" heading is not.
+    const coreNames = [
+      ...ROLE_SECTIONS.core.engineer,
+      ...ROLE_SECTIONS.core.team_lead,
+      ...ROLE_SECTIONS.core.manager,
+    ]
+    for (const role of ["engineer", "team_lead", "manager", "auto"] as const) {
+      const { model } = scriptModel([
+        { tools: [{ name: "check_claims", input: { claims: [] } }] },
+        { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+      ])
+      const { stream, done } = runInvestigation(
+        { ...baseInput, role, variant: "baseline" },
+        deps(model),
+        new AbortController().signal
+      )
+      await drain(stream)
+      const record = await done
+      const instructions = record.instruction_texts.join("\n")
+      // No role-core section is DETECTABLE as a heading / bold in the baseline.
+      const present = new Set(
+        [
+          ...detectSections(instructions, "engineer").present,
+          ...detectSections(instructions, "team_lead").present,
+          ...detectSections(instructions, "manager").present,
+        ].map((name) => name.toLowerCase())
+      )
+      for (const name of coreNames)
+        expect(present.has(name.toLowerCase())).toBe(false)
+      // And no "Coverage" section text in any form (LOG-47 is playbook-only).
+      expect(instructions).not.toMatch(/coverage/i)
+    }
+    // The registry guidance strings (answer_guidance) are equally clean.
+    const guidanceText = JSON.stringify(baselineRegistryGuidance("1.0.0"))
+    for (const name of coreNames)
+      expect(guidanceText).not.toMatch(
+        new RegExp(`^[ \\t]*#{1,6}[ \\t]+${name}`, "im")
+      )
+    expect(guidanceText).not.toMatch(/coverage/i)
   })
 })
