@@ -333,5 +333,387 @@
       "describe_result_digest": "8e878dc7c1d27761687cb16a1543a5360f424107c99d23d6286b2cfffcbadc78"
     }
   ],
-  "load_reference_note": "data_version hashes image identity. describe digests derive from the original pre-migration captured data with only versions.data_version set to the exact approved load manifest; all other data and every normalized fact remain unchanged. The official-image digest exactly matched the first CI result."
+  "load_reference_note": "data_version hashes image identity. Historical describe digests derive from the unchanged original captured data with only versions.data_version set to the exact approved load manifest. The complete original describe_result is retained; current comparisons also require the canonical CONTRACT_VERSION. All analytical fields and every normalized fact remain unchanged.",
+  "describe_result": {
+    "datasets": [
+      {
+        "dataset": "bgl",
+        "events": 2000,
+        "lines_read": 2000,
+        "rejected": 0,
+        "first_event": "2005-06-03T22:42:50.675872Z",
+        "last_event": "2006-01-03T15:13:09.127918Z",
+        "error_events": 395,
+        "patterns": 123,
+        "single_event_patterns": 45,
+        "time_basis": "Unix seconds (UTC) + microseconds of the text timestamp",
+        "label_source": "alert category in the first column (dataset label)",
+        "fields": [
+          {
+            "name": "event_id",
+            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+          },
+          {
+            "name": "ts",
+            "meaning": "Event time, UTC with microseconds."
+          },
+          {
+            "name": "level",
+            "meaning": "Severity as logged."
+          },
+          {
+            "name": "component",
+            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+          },
+          {
+            "name": "source_type",
+            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+          },
+          {
+            "name": "message",
+            "meaning": "Original log message, untrusted text."
+          },
+          {
+            "name": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04)."
+          },
+          {
+            "name": "is_error",
+            "meaning": "Error level after R-02."
+          },
+          {
+            "name": "node",
+            "meaning": "Node ID, e.g. R02-M1-N0-C:J12-U11."
+          },
+          {
+            "name": "midplane",
+            "meaning": "Midplane derived from the node, e.g. R02-M1."
+          },
+          {
+            "name": "rack",
+            "meaning": "Rack derived from the node, e.g. R02."
+          },
+          {
+            "name": "alert_label",
+            "meaning": "Dataset alert category; null for non-alert lines."
+          }
+        ],
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 1597
+          },
+          {
+            "level": "FATAL",
+            "events": 347
+          },
+          {
+            "level": "ERROR",
+            "events": 41
+          },
+          {
+            "level": "WARNING",
+            "events": 8
+          },
+          {
+            "level": "SEVERE",
+            "events": 7
+          }
+        ],
+        "components": [
+          {
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "events": 1820
+          },
+          {
+            "component": "APP",
+            "team": "Workload Runtime",
+            "events": 107
+          },
+          {
+            "component": "DISCOVERY",
+            "team": "Hardware Operations",
+            "events": 35
+          },
+          {
+            "component": "MMCS",
+            "team": "Control Plane",
+            "events": 35
+          },
+          {
+            "component": "HARDWARE",
+            "team": "Hardware Operations",
+            "events": 3
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 1857
+          },
+          {
+            "label": "KERNDTLB",
+            "events": 60
+          },
+          {
+            "label": "KERNSTOR",
+            "events": 30
+          },
+          {
+            "label": "APPSEV",
+            "events": 17
+          },
+          {
+            "label": "KERNMNTF",
+            "events": 11
+          },
+          {
+            "label": "KERNTERM",
+            "events": 7
+          },
+          {
+            "label": "KERNREC",
+            "events": 5
+          },
+          {
+            "label": "APPRES",
+            "events": 4
+          },
+          {
+            "label": "APPREAD",
+            "events": 3
+          },
+          {
+            "label": "APPTO",
+            "events": 2
+          },
+          {
+            "label": "KERNRTSP",
+            "events": 2
+          },
+          {
+            "label": "APPCHILD",
+            "events": 1
+          },
+          {
+            "label": "APPOUT",
+            "events": 1
+          }
+        ],
+        "api_accesses": null,
+        "api_accesses_without_request_id": null,
+        "requests": null
+      },
+      {
+        "dataset": "openstack",
+        "events": 2000,
+        "lines_read": 2000,
+        "rejected": 0,
+        "first_event": "2017-05-16T00:00:00.008000Z",
+        "last_event": "2017-05-16T00:14:47.687000Z",
+        "error_events": 0,
+        "patterns": 68,
+        "single_event_patterns": 7,
+        "time_basis": "timestamp without zone, assumed UTC",
+        "label_source": "none: this source has no anomaly labels",
+        "fields": [
+          {
+            "name": "event_id",
+            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+          },
+          {
+            "name": "ts",
+            "meaning": "Event time, UTC with microseconds."
+          },
+          {
+            "name": "level",
+            "meaning": "Severity as logged."
+          },
+          {
+            "name": "component",
+            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+          },
+          {
+            "name": "source_type",
+            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+          },
+          {
+            "name": "message",
+            "meaning": "Original log message, untrusted text."
+          },
+          {
+            "name": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04)."
+          },
+          {
+            "name": "is_error",
+            "meaning": "Error level after R-02."
+          },
+          {
+            "name": "request_id",
+            "meaning": "Request ID (req-…) of the request block."
+          },
+          {
+            "name": "instance_id",
+            "meaning": "Instance UUID named in the line."
+          },
+          {
+            "name": "http_method",
+            "meaning": "HTTP method of an API access line."
+          },
+          {
+            "name": "endpoint",
+            "meaning": "API path with IDs masked (R-04)."
+          },
+          {
+            "name": "http_status",
+            "meaning": "HTTP status of an API access line."
+          },
+          {
+            "name": "latency_ms",
+            "meaning": "Response time of an API access in milliseconds."
+          },
+          {
+            "name": "is_anomalous",
+            "meaning": "Dataset anomaly label of the instance, where assignable."
+          }
+        ],
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 1969
+          },
+          {
+            "level": "WARNING",
+            "events": 31
+          }
+        ],
+        "components": [
+          {
+            "component": "nova-api",
+            "team": "API Gateway",
+            "events": 1060
+          },
+          {
+            "component": "nova-compute",
+            "team": "Compute Platform",
+            "events": 933
+          },
+          {
+            "component": "nova-scheduler",
+            "team": "Control Plane",
+            "events": 7
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 2000
+          }
+        ],
+        "api_accesses": 1017,
+        "api_accesses_without_request_id": 89,
+        "requests": 928
+      }
+    ],
+    "limits": [
+      "No shared time axis: BGL (2005–2006) and OpenStack (2017) do not overlap. Trends and period comparisons are per dataset; numbers across both are totals over each full span and are labelled as such.",
+      "Logs only: there is no business, customer, cost or downtime data. Such impact is unknown and must be named as unknown.",
+      "Labels belong to the dataset: BGL alert categories and OpenStack anomaly labels are not findings of this system; cite them as dataset labels.",
+      "Matches are log entries: counted events, patterns and episodes are neither incidents nor outages."
+    ],
+    "ownership": {
+      "fictional": true,
+      "note": "fictional (Serene Platform)",
+      "teams": [
+        {
+          "team": "API Gateway",
+          "components": [
+            {
+              "dataset": "openstack",
+              "component": "nova-api"
+            }
+          ]
+        },
+        {
+          "team": "Compute Platform",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "KERNEL"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-compute"
+            }
+          ]
+        },
+        {
+          "team": "Control Plane",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "BGLMASTER"
+            },
+            {
+              "dataset": "bgl",
+              "component": "CMCS"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MMCS"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-scheduler"
+            }
+          ]
+        },
+        {
+          "team": "Hardware Operations",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "DISCOVERY"
+            },
+            {
+              "dataset": "bgl",
+              "component": "HARDWARE"
+            },
+            {
+              "dataset": "bgl",
+              "component": "LINKCARD"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MONITOR"
+            }
+          ]
+        },
+        {
+          "team": "Workload Runtime",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "APP"
+            }
+          ]
+        }
+      ],
+      "unowned": []
+    },
+    "versions": {
+      "data_version": "dv_379bf006bbb73434",
+      "source": "samples",
+      "loader_version": "1.0.0",
+      "parser_version": "1.0.0",
+      "pattern_rules_version": "1.0.0",
+      "ownership_version": "1.0.0",
+      "rules_version": "concept-3.5",
+      "contract_version": "2.9.0"
+    },
+    "answer_guidance": null,
+    "guidance_version": null
+  }
 }

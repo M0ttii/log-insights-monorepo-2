@@ -18,6 +18,7 @@ import {
 import { bucketGrid, fillBuckets, type TimeRange } from "@workspace/domain/time"
 import { countEventsOutputSchema } from "@workspace/domain/tools/count-events"
 import { eventTrendOutputSchema } from "@workspace/domain/tools/event-trend"
+import { CONTRACT_VERSION } from "@workspace/domain/version"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { z } from "zod"
 
@@ -26,6 +27,7 @@ import { createDatabase, type Database } from "../../src/db.ts"
 import { FileReceiptStore, resultDigest } from "../../src/receipts.ts"
 import { createRegistry, type Registry } from "../../src/registry.ts"
 import { exactCount, isoTime } from "../../src/sql.ts"
+import { describeCorpus } from "../../src/tools/describe-corpus.ts"
 import { loadEnv, samplesConnection, temporaryDir } from "./helpers.ts"
 
 loadEnv()
@@ -40,6 +42,7 @@ const baselineSchema = z.object({
   source: z.string(),
   data_version: z.string(),
   loads: z.array(loadReferenceSchema),
+  describe_result: describeCorpus.output,
   cases: z.array(
     z.object({
       name: z.string(),
@@ -80,6 +83,13 @@ beforeAll(async () => {
     baseline.loads.find((reference) => reference.image === manifest.image)
   )
   z.literal(expectedLoad.data_version).parse(manifest.data_version)
+  // Keep the original complete capture and its historical digest pinned.
+  // Only the two contextual version stamps vary for current invocations.
+  z.literal(expectedLoad.describe_result_digest).parse(
+    resultDigest(
+      describeReference(baseline.describe_result.versions.contract_version)
+    )
+  )
   receiptsDir = await temporaryDir("analytics-sql-rule-parity-")
   registry = createRegistry({
     db,
@@ -97,6 +107,17 @@ const call = () => ({
   client: "test" as const,
   signal: new AbortController().signal,
 })
+
+function describeReference(contractVersion: string) {
+  return {
+    ...baseline.describe_result,
+    versions: {
+      ...baseline.describe_result.versions,
+      data_version: expectedLoad.data_version,
+      contract_version: contractVersion,
+    },
+  }
+}
 
 async function run(tool: string, input: Record<string, unknown>) {
   const outcome = await registry.runTool(tool, input, call())
@@ -131,7 +152,7 @@ describe("pre-migration result, fact and digest parity", () => {
     const result = await run(fixture.tool, fixture.input)
     const expectedDigest =
       fixture.tool === "describe_corpus"
-        ? expectedLoad.describe_result_digest
+        ? resultDigest(describeReference(CONTRACT_VERSION))
         : fixture.result_digest
     const normalizedFacts = result.facts.map((fact) => ({
       ...fact,
