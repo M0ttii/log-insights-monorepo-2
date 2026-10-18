@@ -1,3 +1,5 @@
+import { getEventListeners } from "node:events"
+
 import type {
   CallContext,
   Registry,
@@ -6,13 +8,14 @@ import type {
 import { ROLE_SECTIONS, detectSections } from "@workspace/domain/answer"
 import { invalidInput, notFound } from "@workspace/domain/errors"
 import type { ToolResult } from "@workspace/domain/tool"
-import { simulateReadableStream, type LanguageModel } from "ai"
+import { APICallError, simulateReadableStream, type LanguageModel } from "ai"
 import { MockLanguageModelV4 } from "ai/test"
 import { z } from "zod"
 import { describe, expect, it, vi } from "vitest"
 
 import { baselineRegistryGuidance } from "./baseline.ts"
 import {
+  investigationScopeSchema,
   runInvestigation,
   type InvestigationDeps,
   type InvestigationInput,
@@ -670,9 +673,17 @@ describe("append-only history and identical prompt prefix", () => {
     const rawLog = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined)
+    let providerCalls = 0
     const model = new MockLanguageModelV4({
       doStream: async () => {
-        throw new Error("private provider payload")
+        providerCalls += 1
+        throw new APICallError({
+          message: "private provider payload",
+          url: "https://example.test/model",
+          requestBodyValues: {},
+          statusCode: 503,
+          isRetryable: true,
+        })
       },
     })
     try {
@@ -685,6 +696,8 @@ describe("append-only history and identical prompt prefix", () => {
       const record = await done
       expect(record.status).toBe("error")
       expect(record.error_kind).toBe("model_error")
+      expect(record.model_calls).toBe(1)
+      expect(providerCalls).toBe(1)
       expect(phaseKinds(chunks)).toEqual(["preflight", "investigate"])
       expect(rawLog).not.toHaveBeenCalled()
     } finally {
@@ -813,6 +826,41 @@ describe("append-only history and identical prompt prefix", () => {
 })
 
 describe("abort", () => {
+  it.each(["completed", "error"] as const)(
+    "removes the caller abort listener after each %s run",
+    async (status) => {
+      const controller = new AbortController()
+      const baseline = getEventListeners(controller.signal, "abort").length
+
+      for (let run = 0; run < 3; run += 1) {
+        const { model } = scriptModel([
+          { tools: [{ name: "check_claims", input: { claims: [] } }] },
+          { text: CLEAN_ENGINEER_ANSWER },
+        ])
+        const d = deps(
+          model,
+          status === "error"
+            ? {
+                callContext: () => {
+                  throw new Error("preflight failed")
+                },
+              }
+            : {}
+        )
+        const { stream, done } = runInvestigation(
+          baseInput,
+          d,
+          controller.signal
+        )
+        await drain(stream)
+        expect((await done).status).toBe(status)
+        expect(getEventListeners(controller.signal, "abort")).toHaveLength(
+          baseline
+        )
+      }
+    }
+  )
+
   it("sets status 'stopped' and still writes the record", async () => {
     const controller = new AbortController()
     // The model hangs; we abort mid-flight.
@@ -1337,4 +1385,242 @@ describe("LOG-48 · data_version in the run record", () => {
     const record = await done
     expect(record.data_version).toBeNull()
   })
+})
+
+describe("LOG-52 run trace", () => {
+  it("keeps actual tool timing, invocation order, answer drafts and model calls", async () => {
+    let tick = 0
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: `${CLEAN_ENGINEER_ANSWER}\n42 events without evidence.` },
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { now: () => new Date(1_800_000_000_000 + tick++ * 10) }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    const steps = record.phases.flatMap((phase) => phase.steps)
+    expect(steps.map((step) => step.sequence)).toEqual([1, 2, 3])
+    expect(steps.every((step) => step.duration_ms > 0)).toBe(true)
+    expect(steps.every((step) => typeof step.started_at === "string")).toBe(
+      true
+    )
+    expect(steps.every((step) => typeof step.finished_at === "string")).toBe(
+      true
+    )
+    expect(record.model_calls).toBe(prompts.length)
+    expect(record.model_calls).toBe(4)
+    expect(record.instruction_messages).toEqual(
+      record.model_history
+        ?.filter((message) => message.role === "system")
+        .map((message) => message.content)
+    )
+    expect(record.instruction_messages).toHaveLength(2)
+    expect(record.usage).toEqual({
+      input: 400,
+      output: 160,
+      cache_read: 80,
+      cache_write: 0,
+    })
+    expect(record.answer_versions).toEqual([
+      expect.objectContaining({
+        phase: "answer",
+        text: `${CLEAN_ENGINEER_ANSWER}\n42 events without evidence.`,
+        after_sequence: 2,
+        started_at: expect.any(String),
+        completed_at: expect.any(String),
+      }),
+      expect.objectContaining({
+        phase: "revise",
+        text: CLEAN_ENGINEER_ANSWER,
+        after_sequence: 3,
+        started_at: expect.any(String),
+        completed_at: expect.any(String),
+      }),
+    ])
+    expect(record.limits).toEqual({
+      max_steps: 16,
+      max_follow_ups: 2,
+      max_revisions: 1,
+      timeout_ms: 180_000,
+      max_retries: 0,
+    })
+  })
+
+  it("associates early answer text with the checks completed before it", async () => {
+    const { model } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      {
+        text: "Investigate KERNEL next.",
+        tools: [{ name: "count_events", input: { dataset: "bgl" } }],
+      },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, {
+        limits: { maxRevisions: 0 },
+        registry: fakeRegistry(async (name) => {
+          if (name === "count_events")
+            await new Promise((resolve) => setTimeout(resolve, 10))
+          return cleanRegistry().runTool(
+            name,
+            {},
+            ctx(new AbortController().signal)
+          )
+        }),
+      }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    // Count events and text share a model step. The check may complete after
+    // the first text chunk; a phase-end tool count must not invent chronology.
+    expect(record.answer_versions?.[0]?.after_sequence).toBe(2)
+    expect(record.answer_versions?.[0]?.completed_sequences).toEqual([1, 2])
+    expect(record.answer_versions?.map((version) => version.text)).toEqual([
+      "Investigate KERNEL next.",
+      CLEAN_ENGINEER_ANSWER,
+    ])
+    expect(record.answer_versions?.[1]?.completed_sequences).toEqual([1, 2, 3])
+  })
+})
+
+it("LOG-52 preserves invocation order when parallel tools complete out of order", async () => {
+  let checkCall = 0
+  let tick = 0
+  const { model } = scriptModel([
+    { tools: [{ name: "check_claims", input: { claims: [] } }] },
+    {
+      tools: [
+        { name: "check_claims", input: { claims: [] } },
+        { name: "count_events", input: { dataset: "bgl" } },
+      ],
+      text: "Investigate KERNEL next.",
+    },
+    { text: CLEAN_ENGINEER_ANSWER },
+  ])
+  const registry = fakeRegistry(async (name, input, call) => {
+    if (name === "check_claims") {
+      checkCall += 1
+      if (checkCall === 2)
+        await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+    return cleanRegistry().runTool(name, input, call)
+  })
+  const { stream, done } = runInvestigation(
+    baseInput,
+    deps(model, {
+      registry,
+      limits: { maxRevisions: 0 },
+      now: () => new Date(1_800_000_000_000 + tick++ * 10),
+    }),
+    new AbortController().signal
+  )
+  await drain(stream)
+  const record = await done
+  const steps = record.phases.flatMap((phase) => phase.steps)
+  expect(steps.map((step) => step.sequence)).toEqual([1, 2, 3, 4])
+  expect(
+    steps[2]?.finished_at?.localeCompare(steps[3]?.finished_at ?? "")
+  ).toBe(1)
+  // Early text is delivered before these tools execute in the installed SDK.
+  expect(record.answer_versions?.[0]?.after_sequence).toBe(2)
+  expect(record.answer_versions?.[0]?.completed_sequences).toEqual([1, 2])
+})
+
+it("LOG-52 preserves a bounded multi-dataset question scope", async () => {
+  const scope = { dataset: ["bgl", "openstack"] }
+  expect(investigationScopeSchema.parse(scope)).toEqual(scope)
+  expect(() => investigationScopeSchema.parse({ dataset: [] })).toThrow(
+    /dataset/
+  )
+  expect(() =>
+    investigationScopeSchema.parse({ dataset: ["invented"] })
+  ).toThrow(/dataset/)
+  const { model, prompts } = scriptModel([
+    { tools: [{ name: "check_claims", input: { claims: [] } }] },
+    { text: CLEAN_ENGINEER_ANSWER },
+  ])
+  const { stream, done } = runInvestigation(
+    { ...baseInput, scope: { dataset: ["bgl", "openstack"] } },
+    deps(model),
+    new AbortController().signal
+  )
+  await drain(stream)
+  expect((await done).scope).toEqual(scope)
+  expect(firstUserMessageText(prompts)).toContain("openstack")
+})
+
+it("LOG-52 records tool calls rejected by the SDK before registry execution", async () => {
+  const calls: string[] = []
+  const base = cleanRegistry((name) => calls.push(name))
+  const registry: Registry = {
+    ...base,
+    tools: base.tools.map((entry) =>
+      entry.name === "count_events"
+        ? {
+            ...entry,
+            inputSchema: z.strictObject({ dataset: z.literal("bgl") }),
+          }
+        : entry
+    ),
+  }
+  const { model } = scriptModel([
+    {
+      tools: [
+        { name: "count_events", input: { dataset: 42 } },
+        { name: "check_claims", input: { claims: [] } },
+      ],
+    },
+    { text: CLEAN_ENGINEER_ANSWER },
+  ])
+  const { stream, done } = runInvestigation(
+    baseInput,
+    deps(model, { registry }),
+    new AbortController().signal
+  )
+  await drain(stream)
+  const record = await done
+  expect(calls).toEqual(["describe_corpus", "check_claims"])
+  expect(record.phases.flatMap((phase) => phase.steps)).toContainEqual(
+    expect.objectContaining({
+      tool: "count_events",
+      input: { dataset: 42 },
+      receipt_id: null,
+      input_validated: false,
+      error_kind: "invalid_input",
+    })
+  )
+})
+
+it("LOG-52 baseline revision feedback never introduces the playbook role core", async () => {
+  const frame =
+    "## Scope\nbgl\n## Answer\nInvestigate KERNEL next.\n## Unknown\nCause is unknown.\n## Verification\nchecked"
+  const { model } = scriptModel([
+    { tools: [{ name: "check_claims", input: { claims: [] } }] },
+    { text: `${frame}\n42 events without a fact.` },
+    { text: frame },
+  ])
+  const { stream, done } = runInvestigation(
+    { ...baseInput, variant: "baseline" },
+    deps(model),
+    new AbortController().signal
+  )
+  await drain(stream)
+  const record = await done
+  expect(
+    record.gate_findings[0]?.some((finding) => finding.kind === "uncited")
+  ).toBe(true)
+  expect(
+    record.gate_findings[0]?.some(
+      (finding) => finding.kind === "missing_section"
+    )
+  ).toBe(false)
+  expect(record.instruction_messages?.join("\n")).not.toContain("role core")
+  expect(record.gate_findings[1]).toEqual([])
 })

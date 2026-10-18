@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "plan": {
+    "id": "dev-clarify-01-baseline-1",
+    "question_id": "dev-clarify-01",
+    "variant": "baseline",
+    "repetition": 1,
+    "order": 0,
+    "required": true
+  },
+  "started_at": "2026-10-18T00:00:00.000Z",
+  "finished_at": "2026-10-18T00:00:00.010Z",
+  "elapsed_ms": 10,
+  "status": "completed",
+  "error_kind": null,
+  "record": {
+    "file": "runs/run_00000001.json",
+    "sha256": "39779041c987952b05a33ce4576d31a9b027eb7a3de7f9e1be05f73eedd9b79f"
+  },
+  "receipts": [],
+  "missing_receipts": []
+}

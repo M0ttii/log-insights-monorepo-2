@@ -1,0 +1,361 @@
+{
+  "schema_version": "1.0.0",
+  "round_id": "log52-fixture-v1",
+  "split": "fixture",
+  "evaluator_version": "1.0.0",
+  "evaluator_sha256": "1976ac835a314879cc776593aaf370981446b56de91027bfc99951e8209c167b",
+  "manifest_sha256": "6347fb0bafd87dfbce4ad7da3ff10945378d9b9f18504442eac3669969eea660",
+  "assessments_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "measurement_complete": true,
+  "acceptance": "not_demonstrated",
+  "limitations": [
+    "No live-quality or holdout acceptance is established by LOG-52.",
+    "S-13 client evidence and human spot-check remain external acceptance gates.",
+    "Fixture metadata tests the evaluator; it is not corpus evidence.",
+    "Pricing is unknown; no API cost is estimated."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "dev-clarify-01-baseline-1",
+      "question_id": "dev-clarify-01",
+      "kind": "routing_control",
+      "role": null,
+      "variant": "baseline",
+      "status": "completed",
+      "error_kind": null,
+      "elapsed_ms": 10,
+      "model_calls": 0,
+      "tool_calls": 0,
+      "usage": {
+        "input": null,
+        "output": null,
+        "cache_read": null,
+        "cache_write": null
+      },
+      "estimated_cost": null,
+      "evaluation": {
+        "question_id": "dev-clarify-01",
+        "run_id": "run_00000001",
+        "kind": "routing_control",
+        "product_status": "unknown",
+        "numerical": {
+          "status": "pass",
+          "checked": 0,
+          "verified": 0,
+          "mismatch": 0,
+          "unresolved": 0,
+          "unchecked": 0,
+          "uncited": 0,
+          "checks": [],
+          "unavailable_checks": []
+        },
+        "findings": [],
+        "sections": {
+          "present": [],
+          "missing": []
+        },
+        "tool_choice": {
+          "status": "pass",
+          "observed": [],
+          "matched_sequence": []
+        },
+        "required_evidence": [
+          {
+            "status": "unknown",
+            "reason": "Required evidence has not been independently assessed.",
+            "requirement": "a clarification of the user's perspective or decision before a role answer",
+            "receipt_ids": []
+          },
+          {
+            "status": "unknown",
+            "reason": "Required evidence has not been independently assessed.",
+            "requirement": "no analytical recommendation before that clarification",
+            "receipt_ids": []
+          }
+        ],
+        "recommendation_check": {
+          "status": "unknown",
+          "reason": "An independent reviewer must identify the distinguishing check and first recommendation.",
+          "check_sequence": null,
+          "recommendation_after_sequence": null
+        },
+        "semantic": {
+          "scope": {
+            "status": "unknown",
+            "reason": "The answer's stated scope has not been independently assessed."
+          },
+          "top_n_generalization": {
+            "status": "unknown",
+            "reason": "Generalization beyond top-N evidence has not been assessed."
+          },
+          "out_of_span_zero": {
+            "status": "unknown",
+            "reason": "Zero claims outside dataset spans have not been assessed."
+          },
+          "denominator": {
+            "status": "unknown",
+            "reason": "Rate numerators and denominators have not been assessed."
+          },
+          "precursor_causality": {
+            "status": "unknown",
+            "reason": "Observation, hypothesis and precursor causality have not been assessed."
+          },
+          "claim_alignment": {
+            "status": "unknown",
+            "reason": "Final numerical statements have not been independently mapped to the submitted claims; matching citation IDs alone cannot establish this."
+          }
+        },
+        "routing_control": {
+          "status": "unknown",
+          "reason": "Routing and absence of analytical recommendations have not been independently assessed."
+        },
+        "unavailable_receipts": [],
+        "reviewer": null,
+        "assessed_at": null,
+        "rubric": null
+      }
+    },
+    {
+      "attempt_id": "dev-clarify-01-playbook-1",
+      "question_id": "dev-clarify-01",
+      "kind": "routing_control",
+      "role": null,
+      "variant": "playbook",
+      "status": "completed",
+      "error_kind": null,
+      "elapsed_ms": 10,
+      "model_calls": 0,
+      "tool_calls": 0,
+      "usage": {
+        "input": null,
+        "output": null,
+        "cache_read": null,
+        "cache_write": null
+      },
+      "estimated_cost": null,
+      "evaluation": {
+        "question_id": "dev-clarify-01",
+        "run_id": "run_00000002",
+        "kind": "routing_control",
+        "product_status": "unknown",
+        "numerical": {
+          "status": "pass",
+          "checked": 0,
+          "verified": 0,
+          "mismatch": 0,
+          "unresolved": 0,
+          "unchecked": 0,
+          "uncited": 0,
+          "checks": [],
+          "unavailable_checks": []
+        },
+        "findings": [],
+        "sections": {
+          "present": [],
+          "missing": []
+        },
+        "tool_choice": {
+          "status": "pass",
+          "observed": [],
+          "matched_sequence": []
+        },
+        "required_evidence": [
+          {
+            "status": "unknown",
+            "reason": "Required evidence has not been independently assessed.",
+            "requirement": "a clarification of the user's perspective or decision before a role answer",
+            "receipt_ids": []
+          },
+          {
+            "status": "unknown",
+            "reason": "Required evidence has not been independently assessed.",
+            "requirement": "no analytical recommendation before that clarification",
+            "receipt_ids": []
+          }
+        ],
+        "recommendation_check": {
+          "status": "unknown",
+          "reason": "An independent reviewer must identify the distinguishing check and first recommendation.",
+          "check_sequence": null,
+          "recommendation_after_sequence": null
+        },
+        "semantic": {
+          "scope": {
+            "status": "unknown",
+            "reason": "The answer's stated scope has not been independently assessed."
+          },
+          "top_n_generalization": {
+            "status": "unknown",
+            "reason": "Generalization beyond top-N evidence has not been assessed."
+          },
+          "out_of_span_zero": {
+            "status": "unknown",
+            "reason": "Zero claims outside dataset spans have not been assessed."
+          },
+          "denominator": {
+            "status": "unknown",
+            "reason": "Rate numerators and denominators have not been assessed."
+          },
+          "precursor_causality": {
+            "status": "unknown",
+            "reason": "Observation, hypothesis and precursor causality have not been assessed."
+          },
+          "claim_alignment": {
+            "status": "unknown",
+            "reason": "Final numerical statements have not been independently mapped to the submitted claims; matching citation IDs alone cannot establish this."
+          }
+        },
+        "routing_control": {
+          "status": "unknown",
+          "reason": "Routing and absence of analytical recommendations have not been independently assessed."
+        },
+        "unavailable_receipts": [],
+        "reviewer": null,
+        "assessed_at": null,
+        "rubric": null
+      }
+    }
+  ],
+  "groups": [
+    {
+      "role": "routing_control",
+      "variant": "baseline",
+      "kind": "routing_control",
+      "planned": 1,
+      "completed": 1,
+      "elapsed_ms": {
+        "n": 1,
+        "median": 10,
+        "min": 10,
+        "max": 10
+      },
+      "model_calls": {
+        "n": 1,
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "tool_calls": {
+        "n": 1,
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "numerical": {
+        "checked": 0,
+        "verified": 0,
+        "mismatch": 0,
+        "unresolved": 0,
+        "unchecked": 0,
+        "uncited": 0
+      },
+      "estimated_cost": null,
+      "rubric_mean": null
+    },
+    {
+      "role": "routing_control",
+      "variant": "playbook",
+      "kind": "routing_control",
+      "planned": 1,
+      "completed": 1,
+      "elapsed_ms": {
+        "n": 1,
+        "median": 10,
+        "min": 10,
+        "max": 10
+      },
+      "model_calls": {
+        "n": 1,
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "tool_calls": {
+        "n": 1,
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "numerical": {
+        "checked": 0,
+        "verified": 0,
+        "mismatch": 0,
+        "unresolved": 0,
+        "unchecked": 0,
+        "uncited": 0
+      },
+      "estimated_cost": null,
+      "rubric_mean": null
+    }
+  ],
+  "repetitions": [
+    {
+      "question_id": "dev-eng-01",
+      "variant": "baseline",
+      "attempt_ids": [],
+      "elapsed_ms": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      }
+    },
+    {
+      "question_id": "dev-eng-01",
+      "variant": "playbook",
+      "attempt_ids": [],
+      "elapsed_ms": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      }
+    },
+    {
+      "question_id": "dev-tl-01",
+      "variant": "baseline",
+      "attempt_ids": [],
+      "elapsed_ms": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      }
+    },
+    {
+      "question_id": "dev-tl-01",
+      "variant": "playbook",
+      "attempt_ids": [],
+      "elapsed_ms": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      }
+    },
+    {
+      "question_id": "dev-mgr-01",
+      "variant": "baseline",
+      "attempt_ids": [],
+      "elapsed_ms": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      }
+    },
+    {
+      "question_id": "dev-mgr-01",
+      "variant": "playbook",
+      "attempt_ids": [],
+      "elapsed_ms": {
+        "n": 0,
+        "median": null,
+        "min": null,
+        "max": null
+      }
+    }
+  ],
+  "assessment_usage": null,
+  "assessment_cost": null
+}

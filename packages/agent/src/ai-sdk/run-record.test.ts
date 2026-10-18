@@ -69,6 +69,35 @@ describe("RunRecord schema", () => {
     )
   })
 
+  it("retains optional audit fields while accepting earlier records", () => {
+    const legacy = sampleRecord("run_1a2b3c4d")
+    expect(runRecordSchema.parse(legacy)).toEqual(legacy)
+    const traced = {
+      ...legacy,
+      model_calls: 3,
+      limits: {
+        max_steps: 16,
+        max_follow_ups: 2,
+        max_revisions: 1,
+        timeout_ms: 180_000,
+        max_retries: 0,
+      },
+      answer_versions: [
+        {
+          text: "draft",
+          phase: "answer",
+          started_at: legacy.started_at,
+          completed_at: legacy.finished_at,
+          after_sequence: 1,
+        },
+      ],
+    }
+    expect(runRecordSchema.parse(traced)).toEqual(traced)
+    expect(() => runRecordSchema.parse({ ...traced, model_calls: -1 })).toThrow(
+      /model_calls/
+    )
+  })
+
   it("allows nullable usage fields when unknown", () => {
     const record = sampleRecord("run_1a2b3c4d")
     record.usage = {

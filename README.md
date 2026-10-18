@@ -224,6 +224,11 @@ or a holdout result. The saved model runs pin contract 2.9.0; the report separat
 records checks of the combined 2.10.0 code after integrating current main. The
 playbooks and `get_log_context` source were unchanged by that integration.
 
+The [eval measurement foundation](packages/evals/README.md) adds `pnpm eval` on
+the shared production agent, immutable attempt/receipt exports and offline report
+replay. Its committed fixture tests metadata only. It establishes no live quality result, advantage over the baseline or holdout
+result; those remain separate U16 gates.
+
 ## Tools
 
 Every tool runs through one registry (`packages/analytics`), writes a query
@@ -492,7 +497,7 @@ packages/analytics          pool, filter compiler, receipts, tool registry and t
 packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
 packages/agent              role playbooks (./playbooks) and the AI SDK agent runInvestigation with run records (./ai-sdk)
 packages/domain             pure Zod contracts, fact IDs, rule functions and answer markings (./answer)
-packages/evals              role eval questions (development set)
+packages/evals              eval runner, offline reports and development questions
 packages/ui                 shadcn primitives (Base UI), design tokens, cn()
 packages/eslint-config      shared ESLint presets
 packages/typescript-config  shared tsconfig presets
