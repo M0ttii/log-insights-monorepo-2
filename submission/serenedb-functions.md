@@ -51,7 +51,7 @@ receipt. Independent full-corpus Golden queries use separate SQL formulations;
 their implementation is under [tests/golden](../packages/analytics/tests/golden).
 
 `read_json` receipt statistics are documented by the separate
-[`report:perf` workflow](../README.md#database-performance-report). They measure
+[`report:perf` workflow](../DEVELOPMENT.md#database-performance-report). They measure
 database round trips recorded by tools, not model waiting time or complete
 investigation duration.
 
