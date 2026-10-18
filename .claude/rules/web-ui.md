@@ -25,7 +25,9 @@ apps/web/
     investigation/    # Ask: chat, role switcher, answer sections
     logs/             # LogsView and its local implementation
     datasets/         # corpus, schema and ownership views
-    evidence/         # shared EvidenceDrawer: receipts and events
+    evidence/         # shared EvidenceDrawer: receipts, events, SereneDB features
+    results/          # one result view per tool output schema, shared by chat,
+                      # drawer, overview and logs
     charts/           # shared timelines and equivalent tables
   tests/e2e/          # Playwright suites
 packages/ui/          # shadcn primitives (src/components), hooks (src/hooks),
@@ -108,7 +110,12 @@ packages/ui/          # shadcn primitives (src/components), hooks (src/hooks),
 - Preserve input on failures, distinguish running, failed, truncated and empty
   states, prevent duplicate submissions, and avoid unexpected scrolling during
   streaming. The web app has no verifier of its own: it only marks fact IDs that
-  were not submitted to `check_claims`.
+  were not submitted to `check_claims` (`unchecked`) and numbers or times without
+  a following fact ID (`uncited`, ui-concept.md § 4.3). Several `check_claims`
+  calls are shown one by one, never summed.
+- Views format values and never compute them: no sums, differences, shares,
+  ranks or re-sorting of tool results; `null` stays "Unknown" or "not
+  determinable", never 0.
 - Verify 1280×800 and 1920×1080; narrower widths keep every action reachable. Long
   messages and SQL scroll inside their panel, never the page.
 - Exercise changed UI flows and inspect browser and server errors.

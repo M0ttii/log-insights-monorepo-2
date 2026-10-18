@@ -102,14 +102,16 @@
 :root {
   color-scheme: light;
   --workspace-gutter: 1.5rem;
-  /* Reading column for reports (ui-concept.md § 4); data views may be wider. */
+  /* Reading column for answers (DESIGN.md, Layout); data views are wider. */
   --report-width: 53.75rem;
   --data-width: 76rem;
-  /* Quiet indigo-tinted surface reserved for the report conclusion. */
+  /* Quiet indigo-tinted surface reserved for the Verification block and highlighted targets. */
   --conclusion-background: #f5f5fe;
   --conclusion-border: #d9d8f6;
-  /* Report spine: visible on the workspace ground without competing with text. */
+  /* Answer spine: visible on the workspace ground without competing with text. */
   --spine-line: #c3c9d4;
+  /* Search matches in verbatim log messages, always with an underline. */
+  --match-highlight: #fdf0c2;
   --context-height: 3.5rem;
   --evidence-width: 32rem;
   --severity-fatal-foreground: #861b27;
@@ -122,50 +124,52 @@
   --severity-info-background: #edf4fc;
   --severity-unknown-foreground: #596579;
   --severity-unknown-background: #edf0f4;
+  /* Run state (DESIGN.md): tool rows and answers; done and recorded are neutral. */
   --run-running-foreground: #4543b5;
   --run-running-background: #eeedfc;
-  --run-waiting-foreground: #65500d;
-  --run-waiting-background: #fff7db;
-  --run-completed-foreground: #28634a;
-  --run-completed-background: #eaf5ee;
   --run-partial-foreground: #855000;
   --run-partial-background: #fff3d9;
   --run-failed-foreground: #a12b36;
   --run-failed-background: #fff0f1;
-  --run-cancelled-foreground: #596579;
-  --run-cancelled-background: #edf0f4;
-  --run-previous-foreground: #596579;
-  --run-previous-background: #edf0f4;
+  --run-neutral-foreground: #596579;
+  --run-neutral-background: #edf0f4;
   --hypothesis-open-foreground: #596579;
   --hypothesis-open-background: #ffffff;
   --hypothesis-supported-foreground: #ffffff;
   --hypothesis-supported-background: #475569;
   --hypothesis-contradicted-foreground: #475569;
   --hypothesis-contradicted-background: #e8edf2;
-  --quality-usable-foreground: #315d59;
-  --quality-usable-background: #e9f3f2;
-  --quality-limited-foreground: #855000;
-  --quality-limited-background: #fff3d9;
-  --quality-unknown-foreground: #596579;
-  --quality-unknown-background: #edf0f4;
-  --quality-unusable-foreground: #854511;
-  --quality-unusable-background: #fff0e5;
-  --group-new-foreground: #4543b5;
-  --group-new-background: #ffffff;
-  --group-escalating-foreground: #805314;
-  --group-escalating-background: #fff0d8;
-  --group-reappeared-foreground: #475569;
-  --group-reappeared-background: #edf0f4;
-  --group-ongoing-foreground: #475569;
-  --group-ongoing-background: #edf0f4;
-  --group-quiet-foreground: #596579;
-  --group-quiet-background: #f3f4f6;
-  --group-recurring-foreground: #475569;
-  --group-recurring-background: #ffffff;
-  --evaluation-passed-foreground: #28634a;
-  --evaluation-passed-background: #eaf5ee;
-  --evaluation-failed-foreground: #a12b36;
-  --evaluation-failed-background: #fff0f1;
+  /* Pattern status (R-10) and the separate recurring flag (R-05). */
+  --pattern-new-foreground: #4543b5;
+  --pattern-new-background: #ffffff;
+  --pattern-escalating-foreground: #805314;
+  --pattern-escalating-background: #fff0d8;
+  --pattern-reappeared-foreground: #475569;
+  --pattern-reappeared-background: #edf0f4;
+  --pattern-ongoing-foreground: #475569;
+  --pattern-ongoing-background: #edf0f4;
+  --pattern-quiet-foreground: #596579;
+  --pattern-quiet-background: #f3f4f6;
+  --pattern-recurring-foreground: #475569;
+  --pattern-recurring-background: #ffffff;
+  /* Comparison labels (R-06); an increase is not an error. */
+  --change-foreground: #475569;
+  --change-background: #edf0f4;
+  /* Verification of submitted numbers (check_claims) and the app's markings. */
+  --verification-verified-foreground: #28634a;
+  --verification-verified-background: #eaf5ee;
+  --verification-mismatch-foreground: #a12b36;
+  --verification-mismatch-background: #fff0f1;
+  --verification-unresolved-foreground: #855000;
+  --verification-unresolved-background: #fff3d9;
+  --verification-unchecked-foreground: #596579;
+  --verification-unchecked-background: #edf0f4;
+  --verification-uncited-foreground: #855000;
+  --verification-uncited-background: #ffffff;
+  --verification-none-foreground: #596579;
+  --verification-none-background: #edf0f4;
+  --role-foreground: #202635;
+  --role-background: #ffffff;
 }
 
 @layer base {
