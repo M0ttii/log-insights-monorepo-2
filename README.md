@@ -35,7 +35,83 @@ The [editable Typst presentation template](presentation/README.md) includes a
 architecture and query evidence; findings remain explicit placeholders until
 verified runs are available.
 
-## Requirements
+## Jury quick start (Docker)
+
+Docker with Compose v2 or later and Git are sufficient; Node and pnpm run inside
+the app image. Start from a fresh recursive clone:
+
+```bash
+git clone --recurse-submodules https://github.com/M0ttii/log-insights-monorepo-2.git
+cd log-insights-monorepo-2
+cp .env.jury.example .env
+# Edit .env: set SERENEDB_PASSWORD and ANTHROPIC_API_KEY.
+docker compose up
+```
+
+Open [Log Insights](http://localhost:3000) after the log says **Corpus ready**
+and Next reports **Ready**. Compose builds the production web app, starts
+SereneDB, downloads and verifies the full BGL and OpenStack corpus, checks the
+load, then starts the web server. The first build/download can take several
+minutes and needs internet access. No separate install or import command is
+needed. The full base corpus downloads about 63 MB and expands to about 810 MB;
+allow additional disk space for Docker images, indexes and cached dependencies.
+Allocate at least 4 GB RAM to Docker (8 GB recommended).
+
+The template's `COMPOSE_FILE=compose.jury.yaml` makes plain `docker compose up`
+select the jury stack; `compose.yaml` remains the developer database setup.
+Use a fresh directory or preserve your existing developer `.env` before copying.
+The jury uses separate named volumes; only the web port is published, on
+`127.0.0.1`. Database connections use `serenedb:7890` inside Compose.
+
+| Variable in `.env` | Meaning |
+|---|---|
+| `SERENEDB_PASSWORD` | **Required.** Choose a password, e.g. `openssl rand -hex 16`. It initializes the database on the first start. |
+| `ANTHROPIC_API_KEY` | **Required for Ask.** Without a key, live chat is disabled; Overview, Logs, Corpus and receipts remain usable. Only the web container receives it at runtime. |
+| `LOG_INSIGHTS_MODEL` | Defaults to `claude-opus-5-5`, the jury model. The API account needs access to it. |
+| `SERENEDB_IMAGE` | The verified immutable SereneDB 26.10.1 image; see the platform note below. Never select another version on an existing volume. |
+| `WEB_PORT` | Defaults to `3000`. Change it if another app uses that host port. |
+| `LOG_INSIGHTS_DATASETS` | Empty loads full BGL + OpenStack. `all` adds the five full Loghub extensions; a comma-separated subset is also accepted. Remote OTel and OTLP replay use the developer workflow. |
+| `LOG_INSIGHTS_DATA_MODE` | Defaults to `corpus`. For a faster **2k sample** smoke test use `samples` and set `SERENEDB_DATABASE=log_insights_samples` (with any extensions: `log_insights_samples_ext`). |
+| `COMPOSE_PROJECT_NAME` | Defaults to `log-insights-jury`; change it, and `WEB_PORT`, to run a second independent jury stack. |
+
+Keys and passwords are excluded from the Docker build context and never passed
+as build arguments. Raw files, database data, receipts and private run history
+persist in named volumes. Each web-container start reruns the checked,
+idempotent import before serving requests; verified raw files are reused. The
+web server stays stopped if download, checks or configuration fail.
+
+**Platform:** The default is the official **Linux/AMD64** image. On Apple Silicon,
+the official 26.10.1 image does not start under emulation. Obtain the exact
+previously verified ARM64 archive from the project owner, then:
+
+```bash
+docker image load --input /path/to/docker-image.tar.gz
+# In .env replace SERENEDB_IMAGE with this full immutable image ID:
+# sha256:fd1b13533ceff354ffb48901dd63aa36a4b1d3c2b055b872e572bf83f38a7fb0
+docker compose up
+```
+
+The ARM64 archive is an unpublished local build, not downloadable from Docker
+Hub. A mutable local tag is deliberately rejected by the container loader.
+There is no automatic fallback to a different database version.
+
+Stop with Ctrl-C or `docker compose down`; start again with `docker compose up`.
+After changing `.env` or dataset selection, run `docker compose down` first so
+the old web/MCP process is stopped. After pulling new application code, use
+`docker compose up --build`. Inspect failures with `docker compose logs web`
+or `docker compose logs serenedb`; fix the cause and start again. A changed
+password needs a matching database role update or a fresh database volume.
+`docker compose down --volumes` is a **destructive reset** of this jury project's
+database, raw-file cache, receipts and run history; it is never needed for a
+normal restart.
+
+For a stdio MCP client, start the web stack once to load the corpus, then configure
+the client with command `docker`, arguments
+`["compose", "run", "--rm", "--no-deps", "-T", "mcp"]`, and this repository as
+its working directory. No host Node installation or API key in the MCP container
+is needed; the client supplies the model. Stop MCP clients before reloading data.
+
+## Requirements (local development)
 
 - Node.js 24 (see `.nvmrc`)
 - pnpm 11.25.0 (exact `packageManager` version; activate it with your package

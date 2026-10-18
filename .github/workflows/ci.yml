@@ -38,6 +38,61 @@ jobs:
         run: pnpm --filter web exec playwright install --with-deps chromium
       - run: pnpm test:e2e
 
+  jury:
+    name: Jury Docker Compose (fresh 2k sample load)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPOSE_FILE: compose.jury.yaml
+      COMPOSE_PROJECT_NAME: jury-ci
+      LOG_INSIGHTS_DATA_MODE: samples
+      SERENEDB_DATABASE: log_insights_samples
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure an ephemeral database password
+        run: |
+          password=$(openssl rand -hex 16)
+          echo "::add-mask::$password"
+          echo "SERENEDB_PASSWORD=$password" >> "$GITHUB_ENV"
+      - name: Build and start the complete jury stack
+        run: docker compose up --build -d --wait --wait-timeout 600
+      - name: Verify real sample counts, receipt storage and re-run
+        run: |
+          docker compose exec -T web node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const base = 'http://127.0.0.1:3000';
+          const response = await fetch(`${base}/api/tools/count_events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_by: ['dataset'] }),
+          });
+          assert.equal(response.status, 200);
+          const body = await response.json();
+          assert.equal(body.ok, true);
+          assert.equal(body.result.data.total, 4000);
+          assert.deepEqual(
+            body.result.data.groups.map(({ dataset, events }) => [dataset, events]).sort(),
+            [['bgl', 2000], ['openstack', 2000]],
+          );
+          const id = body.result.receipt.receipt_id;
+          assert.match(id, /^r_[0-9a-f]{8}$/);
+          assert.equal((await fetch(`${base}/api/receipts/${id}`)).status, 200);
+          const rerun = await fetch(`${base}/api/receipts/${id}/rerun`, { method: 'POST' });
+          assert.equal(rerun.status, 200);
+          const repeated = await rerun.json();
+          assert.equal(repeated.result.data.total, 4000);
+          assert.notEqual(repeated.result.receipt.receipt_id, id);
+          console.log('Jury stack: real sample counts, persisted receipt and re-run passed.');
+          JS
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 100
+      - name: Stop the isolated jury stack
+        if: always()
+        run: docker compose down --volumes
+
   loader:
     # pnpm data:setup against the Loghub 2k samples and the loader integration
     # tests (technical.md § 7, LOG-11). SereneDB runs through compose.yaml, as

@@ -1,0 +1,121 @@
+# Copy .env.jury.example to .env: COMPOSE_FILE selects this file for plain
+# `docker compose up`. The developer compose.yaml stays independent.
+name: log-insights-jury
+
+x-connection: &connection
+  SERENEDB_HOST: serenedb
+  SERENEDB_PORT: "7890"
+  SERENEDB_USER: postgres
+  SERENEDB_PASSWORD: ${SERENEDB_PASSWORD:?Set SERENEDB_PASSWORD in .env (copy .env.jury.example)}
+  SERENEDB_DATABASE: ${SERENEDB_DATABASE:-postgres}
+  LOG_INSIGHTS_RECEIPTS_DIR: /app/.data/receipts
+  LOG_INSIGHTS_RUNS_DIR: /app/.data/runs
+  LOG_INSIGHTS_WORKSPACE_TOOLS: ${LOG_INSIGHTS_WORKSPACE_TOOLS:-0}
+
+services:
+  serenedb:
+    image: ${SERENEDB_IMAGE:-serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9}
+    # Both supported references are immutable. ARM64 uses a restored image ID,
+    # which Docker finds locally; the official AMD64 digest is pulled if absent.
+    pull_policy: missing
+    environment:
+      POSTGRES_PASSWORD: ${SERENEDB_PASSWORD:?Set SERENEDB_PASSWORD in .env}
+    volumes:
+      - jury-serenedb-26101:/var/lib/serenedb
+      # Let the app seed these volumes with its unprivileged user's ownership.
+      - type: volume
+        source: jury-raw
+        target: /data/raw
+        read_only: true
+        volume:
+          nocopy: true
+      - type: volume
+        source: jury-receipts
+        target: /data/receipts
+        read_only: true
+        volume:
+          nocopy: true
+    # No database or OTLP ports are published. Only the app is host-accessible.
+    ulimits:
+      nofile:
+        soft: 131072
+        hard: 131072
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "psql",
+          "-h",
+          "127.0.0.1",
+          "-p",
+          "7890",
+          "-U",
+          "postgres",
+          "-tAc",
+          "SELECT 1",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+
+  web:
+    image: ${COMPOSE_PROJECT_NAME:-log-insights-jury}-app:local
+    build: .
+    pull_policy: never
+    init: true
+    environment:
+      <<: *connection
+      LOG_INSIGHTS_CONTAINER_IMAGE: ${SERENEDB_IMAGE:-serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9}
+      LOG_INSIGHTS_DATA_MODE: ${LOG_INSIGHTS_DATA_MODE:-corpus}
+      LOG_INSIGHTS_DATASETS: ${LOG_INSIGHTS_DATASETS:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LOG_INSIGHTS_MODEL: ${LOG_INSIGHTS_MODEL:-claude-opus-5-5}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    volumes:
+      - jury-raw:/app/.data/raw
+      - jury-receipts:/app/.data/receipts
+      - jury-runs:/app/.data/runs
+    depends_on:
+      serenedb:
+        condition: service_healthy
+    healthcheck:
+      # The loader must pass before Next starts. Avoid a tool call here, which
+      # would create a new receipt on every healthcheck.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30m
+      retries: 3
+    # A failed download/check stays visible. A manual restart retries the
+    # idempotent load, using already verified cached files.
+    restart: "no"
+
+  mcp:
+    profiles: [mcp]
+    # Share the exact web build, including after `up --build` while this
+    # profile is inactive. A separate service tag could silently stay stale.
+    image: ${COMPOSE_PROJECT_NAME:-log-insights-jury}-app:local
+    build: .
+    pull_policy: never
+    init: true
+    command: ["pnpm", "--silent", "mcp"]
+    environment: *connection
+    volumes:
+      - jury-receipts:/app/.data/receipts
+    # Start the stack first, then run this stdio process with --no-deps -T.
+    stdin_open: true
+
+volumes:
+  jury-serenedb-26101:
+  jury-raw:
+  jury-receipts:
+  jury-runs:

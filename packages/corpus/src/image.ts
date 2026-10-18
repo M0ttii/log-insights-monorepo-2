@@ -69,7 +69,9 @@ export function validateImage(identity: ImageIdentity): ImageIdentity {
     throw new Error(`SereneDB container reports no image ID (${imageId})`)
   }
   if (isDigestPinned(reference)) return identity
-  const local = LOCAL_IMAGES.find((image) => image.reference === reference)
+  const local = LOCAL_IMAGES.find(
+    (image) => image.reference === reference || image.imageId === reference
+  )
   if (local === undefined) {
     throw new Error(
       `SereneDB image ${reference} is neither pinned by digest nor a verified ` +
@@ -89,7 +91,8 @@ export function validateImage(identity: ImageIdentity): ImageIdentity {
 /** Server version a listed local build must report, or null for other images. */
 export function expectedServerVersion(reference: string): string | null {
   return (
-    LOCAL_IMAGES.find((image) => image.reference === reference)
-      ?.serverVersion ?? null
+    LOCAL_IMAGES.find(
+      (image) => image.reference === reference || image.imageId === reference
+    )?.serverVersion ?? null
   )
 }

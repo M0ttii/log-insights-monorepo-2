@@ -38,6 +38,17 @@ describe("validateImage", () => {
     ).toThrow(/neither pinned/)
   })
 
+  it("accepts a known local image ID only when the actual ID matches", () => {
+    if (local === undefined) throw new Error("no local image listed")
+    expect(
+      validateImage({ reference: local.imageId, imageId: local.imageId })
+    ).toEqual({ reference: local.imageId, imageId: local.imageId })
+    expect(() =>
+      validateImage({ reference: local.imageId, imageId: ID_A })
+    ).toThrow(/has image ID .* expected/)
+    expect(expectedServerVersion(local.imageId)).toBe(local.serverVersion)
+  })
+
   it("rejects a missing or malformed image ID, also for pinned references", () => {
     expect(() => validateImage({ reference: PINNED, imageId: "" })).toThrow(
       /no image ID/
