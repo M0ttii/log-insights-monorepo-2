@@ -33,7 +33,10 @@
     "agent:ask": "pnpm --silent --filter @workspace/agent agent:ask",
     "test:e2e": "pnpm --filter web test:e2e",
     "eval": "pnpm --filter @workspace/evals eval",
-    "otel:measure": "pnpm --filter @workspace/analytics otel:measure"
+    "otel:measure": "pnpm --filter @workspace/analytics otel:measure",
+    "retrieval:build": "pnpm --filter @workspace/analytics retrieval:build",
+    "research:verify": "pnpm --filter @workspace/analytics research:verify",
+    "research:compare": "pnpm --filter @workspace/analytics research:compare"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",

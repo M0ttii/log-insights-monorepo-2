@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 
+import { compareClaim } from "../claims.ts"
+import { buildFacts } from "../facts.ts"
 import type { ToolResult } from "../tool.ts"
 import {
   countEventsFactSpecs,
@@ -111,6 +113,52 @@ describe("countEventsInputSchema", () => {
 })
 
 describe("countEventsFactSpecs", () => {
+  it("requires the entity type and selected identity when verifying facts", () => {
+    for (const value of [undefined, "req-rare"]) {
+      const entity = {
+        type: "request_id" as const,
+        ...(value === undefined ? {} : { value }),
+      }
+      const facts = buildFacts(
+        "r_00000001",
+        {
+          result: {
+            entity_distribution: {
+              ...entity,
+              total_events: 5,
+              matched_events: 1,
+              occurrences: 1,
+              distinct_entities: 1,
+              groups: [{ entity: "req-rare", events: 1, share: 0.2 }],
+              other: { entities: 1, events: 1, share: 0.2 },
+            },
+          },
+          scope: {},
+        },
+        countEventsFactSpecs({ group_by: ["component"], entity })
+      )
+      expect(facts).toHaveLength(9)
+      for (const entityFact of facts) {
+        const group = entityFact.path.includes("/groups/")
+          ? { type: "request_id", entity: "req-rare" }
+          : entity
+        expect(entityFact.group).toEqual(group)
+        const claim = {
+          value: entityFact.value,
+          metric: entityFact.metric,
+          group,
+        }
+        expect(compareClaim(claim, entityFact)).toEqual({ status: "verified" })
+        expect(
+          compareClaim(
+            { ...claim, group: { ...group, type: "ip" } },
+            entityFact
+          )
+        ).toMatchObject({ status: "mismatch", mismatch_on: ["group"] })
+      }
+    }
+  })
+
   it("groups facts by the group_by dimensions", () => {
     const specs = countEventsFactSpecs({ group_by: ["dataset", "team"] })
     expect(specs.find((s) => s.path === "/result/groups/*/events")).toEqual({
@@ -160,6 +208,47 @@ describe("countEventsFactSpecs", () => {
     expect(
       specs.find((s) => s.path === "/scope/windows/*/from")?.groupKeys
     ).toEqual(["dataset", "period"])
+  })
+
+  it("adds contribution facts only when explicitly requested", () => {
+    const input = {
+      group_by: ["component"] as const,
+      compare: "previous_period" as const,
+    }
+    const legacy = countEventsFactSpecs({
+      ...input,
+      group_by: [...input.group_by],
+    })
+    const opted = countEventsFactSpecs({
+      ...input,
+      group_by: [...input.group_by],
+      contributions: true,
+    })
+    expect(
+      legacy.some(
+        (spec) =>
+          spec.path.includes("contribution_to_delta") ||
+          spec.path.includes("decomposition")
+      )
+    ).toBe(false)
+    expect(
+      opted
+        .filter(
+          (spec) =>
+            spec.path.includes("contribution_to_delta") ||
+            spec.path.includes("decomposition")
+        )
+        .map((spec) => spec.path)
+    ).toEqual([
+      "/result/groups/*/contribution_to_delta",
+      "/result/other/contribution_to_delta",
+      "/result/comparison/decomposition/positive_delta",
+      "/result/comparison/decomposition/negative_delta",
+      "/result/comparison/decomposition/net_delta",
+    ])
+    expect(
+      countEventsInputSchema.parse({ group_by: ["level"] })
+    ).not.toHaveProperty("contributions")
   })
 
   it("names API accesses as metric and unit for http_status and endpoint", () => {

@@ -1185,6 +1185,10 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "minItems": 1,
         "type": "array",
       },
+      "contributions": {
+        "description": "Opt in to signed contributions and positive/negative delta reconciliation; requires compare. Omit to preserve the ordinary comparison output.",
+        "type": "boolean",
+      },
       "dataset": {
         "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)), otel_replay (OpenTelemetry OTLP replay (text_bench sample)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel and otel_replay are not in log_events and only queried when named here: otel is read in place from remote Parquet files (full text only inside its indexed reference window; counts or trends without text need from/to at most 60 s apart), otel_replay is a bounded OTLP replay of public records into SereneDB's OTel tables.",
         "enum": [
@@ -1199,6 +1203,31 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
           "otel_replay",
         ],
         "type": "string",
+      },
+      "entity": {
+        "additionalProperties": false,
+        "description": "Extract original IPv4/IPv6 addresses, absolute paths, req- request IDs or UUID/block/instance object IDs over every matching log event. Repeated mentions in one event count once.",
+        "properties": {
+          "type": {
+            "enum": [
+              "ip",
+              "path",
+              "request_id",
+              "object_id",
+            ],
+            "type": "string",
+          },
+          "value": {
+            "description": "Exact, case-sensitive original entity value; omit for the full distribution.",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+          },
+        },
+        "required": [
+          "type",
+        ],
+        "type": "object",
       },
       "from": {
         "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
@@ -1397,6 +1426,10 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "minItems": 1,
         "type": "array",
       },
+      "contributions": {
+        "description": "Opt in to signed contributions and positive/negative delta reconciliation; requires compare. Omit to preserve the ordinary comparison output.",
+        "type": "boolean",
+      },
       "dataset": {
         "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)), otel_replay (OpenTelemetry OTLP replay (text_bench sample)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel and otel_replay are not in log_events and only queried when named here: otel is read in place from remote Parquet files (full text only inside its indexed reference window; counts or trends without text need from/to at most 60 s apart), otel_replay is a bounded OTLP replay of public records into SereneDB's OTel tables.",
         "enum": [
@@ -1411,6 +1444,31 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
           "otel_replay",
         ],
         "type": "string",
+      },
+      "entity": {
+        "additionalProperties": false,
+        "description": "Extract original IPv4/IPv6 addresses, absolute paths, req- request IDs or UUID/block/instance object IDs over every matching log event. Repeated mentions in one event count once.",
+        "properties": {
+          "type": {
+            "enum": [
+              "ip",
+              "path",
+              "request_id",
+              "object_id",
+            ],
+            "type": "string",
+          },
+          "value": {
+            "description": "Exact, case-sensitive original entity value; omit for the full distribution.",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string",
+          },
+        },
+        "required": [
+          "type",
+        ],
+        "type": "object",
       },
       "from": {
         "description": "Window start, inclusive. ISO-8601 with Z or ±HH:MM and at most 6 fractional digits, e.g. 2005-06-03T00:00:00Z. Default: start of the data span.",
@@ -1590,6 +1648,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 ],
                 "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
               },
+              "contribution_to_delta": {
+                "description": "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
               "coverage": {
                 "additionalProperties": false,
                 "description": "Data-span coverage of both periods (R-03).",
@@ -1618,6 +1683,40 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                   "baseline",
                 ],
                 "type": "object",
+              },
+              "decomposition": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "negative_delta": {
+                        "maximum": 0,
+                        "minimum": -9007199254740991,
+                        "type": "integer",
+                      },
+                      "net_delta": {
+                        "maximum": 9007199254740991,
+                        "minimum": -9007199254740991,
+                        "type": "integer",
+                      },
+                      "positive_delta": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "positive_delta",
+                      "negative_delta",
+                      "net_delta",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with contributions true: all group deltas; positive plus negative equals net_delta; null when comparison is unknown.",
               },
               "delta": {
                 "anyOf": [
@@ -1665,6 +1764,134 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
           },
         ],
         "description": "Period comparison; null without compare.",
+      },
+      "entity_distribution": {
+        "additionalProperties": false,
+        "description": "Complete-scope entity distribution, original strings unchanged. shares use total_events; their sum can exceed one because an event may contain several entities. other.events sums event/entity pairs, not unique events.",
+        "properties": {
+          "distinct_entities": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "entity": {
+                  "type": "string",
+                },
+                "events": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "share": {
+                  "anyOf": [
+                    {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                },
+              },
+              "required": [
+                "entity",
+                "events",
+                "share",
+              ],
+              "type": "object",
+            },
+            "maxItems": 50,
+            "type": "array",
+          },
+          "matched_events": {
+            "description": "Events with at least one selected entity; distinct events, never mentions.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "occurrences": {
+            "description": "Distinct event/entity pairs; one event may contribute to several entities.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "other": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "entities": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "events": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "share": {
+                    "anyOf": [
+                      {
+                        "minimum": 0,
+                        "type": "number",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                },
+                "required": [
+                  "entities",
+                  "events",
+                  "share",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "total_events": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "truncated": {
+            "type": "boolean",
+          },
+          "type": {
+            "enum": [
+              "ip",
+              "path",
+              "request_id",
+              "object_id",
+            ],
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "type",
+          "total_events",
+          "matched_events",
+          "occurrences",
+          "distinct_entities",
+          "groups",
+          "other",
+          "truncated",
+        ],
+        "type": "object",
       },
       "group_by": {
         "description": "The grouping dimensions, in this order.",
@@ -1755,6 +1982,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               "description": "Component or OpenStack service.",
               "type": [
                 "string",
+                "null",
+              ],
+            },
+            "contribution_to_delta": {
+              "description": "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%.",
+              "type": [
+                "number",
                 "null",
               ],
             },
@@ -1905,6 +2139,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                   },
                 ],
                 "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "contribution_to_delta": {
+                "description": "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%.",
+                "type": [
+                  "number",
+                  "null",
+                ],
               },
               "delta": {
                 "anyOf": [
@@ -2043,6 +2284,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 ],
                 "description": "Only with compare, R-06: 'first observed in this comparison' (B = 0, C > 0), 'not observed in either period' (C = B = 0), 'significantly increased' (B > 0, C ≥ 2 · B and C − B ≥ 20); null when none applies or not determinable.",
               },
+              "contribution_to_delta": {
+                "description": "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%.",
+                "type": [
+                  "number",
+                  "null",
+                ],
+              },
               "coverage": {
                 "additionalProperties": false,
                 "description": "Data-span coverage of both periods (R-03).",
@@ -2071,6 +2319,40 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                   "baseline",
                 ],
                 "type": "object",
+              },
+              "decomposition": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "negative_delta": {
+                        "maximum": 0,
+                        "minimum": -9007199254740991,
+                        "type": "integer",
+                      },
+                      "net_delta": {
+                        "maximum": 9007199254740991,
+                        "minimum": -9007199254740991,
+                        "type": "integer",
+                      },
+                      "positive_delta": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "positive_delta",
+                      "negative_delta",
+                      "net_delta",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Only with contributions true: all group deltas; positive plus negative equals net_delta; null when comparison is unknown.",
               },
               "delta": {
                 "anyOf": [
@@ -2118,6 +2400,134 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
           },
         ],
         "description": "Period comparison; null without compare.",
+      },
+      "entity_distribution": {
+        "additionalProperties": false,
+        "description": "Complete-scope entity distribution, original strings unchanged. shares use total_events; their sum can exceed one because an event may contain several entities. other.events sums event/entity pairs, not unique events.",
+        "properties": {
+          "distinct_entities": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "entity": {
+                  "type": "string",
+                },
+                "events": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "share": {
+                  "anyOf": [
+                    {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                },
+              },
+              "required": [
+                "entity",
+                "events",
+                "share",
+              ],
+              "type": "object",
+            },
+            "maxItems": 50,
+            "type": "array",
+          },
+          "matched_events": {
+            "description": "Events with at least one selected entity; distinct events, never mentions.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "occurrences": {
+            "description": "Distinct event/entity pairs; one event may contribute to several entities.",
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "other": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "entities": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "events": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "share": {
+                    "anyOf": [
+                      {
+                        "minimum": 0,
+                        "type": "number",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                  },
+                },
+                "required": [
+                  "entities",
+                  "events",
+                  "share",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "total_events": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "truncated": {
+            "type": "boolean",
+          },
+          "type": {
+            "enum": [
+              "ip",
+              "path",
+              "request_id",
+              "object_id",
+            ],
+            "type": "string",
+          },
+          "value": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "type",
+          "total_events",
+          "matched_events",
+          "occurrences",
+          "distinct_entities",
+          "groups",
+          "other",
+          "truncated",
+        ],
+        "type": "object",
       },
       "group_by": {
         "description": "The grouping dimensions, in this order.",
@@ -2208,6 +2618,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               "description": "Component or OpenStack service.",
               "type": [
                 "string",
+                "null",
+              ],
+            },
+            "contribution_to_delta": {
+              "description": "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%.",
+              "type": [
+                "number",
                 "null",
               ],
             },
@@ -2358,6 +2775,13 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                   },
                 ],
                 "description": "Only with compare: count B in the reference period; null when the comparison is not determinable.",
+              },
+              "contribution_to_delta": {
+                "description": "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%.",
+                "type": [
+                  "number",
+                  "null",
+                ],
               },
               "delta": {
                 "anyOf": [
@@ -4260,7 +4684,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "null",
               },
             ],
-            "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+            "description": "Population in scope with its counting unit; null for tools without an exact corpus population (check_claims and bounded semantic/hybrid retrieval).",
           },
           "receipt_id": {
             "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
@@ -5098,7 +5522,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                 "type": "null",
               },
             ],
-            "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+            "description": "Population in scope with its counting unit; null for tools without an exact corpus population (check_claims and bounded semantic/hybrid retrieval).",
           },
           "receipt_id": {
             "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
@@ -8539,6 +8963,32 @@ exports[`JSON Schema export > latencyStatsInput converts losslessly for input an
         ],
         "type": "object",
       },
+      "outliers": {
+        "additionalProperties": false,
+        "description": "SQL percentile threshold over every latency value in the identical filtered window. Below min_baseline the threshold and decisions are unknown. case_event_id checks an existing event only within this scope; otherwise show at most 20 slowest accesses.",
+        "properties": {
+          "case_event_id": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "min_baseline": {
+            "default": 20,
+            "maximum": 10000,
+            "minimum": 2,
+            "type": "integer",
+          },
+          "threshold": {
+            "default": "p95",
+            "enum": [
+              "p95",
+              "p99",
+            ],
+            "type": "string",
+          },
+        },
+        "type": "object",
+      },
       "request_id": {
         "description": "OpenStack only: exact request ID, e.g. req-<uuid>.",
         "maxLength": 64,
@@ -8631,6 +9081,36 @@ exports[`JSON Schema export > latencyStatsInput converts losslessly for input an
         "required": [
           "min",
           "max",
+        ],
+        "type": "object",
+      },
+      "outliers": {
+        "additionalProperties": false,
+        "description": "SQL percentile threshold over every latency value in the identical filtered window. Below min_baseline the threshold and decisions are unknown. case_event_id checks an existing event only within this scope; otherwise show at most 20 slowest accesses.",
+        "properties": {
+          "case_event_id": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "min_baseline": {
+            "default": 20,
+            "maximum": 10000,
+            "minimum": 2,
+            "type": "integer",
+          },
+          "threshold": {
+            "default": "p95",
+            "enum": [
+              "p95",
+              "p99",
+            ],
+            "type": "string",
+          },
+        },
+        "required": [
+          "threshold",
+          "min_baseline",
         ],
         "type": "object",
       },
@@ -9089,6 +9569,127 @@ exports[`JSON Schema export > latencyStatsOutput converts losslessly for input a
           },
         ],
         "description": "The groups beyond top_n, aggregated over their accesses (percentiles over their latencies, not averaged); null when every group is listed.",
+      },
+      "outliers": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline_values": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "case_found": {
+            "type": [
+              "boolean",
+              "null",
+            ],
+          },
+          "cases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "event_id": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "exceeds_threshold": {
+                  "type": [
+                    "boolean",
+                    "null",
+                  ],
+                },
+                "latency_ms": {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                "request_id": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+              },
+              "required": [
+                "event_id",
+                "latency_ms",
+                "request_id",
+                "exceeds_threshold",
+              ],
+              "type": "object",
+            },
+            "maxItems": 20,
+            "type": "array",
+          },
+          "cases_truncated": {
+            "type": "boolean",
+          },
+          "determinable": {
+            "type": "boolean",
+          },
+          "minimum_baseline": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "outlier_events": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Strict exceedances; null when the baseline is too small to decide.",
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Outlier API accesses / baseline_values; null when below minimum baseline.",
+          },
+          "threshold": {
+            "enum": [
+              "p95",
+              "p99",
+            ],
+            "type": "string",
+          },
+          "threshold_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+        },
+        "required": [
+          "baseline_values",
+          "minimum_baseline",
+          "threshold_ms",
+          "threshold",
+          "determinable",
+          "outlier_events",
+          "rate",
+          "cases",
+          "case_found",
+          "cases_truncated",
+        ],
+        "type": "object",
       },
       "top_n": {
         "anyOf": [
@@ -9701,6 +10302,127 @@ exports[`JSON Schema export > latencyStatsOutput converts losslessly for input a
           },
         ],
         "description": "The groups beyond top_n, aggregated over their accesses (percentiles over their latencies, not averaged); null when every group is listed.",
+      },
+      "outliers": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline_values": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "case_found": {
+            "type": [
+              "boolean",
+              "null",
+            ],
+          },
+          "cases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "event_id": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "exceeds_threshold": {
+                  "type": [
+                    "boolean",
+                    "null",
+                  ],
+                },
+                "latency_ms": {
+                  "minimum": 0,
+                  "type": "number",
+                },
+                "request_id": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+              },
+              "required": [
+                "event_id",
+                "latency_ms",
+                "request_id",
+                "exceeds_threshold",
+              ],
+              "type": "object",
+            },
+            "maxItems": 20,
+            "type": "array",
+          },
+          "cases_truncated": {
+            "type": "boolean",
+          },
+          "determinable": {
+            "type": "boolean",
+          },
+          "minimum_baseline": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "outlier_events": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Strict exceedances; null when the baseline is too small to decide.",
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Outlier API accesses / baseline_values; null when below minimum baseline.",
+          },
+          "threshold": {
+            "enum": [
+              "p95",
+              "p99",
+            ],
+            "type": "string",
+          },
+          "threshold_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+        },
+        "required": [
+          "baseline_values",
+          "minimum_baseline",
+          "threshold_ms",
+          "threshold",
+          "determinable",
+          "outlier_events",
+          "rate",
+          "cases",
+          "case_found",
+          "cases_truncated",
+        ],
+        "type": "object",
       },
       "top_n": {
         "anyOf": [
@@ -10525,7 +11247,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "null",
           },
         ],
-        "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+        "description": "Population in scope with its counting unit; null for tools without an exact corpus population (check_claims and bounded semantic/hybrid retrieval).",
       },
       "receipt_id": {
         "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
@@ -11402,7 +12124,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
             "type": "null",
           },
         ],
-        "description": "Population in scope with its counting unit; null for tools without a corpus population (check_claims).",
+        "description": "Population in scope with its counting unit; null for tools without an exact corpus population (check_claims and bounded semantic/hybrid retrieval).",
       },
       "receipt_id": {
         "description": "Receipt ID: r_ followed by 8 lower-case hex digits, e.g. r_7f3a9c21.",
@@ -12076,6 +12798,80 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
         "minLength": 1,
         "type": "string",
       },
+      "analysis": {
+        "description": "Optional temporal observation over the identical filtered dataset/window. cooccurrence counts anchors with a distinct matching event in the window, either direction or strictly after; the comparison is the control pattern's anchor rate, never causal proof. periodicity analyses consecutive occurrence gaps and requires the stated minimum.",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "min_occurrences": {
+                "default": 4,
+                "maximum": 10000,
+                "minimum": 4,
+                "type": "integer",
+              },
+              "mode": {
+                "const": "periodicity",
+                "type": "string",
+              },
+              "pattern_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "mode",
+              "pattern_id",
+            ],
+            "type": "object",
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "control_pattern_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+              "direction": {
+                "default": "either",
+                "enum": [
+                  "either",
+                  "after",
+                ],
+                "type": "string",
+              },
+              "mode": {
+                "const": "cooccurrence",
+                "type": "string",
+              },
+              "pattern_a": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+              "pattern_b": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+              "window_seconds": {
+                "default": 60,
+                "maximum": 3600,
+                "minimum": 1,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "mode",
+              "pattern_a",
+              "pattern_b",
+            ],
+            "type": "object",
+          },
+        ],
+      },
       "block_id": {
         "description": "HDFS only: exact block ID, e.g. blk_-1608999687919862906.",
         "pattern": "^blk_-?\\d{1,20}$",
@@ -12238,6 +13034,83 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
         "maxLength": 32,
         "minLength": 1,
         "type": "string",
+      },
+      "analysis": {
+        "description": "Optional temporal observation over the identical filtered dataset/window. cooccurrence counts anchors with a distinct matching event in the window, either direction or strictly after; the comparison is the control pattern's anchor rate, never causal proof. periodicity analyses consecutive occurrence gaps and requires the stated minimum.",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "min_occurrences": {
+                "default": 4,
+                "maximum": 10000,
+                "minimum": 4,
+                "type": "integer",
+              },
+              "mode": {
+                "const": "periodicity",
+                "type": "string",
+              },
+              "pattern_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "mode",
+              "pattern_id",
+              "min_occurrences",
+            ],
+            "type": "object",
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "control_pattern_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+              "direction": {
+                "default": "either",
+                "enum": [
+                  "either",
+                  "after",
+                ],
+                "type": "string",
+              },
+              "mode": {
+                "const": "cooccurrence",
+                "type": "string",
+              },
+              "pattern_a": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+              "pattern_b": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string",
+              },
+              "window_seconds": {
+                "default": 60,
+                "maximum": 3600,
+                "minimum": 1,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "mode",
+              "pattern_a",
+              "pattern_b",
+              "window_seconds",
+              "direction",
+            ],
+            "type": "object",
+          },
+        ],
       },
       "block_id": {
         "description": "HDFS only: exact block ID, e.g. blk_-1608999687919862906.",
@@ -12402,6 +13275,240 @@ exports[`JSON Schema export > recurringPatternsOutput converts losslessly for in
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
+      "analysis": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "coefficient_of_variation": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "determinable": {
+                "type": "boolean",
+              },
+              "gaps": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "max_gap_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "median_gap_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "min_gap_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "minimum_occurrences": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "mode": {
+                "const": "periodicity",
+                "type": "string",
+              },
+              "occurrences": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "pattern_id": {
+                "type": "string",
+              },
+              "scope_unit": {
+                "const": "log_events",
+                "type": "string",
+              },
+              "uncertainty": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "mode",
+              "scope_unit",
+              "pattern_id",
+              "occurrences",
+              "gaps",
+              "minimum_occurrences",
+              "median_gap_seconds",
+              "min_gap_seconds",
+              "max_gap_seconds",
+              "coefficient_of_variation",
+              "determinable",
+              "uncertainty",
+            ],
+            "type": "object",
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "anchors": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "control_anchors": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "control_matched_anchors": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "control_pattern_id": {
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "control_rate": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "direction": {
+                "enum": [
+                  "either",
+                  "after",
+                ],
+                "type": "string",
+              },
+              "identity_scope": {
+                "const": "all_events_in_filtered_dataset",
+                "description": "Pairs may cross nodes, requests or objects within the filter; narrow node/request filters for a same-identity observation.",
+                "type": "string",
+              },
+              "matched_anchors": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "mode": {
+                "const": "cooccurrence",
+                "type": "string",
+              },
+              "pattern_a": {
+                "type": "string",
+              },
+              "pattern_b": {
+                "type": "string",
+              },
+              "rate": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "rate_difference": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": -1,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "scope_unit": {
+                "const": "log_events",
+                "type": "string",
+              },
+              "uncertainty": {
+                "type": "string",
+              },
+              "window_seconds": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "mode",
+              "identity_scope",
+              "scope_unit",
+              "pattern_a",
+              "pattern_b",
+              "direction",
+              "window_seconds",
+              "anchors",
+              "matched_anchors",
+              "rate",
+              "control_pattern_id",
+              "control_anchors",
+              "control_matched_anchors",
+              "control_rate",
+              "rate_difference",
+              "uncertainty",
+            ],
+            "type": "object",
+          },
+        ],
+      },
       "comparison": {
         "additionalProperties": false,
         "description": "Reference of delta and status (R-06, R-10).",
@@ -13313,6 +14420,240 @@ exports[`JSON Schema export > recurringPatternsOutput converts losslessly for in
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
+      "analysis": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "coefficient_of_variation": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "determinable": {
+                "type": "boolean",
+              },
+              "gaps": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "max_gap_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "median_gap_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "min_gap_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "minimum_occurrences": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "mode": {
+                "const": "periodicity",
+                "type": "string",
+              },
+              "occurrences": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "pattern_id": {
+                "type": "string",
+              },
+              "scope_unit": {
+                "const": "log_events",
+                "type": "string",
+              },
+              "uncertainty": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "mode",
+              "scope_unit",
+              "pattern_id",
+              "occurrences",
+              "gaps",
+              "minimum_occurrences",
+              "median_gap_seconds",
+              "min_gap_seconds",
+              "max_gap_seconds",
+              "coefficient_of_variation",
+              "determinable",
+              "uncertainty",
+            ],
+            "type": "object",
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "anchors": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "control_anchors": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "control_matched_anchors": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "control_pattern_id": {
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "control_rate": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "direction": {
+                "enum": [
+                  "either",
+                  "after",
+                ],
+                "type": "string",
+              },
+              "identity_scope": {
+                "const": "all_events_in_filtered_dataset",
+                "description": "Pairs may cross nodes, requests or objects within the filter; narrow node/request filters for a same-identity observation.",
+                "type": "string",
+              },
+              "matched_anchors": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "mode": {
+                "const": "cooccurrence",
+                "type": "string",
+              },
+              "pattern_a": {
+                "type": "string",
+              },
+              "pattern_b": {
+                "type": "string",
+              },
+              "rate": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "rate_difference": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": -1,
+                    "type": "number",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "scope_unit": {
+                "const": "log_events",
+                "type": "string",
+              },
+              "uncertainty": {
+                "type": "string",
+              },
+              "window_seconds": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+            },
+            "required": [
+              "mode",
+              "identity_scope",
+              "scope_unit",
+              "pattern_a",
+              "pattern_b",
+              "direction",
+              "window_seconds",
+              "anchors",
+              "matched_anchors",
+              "rate",
+              "control_pattern_id",
+              "control_anchors",
+              "control_matched_anchors",
+              "control_rate",
+              "rate_difference",
+              "uncertainty",
+            ],
+            "type": "object",
+          },
+        ],
+      },
       "comparison": {
         "additionalProperties": false,
         "description": "Reference of delta and status (R-06, R-10).",
@@ -14309,11 +15650,13 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
       },
       "match": {
         "default": "terms",
-        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'.",
+        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'. semantic: cosine vector retrieval from a pinned representation. hybrid: BM25 plus cosine candidates fused with reciprocal rank fusion. Semantic and hybrid require retrieval_snapshot and return bounded candidates, never a frequency.",
         "enum": [
           "terms",
           "phrase",
           "fuzzy",
+          "semantic",
+          "hybrid",
         ],
         "type": "string",
       },
@@ -14343,7 +15686,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "type": "string",
       },
       "query": {
-        "description": "Search text (1–200 characters), matched case-insensitively against whole message tokens without stemming. Operators, quotes and * are not evaluated; they are only split into words. Must contain at least one searchable word.",
+        "description": "Search text (1–200 characters). Lexical modes match case-insensitive whole tokens without stemming; operators, quotes and * are tokenized, not evaluated, and need a searchable word. Semantic/hybrid use the exact text with the pinned embedding model; hybrid additionally tokenizes the text for BM25.",
         "maxLength": 200,
         "minLength": 1,
         "type": "string",
@@ -14360,9 +15703,14 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "minLength": 1,
         "type": "string",
       },
+      "retrieval_snapshot": {
+        "description": "Immutable representation snapshot ID, required for semantic and hybrid; use a snapshot built with retrieval:build. Pins provider, model, preprocessing and embeddings for reproducible reruns.",
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string",
+      },
       "sort": {
         "default": "relevance",
-        "description": "relevance (default): BM25 score, highest first; time_asc / time_desc: by event time. Ties are broken by event_id.",
+        "description": "relevance (default): lexical BM25 or hybrid RRF highest first, semantic cosine distance lowest first. time_asc / time_desc: event time for lexical modes only. Ties are broken by event_id.",
         "enum": [
           "relevance",
           "time_asc",
@@ -14483,11 +15831,13 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
       },
       "match": {
         "default": "terms",
-        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'.",
+        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'. semantic: cosine vector retrieval from a pinned representation. hybrid: BM25 plus cosine candidates fused with reciprocal rank fusion. Semantic and hybrid require retrieval_snapshot and return bounded candidates, never a frequency.",
         "enum": [
           "terms",
           "phrase",
           "fuzzy",
+          "semantic",
+          "hybrid",
         ],
         "type": "string",
       },
@@ -14517,7 +15867,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "type": "string",
       },
       "query": {
-        "description": "Search text (1–200 characters), matched case-insensitively against whole message tokens without stemming. Operators, quotes and * are not evaluated; they are only split into words. Must contain at least one searchable word.",
+        "description": "Search text (1–200 characters). Lexical modes match case-insensitive whole tokens without stemming; operators, quotes and * are tokenized, not evaluated, and need a searchable word. Semantic/hybrid use the exact text with the pinned embedding model; hybrid additionally tokenizes the text for BM25.",
         "maxLength": 200,
         "minLength": 1,
         "type": "string",
@@ -14534,9 +15884,14 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "minLength": 1,
         "type": "string",
       },
+      "retrieval_snapshot": {
+        "description": "Immutable representation snapshot ID, required for semantic and hybrid; use a snapshot built with retrieval:build. Pins provider, model, preprocessing and embeddings for reproducible reruns.",
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string",
+      },
       "sort": {
         "default": "relevance",
-        "description": "relevance (default): BM25 score, highest first; time_asc / time_desc: by event time. Ties are broken by event_id.",
+        "description": "relevance (default): lexical BM25 or hybrid RRF highest first, semantic cosine distance lowest first. time_asc / time_desc: event time for lexical modes only. Ties are broken by event_id.",
         "enum": [
           "relevance",
           "time_asc",
@@ -14711,7 +16066,7 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
               ],
             },
             "score": {
-              "description": "BM25 relevance score; only comparable within one result, not a count.",
+              "description": "Ranking value, comparable only within one result, never a count: lexical BM25 (higher first); semantic cosine distance (lower first); hybrid RRF score (higher first). retrieval.score_metric identifies non-lexical values.",
               "type": "number",
             },
             "severity_number": {
@@ -14775,11 +16130,13 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "type": "array",
       },
       "match_mode": {
-        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'.",
+        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'. semantic: cosine vector retrieval from a pinned representation. hybrid: BM25 plus cosine candidates fused with reciprocal rank fusion. Semantic and hybrid require retrieval_snapshot and return bounded candidates, never a frequency.",
         "enum": [
           "terms",
           "phrase",
           "fuzzy",
+          "semantic",
+          "hybrid",
         ],
         "type": "string",
       },
@@ -14800,6 +16157,92 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "description": "The search text as given.",
         "type": "string",
       },
+      "retrieval": {
+        "additionalProperties": false,
+        "description": "Pinned representation and query-vector provenance. Indexed events describe snapshot coverage; candidate_limit bounds each retrieval branch. Similarity and RRF scores are neither frequencies nor causal evidence.",
+        "properties": {
+          "candidate_limit": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "dimensions": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "fusion_k": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "indexed_events": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "model": {
+            "minLength": 1,
+            "type": "string",
+          },
+          "model_version": {
+            "minLength": 1,
+            "type": "string",
+          },
+          "normalization": {
+            "enum": [
+              "none",
+              "l2",
+            ],
+            "type": "string",
+          },
+          "preprocessing_version": {
+            "const": "message-v1",
+            "type": "string",
+          },
+          "provider": {
+            "minLength": 1,
+            "type": "string",
+          },
+          "query_embedding_digest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string",
+          },
+          "score_metric": {
+            "enum": [
+              "cosine_distance",
+              "rrf",
+            ],
+            "type": "string",
+          },
+          "snapshot_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "snapshot_id",
+          "provider",
+          "model",
+          "model_version",
+          "dimensions",
+          "normalization",
+          "preprocessing_version",
+          "query_embedding_digest",
+          "score_metric",
+          "candidate_limit",
+          "indexed_events",
+          "fusion_k",
+        ],
+        "type": "object",
+      },
       "row_limit": {
         "description": "The limit that applied.",
         "exclusiveMinimum": 0,
@@ -14807,7 +16250,7 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "type": "integer",
       },
       "sort": {
-        "description": "relevance (default): BM25 score, highest first; time_asc / time_desc: by event time. Ties are broken by event_id.",
+        "description": "relevance (default): lexical BM25 or hybrid RRF highest first, semantic cosine distance lowest first. time_asc / time_desc: event time for lexical modes only. Ties are broken by event_id.",
         "enum": [
           "relevance",
           "time_asc",
@@ -14816,10 +16259,17 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "type": "string",
       },
       "total_matches": {
-        "description": "Exact number of matching log events in scope, from the same condition as the hits.",
-        "maximum": 9007199254740991,
-        "minimum": 0,
-        "type": "integer",
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Exact matching log-event count for terms/phrase/fuzzy; null for semantic/hybrid bounded retrieval, which does not define a full-population frequency.",
       },
       "truncated": {
         "description": "True when total_matches is larger than the number of hits.",
@@ -14968,7 +16418,7 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
               ],
             },
             "score": {
-              "description": "BM25 relevance score; only comparable within one result, not a count.",
+              "description": "Ranking value, comparable only within one result, never a count: lexical BM25 (higher first); semantic cosine distance (lower first); hybrid RRF score (higher first). retrieval.score_metric identifies non-lexical values.",
               "type": "number",
             },
             "severity_number": {
@@ -15032,11 +16482,13 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "type": "array",
       },
       "match_mode": {
-        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'.",
+        "description": "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'. semantic: cosine vector retrieval from a pinned representation. hybrid: BM25 plus cosine candidates fused with reciprocal rank fusion. Semantic and hybrid require retrieval_snapshot and return bounded candidates, never a frequency.",
         "enum": [
           "terms",
           "phrase",
           "fuzzy",
+          "semantic",
+          "hybrid",
         ],
         "type": "string",
       },
@@ -15057,6 +16509,92 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "description": "The search text as given.",
         "type": "string",
       },
+      "retrieval": {
+        "additionalProperties": false,
+        "description": "Pinned representation and query-vector provenance. Indexed events describe snapshot coverage; candidate_limit bounds each retrieval branch. Similarity and RRF scores are neither frequencies nor causal evidence.",
+        "properties": {
+          "candidate_limit": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "dimensions": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer",
+          },
+          "fusion_k": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "indexed_events": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          "model": {
+            "minLength": 1,
+            "type": "string",
+          },
+          "model_version": {
+            "minLength": 1,
+            "type": "string",
+          },
+          "normalization": {
+            "enum": [
+              "none",
+              "l2",
+            ],
+            "type": "string",
+          },
+          "preprocessing_version": {
+            "const": "message-v1",
+            "type": "string",
+          },
+          "provider": {
+            "minLength": 1,
+            "type": "string",
+          },
+          "query_embedding_digest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string",
+          },
+          "score_metric": {
+            "enum": [
+              "cosine_distance",
+              "rrf",
+            ],
+            "type": "string",
+          },
+          "snapshot_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string",
+          },
+        },
+        "required": [
+          "snapshot_id",
+          "provider",
+          "model",
+          "model_version",
+          "dimensions",
+          "normalization",
+          "preprocessing_version",
+          "query_embedding_digest",
+          "score_metric",
+          "candidate_limit",
+          "indexed_events",
+          "fusion_k",
+        ],
+        "type": "object",
+      },
       "row_limit": {
         "description": "The limit that applied.",
         "exclusiveMinimum": 0,
@@ -15064,7 +16602,7 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "type": "integer",
       },
       "sort": {
-        "description": "relevance (default): BM25 score, highest first; time_asc / time_desc: by event time. Ties are broken by event_id.",
+        "description": "relevance (default): lexical BM25 or hybrid RRF highest first, semantic cosine distance lowest first. time_asc / time_desc: event time for lexical modes only. Ties are broken by event_id.",
         "enum": [
           "relevance",
           "time_asc",
@@ -15073,10 +16611,17 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
         "type": "string",
       },
       "total_matches": {
-        "description": "Exact number of matching log events in scope, from the same condition as the hits.",
-        "maximum": 9007199254740991,
-        "minimum": 0,
-        "type": "integer",
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer",
+          },
+          {
+            "type": "null",
+          },
+        ],
+        "description": "Exact matching log-event count for terms/phrase/fuzzy; null for semantic/hybrid bounded retrieval, which does not define a full-population frequency.",
       },
       "truncated": {
         "description": "True when total_matches is larger than the number of hits.",

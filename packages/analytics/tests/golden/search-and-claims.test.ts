@@ -174,7 +174,9 @@ describe("search_logs independent message scans", () => {
       )
       expect(result.data.total_matches).toBe(expected[0]?.events)
       expect(result.data.max_edits).toBe(edits)
-      expect(result.data.truncated).toBe(result.data.total_matches > 50)
+      expect(result.data.truncated).toBe(
+        result.data.total_matches !== null && result.data.total_matches > 50
+      )
     })
   }
 })

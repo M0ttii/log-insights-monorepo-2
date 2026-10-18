@@ -1,0 +1,1689 @@
+{
+  "receipt_id": "r_05431b89",
+  "created_at": "2026-10-18T19:11:40.064Z",
+  "client": "test",
+  "tool": "recurring_patterns",
+  "tool_version": "1.2.0",
+  "input": {
+    "analysis": {
+      "mode": "cooccurrence",
+      "pattern_a": "bc048d75f905460b",
+      "pattern_b": "be1196c055349e9a",
+      "window_seconds": 60,
+      "direction": "after"
+    },
+    "dataset": "bgl",
+    "from": "2005-06-10T00:00:00Z",
+    "to": "2005-06-11T00:00:00Z",
+    "rank": "episodes"
+  },
+  "signature": "76bd8ca968f8cca73285d9d05f927f953cf80237e285143a3f312a3e44d263f8",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH comparison_bounds AS (SELECT $1::TIMESTAMPTZ AS cf, $2::TIMESTAMPTZ AS ct, $3::TIMESTAMPTZ AS bf, $4::TIMESTAMPTZ AS bt, $5::TIMESTAMPTZ AS first_ts, $6::TIMESTAMPTZ + INTERVAL '1 microsecond' AS end_ts), comparison_coverage AS (SELECT CASE WHEN ct <= first_ts OR cf >= end_ts THEN 'none' WHEN cf >= first_ts AND ct <= end_ts THEN 'full' ELSE 'partial' END AS current, CASE WHEN bt <= first_ts OR bf >= end_ts THEN 'none' WHEN bf >= first_ts AND bt <= end_ts THEN 'full' ELSE 'partial' END AS baseline FROM comparison_bounds) SELECT current, baseline, current <> 'none' AND baseline <> 'none' AS determinable FROM comparison_coverage",
+    "SELECT rules_version, pattern_rules_version FROM load_manifest",
+    "WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.node AS u1, e.rack AS u2 FROM log_events e WHERE e.dataset = $1 AND e.ts >= $3::TIMESTAMPTZ AND e.ts < $4::TIMESTAMPTZ), episodic AS (SELECT * FROM cur MATCH_RECOGNIZE (PARTITION BY pattern_id ORDER BY ts, event_id MEASURES pattern AS pattern, dataset AS dataset, component AS component, u1 AS u1, u2 AS u2, CLASSIFIER() AS phase, MATCH_NUMBER() AS episode ALL ROWS PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $2::INTERVAL)), c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE phase = 's') AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE phase = 's' AND episode = 1) AS example_event_id FROM episodic GROUP BY pattern_id), b AS (SELECT e.pattern_id, min(e.pattern) AS pattern, min(e.dataset) AS dataset, min(e.component) AS component, count(*) AS baseline FROM log_events e WHERE e.dataset = $1 AND e.ts >= $5::TIMESTAMPTZ AND e.ts < $6::TIMESTAMPTZ GROUP BY e.pattern_id), joined AS (SELECT coalesce(c.pattern_id, b.pattern_id) AS pattern_id, coalesce(c.pattern, b.pattern) AS pattern, coalesce(c.dataset, b.dataset) AS dataset, coalesce(c.component, b.component) AS component, coalesce(c.events, 0) AS events, coalesce(c.episodes, 0) AS episodes, coalesce(c.active_days, 0) AS active_days, coalesce(c.active_weeks, 0) AS active_weeks, CASE WHEN c.pattern_id IS NULL THEN 0 ELSE c.b1 END AS b1, CASE WHEN c.pattern_id IS NULL THEN 0 ELSE c.b2 END AS b2, coalesce(c.components, 0) AS components, c.first_ts, c.last_ts, c.example_event_id, coalesce(b.baseline, 0) AS baseline, coalesce(c.events, 0) - coalesce(b.baseline, 0) AS delta FROM c FULL OUTER JOIN b ON c.pattern_id = b.pattern_id), history AS (SELECT e.pattern_id, min(e.ts) AS first_before FROM log_events e WHERE e.dataset = $1 AND e.ts < $10::TIMESTAMPTZ AND $11::TIMESTAMPTZ < $10::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM joined) GROUP BY e.pattern_id), ruled AS (SELECT joined.*, history.first_before, episodes >= $7::BIGINT AS recurring, CASE WHEN events > 0 AND history.first_before IS NULL AND $11::TIMESTAMPTZ < $10::TIMESTAMPTZ THEN 'new' WHEN baseline > 0 AND events >= $8::BIGINT * baseline AND events - baseline >= $9::BIGINT THEN 'escalating' WHEN baseline = 0 AND events > 0 AND history.first_before IS NOT NULL THEN 'reappeared' WHEN events > 0 THEN 'ongoing' WHEN baseline > 0 THEN 'quiet' ELSE NULL::VARCHAR END AS status FROM joined LEFT JOIN history ON joined.pattern_id = history.pattern_id), totals AS (SELECT coalesce(sum(events), 0)::BIGINT AS total, coalesce(count_if(events > 0), 0) AS active, coalesce(count_if(events = 0), 0) AS quiet FROM joined) , ranked AS (SELECT *, row_number() OVER (ORDER BY episodes DESC, events DESC, pattern_id ASC) AS rank FROM ruled) SELECT * FROM (SELECT 'pattern' AS record_kind, pattern_id AS pattern_id, pattern AS pattern, dataset AS dataset, component AS component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = ranked.dataset AND o.component = ranked.component), 'unowned') AS team, events AS events, episodes AS episodes, active_days AS active_days, active_weeks AS active_weeks, b1 AS b1, b2 AS b2, components AS components, example_event_id AS example_event_id, baseline AS baseline, delta AS delta, recurring AS recurring, status AS status, strftime(first_before, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen_before_window, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_seen, events::DOUBLE / NULLIF((SELECT total FROM totals), 0) AS share, (SELECT total FROM totals) AS total, (SELECT active FROM totals) AS active, (SELECT quiet FROM totals) AS quiet, NULL::BIGINT AS candidates_checked, NULL::BIGINT AS missing_breadth, NULL::BOOLEAN AS drop_breadth, NULL::BOOLEAN AS drop_increase, NULL::BIGINT AS not_dominated_by_first, NULL::VARCHAR AS first_pattern_id, NULL::BIGINT AS compared_with, NULL::BOOLEAN AS truncated, NULL::BIGINT AS qualifying, NULL::VARCHAR AS criterion, NULL::BIGINT AS value, NULL::BIGINT AS tied, NULL::VARCHAR AS a, NULL::VARCHAR AS b, NULL::BOOLEAN AS a_episodes, NULL::BOOLEAN AS a_breadth, NULL::BOOLEAN AS a_change, NULL::BOOLEAN AS b_episodes, NULL::BOOLEAN AS b_breadth, NULL::BOOLEAN AS b_change, NULL::BOOLEAN AS b_listed, NULL::BIGINT AS sort_section, rank AS sort_a, NULL::BIGINT AS sort_b FROM ranked WHERE rank <= $12::BIGINT UNION ALL SELECT 'summary' AS record_kind, NULL::VARCHAR AS pattern_id, NULL::VARCHAR AS pattern, NULL::VARCHAR AS dataset, NULL::VARCHAR AS component, NULL::VARCHAR AS team, NULL::BIGINT AS events, NULL::BIGINT AS episodes, NULL::BIGINT AS active_days, NULL::BIGINT AS active_weeks, NULL::BIGINT AS b1, NULL::BIGINT AS b2, NULL::BIGINT AS components, NULL::BIGINT AS example_event_id, NULL::BIGINT AS baseline, NULL::BIGINT AS delta, NULL::BOOLEAN AS recurring, NULL::VARCHAR AS status, NULL::VARCHAR AS first_seen_before_window, NULL::VARCHAR AS first_seen, NULL::VARCHAR AS last_seen, NULL::DOUBLE AS share, total AS total, active AS active, quiet AS quiet, NULL::BIGINT AS candidates_checked, NULL::BIGINT AS missing_breadth, NULL::BOOLEAN AS drop_breadth, NULL::BOOLEAN AS drop_increase, NULL::BIGINT AS not_dominated_by_first, NULL::VARCHAR AS first_pattern_id, NULL::BIGINT AS compared_with, active + quiet > $12::BIGINT AS truncated, active + quiet AS qualifying, NULL::VARCHAR AS criterion, NULL::BIGINT AS value, NULL::BIGINT AS tied, NULL::VARCHAR AS a, NULL::VARCHAR AS b, NULL::BOOLEAN AS a_episodes, NULL::BOOLEAN AS a_breadth, NULL::BOOLEAN AS a_change, NULL::BOOLEAN AS b_episodes, NULL::BOOLEAN AS b_breadth, NULL::BOOLEAN AS b_change, NULL::BOOLEAN AS b_listed, NULL::BIGINT AS sort_section, NULL::BIGINT AS sort_a, NULL::BIGINT AS sort_b FROM totals) records ORDER BY record_kind, sort_section, sort_a, sort_b, criterion, pattern_id, a, b",
+    "WITH base AS (SELECT log_events.event_id AS event_id, log_events.ts AS ts, log_events.pattern_id AS pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ), anchors AS (SELECT a.pattern_id, EXISTS (SELECT 1 FROM base b WHERE b.pattern_id = $5::VARCHAR AND b.event_id <> a.event_id AND epoch_us(b.ts) > epoch_us(a.ts) AND epoch_us(b.ts) - epoch_us(a.ts) <= $6::DOUBLE * 1000000) AS matched FROM base a WHERE a.pattern_id = $4::VARCHAR), aggregate AS (SELECT count(*) FILTER (WHERE pattern_id = $4::VARCHAR) AS anchors,count(*) FILTER (WHERE pattern_id = $4::VARCHAR AND matched) AS matched_anchors,NULL::BIGINT AS control_anchors,NULL::BIGINT AS control_matched_anchors FROM anchors), rates AS (SELECT *,matched_anchors::DOUBLE/nullif(anchors,0) AS rate,control_matched_anchors::DOUBLE/nullif(control_anchors,0) AS control_rate FROM aggregate) SELECT *,rate-control_rate AS rate_difference FROM rates"
+  ],
+  "params": [
+    ["bgl"],
+    [
+      "2005-06-10T00:00:00Z",
+      "2005-06-11T00:00:00Z",
+      "2005-06-09T00:00:00.000000Z",
+      "2005-06-10T00:00:00.000000Z",
+      "2005-06-03T22:42:50.363779Z",
+      "2006-01-04T16:00:05.233639Z"
+    ],
+    [],
+    [
+      "bgl",
+      "30 minutes",
+      "2005-06-10T00:00:00Z",
+      "2005-06-11T00:00:00Z",
+      "2005-06-09T00:00:00.000000Z",
+      "2005-06-10T00:00:00.000000Z",
+      2,
+      2,
+      20,
+      "2005-06-10T00:00:00Z",
+      "2005-06-03T22:42:50.363779Z",
+      10
+    ],
+    [
+      "bgl",
+      "2005-06-10T00:00:00Z",
+      "2005-06-11T00:00:00Z",
+      "bc048d75f905460b",
+      "be1196c055349e9a",
+      60
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-10T00:00:00Z",
+        "to": "2005-06-11T00:00:00Z",
+        "period": "current"
+      },
+      {
+        "dataset": "bgl",
+        "from": "2005-06-09T00:00:00.000000Z",
+        "to": "2005-06-10T00:00:00.000000Z",
+        "period": "baseline"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 9013,
+    "unit": "log_events"
+  },
+  "rows_returned": 10,
+  "truncated": true,
+  "row_limit": 10,
+  "duration_ms": 58.67,
+  "result": {
+    "analysis": {
+      "mode": "cooccurrence",
+      "identity_scope": "all_events_in_filtered_dataset",
+      "scope_unit": "log_events",
+      "pattern_a": "bc048d75f905460b",
+      "pattern_b": "be1196c055349e9a",
+      "direction": "after",
+      "window_seconds": 60,
+      "anchors": 60,
+      "matched_anchors": 30,
+      "rate": 0.5,
+      "control_pattern_id": null,
+      "control_anchors": null,
+      "control_matched_anchors": null,
+      "control_rate": null,
+      "rate_difference": null,
+      "uncertainty": "Temporal co-occurrence/order within the stated window is an observation, never causal proof. Rates count distinct anchors; one target can match multiple anchors. A missing/empty control population leaves its rate and rate difference unknown."
+    },
+    "dataset": "bgl",
+    "rank": "episodes",
+    "limit": 10,
+    "rules": {
+      "rules_version": "concept-3.8",
+      "pattern_rules_version": "1.1.0",
+      "episode_gap_minutes": 30,
+      "recurring_min_episodes": 2,
+      "breadth_unit": "nodes"
+    },
+    "comparison": {
+      "baseline": {
+        "from": "2005-06-09T00:00:00.000000Z",
+        "to": "2005-06-10T00:00:00.000000Z"
+      },
+      "coverage": {
+        "current": "full",
+        "baseline": "full"
+      },
+      "determinable": true
+    },
+    "events": 9013,
+    "pattern_count": 53,
+    "quiet_count": 5,
+    "patterns": [
+      {
+        "pattern_id": "bc048d75f905460b",
+        "pattern": "<NUM> ddr errors(s) detected and corrected on rank <NUM>, symbol <NUM>, bit <NUM>",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 60,
+        "first_seen": "2005-06-10T00:25:26.565541Z",
+        "last_seen": "2005-06-10T22:19:30.219213Z",
+        "episodes": 10,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 32,
+        "racks": 19,
+        "components": 1,
+        "baseline": 146,
+        "delta": -86,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T23:01:50.687138Z",
+        "example_event_id": 213603
+      },
+      {
+        "pattern_id": "be1196c055349e9a",
+        "pattern": "<NUM> L3 EDRAM error(s) (dcr <ADDR>) detected and corrected",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 20,
+        "first_seen": "2005-06-10T00:25:26.861710Z",
+        "last_seen": "2005-06-10T23:46:50.201911Z",
+        "episodes": 10,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 3,
+        "racks": 3,
+        "components": 1,
+        "baseline": 45,
+        "delta": -25,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T23:01:50.728205Z",
+        "example_event_id": 213612
+      },
+      {
+        "pattern_id": "8eb053329ba11348",
+        "pattern": "CE sym <NUM>, at <ADDR>, mask <ADDR>",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 716,
+        "first_seen": "2005-06-10T00:25:27.416916Z",
+        "last_seen": "2005-06-10T22:19:30.519847Z",
+        "episodes": 9,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 27,
+        "racks": 16,
+        "components": 1,
+        "baseline": 1828,
+        "delta": -1112,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T23:01:50.945374Z",
+        "example_event_id": 213619
+      },
+      {
+        "pattern_id": "2aa30ef3ecea724b",
+        "pattern": "total of <NUM> ddr error(s) detected and corrected",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 40,
+        "first_seen": "2005-06-10T00:25:28.067257Z",
+        "last_seen": "2005-06-10T22:19:30.922457Z",
+        "episodes": 9,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 25,
+        "racks": 15,
+        "components": 1,
+        "baseline": 120,
+        "delta": -80,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T23:01:51.141964Z",
+        "example_event_id": 213633
+      },
+      {
+        "pattern_id": "10d868eba093620d",
+        "pattern": "generating core.<NUM>",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 8058,
+        "first_seen": "2005-06-10T02:35:43.258499Z",
+        "last_seen": "2005-06-10T19:17:40.439124Z",
+        "episodes": 6,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 7398,
+        "racks": 17,
+        "components": 1,
+        "baseline": 17300,
+        "delta": -9242,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T22:51:25.712950Z",
+        "example_event_id": 213995
+      },
+      {
+        "pattern_id": "c4de774642754d2a",
+        "pattern": "MidplaneSwitchController performing bit sparing on <NODE> bit <NUM>",
+        "component": "LINKCARD",
+        "team": "Hardware Operations",
+        "events": 12,
+        "first_seen": "2005-06-10T14:40:48.553189Z",
+        "last_seen": "2005-06-10T23:36:17.706733Z",
+        "episodes": 5,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 2,
+        "racks": 2,
+        "components": 1,
+        "baseline": 15,
+        "delta": -3,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T22:47:20.852959Z",
+        "example_event_id": 221326
+      },
+      {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "pattern": "<NUM> torus receiver x+ input pipe error(s) (dcr <ADDR>) detected and corrected",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 4,
+        "first_seen": "2005-06-10T00:25:26.729987Z",
+        "last_seen": "2005-06-10T22:19:30.553214Z",
+        "episodes": 4,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 1,
+        "racks": 1,
+        "components": 1,
+        "baseline": 1,
+        "delta": 3,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-05T08:55:10.026393Z",
+        "example_event_id": 213608
+      },
+      {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "pattern": "<NUM> tree receiver <NUM> in re-synch state event(s) (dcr <ADDR>) detected",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 4,
+        "first_seen": "2005-06-10T00:25:27.538550Z",
+        "last_seen": "2005-06-10T22:19:30.946950Z",
+        "episodes": 4,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 1,
+        "racks": 1,
+        "components": 1,
+        "baseline": 3,
+        "delta": 1,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-04T01:21:45.321124Z",
+        "example_event_id": 213624
+      },
+      {
+        "pattern_id": "f1fdb529c6f498e2",
+        "pattern": "ddr: activating redundant bit steering: rank=<NUM> symbol=<NUM>",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 3,
+        "first_seen": "2005-06-10T04:03:53.965121Z",
+        "last_seen": "2005-06-10T19:18:11.036174Z",
+        "episodes": 3,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 3,
+        "racks": 3,
+        "components": 1,
+        "baseline": 9,
+        "delta": -6,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-03T23:12:00.444970Z",
+        "example_event_id": 221190
+      },
+      {
+        "pattern_id": "aabf218cebb5bc84",
+        "pattern": "<NUM>:<ADDR> <NUM>:<ADDR> <NUM>:<ADDR> <NUM>:<ADDR>",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 16,
+        "first_seen": "2005-06-10T00:44:20.882966Z",
+        "last_seen": "2005-06-10T09:01:45.010366Z",
+        "episodes": 2,
+        "recurring": true,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 2,
+        "racks": 2,
+        "components": 1,
+        "baseline": 8,
+        "delta": 8,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-05T08:55:05.079275Z",
+        "example_event_id": 213983
+      }
+    ],
+    "truncated": true,
+    "investigation": null
+  },
+  "result_digest": "f307fcf49191e962a5ab083e693cff35339ab6caef1ac6b30b5b08dee8e8cae6",
+  "facts": [
+    {
+      "id": "r_05431b89.f1",
+      "path": "/result/analysis/anchors",
+      "value": 60,
+      "metric": "pattern_analysis_anchors",
+      "unit": "log_events",
+      "group": {
+        "pattern_a": "bc048d75f905460b",
+        "pattern_b": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_05431b89.f2",
+      "path": "/result/analysis/matched_anchors",
+      "value": 30,
+      "metric": "pattern_analysis_matched_anchors",
+      "unit": "log_events",
+      "group": {
+        "pattern_a": "bc048d75f905460b",
+        "pattern_b": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_05431b89.f3",
+      "path": "/result/analysis/rate",
+      "value": 0.5,
+      "metric": "pattern_analysis_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_a": "bc048d75f905460b",
+        "pattern_b": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_05431b89.f4",
+      "path": "/result/analysis/window_seconds",
+      "value": 60,
+      "metric": "pattern_analysis_window_seconds",
+      "unit": "seconds",
+      "group": {
+        "pattern_a": "bc048d75f905460b",
+        "pattern_b": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_05431b89.f5",
+      "path": "/result/comparison/baseline/from",
+      "value": "2005-06-09T00:00:00.000000Z",
+      "metric": "baseline_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_05431b89.f6",
+      "path": "/result/comparison/baseline/to",
+      "value": "2005-06-10T00:00:00.000000Z",
+      "metric": "baseline_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_05431b89.f7",
+      "path": "/result/events",
+      "value": 9013,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_05431b89.f8",
+      "path": "/result/pattern_count",
+      "value": 53,
+      "metric": "patterns",
+      "unit": "patterns",
+      "group": {}
+    },
+    {
+      "id": "r_05431b89.f9",
+      "path": "/result/patterns/0/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f10",
+      "path": "/result/patterns/0/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f11",
+      "path": "/result/patterns/0/baseline",
+      "value": 146,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f12",
+      "path": "/result/patterns/0/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f13",
+      "path": "/result/patterns/0/delta",
+      "value": -86,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f14",
+      "path": "/result/patterns/0/episodes",
+      "value": 10,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f15",
+      "path": "/result/patterns/0/events",
+      "value": 60,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f16",
+      "path": "/result/patterns/0/first_seen",
+      "value": "2005-06-10T00:25:26.565541Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f17",
+      "path": "/result/patterns/0/first_seen_before_window",
+      "value": "2005-06-03T23:01:50.687138Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f18",
+      "path": "/result/patterns/0/last_seen",
+      "value": "2005-06-10T22:19:30.219213Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f19",
+      "path": "/result/patterns/0/nodes",
+      "value": 32,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f20",
+      "path": "/result/patterns/0/racks",
+      "value": 19,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "bc048d75f905460b"
+      }
+    },
+    {
+      "id": "r_05431b89.f21",
+      "path": "/result/patterns/1/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f22",
+      "path": "/result/patterns/1/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f23",
+      "path": "/result/patterns/1/baseline",
+      "value": 45,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f24",
+      "path": "/result/patterns/1/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f25",
+      "path": "/result/patterns/1/delta",
+      "value": -25,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f26",
+      "path": "/result/patterns/1/episodes",
+      "value": 10,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f27",
+      "path": "/result/patterns/1/events",
+      "value": 20,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f28",
+      "path": "/result/patterns/1/first_seen",
+      "value": "2005-06-10T00:25:26.861710Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f29",
+      "path": "/result/patterns/1/first_seen_before_window",
+      "value": "2005-06-03T23:01:50.728205Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f30",
+      "path": "/result/patterns/1/last_seen",
+      "value": "2005-06-10T23:46:50.201911Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f31",
+      "path": "/result/patterns/1/nodes",
+      "value": 3,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f32",
+      "path": "/result/patterns/1/racks",
+      "value": 3,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "be1196c055349e9a"
+      }
+    },
+    {
+      "id": "r_05431b89.f33",
+      "path": "/result/patterns/2/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f34",
+      "path": "/result/patterns/2/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f35",
+      "path": "/result/patterns/2/baseline",
+      "value": 1828,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f36",
+      "path": "/result/patterns/2/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f37",
+      "path": "/result/patterns/2/delta",
+      "value": -1112,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f38",
+      "path": "/result/patterns/2/episodes",
+      "value": 9,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f39",
+      "path": "/result/patterns/2/events",
+      "value": 716,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f40",
+      "path": "/result/patterns/2/first_seen",
+      "value": "2005-06-10T00:25:27.416916Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f41",
+      "path": "/result/patterns/2/first_seen_before_window",
+      "value": "2005-06-03T23:01:50.945374Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f42",
+      "path": "/result/patterns/2/last_seen",
+      "value": "2005-06-10T22:19:30.519847Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f43",
+      "path": "/result/patterns/2/nodes",
+      "value": 27,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f44",
+      "path": "/result/patterns/2/racks",
+      "value": 16,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "8eb053329ba11348"
+      }
+    },
+    {
+      "id": "r_05431b89.f45",
+      "path": "/result/patterns/3/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f46",
+      "path": "/result/patterns/3/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f47",
+      "path": "/result/patterns/3/baseline",
+      "value": 120,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f48",
+      "path": "/result/patterns/3/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f49",
+      "path": "/result/patterns/3/delta",
+      "value": -80,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f50",
+      "path": "/result/patterns/3/episodes",
+      "value": 9,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f51",
+      "path": "/result/patterns/3/events",
+      "value": 40,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f52",
+      "path": "/result/patterns/3/first_seen",
+      "value": "2005-06-10T00:25:28.067257Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f53",
+      "path": "/result/patterns/3/first_seen_before_window",
+      "value": "2005-06-03T23:01:51.141964Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f54",
+      "path": "/result/patterns/3/last_seen",
+      "value": "2005-06-10T22:19:30.922457Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f55",
+      "path": "/result/patterns/3/nodes",
+      "value": 25,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f56",
+      "path": "/result/patterns/3/racks",
+      "value": 15,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b"
+      }
+    },
+    {
+      "id": "r_05431b89.f57",
+      "path": "/result/patterns/4/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f58",
+      "path": "/result/patterns/4/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f59",
+      "path": "/result/patterns/4/baseline",
+      "value": 17300,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f60",
+      "path": "/result/patterns/4/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f61",
+      "path": "/result/patterns/4/delta",
+      "value": -9242,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f62",
+      "path": "/result/patterns/4/episodes",
+      "value": 6,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f63",
+      "path": "/result/patterns/4/events",
+      "value": 8058,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f64",
+      "path": "/result/patterns/4/first_seen",
+      "value": "2005-06-10T02:35:43.258499Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f65",
+      "path": "/result/patterns/4/first_seen_before_window",
+      "value": "2005-06-03T22:51:25.712950Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f66",
+      "path": "/result/patterns/4/last_seen",
+      "value": "2005-06-10T19:17:40.439124Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f67",
+      "path": "/result/patterns/4/nodes",
+      "value": 7398,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f68",
+      "path": "/result/patterns/4/racks",
+      "value": 17,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "10d868eba093620d"
+      }
+    },
+    {
+      "id": "r_05431b89.f69",
+      "path": "/result/patterns/5/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f70",
+      "path": "/result/patterns/5/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f71",
+      "path": "/result/patterns/5/baseline",
+      "value": 15,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f72",
+      "path": "/result/patterns/5/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f73",
+      "path": "/result/patterns/5/delta",
+      "value": -3,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f74",
+      "path": "/result/patterns/5/episodes",
+      "value": 5,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f75",
+      "path": "/result/patterns/5/events",
+      "value": 12,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f76",
+      "path": "/result/patterns/5/first_seen",
+      "value": "2005-06-10T14:40:48.553189Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f77",
+      "path": "/result/patterns/5/first_seen_before_window",
+      "value": "2005-06-03T22:47:20.852959Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f78",
+      "path": "/result/patterns/5/last_seen",
+      "value": "2005-06-10T23:36:17.706733Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f79",
+      "path": "/result/patterns/5/nodes",
+      "value": 2,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f80",
+      "path": "/result/patterns/5/racks",
+      "value": 2,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "c4de774642754d2a"
+      }
+    },
+    {
+      "id": "r_05431b89.f81",
+      "path": "/result/patterns/6/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f82",
+      "path": "/result/patterns/6/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f83",
+      "path": "/result/patterns/6/baseline",
+      "value": 1,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f84",
+      "path": "/result/patterns/6/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f85",
+      "path": "/result/patterns/6/delta",
+      "value": 3,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f86",
+      "path": "/result/patterns/6/episodes",
+      "value": 4,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f87",
+      "path": "/result/patterns/6/events",
+      "value": 4,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f88",
+      "path": "/result/patterns/6/first_seen",
+      "value": "2005-06-10T00:25:26.729987Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f89",
+      "path": "/result/patterns/6/first_seen_before_window",
+      "value": "2005-06-05T08:55:10.026393Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f90",
+      "path": "/result/patterns/6/last_seen",
+      "value": "2005-06-10T22:19:30.553214Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f91",
+      "path": "/result/patterns/6/nodes",
+      "value": 1,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f92",
+      "path": "/result/patterns/6/racks",
+      "value": 1,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb"
+      }
+    },
+    {
+      "id": "r_05431b89.f93",
+      "path": "/result/patterns/7/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f94",
+      "path": "/result/patterns/7/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f95",
+      "path": "/result/patterns/7/baseline",
+      "value": 3,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f96",
+      "path": "/result/patterns/7/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f97",
+      "path": "/result/patterns/7/delta",
+      "value": 1,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f98",
+      "path": "/result/patterns/7/episodes",
+      "value": 4,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f99",
+      "path": "/result/patterns/7/events",
+      "value": 4,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f100",
+      "path": "/result/patterns/7/first_seen",
+      "value": "2005-06-10T00:25:27.538550Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f101",
+      "path": "/result/patterns/7/first_seen_before_window",
+      "value": "2005-06-04T01:21:45.321124Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f102",
+      "path": "/result/patterns/7/last_seen",
+      "value": "2005-06-10T22:19:30.946950Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f103",
+      "path": "/result/patterns/7/nodes",
+      "value": 1,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f104",
+      "path": "/result/patterns/7/racks",
+      "value": 1,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2"
+      }
+    },
+    {
+      "id": "r_05431b89.f105",
+      "path": "/result/patterns/8/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f106",
+      "path": "/result/patterns/8/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f107",
+      "path": "/result/patterns/8/baseline",
+      "value": 9,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f108",
+      "path": "/result/patterns/8/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f109",
+      "path": "/result/patterns/8/delta",
+      "value": -6,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f110",
+      "path": "/result/patterns/8/episodes",
+      "value": 3,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f111",
+      "path": "/result/patterns/8/events",
+      "value": 3,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f112",
+      "path": "/result/patterns/8/first_seen",
+      "value": "2005-06-10T04:03:53.965121Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f113",
+      "path": "/result/patterns/8/first_seen_before_window",
+      "value": "2005-06-03T23:12:00.444970Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f114",
+      "path": "/result/patterns/8/last_seen",
+      "value": "2005-06-10T19:18:11.036174Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f115",
+      "path": "/result/patterns/8/nodes",
+      "value": 3,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f116",
+      "path": "/result/patterns/8/racks",
+      "value": 3,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2"
+      }
+    },
+    {
+      "id": "r_05431b89.f117",
+      "path": "/result/patterns/9/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f118",
+      "path": "/result/patterns/9/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f119",
+      "path": "/result/patterns/9/baseline",
+      "value": 8,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f120",
+      "path": "/result/patterns/9/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f121",
+      "path": "/result/patterns/9/delta",
+      "value": 8,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f122",
+      "path": "/result/patterns/9/episodes",
+      "value": 2,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f123",
+      "path": "/result/patterns/9/events",
+      "value": 16,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f124",
+      "path": "/result/patterns/9/first_seen",
+      "value": "2005-06-10T00:44:20.882966Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f125",
+      "path": "/result/patterns/9/first_seen_before_window",
+      "value": "2005-06-05T08:55:05.079275Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f126",
+      "path": "/result/patterns/9/last_seen",
+      "value": "2005-06-10T09:01:45.010366Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f127",
+      "path": "/result/patterns/9/nodes",
+      "value": 2,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f128",
+      "path": "/result/patterns/9/racks",
+      "value": 2,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "aabf218cebb5bc84"
+      }
+    },
+    {
+      "id": "r_05431b89.f129",
+      "path": "/result/quiet_count",
+      "value": 5,
+      "metric": "quiet_patterns",
+      "unit": "patterns",
+      "group": {}
+    },
+    {
+      "id": "r_05431b89.f130",
+      "path": "/result/rules/episode_gap_minutes",
+      "value": 30,
+      "metric": "episode_gap",
+      "unit": "minutes",
+      "group": {}
+    },
+    {
+      "id": "r_05431b89.f131",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-10T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_05431b89.f132",
+      "path": "/scope/windows/0/to",
+      "value": "2005-06-11T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_05431b89.f133",
+      "path": "/scope/windows/1/from",
+      "value": "2005-06-09T00:00:00.000000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "id": "r_05431b89.f134",
+      "path": "/scope/windows/1/to",
+      "value": "2005-06-10T00:00:00.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    }
+  ]
+}

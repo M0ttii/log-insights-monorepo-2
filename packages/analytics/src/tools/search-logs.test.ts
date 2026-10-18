@@ -385,3 +385,76 @@ describe("search_logs result", () => {
     })
   })
 })
+
+describe("semantic retrieval input", () => {
+  it("requires an immutable snapshot before any query", async () => {
+    const { calls, search } = setup()
+    const result = await search({
+      query: "network exhausted",
+      match: "semantic",
+    })
+    expect(result).toMatchObject({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        issues: [{ path: "retrieval_snapshot" }],
+      },
+    })
+    expect(calls).toHaveLength(0)
+  })
+  it("rejects lexical snapshot mixing and non-relevance retrieval sorting", async () => {
+    const { calls, search } = setup()
+    const snapshot = "a".repeat(64)
+    expect(
+      await search({ query: "parity", retrieval_snapshot: snapshot })
+    ).toMatchObject({ ok: false, error: { code: "invalid_input" } })
+    expect(
+      await search({
+        query: "parity",
+        match: "semantic",
+        retrieval_snapshot: snapshot,
+        sort: "time_asc",
+      })
+    ).toMatchObject({ ok: false, error: { code: "invalid_input" } })
+    expect(calls).toHaveLength(0)
+  })
+  it.each(["otel", "otel_replay"] as const)(
+    "reports missing %s snapshots before opening a mutable lexical source",
+    async (dataset) => {
+      const { calls, search } = setup()
+      const result = await search({
+        query: "parity",
+        match: "hybrid",
+        retrieval_snapshot: "0".repeat(64),
+        dataset,
+      })
+      expect(result).toMatchObject({
+        ok: false,
+        error: {
+          code: "invalid_input",
+          hint: expect.stringContaining("No lexical fallback"),
+        },
+      })
+      expect(toolCalls(calls)).toHaveLength(0)
+    }
+  )
+  it("reports an unavailable snapshot without a lexical fallback", async () => {
+    const { calls, search } = setup()
+    const result = await search({
+      query: "parity",
+      match: "semantic",
+      retrieval_snapshot: "0".repeat(64),
+      dataset: "bgl",
+    })
+    expect(result).toMatchObject({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        hint: expect.stringContaining("No lexical fallback"),
+      },
+    })
+    expect(
+      calls.some(({ sql }) => sql.includes("BM25") || sql.includes("ts_lexize"))
+    ).toBe(false)
+  })
+})

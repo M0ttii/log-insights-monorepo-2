@@ -1,0 +1,548 @@
+{
+  "question_set_version": 1,
+  "generated_at": "2026-10-18T19:05:44.845Z",
+  "execution": "Real local SereneDB. Lexical and missing-snapshot failures perform no model requests; provider usage/cost for an explicitly supplied snapshot is unavailable to this runner and is recorded as null.",
+  "quality_conclusion": "No semantic or hybrid quality advantage established. Unavailable snapshots/providers are explicit failed cases, not lexical fallbacks.",
+  "rows": [
+    {
+      "question_id": "exact",
+      "query": "cache parity error",
+      "mode": "terms",
+      "elapsed_ms": 78.06,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "receipt": {
+        "receipt_id": "r_79a37f90",
+        "input": {
+          "query": "cache parity error",
+          "match": "terms",
+          "dataset": "bgl",
+          "sort": "relevance",
+          "limit": 5
+        },
+        "signature": "c068f9dbc16ac5722e267a9bb3fbf041e85ccfdb0dd368eb871b507462f3b41c",
+        "data_version": "dv_229e422f86a9fc6e",
+        "sql": [
+          "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+          "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+          "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2",
+          "WITH hits AS MATERIALIZED (SELECT log_events_idx.event_id AS event_id, log_events_idx.dataset AS dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.ts AS sort_ts, log_events_idx.component AS component, log_events_idx.level AS level, log_events_idx.node AS node, log_events_idx.alert_label AS alert_label, log_events_idx.request_id AS request_id, log_events_idx.host AS host, log_events_idx.process_id AS process_id, log_events_idx.client_ip AS client_ip, log_events_idx.thread AS thread, log_events_idx.block_id AS block_id, NULL::VARCHAR AS trace_id, NULL::VARCHAR AS span_id, NULL::INTEGER AS severity_number, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 ORDER BY BM25(log_events_idx.tableoid) DESC, log_events_idx.event_id LIMIT $3) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT log_events_idx.event_id AS event_id, ts_offsets(log_events_idx.message) AS match_offsets FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND CASE WHEN log_events_idx.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY hits.score DESC, hits.event_id"
+        ],
+        "params": [
+          ["cache parity error"],
+          ["bgl"],
+          ["cache parity error", "bgl"],
+          ["cache parity error", "bgl", 5]
+        ],
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-03T22:42:50.363779Z",
+              "to": "2006-01-04T16:00:05.233640Z"
+            }
+          ],
+          "filters": {}
+        },
+        "population": {
+          "count": 120814,
+          "unit": "log_events"
+        },
+        "rows_returned": 5,
+        "truncated": true,
+        "duration_ms": 47.32,
+        "result_digest": "5c376a1318737be1300431a873bce0033d21416f46da906c35c5092c89c3f901"
+      },
+      "result": {
+        "query": "cache parity error",
+        "match_mode": "terms",
+        "max_edits": null,
+        "sort": "relevance",
+        "total_matches": 120814,
+        "hits": [
+          {
+            "event_id": 1,
+            "dataset": "bgl",
+            "ts": "2005-06-03T22:42:50.363779Z",
+            "component": "KERNEL",
+            "level": "INFO",
+            "node": "R02-M1-N0-C:J12-U11",
+            "alert_label": null,
+            "request_id": null,
+            "message": "instruction cache parity error corrected",
+            "message_truncated": false,
+            "match_ranges": [
+              {
+                "start": 12,
+                "end": 17
+              },
+              {
+                "start": 18,
+                "end": 24
+              },
+              {
+                "start": 25,
+                "end": 30
+              }
+            ],
+            "score": 5.0523825
+          },
+          {
+            "event_id": 2,
+            "dataset": "bgl",
+            "ts": "2005-06-03T22:42:50.527847Z",
+            "component": "KERNEL",
+            "level": "INFO",
+            "node": "R02-M1-N0-C:J12-U11",
+            "alert_label": null,
+            "request_id": null,
+            "message": "instruction cache parity error corrected",
+            "message_truncated": false,
+            "match_ranges": [
+              {
+                "start": 12,
+                "end": 17
+              },
+              {
+                "start": 18,
+                "end": 24
+              },
+              {
+                "start": 25,
+                "end": 30
+              }
+            ],
+            "score": 5.0523825
+          },
+          {
+            "event_id": 3,
+            "dataset": "bgl",
+            "ts": "2005-06-03T22:42:50.675872Z",
+            "component": "KERNEL",
+            "level": "INFO",
+            "node": "R02-M1-N0-C:J12-U11",
+            "alert_label": null,
+            "request_id": null,
+            "message": "instruction cache parity error corrected",
+            "message_truncated": false,
+            "match_ranges": [
+              {
+                "start": 12,
+                "end": 17
+              },
+              {
+                "start": 18,
+                "end": 24
+              },
+              {
+                "start": 25,
+                "end": 30
+              }
+            ],
+            "score": 5.0523825
+          },
+          {
+            "event_id": 4,
+            "dataset": "bgl",
+            "ts": "2005-06-03T22:42:50.823719Z",
+            "component": "KERNEL",
+            "level": "INFO",
+            "node": "R02-M1-N0-C:J12-U11",
+            "alert_label": null,
+            "request_id": null,
+            "message": "instruction cache parity error corrected",
+            "message_truncated": false,
+            "match_ranges": [
+              {
+                "start": 12,
+                "end": 17
+              },
+              {
+                "start": 18,
+                "end": 24
+              },
+              {
+                "start": 25,
+                "end": 30
+              }
+            ],
+            "score": 5.0523825
+          },
+          {
+            "event_id": 5,
+            "dataset": "bgl",
+            "ts": "2005-06-03T22:42:50.982731Z",
+            "component": "KERNEL",
+            "level": "INFO",
+            "node": "R02-M1-N0-C:J12-U11",
+            "alert_label": null,
+            "request_id": null,
+            "message": "instruction cache parity error corrected",
+            "message_truncated": false,
+            "match_ranges": [
+              {
+                "start": 12,
+                "end": 17
+              },
+              {
+                "start": 18,
+                "end": 24
+              },
+              {
+                "start": 25,
+                "end": 30
+              }
+            ],
+            "score": 5.0523825
+          }
+        ],
+        "truncated": true,
+        "row_limit": 5
+      }
+    },
+    {
+      "question_id": "exact",
+      "query": "cache parity error",
+      "mode": "semantic",
+      "elapsed_ms": 0.09,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "exact",
+      "query": "cache parity error",
+      "mode": "hybrid",
+      "elapsed_ms": 0.03,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "paraphrase",
+      "query": "memory integrity fault",
+      "mode": "terms",
+      "elapsed_ms": 10.83,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "receipt": {
+        "receipt_id": "r_56509af1",
+        "input": {
+          "query": "memory integrity fault",
+          "match": "terms",
+          "dataset": "bgl",
+          "sort": "relevance",
+          "limit": 5
+        },
+        "signature": "27e3f4b9713abc7b9ebb132394d47af5a94dcf37aa270f4434333c689dfaeaed",
+        "data_version": "dv_229e422f86a9fc6e",
+        "sql": [
+          "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+          "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+          "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2",
+          "WITH hits AS MATERIALIZED (SELECT log_events_idx.event_id AS event_id, log_events_idx.dataset AS dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.ts AS sort_ts, log_events_idx.component AS component, log_events_idx.level AS level, log_events_idx.node AS node, log_events_idx.alert_label AS alert_label, log_events_idx.request_id AS request_id, log_events_idx.host AS host, log_events_idx.process_id AS process_id, log_events_idx.client_ip AS client_ip, log_events_idx.thread AS thread, log_events_idx.block_id AS block_id, NULL::VARCHAR AS trace_id, NULL::VARCHAR AS span_id, NULL::INTEGER AS severity_number, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 ORDER BY BM25(log_events_idx.tableoid) DESC, log_events_idx.event_id LIMIT $3) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT log_events_idx.event_id AS event_id, ts_offsets(log_events_idx.message) AS match_offsets FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND CASE WHEN log_events_idx.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY hits.score DESC, hits.event_id"
+        ],
+        "params": [
+          ["memory integrity fault"],
+          ["bgl"],
+          ["memory integrity fault", "bgl"],
+          ["memory integrity fault", "bgl", 5]
+        ],
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-03T22:42:50.363779Z",
+              "to": "2006-01-04T16:00:05.233640Z"
+            }
+          ],
+          "filters": {}
+        },
+        "population": {
+          "count": 0,
+          "unit": "log_events"
+        },
+        "rows_returned": 0,
+        "truncated": false,
+        "duration_ms": 9.04,
+        "result_digest": "242d5e39da70408361736781a644b3ef75fff393aa75a6ea3989c297e7f60684"
+      },
+      "result": {
+        "query": "memory integrity fault",
+        "match_mode": "terms",
+        "max_edits": null,
+        "sort": "relevance",
+        "total_matches": 0,
+        "hits": [],
+        "truncated": false,
+        "row_limit": 5
+      }
+    },
+    {
+      "question_id": "paraphrase",
+      "query": "memory integrity fault",
+      "mode": "semantic",
+      "elapsed_ms": 0.05,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "paraphrase",
+      "query": "memory integrity fault",
+      "mode": "hybrid",
+      "elapsed_ms": 0.03,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "related",
+      "query": "hardware consistency failure",
+      "mode": "terms",
+      "elapsed_ms": 9.75,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "receipt": {
+        "receipt_id": "r_2ffd6014",
+        "input": {
+          "query": "hardware consistency failure",
+          "match": "terms",
+          "dataset": "bgl",
+          "sort": "relevance",
+          "limit": 5
+        },
+        "signature": "8568fc42e928ae8c161beebb23b1a8286d178f758ee473ee8cf53a052ccdd49a",
+        "data_version": "dv_229e422f86a9fc6e",
+        "sql": [
+          "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+          "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+          "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2",
+          "WITH hits AS MATERIALIZED (SELECT log_events_idx.event_id AS event_id, log_events_idx.dataset AS dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.ts AS sort_ts, log_events_idx.component AS component, log_events_idx.level AS level, log_events_idx.node AS node, log_events_idx.alert_label AS alert_label, log_events_idx.request_id AS request_id, log_events_idx.host AS host, log_events_idx.process_id AS process_id, log_events_idx.client_ip AS client_ip, log_events_idx.thread AS thread, log_events_idx.block_id AS block_id, NULL::VARCHAR AS trace_id, NULL::VARCHAR AS span_id, NULL::INTEGER AS severity_number, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 ORDER BY BM25(log_events_idx.tableoid) DESC, log_events_idx.event_id LIMIT $3) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT log_events_idx.event_id AS event_id, ts_offsets(log_events_idx.message) AS match_offsets FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND CASE WHEN log_events_idx.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY hits.score DESC, hits.event_id"
+        ],
+        "params": [
+          ["hardware consistency failure"],
+          ["bgl"],
+          ["hardware consistency failure", "bgl"],
+          ["hardware consistency failure", "bgl", 5]
+        ],
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-03T22:42:50.363779Z",
+              "to": "2006-01-04T16:00:05.233640Z"
+            }
+          ],
+          "filters": {}
+        },
+        "population": {
+          "count": 0,
+          "unit": "log_events"
+        },
+        "rows_returned": 0,
+        "truncated": false,
+        "duration_ms": 8.37,
+        "result_digest": "11d9318845d94f50094cec3961a86235c33b480132dcedea61a790928ad118ac"
+      },
+      "result": {
+        "query": "hardware consistency failure",
+        "match_mode": "terms",
+        "max_edits": null,
+        "sort": "relevance",
+        "total_matches": 0,
+        "hits": [],
+        "truncated": false,
+        "row_limit": 5
+      }
+    },
+    {
+      "question_id": "related",
+      "query": "hardware consistency failure",
+      "mode": "semantic",
+      "elapsed_ms": 0.06,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "related",
+      "query": "hardware consistency failure",
+      "mode": "hybrid",
+      "elapsed_ms": 0.05,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "empty",
+      "query": "log41_absent_qxzv_protocol",
+      "mode": "terms",
+      "elapsed_ms": 8.41,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "receipt": {
+        "receipt_id": "r_fa30deb1",
+        "input": {
+          "query": "log41_absent_qxzv_protocol",
+          "match": "terms",
+          "dataset": "bgl",
+          "sort": "relevance",
+          "limit": 5
+        },
+        "signature": "23dd9afff72c18e683df549e80438fcae72689e23d66791c8f21dece43f8f70f",
+        "data_version": "dv_229e422f86a9fc6e",
+        "sql": [
+          "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+          "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+          "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2",
+          "WITH hits AS MATERIALIZED (SELECT log_events_idx.event_id AS event_id, log_events_idx.dataset AS dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.ts AS sort_ts, log_events_idx.component AS component, log_events_idx.level AS level, log_events_idx.node AS node, log_events_idx.alert_label AS alert_label, log_events_idx.request_id AS request_id, log_events_idx.host AS host, log_events_idx.process_id AS process_id, log_events_idx.client_ip AS client_ip, log_events_idx.thread AS thread, log_events_idx.block_id AS block_id, NULL::VARCHAR AS trace_id, NULL::VARCHAR AS span_id, NULL::INTEGER AS severity_number, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 ORDER BY BM25(log_events_idx.tableoid) DESC, log_events_idx.event_id LIMIT $3) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT log_events_idx.event_id AS event_id, ts_offsets(log_events_idx.message) AS match_offsets FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND CASE WHEN log_events_idx.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY hits.score DESC, hits.event_id"
+        ],
+        "params": [
+          ["log41_absent_qxzv_protocol"],
+          ["bgl"],
+          ["log41_absent_qxzv_protocol", "bgl"],
+          ["log41_absent_qxzv_protocol", "bgl", 5]
+        ],
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-03T22:42:50.363779Z",
+              "to": "2006-01-04T16:00:05.233640Z"
+            }
+          ],
+          "filters": {}
+        },
+        "population": {
+          "count": 0,
+          "unit": "log_events"
+        },
+        "rows_returned": 0,
+        "truncated": false,
+        "duration_ms": 7.09,
+        "result_digest": "28648a3c5950c98481c7b607edb24828538051aef60c1e1ec2d728bf718b1057"
+      },
+      "result": {
+        "query": "log41_absent_qxzv_protocol",
+        "match_mode": "terms",
+        "max_edits": null,
+        "sort": "relevance",
+        "total_matches": 0,
+        "hits": [],
+        "truncated": false,
+        "row_limit": 5
+      }
+    },
+    {
+      "question_id": "empty",
+      "query": "log41_absent_qxzv_protocol",
+      "mode": "semantic",
+      "elapsed_ms": 0.04,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    },
+    {
+      "question_id": "empty",
+      "query": "log41_absent_qxzv_protocol",
+      "mode": "hybrid",
+      "elapsed_ms": 0.01,
+      "model_requests_this_run": 0,
+      "model_cost_this_run": 0,
+      "embedding_snapshot_build_cost": null,
+      "error": {
+        "code": "invalid_input",
+        "message": "Invalid input at retrieval_snapshot: semantic and hybrid require a pinned retrieval_snapshot.",
+        "hint": "Correct the listed fields and call the tool again.",
+        "issues": [
+          {
+            "path": "retrieval_snapshot",
+            "message": "semantic and hybrid require a pinned retrieval_snapshot."
+          }
+        ]
+      }
+    }
+  ]
+}

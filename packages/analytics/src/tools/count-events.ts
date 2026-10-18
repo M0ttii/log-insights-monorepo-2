@@ -68,6 +68,7 @@ import {
 import { z } from "zod"
 
 import { comparisonCoverageSql } from "../comparison.ts"
+import { dictionaryFacetRelation } from "../dictionary-facets.ts"
 import { requireDataSpan } from "../corpus.ts"
 import {
   apiAccessCondition,
@@ -88,6 +89,7 @@ import {
   type ResolvedWindow,
 } from "../scope.ts"
 import { SqlParams } from "../sql.ts"
+import { entityDistribution } from "../entity-distribution.ts"
 
 /**
  * count_events (A-07, A-09): counts over the stated scope, grouped by one or
@@ -150,12 +152,17 @@ const summaryRow = z.object({
   other_baseline: exactCount.nullable(),
   other_delta: exactInteger.nullable(),
   other_pct_change: z.number().nullable(),
+  positive_delta: exactCount.nullable().optional(),
+  negative_delta: exactInteger.nullable().optional(),
+  contribution_to_delta: z.number().nullable().optional(),
+  other_contribution_to_delta: z.number().nullable().optional(),
 })
 
 const groupRow = z.object({
   rank: exactCount,
   events: exactCount,
   share: z.number().nullable(),
+  contribution_to_delta: z.number().nullable().optional(),
   baseline: exactCount.nullable(),
   delta: exactInteger.nullable(),
   pct_change: z.number().nullable(),
@@ -191,10 +198,10 @@ type Periods = {
 export const countEvents = defineTool({
   name: "count_events",
   title: "Count events",
-  version: "1.3.0",
+  version: "1.4.0",
   description: renderDescription({
     purpose:
-      "Counts log events (or OpenStack API accesses) over the stated scope, grouped by one or two dimensions, with exact total, share per group and the remaining groups summed in other. Without from/to the whole corpus is counted. With compare it also counts an equally long reference period and reports what changed (R-06). For dataset otel (remote OpenTelemetry Parquet) it counts a bounded window read in place from the files.",
+      "Counts log events (or OpenStack API accesses) over the stated scope, grouped by one or two dimensions, with exact total, share per group and the remaining groups summed in other. Without from/to the whole corpus is counted. With compare it also counts an equally long reference period and reports what changed (R-06). Optional entity {type,value?} adds a complete-scope original-string distribution of IPs, paths, request or object IDs; an exact value selects the distribution only. With contributions true, compare includes signed contributions to the net change and reconciled positive/negative deltas. For dataset otel (remote OpenTelemetry Parquet) it counts a bounded window read in place from the files.",
     useWhen:
       "the question asks how often something happened or how events are distributed, e.g. errors per team, per component, per level, per node, per HTTP status, across the whole corpus or a window. Group by dataset when both datasets are in scope, so their totals stay apart. Use compare for what changed versus the previous period or a chosen reference, first occurrences and escalation.",
     doNotUseWhen: [
@@ -215,6 +222,7 @@ export const countEvents = defineTool({
     ],
     inputs: `group_by (1–${COUNT_MAX_DIMENSIONS} distinct dimensions: dataset, team, component, level, alert_label, rack, node, pattern, http_status, endpoint), top_n (1–${COUNT_MAX_TOP_N}, default ${COUNT_DEFAULT_TOP_N}), from/to as ISO-8601 with Z or offset, [from, to); without them each dataset counts over its full data span. text is a full-text condition on the message (all words must occur, case-insensitive whole tokens). http_status and endpoint count OpenStack API accesses and cannot be combined with node, rack, alert_label, only_alerts or dataset bgl. team uses the fictional ownership table; unmapped components are 'unowned'. compare: "previous_period" (the equally long period right before [from, to)) or {from, to} (a reference of the same length, not overlapping); needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ ${COMPARE_MAX_TOP_N}; both periods use the same filters. Without dataset every log_events dataset is counted, never otel. dataset otel: without text a direct scan of the remote files, from and to required and at most ${REMOTE_SCAN_MAX_SECONDS} s apart (more is limit_exceeded, outside the data span invalid_input), touching at most two files; with text the indexed reference window only (from/to default to it and must stay inside it); group_by dataset, team, component or level; no compare, no pattern; source_changed when a remote file no longer matches its load-time pin.`,
     filters: COUNT_FILTER.summary,
+
     outputs:
       "total (exact population in scope; with compare C), group_count, groups[] with the group_by values, events and share (fraction of total, 0–1), other (groups, events, share of the groups beyond top_n, or null), comparison (null without compare), unit, truncated and top_n. With compare every group and other also carry baseline (B), delta (C − B), pct_change (percent, null when B = 0) and classification (R-06); comparison has the same for the totals, the coverage of both periods and determinable (false when a period lies outside the data span: then B and the change are null, not 0). A missing dimension value is its own category null. Cite every number by its fact ID; shares, differences and percentages are computed, do not compute your own.",
     truncation: `at most top_n groups, largest first (with compare by |C − B|); the rest is summed in other and truncated is true. total is exact regardless.`,
@@ -324,14 +332,30 @@ export const countEvents = defineTool({
       ]
     }
 
+    // Remote FROM expressions own the parameters allocated so far. The entity
+    // statement must not inherit later count/filter/ranking-only bindings.
+    const relationParams = new SqlParams()
+    for (const value of params.values) relationParams.add(value)
+
     // With compare the window becomes two period conditions below.
     const filter =
       remote?.filter ??
       (periods === null ? input : { ...input, from: undefined, to: undefined })
+    const facet =
+      remote === null
+        ? dictionaryFacetRelation(
+            input,
+            windows.map(({ window }) => window.dataset)
+          )
+        : undefined
     const compiled = compileFilter(filter, {
       accepted: COUNT_FILTER.fields,
       params,
-      ...(remote === null ? {} : { relation: remote.rel }),
+      ...(remote !== null
+        ? { relation: remote.rel }
+        : facet === undefined
+          ? {}
+          : { relation: facet }),
     })
     if (!compiled.ok) return compiled
     const { relation, rel } = compiled.filter
@@ -381,10 +405,10 @@ export const countEvents = defineTool({
     const counted = await ctx.db.query(
       [
         `WITH grouped AS (SELECT ${selected}, ${counts} FROM ${rel.from} WHERE ${where} GROUP BY ${keys.map((_, i) => i + 1).join(", ")})`,
-        `, ranked AS (SELECT ${keys.join(", ")}, events, baseline, row_number() OVER (ORDER BY ${order}) AS rank, sum(events) OVER () AS total FROM grouped)`,
-        `, summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) ${beyond} AS other_n, coalesce(sum(events) ${beyond}, 0) AS other_c, sum(baseline) ${beyond} AS other_b FROM ranked)`,
-        ` SELECT 0::BIGINT AS rank, ${nulls}, c::BIGINT AS events, NULL::DOUBLE AS share, ${change(sumOf("b"), "c")}, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, ${change(sumOf("other_b"), "other_c", "other_")} FROM summary`,
-        ` UNION ALL SELECT rank, ${keys.join(", ")}, events, events::DOUBLE / NULLIF(total, 0), ${change("baseline", "events")}, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= ${topN} ORDER BY rank`,
+        `, ranked AS (SELECT ${keys.join(", ")}, events, baseline, row_number() OVER (ORDER BY ${order}) AS rank, sum(events) OVER () AS total, sum(baseline) OVER () AS baseline_total FROM grouped)`,
+        `, summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, coalesce(sum(greatest(events-baseline,0)),0) AS positive_delta, coalesce(sum(least(events-baseline,0)),0) AS negative_delta, count(*) AS n, count(*) ${beyond} AS other_n, coalesce(sum(events) ${beyond}, 0) AS other_c, sum(baseline) ${beyond} AS other_b FROM ranked)`,
+        ` SELECT 0::BIGINT AS rank, ${nulls}, c::BIGINT AS events, NULL::DOUBLE AS share, ${change(sumOf("b"), "c")}, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, ${change(sumOf("other_b"), "other_c", "other_")}, CASE WHEN ${compared ? "TRUE" : "FALSE"} THEN positive_delta END AS positive_delta, CASE WHEN ${compared ? "TRUE" : "FALSE"} THEN negative_delta END AS negative_delta, NULL::DOUBLE AS contribution_to_delta, 100 * (other_c-other_b)::DOUBLE / nullif(c-b,0) AS other_contribution_to_delta FROM summary`,
+        ` UNION ALL SELECT rank, ${keys.join(", ")}, events, events::DOUBLE / NULLIF(total, 0), ${change("baseline", "events")}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100 * (events-baseline)::DOUBLE / nullif(total-baseline_total,0), NULL FROM ranked WHERE rank <= ${topN} ORDER BY rank`,
       ].join(""),
       params.values,
       ctx.signal
@@ -400,7 +424,15 @@ export const countEvents = defineTool({
           [dimension]: DIMENSION_VALUE[dimension].parse(row[keys[i] ?? ""]),
         })
       })
-      return periods === null ? group : { ...group, ...changeOf(parsed) }
+      return periods === null
+        ? group
+        : {
+            ...group,
+            ...changeOf(parsed),
+            ...(input.contributions === true
+              ? { contribution_to_delta: parsed.contribution_to_delta ?? null }
+              : {}),
+          }
     })
     const other =
       summary.other_groups === 0
@@ -416,8 +448,29 @@ export const countEvents = defineTool({
                   summary.other_delta,
                   summary.other_pct_change
                 )),
+            ...(periods === null || input.contributions !== true
+              ? {}
+              : {
+                  contribution_to_delta:
+                    summary.other_contribution_to_delta ?? null,
+                }),
           }
     const data: CountEventsOutput = {
+      ...(input.entity === undefined
+        ? {}
+        : {
+            entity_distribution: await entityDistribution(
+              ctx,
+              input,
+              remote === null
+                ? undefined
+                : {
+                    relation: remote.rel,
+                    filter: remote.filter,
+                    params: relationParams,
+                  }
+            ),
+          }),
       group_by: input.group_by,
       unit,
       total: summary.events,
@@ -437,6 +490,21 @@ export const countEvents = defineTool({
                 baseline: periods.coverage.baseline,
               },
               determinable: compared,
+              ...(input.contributions === true
+                ? {
+                    decomposition:
+                      compared &&
+                      summary.positive_delta != null &&
+                      summary.negative_delta != null &&
+                      summary.delta !== null
+                        ? {
+                            positive_delta: summary.positive_delta,
+                            negative_delta: summary.negative_delta,
+                            net_delta: summary.delta,
+                          }
+                        : null,
+                  }
+                : {}),
               ...changeOf({
                 baseline: summary.baseline,
                 delta: summary.delta,
@@ -459,10 +527,16 @@ export const countEvents = defineTool({
         scope,
         population: { count: data.total, unit },
         rows_returned: groups.length,
-        truncated: data.truncated,
+        truncated:
+          data.truncated || (data.entity_distribution?.truncated ?? false),
         row_limit: input.top_n,
         notes: [
           ...notesFor(input, data, scope, windows, periods),
+          ...(input.entity === undefined
+            ? []
+            : [
+                "Entity distribution covers every matching event in the current scope; its optional exact value selects only this distribution, not the main grouped counts. Repeated mentions in one event count once per original entity. One event may contain multiple entities, so occurrence sums and summed shares can exceed the event population.",
+              ]),
           ...excludedNote(excluded),
           ...(source === undefined ? [] : sourceNotes(source)),
         ],
@@ -538,6 +612,21 @@ function dimensionDatasets(dimension: Dimension): Dataset[] | null {
  */
 function validateCount(input: CountEventsInput): ToolError | null {
   const issues: InputIssue[] = []
+  if (input.contributions !== undefined && input.compare === undefined)
+    issues.push({
+      path: "contributions",
+      message:
+        "contributions requires compare; add an equal-duration reference comparison or omit contributions.",
+    })
+  if (
+    input.entity !== undefined &&
+    (input.dataset === undefined || countsApiAccesses(input.group_by))
+  )
+    issues.push({
+      path: "entity",
+      message:
+        "Entity distributions need exactly one dataset and log-event dimensions; use group_by dataset, component or level, without HTTP access dimensions.",
+    })
   const seen = new Set<Dimension>()
   for (const dimension of input.group_by) {
     if (seen.has(dimension))

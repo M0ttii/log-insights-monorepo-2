@@ -326,7 +326,9 @@ describe("otel indexed full text against independent HTTPS message scans", () =>
       )
       expect(result.data.total_matches).toBe(expected?.events)
       expect(result.data.hits.map((hit) => hitSchema.parse(hit))).toEqual(hits)
-      expect(result.data.truncated).toBe(result.data.total_matches > 50)
+      expect(result.data.truncated).toBe(
+        result.data.total_matches !== null && result.data.total_matches > 50
+      )
       const source = result.receipt.source
       if (source?.kind !== "remote_parquet")
         throw new Error("Missing remote Parquet provenance")

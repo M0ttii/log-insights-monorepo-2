@@ -1,0 +1,313 @@
+{
+  "receipt_id": "r_097256b2",
+  "created_at": "2026-10-18T19:11:39.755Z",
+  "client": "test",
+  "tool": "count_events",
+  "tool_version": "1.4.0",
+  "input": {
+    "entity": {
+      "type": "request_id"
+    },
+    "group_by": ["component"],
+    "dataset": "openstack",
+    "top_n": 2
+  },
+  "signature": "02e04ade4381928c7429c611dfc750fc4f2340987e2e75aad275f979a99ddc32",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH grouped AS (SELECT log_events.component AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.dataset = $1 GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total, sum(baseline) OVER () AS baseline_total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, coalesce(sum(greatest(events-baseline,0)),0) AS positive_delta, coalesce(sum(least(events-baseline,0)),0) AS negative_delta, count(*) AS n, count(*) FILTER (WHERE rank > $2) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $2), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $2) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, CASE WHEN b IS NULL THEN NULL WHEN b = 0 AND c > 0 THEN 'first observed in this comparison' WHEN b = 0 THEN 'not observed in either period' WHEN c >= $3::BIGINT * b AND c - b >= $4::BIGINT THEN 'significantly increased' END AS classification, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change, CASE WHEN FALSE THEN positive_delta END AS positive_delta, CASE WHEN FALSE THEN negative_delta END AS negative_delta, NULL::DOUBLE AS contribution_to_delta, 100 * (other_c-other_b)::DOUBLE / nullif(c-b,0) AS other_contribution_to_delta FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, CASE WHEN baseline IS NULL THEN NULL WHEN baseline = 0 AND events > 0 THEN 'first observed in this comparison' WHEN baseline = 0 THEN 'not observed in either period' WHEN events >= $3::BIGINT * baseline AND events - baseline >= $4::BIGINT THEN 'significantly increased' END AS classification, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100 * (events-baseline)::DOUBLE / nullif(total-baseline_total,0), NULL FROM ranked WHERE rank <= $2 ORDER BY rank",
+    "WITH base AS (SELECT log_events.event_id AS event_id, log_events.message AS message, log_events.request_id AS request_id FROM log_events WHERE log_events.dataset = $1), extracted AS (SELECT event_id, unnest(regexp_extract_all(message, $2::VARCHAR, 0)) AS entity FROM base UNION ALL SELECT event_id, request_id AS entity FROM base WHERE request_id IS NOT NULL), pairs AS (SELECT DISTINCT event_id, entity FROM extracted WHERE TRUE AND TRUE), grouped AS (SELECT entity, count(*) AS events FROM pairs GROUP BY entity), ranked AS (SELECT entity, events, row_number() OVER (ORDER BY events DESC, entity ASC) AS rank FROM grouped), summary AS (SELECT (SELECT count(*) FROM base) AS total_events, (SELECT count(DISTINCT event_id) FROM pairs) AS matched_events, coalesce(sum(events),0) AS occurrences, count(*) AS distinct_entities, count(*) FILTER (WHERE rank > $3::BIGINT) AS other_entities, coalesce(sum(events) FILTER (WHERE rank > $3::BIGINT),0) AS other_events FROM ranked) SELECT 0::BIGINT AS rank, NULL::VARCHAR AS entity, 0::BIGINT AS events, NULL::DOUBLE AS share, total_events, matched_events, occurrences, distinct_entities, other_entities, other_events, other_events::DOUBLE / nullif(total_events,0) AS other_share FROM summary UNION ALL SELECT rank, entity, events, events::DOUBLE / nullif((SELECT total_events FROM summary),0), NULL,NULL,NULL,NULL,NULL,NULL,NULL FROM ranked WHERE rank <= $3::BIGINT ORDER BY rank"
+  ],
+  "params": [
+    ["openstack"],
+    ["openstack", 2, 2, 20],
+    ["openstack", "req-[A-Za-z0-9-]+", 2]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 207820,
+    "unit": "log_events"
+  },
+  "rows_returned": 2,
+  "truncated": true,
+  "row_limit": 2,
+  "duration_ms": 209.58,
+  "result": {
+    "entity_distribution": {
+      "type": "request_id",
+      "total_events": 207820,
+      "matched_events": 192174,
+      "occurrences": 192174,
+      "distinct_entities": 90406,
+      "groups": [
+        {
+          "entity": "req-addc1839-2ed5-4778-b57e-5854eb7b8b09",
+          "events": 52349,
+          "share": 0.2518958714271966
+        },
+        {
+          "entity": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+          "events": 12248,
+          "share": 0.058935617361177944
+        }
+      ],
+      "other": {
+        "entities": 90404,
+        "events": 127577,
+        "share": 0.6138822057549803
+      },
+      "truncated": true
+    },
+    "group_by": ["component"],
+    "unit": "log_events",
+    "total": 207820,
+    "group_count": 3,
+    "groups": [
+      {
+        "component": "nova-compute",
+        "events": 104086,
+        "share": 0.5008468867289
+      },
+      {
+        "component": "nova-api",
+        "events": 102868,
+        "share": 0.4949860456163988
+      }
+    ],
+    "other": {
+      "groups": 1,
+      "events": 866,
+      "share": 0.004167067654701184
+    },
+    "comparison": null,
+    "truncated": true,
+    "top_n": 2
+  },
+  "result_digest": "3ff2d2e8dba6e4c0fe265a945aa771f06888c11669575e9d6352bf5272a1cdca",
+  "facts": [
+    {
+      "id": "r_097256b2.f1",
+      "path": "/result/entity_distribution/distinct_entities",
+      "value": 90406,
+      "metric": "entity_distinct_entities",
+      "unit": "entities",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f2",
+      "path": "/result/entity_distribution/groups/0/events",
+      "value": 52349,
+      "metric": "entity_events",
+      "unit": "log_events",
+      "group": {
+        "type": "request_id",
+        "entity": "req-addc1839-2ed5-4778-b57e-5854eb7b8b09"
+      }
+    },
+    {
+      "id": "r_097256b2.f3",
+      "path": "/result/entity_distribution/groups/0/share",
+      "value": 0.2518958714271966,
+      "metric": "entity_share",
+      "unit": "ratio",
+      "group": {
+        "type": "request_id",
+        "entity": "req-addc1839-2ed5-4778-b57e-5854eb7b8b09"
+      }
+    },
+    {
+      "id": "r_097256b2.f4",
+      "path": "/result/entity_distribution/groups/1/events",
+      "value": 12248,
+      "metric": "entity_events",
+      "unit": "log_events",
+      "group": {
+        "type": "request_id",
+        "entity": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab"
+      }
+    },
+    {
+      "id": "r_097256b2.f5",
+      "path": "/result/entity_distribution/groups/1/share",
+      "value": 0.058935617361177944,
+      "metric": "entity_share",
+      "unit": "ratio",
+      "group": {
+        "type": "request_id",
+        "entity": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab"
+      }
+    },
+    {
+      "id": "r_097256b2.f6",
+      "path": "/result/entity_distribution/matched_events",
+      "value": 192174,
+      "metric": "entity_matched_events",
+      "unit": "log_events",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f7",
+      "path": "/result/entity_distribution/occurrences",
+      "value": 192174,
+      "metric": "entity_occurrences",
+      "unit": "event_entity_pairs",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f8",
+      "path": "/result/entity_distribution/other/entities",
+      "value": 90404,
+      "metric": "other_entities",
+      "unit": "entities",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f9",
+      "path": "/result/entity_distribution/other/events",
+      "value": 127577,
+      "metric": "other_entity_events",
+      "unit": "event_entity_pairs",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f10",
+      "path": "/result/entity_distribution/other/share",
+      "value": 0.6138822057549803,
+      "metric": "other_entity_share",
+      "unit": "ratio",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f11",
+      "path": "/result/entity_distribution/total_events",
+      "value": 207820,
+      "metric": "entity_total_events",
+      "unit": "log_events",
+      "group": {
+        "type": "request_id"
+      }
+    },
+    {
+      "id": "r_097256b2.f12",
+      "path": "/result/group_count",
+      "value": 3,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_097256b2.f13",
+      "path": "/result/groups/0/events",
+      "value": 104086,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "component": "nova-compute"
+      }
+    },
+    {
+      "id": "r_097256b2.f14",
+      "path": "/result/groups/0/share",
+      "value": 0.5008468867289,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "component": "nova-compute"
+      }
+    },
+    {
+      "id": "r_097256b2.f15",
+      "path": "/result/groups/1/events",
+      "value": 102868,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "component": "nova-api"
+      }
+    },
+    {
+      "id": "r_097256b2.f16",
+      "path": "/result/groups/1/share",
+      "value": 0.4949860456163988,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "component": "nova-api"
+      }
+    },
+    {
+      "id": "r_097256b2.f17",
+      "path": "/result/other/events",
+      "value": 866,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_097256b2.f18",
+      "path": "/result/other/groups",
+      "value": 1,
+      "metric": "other_groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_097256b2.f19",
+      "path": "/result/other/share",
+      "value": 0.004167067654701184,
+      "metric": "other_share",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_097256b2.f20",
+      "path": "/result/total",
+      "value": 207820,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_097256b2.f21",
+      "path": "/scope/windows/0/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_097256b2.f22",
+      "path": "/scope/windows/0/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    }
+  ]
+}

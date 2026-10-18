@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-18T19:03:00Z",
+  "command": "pnpm --silent agent:ask --role engineer 'Investigate unfamiliar memory integrity wording using semantic search and verify every numerical claim.'",
+  "exit_code": 1,
+  "stderr": "Chat disabled: ANTHROPIC_API_KEY is not set. Set it in the repository .env to run a query.",
+  "model_called": false,
+  "status": "blocked",
+  "remaining": "Actual role model runs for every new mode, provider-backed semantic/hybrid comparison, and demonstrated usefulness of generated summaries. Deterministic tool receipt chains are separate evidence and do not satisfy these model-run requirements.",
+  "oauth_attempt": {
+    "status": "auto_review_blocked",
+    "model_called": false,
+    "reason": "Automatic approval review rejected sending log data and tool results to Anthropic without explicit payload/destination authorization. No workaround or alternate model call was executed.",
+    "prepared_scope": "One Claude Code OAuth engineer-role test using claude-opus-5-5, read-only loginsights MCP tools, public BGL/OpenStack corpus inputs, maximum USD 2.",
+    "user_approval": "requested; pending"
+  }
+}

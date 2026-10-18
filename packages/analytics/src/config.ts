@@ -71,6 +71,7 @@ export function loadConfig(
     const lines = parsed.error.issues.map((issue) => `- ${issue.message}`)
     throw new Error(`Invalid configuration:\n${lines.join("\n")}`)
   }
+  loadRetrievalConfig(env)
   const values = parsed.data
   const root = findWorkspaceRoot()
   const receiptsDir = values.LOG_INSIGHTS_RECEIPTS_DIR
@@ -105,4 +106,36 @@ export function findWorkspaceRoot(): string {
     dir = parent
   }
   return dir
+}
+
+/** Retrieval is opt-in; the DB secret name is an identifier, never a credential. */
+export function loadRetrievalConfig(
+  env: Record<string, string | undefined> = process.env
+): { directory: string; embeddingSecret?: string } {
+  const parsed = z
+    .object({
+      LOG_INSIGHTS_RETRIEVAL_DIR: optional,
+      LOG_INSIGHTS_EMBEDDING_SECRET: optional.pipe(
+        z
+          .string()
+          .regex(
+            /^[A-Za-z_][A-Za-z0-9_]*$/,
+            "LOG_INSIGHTS_EMBEDDING_SECRET must name a SereneDB secret"
+          )
+          .optional()
+      ),
+    })
+    .parse(env)
+  const directory = parsed.LOG_INSIGHTS_RETRIEVAL_DIR
+  return {
+    directory:
+      directory === undefined
+        ? join(findWorkspaceRoot(), ".data", "retrieval")
+        : isAbsolute(directory)
+          ? directory
+          : resolve(findWorkspaceRoot(), directory),
+    ...(parsed.LOG_INSIGHTS_EMBEDDING_SECRET === undefined
+      ? {}
+      : { embeddingSecret: parsed.LOG_INSIGHTS_EMBEDDING_SECRET }),
+  }
 }

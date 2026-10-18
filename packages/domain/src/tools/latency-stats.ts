@@ -60,7 +60,23 @@ export function groupKeyOf(group: LatencyGroup): string {
   return isTimeGroup(group) ? "bucket_start" : group
 }
 
+export const latencyOutlierInputSchema = z
+  .strictObject({
+    threshold: z.enum(["p95", "p99"]).default("p95"),
+    min_baseline: z.number().int().min(2).max(10000).default(20),
+    case_event_id: z
+      .number()
+      .int()
+      .positive()
+      .max(Number.MAX_SAFE_INTEGER)
+      .optional(),
+  })
+  .describe(
+    "SQL percentile threshold over every latency value in the identical filtered window. Below min_baseline the threshold and decisions are unknown. case_event_id checks an existing event only within this scope; otherwise show at most 20 slowest accesses."
+  )
+
 export const latencyStatsInputSchema = z.strictObject({
+  outliers: latencyOutlierInputSchema.optional(),
   dataset: z
     .enum(["openstack"], { error: OPENSTACK_ONLY })
     .optional()
@@ -171,7 +187,38 @@ export const latencyGroupRowSchema = z.strictObject({
 
 export type LatencyGroupRow = z.infer<typeof latencyGroupRowSchema>
 
+export const latencyOutlierOutputSchema = z.strictObject({
+  baseline_values: count,
+  minimum_baseline: count,
+  threshold_ms: z.number().nonnegative().nullable(),
+  threshold: z.enum(["p95", "p99"]),
+  determinable: z.boolean(),
+  outlier_events: count
+    .nullable()
+    .describe(
+      "Strict exceedances; null when the baseline is too small to decide."
+    ),
+  rate: ratio
+    .nullable()
+    .describe(
+      "Outlier API accesses / baseline_values; null when below minimum baseline."
+    ),
+  cases: z
+    .array(
+      z.strictObject({
+        event_id: count,
+        latency_ms: z.number().nonnegative(),
+        request_id: z.string().nullable(),
+        exceeds_threshold: z.boolean().nullable(),
+      })
+    )
+    .max(20),
+  case_found: z.boolean().nullable(),
+  cases_truncated: z.boolean(),
+})
+
 export const latencyStatsOutputSchema = z.strictObject({
+  outliers: latencyOutlierOutputSchema.optional(),
   dataset: z.literal("openstack"),
   unit: z
     .literal("api_accesses")
@@ -285,6 +332,37 @@ export function latencyStatsFactSpecs(
           },
         ]
   return [
+    ...(
+      [
+        "baseline_values",
+        "minimum_baseline",
+        "threshold_ms",
+        "outlier_events",
+        "rate",
+      ] as const
+    ).map((field) => ({
+      path: `/result/outliers/${field}`,
+      metric: `outlier_${field}`,
+      unit:
+        field === "threshold_ms"
+          ? "ms"
+          : field === "rate"
+            ? "ratio"
+            : "api_accesses",
+      groupKeys: [],
+    })),
+    {
+      path: "/result/outliers/cases/*/event_id",
+      metric: "outlier_event_id",
+      unit: "event_id",
+      groupKeys: ["event_id"],
+    },
+    {
+      path: "/result/outliers/cases/*/latency_ms",
+      metric: "outlier_case_latency",
+      unit: "ms",
+      groupKeys: ["event_id"],
+    },
     ...statFacts("/result/total", [], ""),
     {
       path: "/result/group_count",
@@ -367,6 +445,15 @@ export function summarizeLatencyStats(
       ? []
       : [
           `other (${formatFactValue(data.other.groups)} groups${cite("/result/other/groups")}): ${row("/result/other", data.other)}`,
+        ]),
+    ...(data.outliers === undefined
+      ? []
+      : [
+          `Outlier baseline: ${formatFactValue(data.outliers.baseline_values)} latency values${cite("/result/outliers/baseline_values")}, minimum ${formatFactValue(data.outliers.minimum_baseline)}${cite("/result/outliers/minimum_baseline")}; ${data.outliers.threshold} threshold ${data.outliers.threshold_ms === null ? "unknown" : `${formatFactValue(data.outliers.threshold_ms)} ms${cite("/result/outliers/threshold_ms")}`}; exceedances ${data.outliers.outlier_events === null ? "unknown" : `${formatFactValue(data.outliers.outlier_events)}${cite("/result/outliers/outlier_events")}`}, rate ${data.outliers.rate === null ? "unknown" : `${formatFactValue(data.outliers.rate)}${cite("/result/outliers/rate")}`}; cases truncated: ${data.outliers.cases_truncated}, requested case found: ${data.outliers.case_found ?? "not requested"}.`,
+          ...data.outliers.cases.map(
+            (entry, index) =>
+              `Case ${formatFactValue(entry.event_id)}${cite(`/result/outliers/cases/${index}/event_id`)}: ${formatFactValue(entry.latency_ms)} ms${cite(`/result/outliers/cases/${index}/latency_ms`)}, request ${JSON.stringify(entry.request_id)}, exceeds threshold: ${entry.exceeds_threshold ?? "unknown"}.`
+          ),
         ]),
     ...notes.map((note) => `Note: ${note}`),
   ]
