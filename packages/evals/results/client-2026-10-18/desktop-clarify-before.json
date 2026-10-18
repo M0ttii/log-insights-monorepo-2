@@ -1,0 +1,28 @@
+{
+  "kind": "development_client_probe",
+  "formal_eval": false,
+  "client": "Claude Desktop",
+  "model_ui": "Opus 5.5",
+  "effort_ui": "Mittel",
+  "code_commit": "82f058537e2840f2234dd4bac73dcf952d1897d7",
+  "guidance_version": "1.0.7",
+  "data_version": "dv_5663ee75e955ec1d",
+  "question": "I need an analysis of the BGL logs.",
+  "prompt": null,
+  "chat_url": "https://claude.ai/chat/fa3e0427-e067-4764-b724-d13229b1e187",
+  "receipt_id": "r_4a25d388",
+  "observed_preface": "I'll start by looking at what your local log tool has for the BGL corpus.",
+  "observed_question": "The BGL corpus is loaded (BlueGene/L, Jun 2005 \u2013 Jan 2006, ~4.75M log events). Which perspective should the analysis take?",
+  "observed_choices": [
+    "Team Lead (Recommended) Recurring patterns, one-off vs recurring, trends vs prior period, by team/component",
+    "Manager Top 3 investigation priorities with breadth, change, and dominance trade-offs",
+    "Engineer Deep diagnosis of one specific failure: timeline, narrowing, hypotheses"
+  ],
+  "routing": "clarification requested before role answer",
+  "numerical_contract": "failed: uncited dates and rounded event count in clarification question",
+  "observation_format": "verbatim visible accessibility text; not Markdown export",
+  "previous_preflight": {
+    "chat_url": "https://claude.ai/chat/184ff776-1a64-4f6f-bf81-e00eadddf3d5",
+    "status": "aborted before allowing describe_corpus because connector used old checkout"
+  }
+}

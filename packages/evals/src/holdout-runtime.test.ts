@@ -57,7 +57,8 @@ vi.mock("@workspace/analytics/db", () => ({
     }
   },
 }))
-vi.mock("@workspace/analytics/registry", () => ({
+vi.mock("@workspace/analytics/registry", async (original) => ({
+  ...(await original<typeof import("@workspace/analytics/registry")>()),
   createRegistry: (options: {
     receipts: { put(receipt: unknown): Promise<void> }
   }) => ({

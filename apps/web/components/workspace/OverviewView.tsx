@@ -12,6 +12,8 @@ import { ToolPanel } from "@/components/results/ToolPanel"
 import { ReceiptLink } from "@/components/evidence/ReceiptLink"
 import { ToolErrorNotice } from "./ToolErrorNotice"
 import { formatUtcDate } from "./format"
+import { DATASETS } from "@workspace/domain/datasets"
+import { datasetTitle, loadedDatasetIds } from "@/components/datasets/catalog"
 const panels = [
   {
     title: "Events by dataset and team",
@@ -62,8 +64,9 @@ export function OverviewView({
       </div>
       <p className="mt-6 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
         <Clock3 className="mt-0.5 size-3.5 shrink-0" />
-        BGL (2005–2006) and OpenStack (2017) do not share a time axis.
-        Cross-dataset counts are totals over each full span.
+        Each dataset has its own time axis. Cross-dataset counts cover the
+        loaded log corpus over each full span. OTel and OTLP replay require
+        explicit selection and are excluded from those totals.
       </p>
       {corpus && !corpus.ok && (
         <div className="mt-6">
@@ -75,7 +78,7 @@ export function OverviewView({
           className="mt-6 grid gap-4 lg:grid-cols-2"
           aria-label="Loaded datasets"
         >
-          {["bgl", "openstack"].map((dataset) => {
+          {loadedDatasetIds(corpus).map((dataset) => {
             const facts = corpus.result.facts.filter(
               (fact) => fact.group.dataset === dataset
             )
@@ -93,26 +96,36 @@ export function OverviewView({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Database className="size-4 text-link" />
-                    {dataset === "bgl" ? "BGL" : "OpenStack"}
+                    {datasetTitle(dataset)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="flex flex-wrap items-baseline gap-2">
-                    <strong className="text-2xl font-semibold tabular-nums">
-                      {events
-                        ? Number(events.value).toLocaleString("en-US")
-                        : "Unknown"}
-                    </strong>
-                    <span className="text-sm text-muted-foreground">
-                      log events
-                    </span>
-                    {events && (
-                      <ReceiptLink
-                        id={corpus.result.receipt.receipt_id}
-                        fact={events.id}
-                      />
-                    )}
-                  </p>
+                  {DATASETS[dataset].storage === "remote_parquet" ? (
+                    <p className="text-sm text-muted-foreground">
+                      External Parquet rows. Full text covers the indexed
+                      reference window; direct scans are bounded. See Corpus for
+                      sources and limits.
+                    </p>
+                  ) : (
+                    <p className="flex flex-wrap items-baseline gap-2">
+                      <strong className="text-2xl font-semibold tabular-nums">
+                        {events
+                          ? Number(events.value).toLocaleString("en-US")
+                          : "Unknown"}
+                      </strong>
+                      <span className="text-sm text-muted-foreground">
+                        {DATASETS[dataset].storage === "otlp_replay"
+                          ? "replayed log events · not a production stream"
+                          : "log events"}
+                      </span>
+                      {events && (
+                        <ReceiptLink
+                          id={corpus.result.receipt.receipt_id}
+                          fact={events.id}
+                        />
+                      )}
+                    </p>
+                  )}
                   <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {first && (
                       <>
@@ -139,7 +152,7 @@ export function OverviewView({
                     size="sm"
                     render={<Link href={`/logs?dataset=${dataset}`} />}
                   >
-                    Search {dataset === "bgl" ? "BGL" : "OpenStack"}
+                    Search {datasetTitle(dataset)}
                     <ArrowRight />
                   </Button>
                 </CardContent>

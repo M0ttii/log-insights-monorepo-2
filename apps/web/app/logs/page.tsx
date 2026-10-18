@@ -24,6 +24,12 @@ export default async function Page({
     "rack",
     "request_id",
     "instance_id",
+    "trace_id",
+    "block_id",
+    "host",
+    "process_id",
+    "client_ip",
+    "thread",
   ])
     if (query[name]) input[name] = query[name]
   for (const name of ["components", "teams", "levels"])

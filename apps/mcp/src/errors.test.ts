@@ -5,6 +5,7 @@ import {
   notFound,
   queryTimeout,
   receiptUnavailable,
+  sourceChanged,
 } from "@workspace/domain/errors"
 import { describe, expect, it } from "vitest"
 
@@ -18,6 +19,7 @@ describe("MCP error mapping", () => {
     dbUnavailable(),
     receiptUnavailable(),
     limitExceeded("Rows", 50, 51),
+    sourceChanged("otel", ["part_000.parquet"]),
   ])("preserves the expected $code message and correction hint", (error) => {
     const result = toToolErrorResult(error)
     expect(result).toEqual({

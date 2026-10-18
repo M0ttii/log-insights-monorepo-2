@@ -24,6 +24,7 @@ export type CoverageAlternative = z.infer<typeof coverageAlternativeSchema>
 export const coverageRequirementSchema = z.strictObject({
   label: z.string().min(1),
   anyOf: z.array(coverageAlternativeSchema).min(1),
+  fallback: coverageAlternativeSchema.optional(),
 })
 export type CoverageRequirement = z.infer<typeof coverageRequirementSchema>
 
@@ -82,7 +83,9 @@ export function parseCoverage(text: string): RoleCoverage {
     .map((line) => {
       if (!line.startsWith("- "))
         throw new Error(`Invalid playbook coverage line: ${line}`)
-      const label = line.slice(2)
+      const [label, fallback, ...extra] = line.slice(2).split("; otherwise: ")
+      if (label === undefined || extra.length > 0)
+        throw new Error(`Invalid playbook coverage fallback: ${line}`)
       const choices = label.startsWith("one of: ")
         ? label.slice("one of: ".length).split("|")
         : [label]
@@ -93,6 +96,9 @@ export function parseCoverage(text: string): RoleCoverage {
       return {
         label,
         anyOf: choices.map((choice) => coverageAlternative(choice.trim())),
+        ...(fallback === undefined
+          ? {}
+          : { fallback: coverageAlternative(fallback.trim()) }),
       }
     })
   return roleCoverageSchema.parse(requirements)

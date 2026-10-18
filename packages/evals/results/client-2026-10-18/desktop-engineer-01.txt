@@ -1,0 +1,88 @@
+I'll run the Engineer investigation on BGL ciod control-stream failures for June 2005 using the Log Insights tools, starting with the corpus description.
+
+## Scope
+
+- Dataset: BGL. Requested window is [`2005-06-01` [r_edc6b835.f12], `2005-07-01` [r_edc6b835.f13]) UTC.
+- BGL data only starts at `2005-06-03T22:42Z` [r_30c113da.f198]. Everything before that is uncaptured, not zero.
+- Filter: the message text "ciod failed to read message prefix on control stream". It maps to a single pattern, `287312f13c189c4d` (component APP; owner Workload Runtime, from the fictional ownership table).
+
+## Answer
+
+These failures were not a single-node fault. They appeared as repeated, near-simultaneous bursts across many I/O nodes in many racks, so we can rule out the idea that the symptoms stayed on one node.
+
+The failures did repeat during the observed part of June. Almost every burst start was shortly preceded by a `ciod: LOGIN chdir(...) failed: No such file or directory` event. That fits a link to the job-launch side, but the timing alone does not prove a cause. The next step is to check job and service-node records outside these logs (see Next check).
+
+### Evidence
+
+| Item | Value |
+|---|---|
+| Matching log events in the window (exact count; 10 shown, so the hit list is truncated) | 5,983 [r_edc6b835.f11] |
+| Selected event (`14738`, APP FATAL, node `R23-M1-N8-I:J18-U11`) | `2005-06-04T07:24Z` [r_8ffd835c.f1] |
+| Last matching event in the window | `2005-06-20T08:42Z` [r_695ba837.f11] |
+
+Verbatim example: `ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399`. Every displayed hit names the same peer address. That is true only for this small sample; the frequency across all events was not measured.
+
+### Timeline
+
+**Around the selected event** (dataset-wide context window):
+- Only 2 [r_8ffd835c.f16] events came before it, and 1,021 [r_8ffd835c.f17] came after.
+- The two earlier events were `ciod: LOGIN chdir(/p/gb2/draeger/benchmark/dat32k_060205) failed: No such file or directory`, at −838.005 ms [r_8ffd835c.f12] and −803.828 ms [r_8ffd835c.f14].
+- Matching failures on other racks (`R04`, `R35`, `R36`) followed within milliseconds, the first at +33.908 ms [r_8ffd835c.f2].
+
+**Daily trend** (UTC; all other days in the observed range had no events):
+
+| Day | Events |
+|---|---|
+| `2005-06-04` | 2,040 [r_30c113da.f9] |
+| `2005-06-09` | 124 [r_30c113da.f44] |
+| `2005-06-13` | 1,017 [r_30c113da.f72] |
+| `2005-06-16` | 2,040 [r_30c113da.f93] |
+| `2005-06-20` | 762 [r_30c113da.f121] |
+
+**Precursor check:** I looked at what came before each of the 7 [r_2705cdb6.f1] burst starts.
+- The `LOGIN chdir ... failed` pattern (`bdec89f666f62cf9`) appeared before 6 [r_2705cdb6.f6] of them.
+- Its normal background rate is 0.0059 [r_2705cdb6.f7], so this is a ratio of 145.19 [r_2705cdb6.f9] above baseline.
+- This is a timing observation, not a cause.
+
+### Narrowing
+
+- The pattern covers 512 nodes [r_695ba837.f12] in 32 racks [r_695ba837.f13].
+- It occurred in 7 bursts [r_695ba837.f8] over 5 active days [r_695ba837.f5].
+- By rack, the top groups each show 240 events (example: `R00` with 240 [r_c22b06ea.f2]). The remaining 22 racks [r_c22b06ea.f23] together account for 3,583 events [r_c22b06ea.f22], so we can't assume they're uniform.
+- All matching nodes carry `-I:` identifiers. Background knowledge, not checked in this corpus: on BlueGene/L, ciod runs on the I/O nodes.
+- The tools can't group by midplane, so I have no midplane breakdown.
+
+### Hypotheses
+
+| Explanation | Status | Evidence for / against | Check run and facts |
+|---|---|---|---|
+| Symptoms are confined to one node or rack | Contradicted | The required assumption is that one node or rack produced the matches. That is refuted by the spread across 512 nodes [r_695ba837.f12] and 32 racks [r_695ba837.f13], and by failures on different racks within milliseconds (+33.908 ms [r_8ffd835c.f2]). | Local-vs-systemic check: count_events by rack, recurring_patterns breadth, event context |
+| It was a one-off burst | Contradicted, within the observed window only | The required assumption is a single burst. That is refuted by 7 bursts [r_695ba837.f8] on separate days (see trend table). Data before June 3 is missing, so recurrence outside the window is unknown. | Periodicity check: event_trend by day, recurring_patterns |
+| A launch-side or job condition (e.g. a missing working directory at LOGIN) is associated with the control-stream failures | Supported (a timing link, not proven as a cause) | For: the precursor appears before 6 [r_2705cdb6.f6] of 7 [r_2705cdb6.f1] burst starts, at a ratio of 145.19 [r_2705cdb6.f9]. Against: not every burst start had it; the logs show no job ID or user to tie the events together. | Precursor check: aggregate context [r_2705cdb6] |
+| One shared component (e.g. the service-side peer `172.16.96.116`, or the control system) is the common origin | Open | For: every displayed hit names the same peer. Against: none, but that is a 10-hit sample, and the normalised pattern hides the IP, so no count exists. Wide spread does not rule out a single shared origin. | No check has tested this yet |
+
+## Next check
+
+**Collect evidence from outside these logs.** Pull the job-scheduler / MMCS job records for each burst start: job ID, user, working directory, partition, and how the job ended. Also pull the logs of the service node behind `172.16.96.116` (ciodb / control system) for the same times.
+
+How each outcome would update the hypotheses:
+- **Each burst lines up with a job whose working directory is missing:** the launch-side association becomes stronger. It still isn't a proven cause unless the control-stream drop is shown to follow from that job's teardown.
+- **Bursts span several unrelated jobs, or the service node logs its own fault or restart:** the shared-component hypothesis gains support and the launch-side link weakens.
+- **The burst start without a chdir precursor:** look at it individually (event context on that anchor). A missing precursor there does not show a different or second cause. It only weakens the repeated link.
+
+Whatever the result, a single job-wide origin and a single service-side origin both stay possible until job-lifecycle evidence separates them. Timing and a shared IP alone can't decide between them.
+
+**Inside the log corpus:** run search_logs with `172.16.96.116` over the same window. This shows whether that peer is common to all matches, which tells us how widespread the shared identifier is, but not what caused the failures.
+
+## Unknown
+
+- **Cause:** not established. The precursor is a timing observation only.
+- **Comparison:** the prior equal period lies before the BGL data, so the comparison could not be made. The "ongoing" status is not escalation, and the pattern is not "first ever".
+- **Coverage gaps:** no data before the BGL start. Peer-IP frequency is unmeasured. No midplane aggregation.
+- **Impact:** business or job impact is unknown. "APPREAD" is a dataset label, not our finding, and the ownership table is fictional.
+
+## Verification
+
+27 claims checked [r_face094c.f1] · 0 mismatch [r_face094c.f2] · 0 unresolved [r_face094c.f3].
+
+This covers the submitted numbers and times only, not the explanations or the causal reasoning.

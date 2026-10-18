@@ -1,0 +1,57 @@
+**Engineer investigation: BGL, `ciod: failed to read message prefix on control stream`**
+
+## Scope
+- Dataset: `bgl` (public Loghub BGL). Requested window [2005-06-01 [r_d91a3550.f12], 2005-07-01 [r_d91a3550.f13]) UTC. BGL data only starts at 2005-06-03T22:42:50Z [r_d915c620.f30], so the time before that has no data, which is not the same as zero events.
+- Filter: full-text terms `ciod failed to read message prefix on control stream`. One simultaneity check covers only 2005-06-04, a narrower window that is labelled where it appears.
+- Bounded M1 probe: `recurring_patterns`, precursor aggregation and `compare` were not used.
+
+## Answer
+It is not one bad node; the symptom is spread across the job. The failures are spread thinly over many I/O nodes in many racks, and they arrive in bursts that hit many racks within the same second or hour. That rules out the idea that the symptoms are confined to one node. It does not rule out a single shared cause, such as the ciod/CioStream peer that every failing line names, or one failed component that many nodes depend on. A second ciod error, `LOGIN chdir(...) failed: No such file or directory`, appears right before the selected event. But by day the two messages only partly line up, so that link stays open.
+
+## Evidence
+- Exact population: 5,983 log events [r_d91a3550.f11], all component `APP`, level `FATAL` [r_714cabc0.f2]. The search returned only a bounded set of hits (truncated); frequencies come from `count_events`, not from the hits.
+- Selected event `14738` at 2005-06-04T07:24:32Z [r_740eb4a0.f1], node `R23-M1-N8-I:J18-U11`, dataset label `APPREAD` (a dataset label, not our finding):
+  > `ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399`
+- Every hit shown names the same peer, `172.16.96.116`, with a different port each time. This is an observation from the sample only, not a counted fact.
+
+## Timeline
+- **Same node, ±10 min:** 0 events before [r_740eb4a0.f4] and 1 after [r_740eb4a0.f5]. That one is the same message again at +42,258.222 ms [r_740eb4a0.f2]. Nothing on this node announces the failure locally.
+- **Whole dataset, ±5 min:**
+  - Before: `ciod: LOGIN chdir(/p/gb2/draeger/benchmark/dat32k_060205) failed: No such file or directory` on `R23-M0-N4-I:J18-U11` at −838.005 ms [r_5857fe61.f8] and on `R23-M1-N8-I:J18-U01` at −803.828 ms [r_5857fe61.f10].
+  - After: 1,021 events [r_5857fe61.f13], starting with the same prefix failure on `R04-M1-N4-I:J18-U11` at +33.908 ms [r_5857fe61.f2].
+  - These are temporal observations, not causes.
+
+## Narrowing
+| Dimension | Result |
+|---|---|
+| Nodes | 512 nodes affected [r_0f740530.f1]; the top node, `R00-M0-N0-I:J18-U01`, has only 15 events [r_0f740530.f2] |
+| Racks | 32 racks [r_bbf1e963.f1]; e.g. `R00` 240 [r_bbf1e963.f2], `R31` 144 [r_bbf1e963.f34]; the 12 racks not listed [r_bbf1e963.f43] hold 1,581 events [r_bbf1e963.f42] |
+| 2005-06-04 07:00 hour (narrower window) | 1,020 events [r_deb4dcbd.f51]: `R00` 32 [r_deb4dcbd.f53], the 27 racks outside the top five [r_deb4dcbd.f175] 860 [r_deb4dcbd.f52] |
+| 2005-06-04 11:00 hour | 1,020 events [r_deb4dcbd.f51 → see f79: r_deb4dcbd.f79] |
+
+Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f19]. The other days in the window had none. Midplanes can't be aggregated with these tools, so there is no midplane total.
+
+## Hypotheses
+| Explanation | Status | Evidence for / against | Discriminating check |
+|---|---|---|---|
+| Symptoms confined to one bad node | **contradicted** | Necessary assumption: the events concentrate on one node. Refuted by 512 nodes [r_0f740530.f1] across 32 racks [r_bbf1e963.f1], hitting many racks in the same hour [r_deb4dcbd.f51]. | Node/rack counts plus hourly trend by rack |
+| A single failing node or component causes the spread | **open** | For: the hits shown share one peer address. Against: none found. Breadth alone cannot refute a single origin. | No check run that tests the peer `172.16.96.116` directly |
+| Job-level or ciod-side event (bursts tied to a job start or teardown) | **supported** (not proven) | For: the same burst is spread across racks within the same hour [r_deb4dcbd.f51]. Against: none found. | Hourly trend by rack |
+| The `LOGIN chdir` failure is linked to the prefix failures | **open** (mixed) | For: it appears less than a second before the anchor [r_5857fe61.f8] and also occurs on 06-04 (8 events [r_40807e8f.f3]). Against: on 06-08 it has 1,408 events [r_40807e8f.f7] while the prefix failure has 0 [r_d915c620.f7]. | Day trend of both messages (chdir total 2,178 [r_40807e8f.f34]) |
+
+## Next check
+- **Peer address:** count `172.16.96.116` with the same filters, and pick a burst from another day with `search_logs` sorted by time.
+  - If every burst names this peer, a shared-peer origin gains support but is still unproven.
+  - If the peer differs between bursts, the single-peer idea is weakened; that alone does not prove separate causes.
+- **Job records:** compare the burst start times with the job and partition records for the IP/host behind `172.16.96.116`. Those records are outside this corpus. Only they can tell whether a job ended or a link failed, as opposed to a fault on the service node. Matching timestamps by themselves cannot confirm a cause.
+- **chdir link:** run the precursor aggregation (unavailable here) to compare the share of bursts preceded by the chdir message against its base rate.
+
+## Unknown
+- Not available in this probe: episodes and active days (`recurring_patterns`), a precursor baseline (aggregate context) and a previous-period comparison (`compare`). Event volume does not stand in for any of these.
+- The day trend split by rack was too large to return here, so per-rack simultaneity was checked only for 2005-06-04.
+- Root cause and job or business impact are unknown.
+
+## Verification
+- Batch 1: 30 claims checked [r_8aba9e4b.f1] · 0 mismatch [r_8aba9e4b.f2] · 0 unresolved [r_8aba9e4b.f3].
+- Batch 2: 4 claims checked [r_2d046e07.f1] · 0 mismatch [r_2d046e07.f2] · 0 unresolved [r_2d046e07.f3].
+- The 11:00 bucket citation is r_deb4dcbd.f79, which was checked; nothing checks the explanations above.

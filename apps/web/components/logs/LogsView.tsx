@@ -45,6 +45,13 @@ import { receiptFeatures } from "@/components/evidence/features"
 import { ToolErrorNotice } from "@/components/workspace/ToolErrorNotice"
 import { EventContext } from "./EventContext"
 import { messageParts } from "./matches"
+import { datasetTitle } from "@/components/datasets/catalog"
+import { useLoadedDatasets } from "@/components/providers/LoadedDatasets"
+import {
+  datasetsWithColumn,
+  SPECIFIC_FILTER_COLUMNS,
+} from "@workspace/domain/datasets"
+import { datasetSchema } from "@workspace/domain/filters"
 
 export function LogsView({
   initial,
@@ -54,6 +61,23 @@ export function LogsView({
   outcome: ToolOutcome<unknown> | null
 }) {
   const router = useRouter()
+  const datasets = useLoadedDatasets()
+  const [dataset, setDataset] = useState(initial.dataset ?? "")
+  const [filterDefaults, setFilterDefaults] = useState(initial)
+  const selectedDataset = datasetSchema.safeParse(dataset)
+  const unavailableDataset =
+    dataset !== "" &&
+    (!selectedDataset.success || !datasets.includes(selectedDataset.data))
+  function availableFilter(name: string | undefined) {
+    if (!selectedDataset.success) return true
+    const entry = Object.entries(SPECIFIC_FILTER_COLUMNS).find(
+      ([field]) => field === name
+    )
+    return (
+      entry === undefined ||
+      datasetsWithColumn(entry[1]).includes(selectedDataset.data)
+    )
+  }
   const [pending, startTransition] = useTransition()
   const [match, setMatch] = useState(initial.match ?? "terms")
   const [selected, setSelected] = useState<number | null>(null)
@@ -76,6 +100,8 @@ export function LogsView({
           for (const [key, value] of form)
             if (typeof value === "string" && value.trim())
               params.set(key, value.trim())
+          if (dataset) params.set("dataset", dataset)
+          else params.delete("dataset")
           startTransition(() => router.push(`/logs?${params}`))
         }}
       >
@@ -110,15 +136,36 @@ export function LogsView({
             <NativeSelect
               id="log-dataset"
               name="dataset"
-              defaultValue={initial.dataset ?? ""}
+              value={dataset}
+              onChange={(event) => {
+                if (event.target.value !== dataset) {
+                  setFilterDefaults({})
+                  setDataset(event.target.value)
+                }
+              }}
             >
-              <NativeSelectOption value="">All datasets</NativeSelectOption>
-              <NativeSelectOption value="bgl">BGL</NativeSelectOption>
-              <NativeSelectOption value="openstack">
-                OpenStack
+              <NativeSelectOption value="">
+                Loaded log corpus (excludes OTel)
               </NativeSelectOption>
+              {unavailableDataset && (
+                <NativeSelectOption value={dataset} disabled>
+                  {selectedDataset.success
+                    ? `${datasetTitle(selectedDataset.data)} · not loaded`
+                    : `${dataset} · unknown dataset`}
+                </NativeSelectOption>
+              )}
+              {datasets.map((id) => (
+                <NativeSelectOption key={id} value={id}>
+                  {datasetTitle(id)}
+                </NativeSelectOption>
+              ))}
             </NativeSelect>
           </div>
+          <p className="max-w-md self-center text-xs leading-5 text-muted-foreground">
+            OTel must be selected explicitly. Its full-text search and event
+            context cover the indexed reference window only. OTLP is a bounded
+            replay. See Corpus for exact source limits.
+          </p>
           <div className="space-y-1.5">
             <Label
               htmlFor="match-mode"
@@ -195,40 +242,52 @@ export function LogsView({
                   ["rack", "Rack"],
                   ["request_id", "Request ID"],
                   ["instance_id", "Instance ID"],
-                ].map(([name, label]) => (
-                  <div key={name} className="space-y-1">
-                    <Label htmlFor={`filter-${name}`} className="text-xs">
-                      {label}
-                    </Label>
-                    <Input
-                      id={`filter-${name}`}
-                      name={name}
-                      defaultValue={name ? initial[name] : ""}
-                      placeholder={
-                        name === "from" || name === "to"
-                          ? "2005-06-01T00:00:00Z"
-                          : undefined
-                      }
-                      maxLength={200}
-                    />
-                  </div>
-                ))}
+                  ["trace_id", "Trace ID · log records only"],
+                  ["block_id", "HDFS block ID"],
+                  ["host", "Syslog host"],
+                  ["process_id", "Process ID"],
+                  ["client_ip", "Client IP"],
+                  ["thread", "Thread"],
+                ]
+                  .filter(([name]) => availableFilter(name))
+                  .map(([name, label]) => (
+                    <div key={`${dataset}:${name}`} className="space-y-1">
+                      <Label htmlFor={`filter-${name}`} className="text-xs">
+                        {label}
+                      </Label>
+                      <Input
+                        id={`filter-${name}`}
+                        name={name}
+                        defaultValue={name ? (filterDefaults[name] ?? "") : ""}
+                        placeholder={
+                          name === "from" || name === "to"
+                            ? "2005-06-01T00:00:00Z"
+                            : undefined
+                        }
+                        maxLength={200}
+                      />
+                    </div>
+                  ))}
                 {[
                   ["only_errors", "Error events only"],
                   ["only_alerts", "Dataset alerts only"],
-                ].map(([name, label]) => (
-                  <div key={name} className="space-y-1">
-                    <Label htmlFor={`filter-${name}`}>{label}</Label>
-                    <NativeSelect
-                      id={`filter-${name}`}
-                      name={name}
-                      defaultValue={name ? (initial[name] ?? "") : ""}
-                    >
-                      <NativeSelectOption value="">No</NativeSelectOption>
-                      <NativeSelectOption value="true">Yes</NativeSelectOption>
-                    </NativeSelect>
-                  </div>
-                ))}
+                ]
+                  .filter(([name]) => availableFilter(name))
+                  .map(([name, label]) => (
+                    <div key={`${dataset}:${name}`} className="space-y-1">
+                      <Label htmlFor={`filter-${name}`}>{label}</Label>
+                      <NativeSelect
+                        id={`filter-${name}`}
+                        name={name}
+                        defaultValue={name ? (filterDefaults[name] ?? "") : ""}
+                      >
+                        <NativeSelectOption value="">No</NativeSelectOption>
+                        <NativeSelectOption value="true">
+                          Yes
+                        </NativeSelectOption>
+                      </NativeSelect>
+                    </div>
+                  ))}
               </div>
             </CollapsibleContent>
           </Collapsible>

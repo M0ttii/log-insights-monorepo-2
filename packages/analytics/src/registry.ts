@@ -49,6 +49,8 @@ import { latencyStats } from "./tools/latency-stats.ts"
 import { recurringPatterns } from "./tools/recurring-patterns.ts"
 import { searchLogs } from "./tools/search-logs.ts"
 
+export { describeCorpusOutputSchema } from "./tools/describe-corpus.ts"
+
 /**
  * The tool registry (technical.md § 8): one list of tools and one run
  * pipeline shared by the MCP server, the web app and the eval runner.

@@ -20,8 +20,9 @@ receipt.
 > callable through `pnpm --silent agent:ask` and the streaming Ask chat. Role
 > comparison, complete live acceptance for all three web roles, and full
 > MCP-client role acceptance remain open. OTel remote Parquet and a bounded
-> OTLP replay use the same registry when explicitly loaded; web dataset selectors,
-> agent-created indexes (U28/A-33) and trace/metric correlation (U29) remain open.
+> OTLP replay use the same registry when explicitly loaded, including web dataset
+> selection and source receipts. Agent-created indexes (U28/A-33) and
+> trace/metric correlation (U29) remain open.
 
 The tracked [submission evidence and remaining gates](submission/README.md) identify
 what is ready and what still needs final release verification. The
@@ -333,8 +334,12 @@ Engineer probe and elicited a perspective question for an unclear request;
 unsupported broader conclusions and uncited quantities remained.
 Full answer-contract acceptance is still open. Probe chat links, receipt IDs and
 observed gaps are recorded in Linear LOG-39, without formal U16 scoring. Claude
-Code was not signed in and no API key was configured during these checks, so
-its model probes remain pending; transport tests do not establish model behavior.
+Code is now signed in through the existing claude.ai subscription. The
+[retained client probes](packages/evals/results/client-2026-10-18/README.md)
+include a real restricted M1 Code run and a full Desktop Engineer run. Both still
+fail whole-answer acceptance. Guidance 1.0.8 passes the observed ambiguous-role
+clarification without optional corpus quantities; the rest of the client matrix
+remains open. No API key or paid U16 experiment was used.
 
 The [focused S-15 regression](packages/evals/results/s15-2026-10-18-r5/report.json)
 passes all three predeclared valid Desktop attempts with guidance bundle 1.0.5.
@@ -626,6 +631,23 @@ pnpm data:setup --with otel,otel_replay
 # Hermetic fixtures, separate database log_insights_samples_otel:
 pnpm data:setup --samples --with otel,otel_replay
 ```
+
+Existing checkouts also need `SERENEDB_OTLP_PORT` and
+`SERENEDB_OTLP_SAMPLES_PORT` from `.env.example`; choose free ports per checkout.
+Restart MCP and the web process after updating the code and loading data.
+
+The web dataset menus and overview use the loaded corpus catalog, including
+extensions and both OTel sources. The default log-corpus selection excludes OTel;
+select an OTel source explicitly. Corpus cards distinguish indexed-reference
+statistics from whole-dataset statistics and label the bounded replay. Open a
+receipt's **Source** tab for its files, bounds, pins and index/replay snapshot.
+Re-run failures retain the tool's correction hint, including `source_changed`.
+
+Role guidance and web-agent coverage follow the selected dataset's capabilities.
+Unavailable patterns, comparisons, latency, episodes or breadth stay explicit in
+Unknown. Available OTel distributions do not establish a management priority or
+pass the full role contract; the agent does not query an unrelated dataset to
+fill those gaps. A real model-run verification still requires an Anthropic key.
 
 `otel` allowlists exactly the brief's [part_000.parquet](https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet)
 through [part_049.parquet](https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_049.parquet)

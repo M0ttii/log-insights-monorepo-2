@@ -310,7 +310,7 @@ const datasetSummarySchema = z.strictObject({
   replay: replaySchema,
 })
 
-const outputSchema = z.strictObject({
+export const describeCorpusOutputSchema = z.strictObject({
   datasets: z
     .array(datasetSummarySchema)
     .describe("The loaded datasets in catalog order."),
@@ -371,7 +371,7 @@ const outputSchema = z.strictObject({
     ),
 })
 
-type DescribeCorpusOutput = z.infer<typeof outputSchema>
+type DescribeCorpusOutput = z.infer<typeof describeCorpusOutputSchema>
 
 /** Concept § 5.2, 5.5. */
 const LIMITS = [
@@ -574,7 +574,7 @@ export const describeCorpus = defineTool({
       "log events (parsed lines), not incidents; OpenStack also api_accesses and requests (R-01); distinct_values counts values.",
   }),
   input: emptyInputSchema,
-  output: outputSchema,
+  output: describeCorpusOutputSchema,
   factSpecs: [
     {
       path: "/result/datasets/*/fields/*/events_with_value",
