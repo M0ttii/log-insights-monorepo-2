@@ -1,8 +1,8 @@
 # Presentation template
 
 An editable English Typst deck for Log Insights. The 16:9 layout uses Urbanist and
-the SereneDB colors from `DESIGN.md`. It contains eleven main slides and three
-appendix slides. The checked-in PDF is a **template preview**, not the final
+the SereneDB colors from `DESIGN.md`. It contains six main slides and three
+reserve slides. The checked-in PDF is a **template preview**, not the final
 submission: purple `TO FILL` text marks evidence or metadata still to supply.
 
 ## Build and edit
@@ -48,17 +48,26 @@ also triggers the guard. The PDF title loses its template suffix in final mode.
 
 ## Story and timing
 
-The main deck covers the approach, system diagram, actual registered tools,
-both datasets, three roles, an executed discriminating check, recommendations
-and limitations. The appendix provides query receipts, evaluation and submission
-access. The evidence slides share one worked investigation; BGL and OpenStack
-also receive explicit coverage and separate full-span counts on the scope slide.
+The main deck has one argument per slide:
 
-A starting rehearsal budget is 10/20/25/15/20/30/30/30/30/25/5 seconds for main
-slides 1-11 (four minutes in total). Reserve the remaining minute of the five-minute
-presentation/demo allowance for a brief real tool call or a clearly labelled
-recording. Rehearse the actual combined flow. The separate submission video has
-its own three-minute limit in the project plan and needs a shorter selection.
+1. Cover and question.
+2. Approach, system diagram and tool contracts.
+3. Query evidence, both datasets and whole-corpus aggregation.
+4. Findings and next steps for the engineer, team lead and manager together.
+5. Initial hypothesis, executed check and its effect on the recommendation.
+6. Limitations and public handoff links.
+
+Detailed SQL/receipts, the full tool catalog and evaluation are reserve slides for
+jury questions. The same worked investigation connects the role findings. BGL and
+OpenStack receive separate full-span counts and separate time axes.
+
+There is no strict slide limit for this challenge; the organizer's six-slide limit
+applies to Camera-based Localization. This deck uses six main slides to leave room
+for the working demo. A starting rehearsal budget is 10/30/40/50/30/20 seconds for
+slides 1-6 (three minutes in total). Reserve two minutes of the five-minute
+presentation/demo allowance for the real workflow or a clearly labelled recording.
+Rehearse the actual combined flow. The separate submission video has its own
+three-minute limit in the project plan and needs a shorter selection or narration.
 
 ## Evidence to fill
 
