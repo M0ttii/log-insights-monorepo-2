@@ -21,4 +21,9 @@ SELECT
   $12::VARCHAR AS rules_version,
   $13::VARCHAR AS sql_digest,
   -- Loaded datasets in catalog order (U26), e.g. ["bgl","openstack"].
-  $14::JSON AS datasets;
+  $14::JSON AS datasets,
+  -- Remote sources (LOG-35): per file the load-time pin, the mapping
+  -- version, the reference window with its index, build time and duration;
+  -- NULL without a remote dataset. Everything except the build facts is
+  -- part of data_version.
+  $15::JSON AS external_sources;

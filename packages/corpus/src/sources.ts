@@ -14,6 +14,12 @@
  * The archive digests match the MD5 checksums Zenodo publishes for the
  * record (checked 17./18.10.2026); a different file means different data, so
  * a mismatch stops the setup instead of silently changing the data version.
+ *
+ * Remote datasets (`--with otel`, LOG-35) are not part of log_events: the
+ * corpus reads the allowlisted HTTPS files in place (pinned by HEAD at
+ * load), the samples read the committed Parquet fixtures copied below
+ * .data/raw, so CI stays hermetic. A samples load with a remote dataset goes
+ * into its own database.
  */
 import {
   BASE_DATASETS,
@@ -23,14 +29,44 @@ import {
   type Archive,
   type Dataset,
   type DirectFile,
+  type ExternalDataset,
+  type ParquetFixture,
   type PinnedFile,
+  type TableDataset,
 } from "@workspace/domain/datasets"
+
+import { CONTAINER_RAW_DIR } from "./config.ts"
 
 export type { Archive, Dataset, DirectFile, PinnedFile }
 
+/** One remote Parquet file as the server reads it. */
+type ExternalFile = {
+  file_index: number
+  /** HTTPS URL (corpus) or container path of the fixture copy (samples). */
+  location: string
+  /** The location as the reference-window glob reports it (filename column). */
+  globName: string
+  /** Samples only: the committed fixture and its pin. */
+  fixture: ParquetFixture | null
+}
+
+/** A remote dataset of a source (LOG-35). */
+export type ExternalLoad = {
+  dataset: ExternalDataset
+  /** remote: HTTPS files pinned by HEAD; fixture: committed local copies. */
+  kind: "remote" | "fixture"
+  files: readonly ExternalFile[]
+  reference: {
+    glob: string
+    files: readonly number[]
+    from: string
+    to: string
+  }
+}
+
 /** One dataset of a source: its log files, labels and expected line count. */
 export type DatasetLoad = {
-  dataset: Dataset
+  dataset: TableDataset
   /** Log files in their fixed load order (event_id follows it). */
   logs: readonly string[]
   /** Dataset label file, or null if the source has no labels. */
@@ -49,11 +85,15 @@ export type Source = {
   downloads: readonly DirectFile[]
   /** Loaded datasets in catalog order; always BGL and OpenStack first. */
   datasets: readonly DatasetLoad[]
+  /** Remote datasets read in place (LOG-35); not in log_events. */
+  external: readonly ExternalLoad[]
 }
 
 export const SAMPLES_DATABASE = "log_insights_samples"
 /** 2k samples of the base corpus and the extensions (U26). */
 export const SAMPLES_EXTENDED_DATABASE = "log_insights_samples_ext"
+/** 2k samples plus the otel Parquet fixtures (LOG-35). */
+const SAMPLES_REMOTE_DATABASE = "log_insights_samples_otel"
 
 /**
  * The corpus or the samples with the base datasets plus `extensions`. The
@@ -61,27 +101,41 @@ export const SAMPLES_EXTENDED_DATABASE = "log_insights_samples_ext"
  */
 export function buildSource(
   kind: "corpus" | "samples",
-  extensions: readonly Dataset[] = []
+  extensions: readonly TableDataset[] = [],
+  external: readonly ExternalDataset[] = []
 ): Source {
-  const specs = datasetSpecs([...BASE_DATASETS, ...extensions])
+  const specs = datasetSpecs([...BASE_DATASETS, ...extensions]).flatMap(
+    (spec) => (spec.storage === "log_events" ? [spec] : [])
+  )
   const extended = specs.length > BASE_DATASETS.length
-  const sourceOf = (dataset: Dataset) =>
+  const sourceOf = (dataset: TableDataset) =>
     kind === "corpus" ? DATASETS[dataset].corpus : DATASETS[dataset].samples
   const titles = specs.map((spec) => spec.title).join(", ")
+  const remote = external.map((dataset) => externalLoad(kind, dataset))
+  const remoteText = remote
+    .map(({ dataset }) =>
+      kind === "corpus"
+        ? ` + ${DATASETS[dataset].title} read in place over HTTPS`
+        : ` + ${DATASETS[dataset].title} Parquet fixtures`
+    )
+    .join("")
   return {
     id: kind,
     description:
       kind === "corpus"
-        ? `Loghub ${titles} (Zenodo record 8196385)`
-        : `Loghub 2k samples of ${titles} (logpai/loghub@${LOGHUB_COMMIT.slice(0, 7)})`,
+        ? `Loghub ${titles} (Zenodo record 8196385)${remoteText}`
+        : `Loghub 2k samples of ${titles} (logpai/loghub@${LOGHUB_COMMIT.slice(0, 7)})${remoteText}`,
     database:
       kind === "corpus"
         ? null
-        : extended
-          ? SAMPLES_EXTENDED_DATABASE
-          : SAMPLES_DATABASE,
+        : remote.length > 0
+          ? SAMPLES_REMOTE_DATABASE
+          : extended
+            ? SAMPLES_EXTENDED_DATABASE
+            : SAMPLES_DATABASE,
     archives: specs.flatMap((spec) => sourceOf(spec.id).archives),
     downloads: specs.flatMap((spec) => sourceOf(spec.id).downloads),
+    external: remote,
     datasets: specs.map((spec) => {
       const source = sourceOf(spec.id)
       return {
@@ -92,6 +146,49 @@ export function buildSource(
         expectedLinesSource: source.expectedLinesSource,
       }
     }),
+  }
+}
+
+const container = (path: string) => joinPosix(CONTAINER_RAW_DIR, path)
+
+/** The files and reference window of a remote dataset in a source. */
+function externalLoad(
+  kind: "corpus" | "samples",
+  dataset: ExternalDataset
+): ExternalLoad {
+  const { remote } = DATASETS[dataset]
+  if (kind === "corpus")
+    return {
+      dataset,
+      kind: "remote",
+      files: remote.files.map((file) => ({
+        file_index: file.index,
+        location: file.url,
+        globName: file.s3,
+        fixture: null,
+      })),
+      reference: {
+        glob: remote.reference.glob,
+        files: remote.reference.files,
+        from: remote.reference.from,
+        to: remote.reference.to,
+      },
+    }
+  return {
+    dataset,
+    kind: "fixture",
+    files: remote.samples.files.map((fixture) => ({
+      file_index: fixture.index,
+      location: container(fixture.path),
+      globName: container(fixture.path),
+      fixture,
+    })),
+    reference: {
+      glob: container(remote.samples.glob),
+      files: remote.samples.files.map((fixture) => fixture.index),
+      from: remote.samples.from,
+      to: remote.samples.to,
+    },
   }
 }
 

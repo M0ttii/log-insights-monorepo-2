@@ -26,10 +26,12 @@ import {
   loadSteps,
   readSql,
   SQL_FILES,
+  type LoadFacts,
   type SqlFile,
   type Timings,
 } from "./plan.ts"
-import type { Source } from "./sources.ts"
+import { ensureFixtures, pinRemoteFiles, type ExternalPin } from "./remote.ts"
+import type { ExternalLoad, Source } from "./sources.ts"
 import { fillPlaceholders, splitSqlScript } from "./sql-script.ts"
 import { VERSIONS } from "./versions.ts"
 
@@ -55,6 +57,17 @@ export type LoadReportRow = {
   duration_s: number
 }
 
+type ExternalSummary = {
+  dataset: string
+  kind: ExternalLoad["kind"]
+  files: number
+  footer_rows: string
+  bytes: string
+  reference: Record<string, unknown>
+  index_ms: number
+  index_disk_kib: number | null
+}
+
 export type LoadResult = {
   database: string
   dataVersion: string
@@ -62,6 +75,7 @@ export type LoadResult = {
   checks: LoadCheck[]
   report: LoadReportRow[]
   stats: Array<Record<string, unknown>>
+  external: ExternalSummary[]
   timingsMs: Timings & { index: number; total: number }
 }
 
@@ -287,6 +301,50 @@ async function runScript(
   }
 }
 
+/** Directory of this package, for the committed fixtures (LOG-35). */
+const CORPUS_DIR = new URL("..", import.meta.url).pathname
+
+/**
+ * Disk size of the otel reference index (LOG-35, design D4): view-backed
+ * indexes report 0 in pg_indexes_size, so the engine_search directory of
+ * the view is measured with du inside the container. null when that fails.
+ */
+async function indexDiskKib(
+  root: string,
+  client: Client
+): Promise<number | null> {
+  try {
+    const { rows } = await client.query<{
+      db: string
+      ns: string
+      view: string
+    }>(
+      `SELECT (SELECT oid FROM pg_database WHERE datname = current_database())::VARCHAR AS db,
+         c.relnamespace::VARCHAR AS ns, c.oid::VARCHAR AS view
+       FROM pg_class c WHERE c.relname = 'otel_ref'`
+    )
+    const row = rows[0]
+    if (
+      row === undefined ||
+      ![row.db, row.ns, row.view].every((v) => /^\d+$/.test(v))
+    )
+      return null
+    const out = await docker(root, [
+      "compose",
+      "exec",
+      "-T",
+      "serenedb",
+      "du",
+      "-sk",
+      `/var/lib/serenedb/engine_search/${row.db}/${row.ns}/${row.view}`,
+    ])
+    const kib = Number(out.split(/\s/)[0])
+    return Number.isSafeInteger(kib) ? kib : null
+  } catch {
+    return null
+  }
+}
+
 async function timed(run: () => Promise<void>): Promise<number> {
   const start = performance.now()
   await run()
@@ -333,6 +391,25 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       `  ${file.fetched ? "fetched" : "present"}  ${file.path}  ${file.bytes} bytes  sha256 ${file.sha256}`
     )
   }
+  // Remote datasets (LOG-35): pins by HEAD, never a download; or the
+  // committed fixtures with --samples.
+  const pins = new Map<string, ExternalPin[]>()
+  for (const load of source.external) {
+    log(`Remote files (${load.dataset}, ${load.kind})`)
+    pins.set(
+      load.dataset,
+      load.kind === "remote"
+        ? await pinRemoteFiles(load, log)
+        : await ensureFixtures(load, rawDir, CORPUS_DIR, log)
+    )
+  }
+  const externalSources = source.external.map((load) => ({
+    dataset: load.dataset,
+    kind: load.kind,
+    mapping_version: VERSIONS.otelMapping,
+    reference: load.reference,
+    files: pins.get(load.dataset) ?? [],
+  }))
 
   const sources = await Promise.all(
     SQL_FILES.map(async (name) => ({ name, content: await readSql(name) }))
@@ -361,6 +438,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     serverVersion: server,
     versions: VERSIONS,
     sqlDigest: sqlDigest(sources),
+    ...(externalSources.length === 0 ? {} : { externalSources }),
   }
   const version = dataVersion(manifest)
 
@@ -376,12 +454,36 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     await client.query(`SET memory_limit = '${LOAD_MEMORY_LIMIT}'`)
     const timings: Timings = { shared: 0 }
     let indexMs = 0
+    const otelPins = pins.get("otel")
+    const facts: LoadFacts = otelPins === undefined ? {} : { otelPins }
+    let builtAt = ""
     for (const step of loadSteps(source)) {
+      if (step.file === "61_otel_reference.sql")
+        builtAt = new Date().toISOString()
       const ms = await timed(() =>
-        runScript(client, step.file, sql(step.file), step.placeholders(timings))
+        runScript(
+          client,
+          step.file,
+          sql(step.file),
+          step.placeholders(timings, facts)
+        )
       )
       timings[step.timing] = (timings[step.timing] ?? 0) + ms
       if (step.file === "50_index.sql") indexMs = ms
+      if (step.file === "60_otel_sources.sql")
+        facts.otelRanges = (
+          await client.query<{
+            file_index: number
+            from: string
+            to: string | null
+          }>(
+            `SELECT file_index, strftime(assigned_from, '%Y-%m-%dT%H:%M:%S.%nZ') AS "from",
+               strftime(assigned_to, '%Y-%m-%dT%H:%M:%S.%nZ') AS "to"
+             FROM otel_sources ORDER BY file_index`
+          )
+        ).rows
+      if (step.file === "61_otel_reference.sql")
+        facts.otelIndex = { builtAt, ms }
       log(`  ${step.file.padEnd(20)} ${(ms / 1000).toFixed(1).padStart(6)} s`)
     }
 
@@ -411,6 +513,57 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     }
     if (checks.some((check) => !check.ok)) throw new LoadCheckFailed(checks)
 
+    // Remote summary and index facts for the manifest (not part of
+    // data_version: the build time differs on every run).
+    const external: ExternalSummary[] = []
+    for (const load of source.external) {
+      const { rows } = await client.query<{
+        files: string
+        footer_rows: string
+        bytes: string
+      }>(
+        "SELECT count(*)::VARCHAR AS files, sum(footer_rows)::VARCHAR AS footer_rows, sum(size)::VARCHAR AS bytes FROM otel_sources"
+      )
+      const reference = (
+        await client.query<Record<string, unknown>>(
+          `SELECT index_name, source_glob, strftime(window_from, '%Y-%m-%dT%H:%M:%S.%fZ') AS window_from,
+             strftime(window_to, '%Y-%m-%dT%H:%M:%S.%fZ') AS window_to,
+             strftime(built_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS built_at, build_ms,
+             events::VARCHAR AS events, duplicates_removed::VARCHAR AS duplicates_removed, mapping_version
+           FROM otel_reference`
+        )
+      ).rows[0]
+      const totals = rows[0]
+      if (reference === undefined || totals === undefined)
+        throw new Error("otel tables missing after the checks")
+      external.push({
+        dataset: load.dataset,
+        kind: load.kind,
+        files: Number(totals.files),
+        footer_rows: totals.footer_rows,
+        bytes: totals.bytes,
+        reference,
+        index_ms: facts.otelIndex?.ms ?? 0,
+        index_disk_kib: await indexDiskKib(root, client),
+      })
+    }
+    const externalManifest =
+      externalSources.length === 0
+        ? null
+        : externalSources.map((entry) => {
+            const summary = external.find(
+              (row) => row.dataset === entry.dataset
+            )
+            return {
+              ...entry,
+              index: {
+                ...summary?.reference,
+                build_ms: summary?.index_ms ?? null,
+                disk_kib: summary?.index_disk_kib ?? null,
+              },
+            }
+          })
+
     const [manifestStatement, ...extra] = splitSqlScript(sql("95_manifest.sql"))
     if (manifestStatement === undefined || extra.length > 0) {
       throw new Error("95_manifest.sql must hold exactly one statement")
@@ -430,6 +583,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       VERSIONS.rules,
       manifest.sqlDigest,
       JSON.stringify(manifest.datasets),
+      externalManifest === null ? null : JSON.stringify(externalManifest),
     ])
     await runScript(
       client,
@@ -454,6 +608,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       checks,
       report,
       stats,
+      external,
       timingsMs: {
         ...timings,
         index: indexMs,

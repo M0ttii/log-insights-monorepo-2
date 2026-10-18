@@ -12,3 +12,13 @@ DROP TABLE IF EXISTS load_manifest;
 -- them here keeps a reload idempotent; 40_stats.sql recreates them.
 DROP VIEW IF EXISTS api_access;
 DROP VIEW IF EXISTS component_teams;
+
+-- The otel reference window (LOG-35) is rebuilt by every load that names
+-- it and removed by every other load, so no stale remote snapshot survives
+-- a reload: index first (it blocks the log_text dictionary in 50_index.sql),
+-- then its view and tables.
+DROP INDEX IF EXISTS otel_ref_idx;
+DROP VIEW IF EXISTS otel_ref;
+DROP TABLE IF EXISTS otel_reference;
+DROP TABLE IF EXISTS otel_sources;
+DROP TABLE IF EXISTS otel_row_groups;

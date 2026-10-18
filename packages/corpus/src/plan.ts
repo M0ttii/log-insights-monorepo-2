@@ -5,14 +5,38 @@ import {
   isExtension,
   type Dataset,
   type DatasetColumn,
+  type TableDataset,
 } from "@workspace/domain/datasets"
 
 import { CONTAINER_RAW_DIR } from "./config.ts"
-import { datasetLoad, joinPosix, type Source } from "./sources.ts"
+import type { ExternalPin } from "./remote.ts"
+import {
+  datasetLoad,
+  joinPosix,
+  type ExternalLoad,
+  type Source,
+} from "./sources.ts"
 import { sqlString, sqlStringList } from "./sql-script.ts"
+import { VERSIONS } from "./versions.ts"
 
 /** Durations measured so far in a run, per dataset (read + parse) and shared. */
 export type Timings = Partial<Record<Dataset, number>> & { shared: number }
+
+/**
+ * Facts a run learns while it loads, for the steps after: the remote pins
+ * (Node, before any SQL), the assigned ranges after 60_otel_sources.sql and
+ * the index build after 61_otel_reference.sql (LOG-35).
+ */
+export type LoadFacts = {
+  otelPins?: readonly ExternalPin[]
+  /** Half-open assigned ranges as nanosecond ISO strings; `to` null for the last file. */
+  otelRanges?: readonly {
+    file_index: number
+    from: string
+    to: string | null
+  }[]
+  otelIndex?: { builtAt: string; ms: number }
+}
 
 export type Step = {
   file: SqlFile
@@ -20,7 +44,7 @@ export type Step = {
   timing: Dataset | "shared"
   /** Bound parameters; such a file holds exactly one statement. */
   parameterised?: true
-  placeholders: (timings: Timings) => Record<string, string>
+  placeholders: (timings: Timings, facts?: LoadFacts) => Record<string, string>
 }
 
 const SQL_DIR = new URL("../sql/", import.meta.url)
@@ -42,6 +66,9 @@ export const SQL_FILES = [
   "30_ownership.sql",
   "40_stats.sql",
   "50_index.sql",
+  "60_otel_sources.sql",
+  "61_otel_reference.sql",
+  "62_otel_stats.sql",
   "90_checks.sql",
   "95_manifest.sql",
   "99_cleanup.sql",
@@ -54,7 +81,7 @@ export type SqlFile = (typeof SQL_FILES)[number]
  * `stage_<dataset>` from `stage_lines_<dataset>`; extensions follow the
  * staging contract that the shared steps below read.
  */
-const PARSER: Record<Dataset, SqlFile> = {
+const PARSER: Record<TableDataset, SqlFile> = {
   bgl: "10_bgl.sql",
   openstack: "11_openstack.sql",
   hdfs: "12_hdfs.sql",
@@ -327,14 +354,216 @@ export function loadSteps(source: Source): Step[] {
       }),
     },
     { file: "50_index.sql", timing: "shared", placeholders: none },
+    ...source.external.flatMap((load) => otelSteps(load)),
     {
       file: "90_checks.sql",
       timing: "shared",
-      placeholders: () => ({
+      placeholders: (_timings, facts = {}) => ({
         EXTENSION_VISIBILITY: pieces.EXTENSION_VISIBILITY,
         EXTENSION_CHECKS: pieces.EXTENSION_CHECKS,
+        OTEL_CHECKS: source.external
+          .flatMap((load) => otelChecks(load, ranges(facts)))
+          .join("\n  "),
       }),
     },
+  ]
+}
+
+// ------------------------------------------------------------ otel (LOG-35)
+
+const NANO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}Z$/
+const MICRO = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.(\d{6})Z$/
+
+/** A catalog µs instant as a nine-digit ISO string (comparable as text). */
+function nanoOf(value: string): string {
+  if (NANO.test(value)) return value
+  const match = MICRO.exec(value)
+  if (match === null) throw new Error(`not a UTC instant: ${value}`)
+  return `${match[1]}.${match[2]}000Z`
+}
+
+const nanoLiteral = (value: string) =>
+  `${sqlString(nanoOf(value))}::TIMESTAMPTZ_NS`
+
+function ranges(facts: LoadFacts): NonNullable<LoadFacts["otelRanges"]> {
+  const found = facts.otelRanges
+  if (found === undefined)
+    throw new Error("otel assigned ranges are read after 60_otel_sources.sql")
+  for (const range of found)
+    if (!NANO.test(range.from) || (range.to !== null && !NANO.test(range.to)))
+      throw new Error(`assigned range of file ${range.file_index} is not in ns`)
+  return found
+}
+
+/** The reference files with their assigned ranges, in glob order. */
+function referenceFiles(
+  load: ExternalLoad,
+  found: NonNullable<LoadFacts["otelRanges"]>
+) {
+  return load.reference.files.map((index) => {
+    const file = load.files.find((entry) => entry.file_index === index)
+    const range = found.find((entry) => entry.file_index === index)
+    if (file === undefined || range === undefined)
+      throw new Error(`reference file ${index} is not loaded`)
+    return { ...file, from: range.from, to: range.to }
+  })
+}
+
+/** Per reference file the bounds it answers for inside the window, as ns text. */
+function boundsInWindow(
+  load: ExternalLoad,
+  file: { from: string; to: string | null }
+): { lower: string; upper: string } {
+  const from = nanoOf(load.reference.from)
+  const to = nanoOf(load.reference.to)
+  return {
+    lower: file.from > from ? file.from : from,
+    upper: file.to !== null && file.to < to ? file.to : to,
+  }
+}
+
+/** The fields of the otel field guide and their expression over otel_ref. */
+function otelFieldExpression(column: DatasetColumn): string {
+  if (column === "is_error") return `(level IN (${errorLevels()}))`
+  if (!/^[a-z_]+$/.test(column)) throw new Error(column)
+  return column
+}
+
+function errorLevels(): string {
+  return DATASETS.otel.remote.errorLevels
+    .map((level) => sqlString(level))
+    .join(", ")
+}
+
+/** The three otel steps between the index of log_events and the checks. */
+function otelSteps(load: ExternalLoad): Step[] {
+  const locations = sqlStringList(load.files.map((file) => file.location))
+  const glob = load.reference.glob
+  if (glob.includes("'")) throw new Error("glob must not contain quotes")
+  return [
+    {
+      file: "60_otel_sources.sql",
+      timing: "shared",
+      placeholders: (_timings, facts = {}) => {
+        const pins = facts.otelPins
+        if (pins === undefined || pins.length !== load.files.length)
+          throw new Error("otel pins are taken before the load steps")
+        return {
+          LOCATIONS: locations,
+          PINS: pins
+            .map(
+              (pin) =>
+                `(${pin.file_index}, ${sqlString(pin.location)}, ${pin.bytes}::BIGINT, ${pin.etag === null ? "NULL::VARCHAR" : sqlString(pin.etag)}, ${pin.last_modified === null ? "NULL::VARCHAR" : sqlString(pin.last_modified)})`
+            )
+            .join(", "),
+        }
+      },
+    },
+    {
+      file: "61_otel_reference.sql",
+      timing: "shared",
+      placeholders: (_timings, facts = {}) => ({
+        GLOB: glob,
+        FROM: nanoOf(load.reference.from),
+        TO: nanoOf(load.reference.to),
+        DEDUPE: referenceFiles(load, ranges(facts))
+          .map(
+            (file) =>
+              `(filename = ${sqlString(file.globName)} AND "Timestamp" >= ${nanoLiteral(file.from)}${file.to === null ? "" : ` AND "Timestamp" < ${nanoLiteral(file.to)}`})`
+          )
+          .join(" OR "),
+      }),
+    },
+    {
+      file: "62_otel_stats.sql",
+      timing: "shared",
+      placeholders: (_timings, facts = {}) => {
+        const index = facts.otelIndex
+        if (index === undefined)
+          throw new Error(
+            "the otel index build is timed in 61_otel_reference.sql"
+          )
+        const columns = guideColumns(load.dataset)
+        return {
+          GLOB: glob,
+          FROM: nanoOf(load.reference.from),
+          TO: nanoOf(load.reference.to),
+          BUILT_AT: index.builtAt,
+          BUILD_MS: index.ms.toFixed(1),
+          MAPPING_VERSION: VERSIONS.otelMapping,
+          ERROR_LEVELS: errorLevels(),
+          TIME_BASIS: sqlString(DATASETS[load.dataset].timeBasis),
+          LABEL_SOURCE: sqlString("none: this dataset has no labels"),
+          FIELD_STATS: columns
+            .map((column) => {
+              const value = otelFieldExpression(column)
+              return (
+                `SELECT ${literal(load.dataset)} AS dataset, ${sqlString(column)} AS field, count(${value}) AS events_with_value, count(DISTINCT ${value}) AS distinct_values, ` +
+                `coalesce((SELECT to_json(list({'value': v, 'events': n} ORDER BY n DESC, v)) FROM (SELECT ${value}::VARCHAR AS v, count(*) AS n FROM otel_ref ` +
+                `WHERE ${value} IS NOT NULL GROUP BY 1 ORDER BY n DESC, v LIMIT 3)), '[]'::JSON) AS examples FROM otel_ref`
+              )
+            })
+            .join("\nUNION ALL\n"),
+        }
+      },
+    },
+  ]
+}
+
+/** Twin hash of a text_bench row: every column a duplicate must repeat. */
+const ROW_HASH =
+  'md5(concat_ws(chr(31), "Timestamp"::VARCHAR, "TraceId", "SpanId", "TraceFlags"::VARCHAR, "SeverityText", "SeverityNumber"::VARCHAR, "ServiceName", "Body", "ScopeName", "ScopeVersion", "ResourceAttributes"::VARCHAR, "ScopeAttributes"::VARCHAR, "LogAttributes"::VARCHAR))'
+
+/** Load checks of a remote dataset (90_checks.sql), ord 30 and up. */
+function otelChecks(
+  load: ExternalLoad,
+  found: NonNullable<LoadFacts["otelRanges"]>
+): string[] {
+  const files = load.files.length
+  const consistent =
+    "coalesce(footer_rows = row_group_rows AND row_groups = row_group_count AND size = footer_file_bytes AND size = head_size " +
+    "AND (head_last_modified IS NULL OR head_last_modified = last_modified), false)"
+  const reference = referenceFiles(load, found)
+  // The analytics shape of a direct scan: one HTTPS (or fixture) read per
+  // file with its own half-open bounds inside the window.
+  const direct = reference
+    .map((file) => {
+      const { lower, upper } = boundsInWindow(load, file)
+      return `(SELECT count(*) FROM read_parquet(${sqlString(file.location)}) WHERE "Timestamp" >= ${nanoLiteral(lower)} AND "Timestamp" < ${nanoLiteral(upper)})`
+    })
+    .join(" + ")
+  // Rows of a file at or after the next file's start are dropped by the
+  // half-open rule; each must have an identical twin in the next file.
+  const twins = reference
+    .slice(0, -1)
+    .map((file, i) => {
+      const next = reference[i + 1]
+      if (next === undefined || file.to === null) return "0"
+      const to = nanoLiteral(load.reference.to)
+      return (
+        `(SELECT count(*) FROM (SELECT ${ROW_HASH} AS h FROM read_parquet(${sqlString(file.location)}) WHERE "Timestamp" >= ${nanoLiteral(file.to)} AND "Timestamp" < ${to}) d ` +
+        `WHERE d.h IN (SELECT ${ROW_HASH} FROM read_parquet(${sqlString(next.location)}) WHERE "Timestamp" >= ${nanoLiteral(file.to)} AND "Timestamp" < ${to}))`
+      )
+    })
+    .join(" + ")
+  const term = DATASETS[load.dataset].probeTerm
+  if (!/^[a-z]+$/.test(term))
+    throw new Error(`probe term of ${load.dataset}: ${term}`)
+  const regex = `regexp_matches(lower(message), '(^|[^a-z0-9_])${term}([^a-z0-9_]|$)')`
+  return [
+    `UNION ALL SELECT 30, 'otel: per file footer rows = row-group rows, read_blob size = footer size = HEAD Content-Length, HEAD Last-Modified = read_blob', '${files} of ${files} files', ` +
+      `count(*) FILTER (WHERE ${consistent})::VARCHAR || ' of ' || count(*) || ' files', count(*) FILTER (WHERE NOT ${consistent}) = 0 AND count(*) = ${files} FROM otel_sources`,
+    "UNION ALL SELECT 31, 'otel: files ascend in time; each assigned range [ts_min(n), ts_min(n+1)) is non-empty', '0 out of order', " +
+      "count(*) FILTER (WHERE assigned_to IS NOT NULL AND assigned_to <= assigned_from)::VARCHAR || ' out of order', " +
+      "count(*) FILTER (WHERE assigned_to IS NOT NULL AND assigned_to <= assigned_from) = 0 FROM otel_sources",
+    `UNION ALL SELECT 32, 'otel: reference index count = view count = direct per-file scan of the window', (${direct})::VARCHAR, ` +
+      "(SELECT count(*) FROM otel_ref_idx)::VARCHAR || ' index, ' || (SELECT count(*) FROM otel_ref) || ' view', " +
+      `(SELECT count(*) FROM otel_ref_idx) = (${direct}) AND (SELECT count(*) FROM otel_ref) = (${direct}) AND (${direct}) > 0`,
+    `UNION ALL SELECT 33, 'otel: boundary rows removed by the half-open rule are identical twins in the next file', (${twins})::VARCHAR || ' twins', ` +
+      `(SELECT duplicates_removed FROM otel_reference)::VARCHAR || ' removed', (SELECT duplicates_removed FROM otel_reference) = (${twins})`,
+    `UNION ALL SELECT 34, 'otel: full-text index @@ ''${term}'' = regex count over the reference window', ` +
+      `(SELECT count(*) FROM otel_ref WHERE ${regex})::VARCHAR, (SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}')::VARCHAR, ` +
+      `(SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}') = (SELECT count(*) FROM otel_ref WHERE ${regex}) AND (SELECT count(*) FROM otel_ref WHERE ${regex}) > 0`,
   ]
 }
 

@@ -10,8 +10,12 @@
  *   --samples   Loghub 2k samples into the database log_insights_samples
  *   --with …    additionally the named extension datasets (hdfs, openssh,
  *               apache, linux, zookeeper or all); with --samples into
- *               log_insights_samples_ext. Every load replaces the previous
- *               one, so name every extension you want.
+ *               log_insights_samples_ext. otel (remote OpenTelemetry Parquet,
+ *               LOG-35) is never part of all: --with otel pins the remote
+ *               files by HEAD and indexes the reference window; with
+ *               --samples it reads committed fixtures into
+ *               log_insights_samples_otel. Every load replaces the previous
+ *               one, so name every dataset you want.
  *
  * Exit code: 0 loaded, 1 a load check failed, 2 error.
  */
@@ -62,7 +66,10 @@ function printResult(source: Source, result: LoadResult): void {
         `${count(row.events_loaded).padStart(10)} ${count(row.rejected).padStart(9)}  ${reasons(row)}`
     )
   }
-  for (const stats of result.stats) {
+  const tableStats = result.stats.filter((stats) =>
+    source.datasets.some((entry) => entry.dataset === String(stats["dataset"]))
+  )
+  for (const stats of tableStats) {
     const dataset = String(stats["dataset"])
     const load = source.datasets.find((entry) => entry.dataset === dataset)
     if (load === undefined) throw new Error(`unexpected dataset ${dataset}`)
@@ -78,8 +85,23 @@ function printResult(source: Source, result: LoadResult): void {
     )
   }
 
+  for (const remote of result.external) {
+    const reference = remote.reference
+    console.log(
+      `  ${remote.dataset} (${remote.kind}): ${count(remote.files)} files, ${count(remote.footer_rows)} footer rows (incl. boundary duplicates), ${count(remote.bytes)} bytes, not loaded`
+    )
+    console.log(
+      `    reference window [${String(reference["window_from"])}, ${String(reference["window_to"])}) over ${String(reference["source_glob"])}: ` +
+        `${count(reference["events"])} events indexed, ${count(reference["duplicates_removed"])} boundary duplicate(s) removed; ` +
+        `index ${String(reference["index_name"])} built in ${seconds(remote.index_ms)}` +
+        (remote.index_disk_kib === null
+          ? ""
+          : `, ${count(remote.index_disk_kib)} KiB on disk`)
+    )
+  }
+
   console.log("Corpus")
-  for (const stats of result.stats) {
+  for (const stats of tableStats) {
     const patterns = Number(stats["patterns"])
     const single = Number(stats["single_event_patterns"])
     const share = patterns === 0 ? 0 : (100 * single) / patterns
@@ -116,7 +138,8 @@ async function main(): Promise<number> {
   }
   const source = buildSource(
     parsed.samples ? "samples" : "corpus",
-    parsed.extensions
+    parsed.extensions,
+    parsed.external
   )
   try {
     const result = await runLoad(source, (message) => console.log(message))

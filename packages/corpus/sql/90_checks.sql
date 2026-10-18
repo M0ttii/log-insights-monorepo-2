@@ -145,5 +145,7 @@ SELECT check_name, expected, observed, ok FROM (
   FROM log_events WHERE level IS NOT NULL AND is_error IS NULL
   -- Checks of the loaded extension datasets (src/plan.ts, U26).
   {{EXTENSION_CHECKS}}
+  -- Checks of the remote otel dataset (src/plan.ts, LOG-35), ord 30 and up.
+  {{OTEL_CHECKS}}
 )
 ORDER BY ord;

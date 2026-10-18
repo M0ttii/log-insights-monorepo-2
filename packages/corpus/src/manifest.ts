@@ -17,6 +17,31 @@ export type ManifestInput = {
   serverVersion: string
   versions: typeof VERSIONS
   sqlDigest: string
+  /**
+   * Remote sources (LOG-35): per file the HEAD pin (size, ETag,
+   * Last-Modified) or the fixture's SHA-256, the mapping version and the
+   * reference window. Absent without a remote dataset, so base and
+   * extension loads hash as before apart from the SQL digest.
+   */
+  externalSources?: ReadonlyArray<{
+    dataset: string
+    kind: string
+    mapping_version: string
+    reference: {
+      glob: string
+      files: readonly number[]
+      from: string
+      to: string
+    }
+    files: ReadonlyArray<{
+      file_index: number
+      location: string
+      bytes: number
+      etag: string | null
+      last_modified: string | null
+      sha256: string | null
+    }>
+  }>
 }
 
 /** JSON with object keys sorted at every level, so equal content hashes equally. */
