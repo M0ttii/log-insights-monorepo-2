@@ -68,14 +68,17 @@ export function normalizeQuestionScope(question: Pick<EvalQuestion, "scope">) {
     filters,
   })
 }
+const questionBankFields = {
+  version: z.literal(2),
+  reference_data_version: z.string(),
+  reference_status: z.literal("historical_unverified"),
+  reference_provenance: z.array(z.string()).min(1),
+  questions: z.array(questionSchema).min(1),
+}
+/** Released holdout projections do not inherit development-bank coverage quotas. */
+export const releasedEvaluationBankSchema = z.strictObject(questionBankFields)
 export const questionBankSchema = z
-  .strictObject({
-    version: z.literal(2),
-    reference_data_version: z.string(),
-    reference_status: z.literal("historical_unverified"),
-    reference_provenance: z.array(z.string()).min(1),
-    questions: z.array(questionSchema).min(1),
-  })
+  .strictObject(questionBankFields)
   .superRefine((bank, ctx) => {
     const ids = bank.questions.map((q) => q.id)
     if (new Set(ids).size !== ids.length)
@@ -217,6 +220,21 @@ export const manifestSchema = z
     tool_catalog: z.array(z.json()),
     repeated_questions: z.array(id),
     attempts: z.array(plannedAttemptSchema).min(1),
+    holdout: z
+      .strictObject({
+        set_id: id,
+        frozen_base_commit: z.string().regex(/^[a-f0-9]{40,64}$/),
+        question_commit: z.string().regex(/^[a-f0-9]{40,64}$/),
+        freeze_sha256: hashSchema,
+        release_sha256: hashSchema,
+        public_questions_sha256: hashSchema,
+        file: z
+          .string()
+          .regex(/^holdout-[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}\.yaml$/),
+        human_question_ids: z.array(id).length(3),
+        judge_max_bytes: z.number().int().positive(),
+      })
+      .optional(),
     experiment: z
       .strictObject({
         version: z.literal("log53-v1"),
@@ -243,6 +261,14 @@ export const manifestSchema = z
       ctx.addIssue({
         code: "custom",
         message: "Invalid attempt order or duplicate IDs",
+      })
+    if (
+      (manifest.split === "holdout_first") !==
+      (manifest.holdout !== undefined)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Holdout provenance and split disagree",
       })
     if ((manifest.split === "fixture") !== manifest.fixture_only)
       ctx.addIssue({
