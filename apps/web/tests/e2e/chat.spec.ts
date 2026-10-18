@@ -348,3 +348,46 @@ test("recorded refusal preserves the question and has no verification mark", asy
     page.getByRole("region", { name: "Claim verification" })
   ).toHaveCount(0)
 })
+
+test("submission clears the composer immediately and returns focus after streaming", async ({
+  page,
+}) => {
+  let release: (() => void) | undefined
+  const response = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let requests = 0
+  await page.route("**/api/chat", async (route) => {
+    requests++
+    await response
+    await route.fulfill({
+      headers: {
+        "content-type": "text/event-stream",
+        "x-vercel-ai-ui-message-stream": "v1",
+      },
+      body:
+        recording
+          .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+          .join("") + "data: [DONE]\n\n",
+    })
+  })
+  await page.goto("/investigations/new")
+  const input = page.getByRole("textbox", { name: "Your question" })
+  await input.fill("Investigate the synthetic recording")
+  await page.getByRole("button", { name: "Send question" }).click()
+  await expect(
+    page.getByRole("button", { name: "Stop response" })
+  ).toBeVisible()
+  await expect(input).toHaveValue("")
+  await expect(input).toHaveAttribute("readonly", "")
+  await input.press("Enter")
+  expect(requests).toBe(1)
+  release?.()
+  await expect(page.getByRole("button", { name: "Export run" })).toBeVisible()
+  await expect(input).toHaveValue("")
+  await expect(input).toBeFocused()
+  await input.fill("Prepare the next question")
+  await input.press("Shift+Enter")
+  await expect(input).toHaveValue("Prepare the next question\n")
+  expect(requests).toBe(1)
+})

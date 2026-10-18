@@ -284,7 +284,7 @@ export function EvidenceDrawer() {
         }
       }}
     >
-      <SheetContent className="w-full min-w-0 gap-4 sm:w-[40rem] sm:max-w-[85vw]">
+      <SheetContent className="min-w-0 gap-4 data-[side=right]:w-full data-[side=right]:sm:w-[40rem] data-[side=right]:sm:max-w-[85vw]">
         <SheetHeader className="border-b p-5">
           <SheetTitle>Query receipt</SheetTitle>
           <SheetDescription className="font-mono text-xs">

@@ -129,6 +129,7 @@ describe("prepared chat", () => {
       scope: { dataset: "bgl" },
     })
     expect(screen.getByRole("button", { name: "Stop response" })).toBeTruthy()
+    expect(screen.getByRole("textbox")).toHaveProperty("value", "")
     await act(async () => {
       wire.push({ type: "start", messageId: "test-reply" })
       wire.push({ type: "text-start", id: "text" })
@@ -148,6 +149,7 @@ describe("prepared chat", () => {
       expect(screen.getByRole("textbox").getAttribute("readonly")).toBeNull()
     )
     expect(screen.getByRole("textbox")).toHaveProperty("value", "")
+    expect(document.activeElement).toBe(screen.getByRole("textbox"))
     expect(screen.getByRole("button", { name: "Copy answer" })).toBeTruthy()
   })
   it("keeps partial text and the draft after Stop", async () => {
@@ -199,6 +201,52 @@ describe("prepared chat", () => {
     )
     expect(screen.getByText(/Stopped · partial response/)).toBeTruthy()
   })
+  it.each(["refusal", "timeout", "error", "stopped"])(
+    "restores the submitted question after a %s run",
+    async (status) => {
+      const wire = streamTransport()
+      render(
+        createElement(InvestigationView, {
+          brief,
+          available: true,
+          chatTransport: wire.transport,
+        })
+      )
+      const textbox = screen.getByRole("textbox", { name: "Your question" })
+      fireEvent.change(textbox, {
+        target: { value: "  Keep the original question  " },
+      })
+      fireEvent.click(screen.getByRole("button", { name: "Send question" }))
+      await waitFor(() => expect(wire.sendMessages).toHaveBeenCalledOnce())
+      expect(textbox).toHaveProperty("value", "")
+      await act(async () => {
+        wire.push({ type: "start", messageId: `run-${status}` })
+        wire.push({
+          type: "data-run",
+          data: {
+            run_id: "run_deadbeef",
+            status,
+            duration_ms: 30,
+            usage: {
+              input: 12,
+              output: 15,
+              cache_read: null,
+              cache_write: null,
+            },
+          },
+        })
+        wire.push({ type: "finish", finishReason: "stop" })
+        wire.close()
+      })
+      await waitFor(() =>
+        expect(textbox).toHaveProperty(
+          "value",
+          "  Keep the original question  "
+        )
+      )
+      expect(document.activeElement).toBe(textbox)
+    }
+  )
   it("preserves the draft and hides provider errors", async () => {
     const transport: ChatTransport<UIMessage> = {
       sendMessages: async () => {

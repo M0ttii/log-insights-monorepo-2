@@ -84,7 +84,7 @@ export function EventContext({
         if (!open) onClose()
       }}
     >
-      <SheetContent className="w-full sm:w-[48rem] sm:max-w-[85vw]">
+      <SheetContent className="min-w-0 data-[side=right]:w-full data-[side=right]:sm:w-[48rem] data-[side=right]:sm:max-w-[85vw]">
         <SheetHeader className="border-b p-5">
           <SheetTitle>Event context</SheetTitle>
           <SheetDescription>

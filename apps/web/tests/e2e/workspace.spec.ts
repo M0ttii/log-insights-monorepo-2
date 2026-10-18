@@ -180,6 +180,30 @@ test("search keeps filter scope in the URL and exposes real evidence or a recove
     path: testInfo.outputPath("search.png"),
     fullPage: true,
   })
+  const contextButton = page
+    .getByRole("button", { name: /^Open context for event/ })
+    .first()
+  if (await contextButton.count()) {
+    await contextButton.click()
+    const context = page.getByRole("dialog", { name: "Event context" })
+    await expect(context).toBeVisible()
+    await expect
+      .poll(() =>
+        context.evaluate((element) =>
+          Math.round(element.getBoundingClientRect().width)
+        )
+      )
+      .toBe(testInfo.project.name === "mobile" ? 390 : 768)
+    const accessibility = await new AxeBuilder({ page }).analyze()
+    expect(
+      accessibility.violations.filter(
+        (item) => item.impact === "serious" || item.impact === "critical"
+      )
+    ).toEqual([])
+    await page.getByRole("button", { name: "Back to results" }).click()
+    await expect(context).toBeHidden()
+    await expect(contextButton).toBeFocused()
+  }
 })
 
 test("receipt IDs are validated and unresolved receipts are explicit", async ({
@@ -204,6 +228,14 @@ test("receipt IDs are validated and unresolved receipts are explicit", async ({
   await expect(
     page.getByRole("dialog", { name: "Query receipt" })
   ).toBeVisible()
+  const drawer = page.getByRole("dialog", { name: "Query receipt" })
+  await expect
+    .poll(() =>
+      drawer.evaluate((element) =>
+        Math.round(element.getBoundingClientRect().width)
+      )
+    )
+    .toBe(testInfo.project.name === "mobile" ? 390 : 640)
   await expect(page.getByRole("dialog")).toContainText("Receipt unavailable")
   await page.screenshot({
     path: testInfo.outputPath("receipt.png"),

@@ -101,8 +101,16 @@ export function InvestigationView({
   const [contexts, setContexts] = useState<Record<string, RunContext>>({})
   const input = useRef<HTMLTextAreaElement>(null)
   const form = useRef<HTMLFormElement>(null)
+  const submittedQuestion = useRef<string | null>(null)
+  function finishQuestion(restore: boolean) {
+    if (restore && submittedQuestion.current !== null)
+      setQuestion(submittedQuestion.current)
+    submittedQuestion.current = null
+    input.current?.focus()
+  }
   const chat = useChat({
     transport: chatTransport,
+    onError: () => finishQuestion(true),
     onFinish: ({ message, isAbort, isError, isDisconnect }) => {
       if (isAbort || isDisconnect || isError)
         setInterruptions((previous) => ({
@@ -110,13 +118,12 @@ export function InvestigationView({
           [message.id]: isAbort ? "stopped" : "failed",
         }))
       const completed = projectMessage(message).run?.status
-      if (
-        !isAbort &&
-        !isError &&
-        !isDisconnect &&
-        (!completed || completed === "completed")
+      finishQuestion(
+        isAbort ||
+          isError ||
+          isDisconnect ||
+          (completed !== undefined && completed !== "completed")
       )
-        setQuestion("")
     },
   })
   const busy = chat.status === "submitted" || chat.status === "streaming"
@@ -256,8 +263,10 @@ export function InvestigationView({
           ref={form}
           onSubmit={(event) => {
             event.preventDefault()
-            if (!canSend) return
+            if (!canSend || submittedQuestion.current !== null) return
             chat.clearError()
+            submittedQuestion.current = question
+            setQuestion("")
             const id = crypto.randomUUID()
             setContexts((previous) => ({
               ...previous,
