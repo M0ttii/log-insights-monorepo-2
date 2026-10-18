@@ -68,6 +68,12 @@ const ORDER: Record<SearchSort, string> = {
   time_desc: `${INDEX}.ts DESC, ${INDEX}.event_id DESC`,
 }
 
+const HIT_ORDER: Record<SearchSort, string> = {
+  relevance: "hits.score DESC, hits.event_id",
+  time_asc: "hits.ts, hits.event_id",
+  time_desc: "hits.ts DESC, hits.event_id DESC",
+}
+
 const BASE_NOTE =
   "Matches are log events, not incidents; do not infer frequencies from hits – use count_events."
 const UNTRUSTED_NOTE =
@@ -85,13 +91,14 @@ const hitRow = z.object({
   request_id: z.string().nullable(),
   message: z.string().nullable(),
   message_truncated: z.boolean().nullable(),
+  match_offsets: z.array(z.number().int().nonnegative()),
   score: z.number(),
 })
 
 export const searchLogs = defineTool({
   name: "search_logs",
   title: "Search logs",
-  version: "1.0.1",
+  version: "1.1.0",
   description: renderDescription({
     purpose:
       "Full-text search over log messages with BM25 ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message.",
@@ -116,8 +123,8 @@ export const searchLogs = defineTool({
     inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy, default terms), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion.`,
     filters: SEARCH_FILTER.summary,
     outputs:
-      "total_matches (exact, same condition as the hits), hits[] with event_id, dataset, ts (UTC, microseconds), component, level, node, alert_label, request_id, message (verbatim, untrusted), message_truncated and score (BM25, comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. Cite total_matches and times by their fact IDs.",
-    truncation: `at most limit hits; truncated is true when total_matches is larger. Messages are cut to ${SEARCH_MESSAGE_MAX_CHARS} characters (message_truncated).`,
+      "total_matches (exact, same condition as the hits), hits[] with event_id, dataset, ts (UTC, microseconds), component, level, node, alert_label, request_id, message (verbatim, untrusted), message_truncated, match_ranges (index-derived, zero-based Unicode code points, start inclusive/end exclusive; no HTML) and score (BM25, comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. Cite total_matches and times by their fact IDs.",
+    truncation: `at most limit hits; truncated is true when total_matches is larger. Messages are cut to ${SEARCH_MESSAGE_MAX_CHARS} characters (message_truncated). Match ranges are clipped to that prefix; matches entirely beyond it have no visible range.`,
     countingUnit:
       "log events (parsed lines), not incidents; hits are examples, never a frequency.",
   }),
@@ -186,16 +193,24 @@ export const searchLogs = defineTool({
       ctx.signal
     )
     const listed = await ctx.db.query(
-      `SELECT ${INDEX}.event_id, ${INDEX}.dataset, ${isoTime(`${INDEX}.ts`)} AS ts, ${INDEX}.component, ${INDEX}.level, ${INDEX}.node, ${INDEX}.alert_label, ${INDEX}.request_id, left(${INDEX}.message, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${INDEX}.message) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, BM25(${INDEX}.tableoid) AS score FROM ${INDEX} WHERE ${where} ORDER BY ${ORDER[input.sort]} LIMIT ${limitRef}`,
+      // Keep the original filtered/ranked top-k query intact: scalar index
+      // filters contribute to its BM25 score in 26.10.1. Those filters also
+      // erase ts_offsets, so read positions in a second FTS scan, restricted
+      // to the selected IDs by a residual CASE (not an index predicate).
+      `WITH hits AS MATERIALIZED (SELECT ${INDEX}.event_id, ${INDEX}.dataset, ${isoTime(`${INDEX}.ts`)} AS ts, ${INDEX}.component, ${INDEX}.level, ${INDEX}.node, ${INDEX}.alert_label, ${INDEX}.request_id, left(${INDEX}.message, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${INDEX}.message) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, BM25(${INDEX}.tableoid) AS score FROM ${INDEX} WHERE ${where} ORDER BY ${ORDER[input.sort]} LIMIT ${limitRef}) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT ${INDEX}.event_id, ts_offsets(${INDEX}.message) AS match_offsets FROM ${INDEX} WHERE ${condition} AND CASE WHEN ${INDEX}.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY ${HIT_ORDER[input.sort]}`,
       params.values,
       ctx.signal
     )
 
     const total = countRow.parse(counted.rows[0]).total
     const hits: SearchHit[] = listed.rows.map((row) => {
-      const hit = hitRow.parse(row)
+      const { match_offsets: offsets, ...hit } = hitRow.parse(row)
       // A NULL message has no length; it is not cut.
-      return { ...hit, message_truncated: hit.message_truncated === true }
+      return {
+        ...hit,
+        message_truncated: hit.message_truncated === true,
+        match_ranges: characterRanges(hit.message, offsets),
+      }
     })
     const truncated = total > hits.length
     const scope: Scope = {
@@ -329,4 +344,50 @@ function notesFor(
     )
   }
   return notes
+}
+
+/**
+ * Presentation-only UTF-8 byte -> Unicode code-point conversion, never a
+ * second search. Walk only the returned prefix (at most 400 code points).
+ * SereneDB supplies sorted [start, end) byte pairs, including one span for
+ * a phrase. Repeated-token phrases can overlap: merge their visible spans
+ * for rendering, and clip partially visible spans to the prefix.
+ */
+function characterRanges(
+  message: string | null,
+  offsets: readonly number[]
+): SearchHit["match_ranges"] {
+  if (message === null) return []
+  const positions = new Map<number, number>([[0, 0]])
+  let bytes = 0
+  let characters = 0
+  for (const character of message) {
+    bytes += Buffer.byteLength(character, "utf8")
+    characters += 1
+    positions.set(bytes, characters)
+  }
+  const ranges: SearchHit["match_ranges"] = []
+  let previousStart = 0
+  for (let index = 0; index < offsets.length; index += 2) {
+    const startByte = offsets[index]
+    const endByte = offsets[index + 1]
+    if (
+      startByte === undefined ||
+      endByte === undefined ||
+      startByte < previousStart ||
+      endByte <= startByte
+    )
+      throw new Error("Invalid index match offsets")
+    previousStart = startByte
+    if (startByte >= bytes) continue
+    const start = positions.get(startByte)
+    const end = positions.get(Math.min(endByte, bytes))
+    if (start === undefined || end === undefined)
+      throw new Error("Index match offset is not a UTF-8 character boundary")
+    const previous = ranges.at(-1)
+    if (previous !== undefined && start < previous.end)
+      previous.end = Math.max(previous.end, end)
+    else ranges.push({ start, end })
+  }
+  return ranges
 }

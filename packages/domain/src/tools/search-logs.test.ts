@@ -167,6 +167,7 @@ describe("summarizeSearchLogs", () => {
             request_id: null,
             message: injected,
             message_truncated: true,
+            match_ranges: [],
             score: 1.5,
           },
         ],
