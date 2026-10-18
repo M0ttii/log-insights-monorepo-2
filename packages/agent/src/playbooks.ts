@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import type { Filter } from "@workspace/domain/filters"
 import { roleGuidanceSchema, type RoleGuidance } from "@workspace/domain/tool"
@@ -10,7 +12,7 @@ type PromptArguments = Pick<Filter, "dataset" | "from" | "to"> & {
 
 function read(name: string): string {
   return readFileSync(
-    new URL(`./playbooks/${name}.md`, import.meta.url),
+    join(dirname(fileURLToPath(import.meta.url)), "playbooks", `${name}.md`),
     "utf8"
   ).trim()
 }

@@ -34,6 +34,9 @@ jobs:
       - run: pnpm knip
       - run: pnpm test
       - run: pnpm build
+      - name: Install Chromium for the web workspace
+        run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
 
   loader:
     # pnpm data:setup against the Loghub 2k samples and the loader integration

@@ -17,6 +17,9 @@
         "tests/integration/regen-sql-rule-baseline.ts"
       ],
       "ignoreDependencies": ["tsx"]
+    },
+    "packages/typescript-config": {
+      "ignoreUnresolved": ["next"]
     }
   },
   "ignore": ["vendor/**"],
