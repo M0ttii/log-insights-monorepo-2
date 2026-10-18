@@ -1,0 +1,93 @@
+{
+  "run_id": "s15-2026-10-18",
+  "frozen_at": "2026-10-18T09:59:58.996016+00:00",
+  "scope": "LOG-21 acceptance 3 / LOG-19; focused S-15 development evaluation only",
+  "split": "development",
+  "question_id": "dev-eng-01",
+  "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+  "role": "engineer",
+  "variant": "production_playbook",
+  "client": "Claude Desktop",
+  "model_requested": "claude-opus-5-5",
+  "model_ui": "Opus 5.5 Mittel",
+  "served_model_id": null,
+  "served_model_note": "Desktop exposes a display label, not an API response model ID.",
+  "prompt_selection": false,
+  "trials": [
+    {
+      "id": "s15-01",
+      "fresh_chat": true,
+      "same_question": true,
+      "chat_url": "https://claude.ai/chat/2aad5f5b-4014-4e93-901b-367d27f877dd",
+      "started_at": "2026-10-18T10:02:06.403417+00:00",
+      "completed_at": "2026-10-18T10:06:11.327115+00:00",
+      "answer": "s15-01-answer.txt",
+      "capture": "Accessibility transcription; visible text preserved, layout normalized."
+    },
+    {
+      "id": "s15-02",
+      "fresh_chat": true,
+      "same_question": true,
+      "chat_url": "https://claude.ai/chat/85b837e7-b968-4e49-bb24-96ca8bb02249",
+      "submission_observed_at": "2026-10-18T10:07:40.179357+00:00",
+      "completed_at": "2026-10-18T10:12:33.340762+00:00",
+      "answer": "s15-02-answer.txt",
+      "capture": "Accessibility transcription; visible text preserved, layout normalized."
+    },
+    {
+      "id": "s15-03",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T10:12:47.061943+00:00",
+      "chat_url": "https://claude.ai/chat/be2b6188-d1cc-4bd2-8732-b63c3e0bfdf4",
+      "completed_at": "2026-10-18T10:16:04.695263+00:00",
+      "answer": "s15-03-answer.txt",
+      "capture": "Accessibility transcription; visible text preserved, layout normalized."
+    }
+  ],
+  "retry_policy": "No corrective follow-ups, replacements, or retries; retain every planned attempt, including failures.",
+  "execution_limits": {
+    "client_default": true,
+    "steps": null,
+    "context_tokens": null,
+    "output_tokens": null,
+    "note": "Desktop owns provider limits and retries; unavailable fields remain null."
+  },
+  "acceptance": [
+    "A real get_log_context aggregate check executes before recommendation.",
+    "The answer names the discriminating check and grounds its hypothesis status in its fact IDs.",
+    "Temporal precursors are explicitly separated from proven causes."
+  ],
+  "review": "Independent reviewer did not author the production playbooks. All attempts are rated.",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness"
+  ],
+  "telemetry": {
+    "tokens": null,
+    "estimated_api_cost": null,
+    "pricing_provenance": null,
+    "reason": "Not exposed by the subscription Desktop UI; no fabricated API estimate."
+  },
+  "baseline_code_commit": "63c9efc2eeba68ffd7d489cf6e562ae0b47fdda3",
+  "source_sha256": {
+    "packages/agent/src/playbooks.ts": "89c9bd9a0182888dd6307bfcdb4e4e6eb3d88a2eec76ca528464c02bfa3340fe",
+    "packages/agent/src/playbooks/common.md": "ed151eb7ddfa95903cf16dfd13d21b49c187a6bfa3a936a2f101ac51c3828a59",
+    "packages/agent/src/playbooks/engineer.md": "17e763011aa0fbba718b2ddb67eb360f0545e42307fad8560005f2f8e2c75c21",
+    "apps/mcp/src/server.ts": "1802c11bd68db5438a41e861de44ce1bda803c75a21fe4303636c0734f28e821",
+    "packages/analytics/src/tools/get-log-context.ts": "e98c69e00707adf190fa2babd6d558d17b09db2730c6d04707ae3c0a6332c1c9",
+    "packages/evals/questions/dev.yaml": "4c8b1b3e28ac2bb8b53c0fe87da3ecfa48b744046e5f2e6cd847f3fc91aaa419"
+  },
+  "execution_status": "all_planned_trials_completed",
+  "approval_gate": {
+    "action": "Submit the fixed development question in Claude Desktop with local MCP corpus results",
+    "result": "Explicit user approval received for three new Claude Desktop trials",
+    "new_model_attempts_started": 0
+  },
+  "runtime_contract_version_observed": "2.8.0",
+  "runtime_source_note": "The already-running Desktop MCP process remains on the baseline bundle from before the unrelated LOG-16 fix. All trials keep this process and production guidance unchanged.",
+  "time_measurement_note": "UI observation timestamps bound capture, not exact provider latency. Tool durations are taken from receipts; Desktop end-to-end generation time/tokens are not instrumented."
+}

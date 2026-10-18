@@ -1,0 +1,17 @@
+{
+  "run_id": "s15-2026-10-18-r4",
+  "outcome": "invalid_infrastructure_round",
+  "scope": "Failed Desktop setup before a valid1.0.5 regression series; not scored as candidate-model behavior.",
+  "planned_attempts": 3,
+  "started_attempts": 1,
+  "unstarted_attempts": 2,
+  "valid_candidate_attempts": 0,
+  "infrastructure_attempts": 1,
+  "s15_passes": null,
+  "s15_failures": null,
+  "guidance_requested": "1.0.5",
+  "guidance_observed": "1.0.4",
+  "reason": "Delayed/stale Desktop state caused a concatenated duplicate question and a submission before the intended MCP restart. The single describe_corpus receipt attests1.0.4. The operator declined the next search and retained the final stop response.",
+  "evidence": ["manifest.json", "r4-01-answer.txt", "r4-01-evidence.json"],
+  "followup": "User explicitly approved one extra replacement. Two unstarted slots plus this extra slot form a separately frozen three-attempt round with unchanged1.0.5 guidance. No candidate-model outcome from this invalid setup is selected or hidden."
+}

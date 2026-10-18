@@ -1,0 +1,96 @@
+{
+  "run_id": "s15-2026-10-18-r4",
+  "frozen_at": "2026-10-18T10:58:44.218122+00:00",
+  "scope": "LOG-21 acceptance 3 / LOG-19; focused S-15 development evaluation only",
+  "split": "regression",
+  "question_id": "dev-eng-01",
+  "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+  "role": "engineer",
+  "variant": "production_playbook",
+  "client": "Claude Desktop",
+  "model_requested": "claude-opus-5-5",
+  "model_ui": "Opus 5.5 Mittel",
+  "served_model_id": null,
+  "served_model_note": "Desktop exposes a display label, not an API response model ID.",
+  "prompt_selection": false,
+  "retry_policy": "No corrective follow-ups, replacements, or retries; retain every planned attempt, including failures.",
+  "execution_limits": {
+    "client_default": true,
+    "steps": null,
+    "context_tokens": null,
+    "output_tokens": null,
+    "note": "Desktop owns provider limits and retries; unavailable fields remain null."
+  },
+  "acceptance": [
+    "A real get_log_context aggregate check executes before recommendation.",
+    "The answer names the discriminating check and grounds its hypothesis status in its fact IDs.",
+    "Temporal precursors are explicitly separated from proven causes."
+  ],
+  "review": "Independent reviewer did not author the production playbooks. All attempts are rated.",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "Causal effect of guidance changes in a controlled comparison"
+  ],
+  "telemetry": {
+    "tokens": null,
+    "estimated_api_cost": null,
+    "pricing_provenance": null,
+    "reason": "Not exposed by the subscription Desktop UI; no fabricated API estimate."
+  },
+  "baseline_code_commit": "c58285bce791e3d50f68593e9eb75c3963df86bc",
+  "source_sha256": {
+    "packages/agent/src/playbooks/common.md": "4ad7e8be81e9f30e6576134f9657d438aff674e0cd5bb5f8e2066bf9502f13d7",
+    "packages/agent/src/playbooks/engineer.md": "9c6ce0f64d16ca5065787c598f12a9a3478ec5a0248ea15f4d5c8d0848fc4f09",
+    "packages/agent/src/playbooks/manager.md": "524f8d2ef9c3423eb5a6c3ba8d60e8f77028cd9afd653e557f50b6cb27f207b2",
+    "packages/agent/src/playbooks/team-lead.md": "d2ad074bfe64a9da1c7fb6ecd611cef93b4736dfaa5ddc78261e1fff5ca20ea1",
+    "packages/agent/src/playbooks.test.ts": "54b2d20d9c7a77da35b6e6454b49001c4159564402d2be108abec942617e6d00",
+    "packages/agent/src/playbooks.ts": "89c9bd9a0182888dd6307bfcdb4e4e6eb3d88a2eec76ca528464c02bfa3340fe"
+  },
+  "execution_status": "aborted_round_due_to_invalid_runtime_and_duplicate_input",
+  "approval_gate": {
+    "result": "User explicitly approved three further Desktop trials for bundle1.0.5 after the earlier capped allowance was exhausted. This round plans all three.",
+    "new_model_attempts_started": 1
+  },
+  "time_measurement_note": "UI observation timestamps bound capture, not exact provider latency. Tool durations are taken from receipts; Desktop end-to-end generation time/tokens are not instrumented.",
+  "prior_round": "../s15-2026-10-18-r3",
+  "guidance_diff_sha256": "f918ec9c9e1b7b655e956effa246688cade5956f34787e962f7c1ee6ef971cc4",
+  "guidance_version_requested": "1.0.5",
+  "runtime_source_note": "Desktop is restarted after the guidance change; each corpus receipt will attest runtime contract/guidance versions. No prompt tuning within this round.",
+  "trials": [
+    {
+      "id": "r4-01",
+      "fresh_chat": true,
+      "same_question": false,
+      "started_at": "2026-10-18T10:59:00.828747+00:00",
+      "submission_window_start": "2026-10-18T11:00:38.199263+00:00",
+      "ui_setup_note": "After Desktop restart, several UI actions produced no prompt or generation. The CUA binding was reset; the exact question was verified in the empty fresh-chat input before submission. No model replacement/retry occurred.",
+      "runtime_guidance_version_observed": "1.0.4",
+      "infrastructure_issue": "Desktop keyboard restart did not replace the MCP runtime. Receipt r_7fc7eb33 attests1.0.4 rather than requested1.0.5. A delayed submission occurred while accessibility and screenshot states disagreed. Retain the attempt; do not treat it as1.0.5 model evidence.",
+      "chat_url": "https://claude.ai/chat/db197742-e091-4229-91f4-f4b8401f1888",
+      "completed_at": "2026-10-18T11:04:33.417248+00:00",
+      "answer": "r4-01-answer.txt",
+      "capture": "Accessibility transcription of final response after operator declined the next search due to invalid setup; wording preserved, layout normalized.",
+      "submitted_question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+      "classification": "invalid_infrastructure_attempt",
+      "stopped_by_operator": true
+    },
+    {
+      "id": "r4-02",
+      "fresh_chat": true,
+      "same_question": true,
+      "execution_status": "not_started_after_infrastructure_abort"
+    },
+    {
+      "id": "r4-03",
+      "fresh_chat": true,
+      "same_question": true,
+      "execution_status": "not_started_after_infrastructure_abort"
+    }
+  ],
+  "guidance_commit": "4e5c863943cbee717a2cd48d75077dc66d25750e",
+  "retry_policy_note": "No invalid attempt is replaced or hidden. Two unstarted slots remain in the user-approved allowance. A separate valid round of three would need one additional explicitly approved model attempt."
+}

@@ -2,7 +2,7 @@
 
 ## Version
 
-1.0.2
+1.0.5
 
 ## Evidence and precedence
 
@@ -17,6 +17,10 @@ Before the final answer call `check_claims` with all numerical and time claims y
 Keep the final answer concise enough to verify completely. Put numerical evidence in the required evidence table or section; use qualitative references to that evidence in Answer, Hypotheses and next steps instead of repeating the values. Every occurrence of a number or time needs its own adjacent fact citation, including repeated values in hypothesis rows, dates in trend tables, scope limits and truncation details. Omit optional numbers that have no fact, such as a display limit or window length without a matching fact. Use unnumbered bullets rather than introducing unverified ordinal or count claims. Do not claim “all numbers checked” when only a submitted subset was checked.
 
 A top_n breakdown is bounded. A shared value among the displayed groups does not establish a uniform value for omitted groups, and a top node's maximum is not a per-node value for everyone. State the named group's value or the returned maximum with its group, and disclose the remainder. “All patterns covered”, “the whole machine” and “every episode” each need scope-wide evidence; otherwise narrow the wording. Do not subtract anchor counts to invent a count without a precursor, infer a percentage, or transform a signed offset into a different checked value. Quote offsets with the returned sign and unit. Keep temporal association and breadth observations separate from an unproven job-wide cause.
+
+Apply the same evidence limits to every paragraph, including the opening answer and Next check. A proposed check that only observes timing, repeated co-occurrence, shared identifiers or log labels can support or weaken an association, never confirm a cause. State the independent evidence needed to distinguish the causal alternatives; a different peer or component alone does not establish a separate cause. For each proposed check, separate its observable outcomes from the hypothesis-status update and the causal alternatives that remain. A different or missing precursor changes the evidence for a repeated association; it does not establish another trigger, multiple causes or an alternative cause. Use “trigger” only for a causal hypothesis that remains explicitly unproven, never as a synonym for an observed precursor.
+
+Classify symptom distribution separately from causal origin. Broad or simultaneous effects can come from one failed node or shared component. Breadth, synchrony, or an empty local context therefore cannot mark a single-node causal hypothesis contradicted; that origin stays open unless another executed check refutes a necessary causal assumption. You may contradict the narrower claim that symptoms are confined to one node. For every contradicted status, state the necessary assumption and the check fact that refutes it; if you cannot, use open. Apply this distinction in the opening answer and every hypothesis row, even when another paragraph already acknowledges a possible shared cause.
 
 ## Domain rules
 

@@ -1,0 +1,45 @@
+It’s job-wide (really machine-wide), not one bad node. The failures hit hundreds of I/O nodes at once, spread evenly across racks, and all of them were talking to the same front-end address. That points at the far end of the control connection, not at any one node.
+
+Scope: BGL, [2005-06-01T00:00:00Z [r_a674fc90.f15], 2005-07-01T00:00:00Z [r_a674fc90.f16]) UTC, messages matching “failed to read message prefix on control stream”. The data only starts on 2005-06-03T22:42:50Z [r_ebd8234b.f30], so the first days of June aren’t covered.
+
+Evidence
+Observation | Value
+Matching log events | 5,983 [r_4930a324.f11]
+Distinct nodes affected | 512 [r_a674fc90.f12]
+Distinct racks affected | 32 [r_a674fc90.f13]
+Highest per-node count (e.g. R00-M0-N0-I:J18-U01) | 15 [r_76d19629.f2]
+Per-rack count (e.g. R00) | 240 [r_72540196.f2]
+Events whose message names peer 172.16.96.116 | 5,983 [r_bfb103b0.f4]
+
+All affected nodes are I/O nodes (-I:J18-U01 / -U11). The busiest node logged only a small handful, and the top racks all show the same count. That even spread is the opposite of what a single failing node looks like.
+
+Timeline
+- First seen 2005-06-04T07:24:32Z [r_a674fc90.f10]. Within about a second (by 2005-06-04T07:24:33Z [r_4930a324.f10]) nodes in R23, R04, R35 and R36 had all failed.
+- Last seen 2005-06-20T08:42:45Z [r_a674fc90.f11]. There were 7 episodes [r_a674fc90.f8] over 5 active days [r_a674fc90.f5]:
+Day (UTC) | Events
+2005-06-04 | 2,040 [r_ebd8234b.f3]
+2005-06-09 | 124 [r_ebd8234b.f8]
+2005-06-13 | 1,017 [r_ebd8234b.f12]
+2005-06-16 | 2,040 [r_ebd8234b.f15]
+2005-06-20 | 762 [r_ebd8234b.f19]
+These are bursts that come back on separate days, not a steady trickle.
+
+Narrowing
+I looked for what shows up around each burst. Across the 7 bursts [r_4a025704.f1], ciod: LOGIN chdir(<PATH>) failed: No such file or directory appeared in the 10 minutes before 6 of them [r_4a025704.f6]. That is about 145.2× [r_4a025704.f9] more often than its normal rate. It also appeared after 3 bursts [r_4a025704.f17]. The DDR/EDRAM corrected-error messages near the bursts are close to their usual rate, so they don’t look related.
+
+Hypotheses
+- A single failing node or rack is the cause: contradicted. The breadth and even spread above rule this out.
+- The ciod peer at 172.16.96.116 dropped or reset the control connections: supported. Every event names that address, and many nodes fail within the same second. Supported isn’t proven, though: the logs show the symptom, not why the peer went away.
+- A job launch with a bad working directory triggers the bursts: supported. The chdir failure precedes most bursts. This is timing only, not proof. As background, a failed login/chdir would make ciod abort the job, and the I/O nodes would then see their control sockets close. That would fit, but the logs don’t confirm it.
+
+Next check
+- Precursor lines: for each burst, pull the ciod: LOGIN chdir(...) lines and see which path they name. If it’s the same path or user each time, a misconfigured job or a missing filesystem mount is the likely trigger.
+- Front-end logs: check the host behind 172.16.96.116 (service node or job launcher) at those burst times for a job kill, restart or network drop. A reset there would confirm the peer theory. If that host was clean, look at the network path between the I/O nodes and it.
+- The odd burst: the 2005-06-09 episode is much smaller than the others. If it wasn’t preceded by the chdir message, it may have a different trigger.
+
+Unknown
+- The root cause on the 172.16.96.116 side, and which jobs or users were involved, aren’t in this corpus.
+- I couldn’t compare against May, because there’s no data before 2005-06-03 [r_ebd8234b.f30].
+- The precursor association is temporal only. Impact on jobs or users is unknown.
+
+Verification: 21 claims checked [r_99539bc6.f1] · 0 mismatch [r_99539bc6.f2] · 0 unresolved [r_99539bc6.f3]. Only the numbers were checked, not the interpretation. Team ownership in the tool is fictional, so I’ve left it out.

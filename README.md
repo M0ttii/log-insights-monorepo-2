@@ -167,6 +167,22 @@ observed gaps are recorded in Linear LOG-39, without formal U16 scoring. Claude
 Code was not signed in and no API key was configured during these checks, so
 its model probes remain pending; transport tests do not establish model behavior.
 
+The [focused S-15 regression](packages/evals/results/s15-2026-10-18-r5/report.json)
+passes all three predeclared valid Desktop attempts with guidance bundle 1.0.5.
+Each executes the real precursor check and separates temporal association,
+symptom distribution and unproven causal origin, including proposed next checks.
+The [initial round](packages/evals/results/s15-2026-10-18/report.json),
+[second round](packages/evals/results/s15-2026-10-18-r2/report.json),
+[third round](packages/evals/results/s15-2026-10-18-r3/report.json) and
+[invalid infrastructure attempt](packages/evals/results/s15-2026-10-18-r4/report.json)
+remain available with all answers, receipt excerpts and independent ratings. The
+initial overgenerous rating is preserved with its correction audit. Material
+broader answer defects remain documented: this focused result does not establish
+the full U16 threshold, whole-answer numerical correctness, a baseline comparison
+or a holdout result. The saved model runs pin contract 2.9.0; the report separately
+records checks of the combined 2.10.0 code after integrating current main. The
+playbooks and `get_log_context` source were unchanged by that integration.
+
 ## Tools
 
 Every tool runs through one registry (`packages/analytics`), writes a query

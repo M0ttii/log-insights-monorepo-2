@@ -1,0 +1,49 @@
+Scope
+• BGL only, window [2005-06-01T00:00:00Z [r_9f370eb4.f12], 2005-07-01T00:00:00Z [r_9f370eb4.f13]) UTC.
+• The data actually starts at 2005-06-03T22:42:50 [r_2e056b7a.f32], so the days before that have no data. That is not the same as zero events.
+• Filter: message terms “failed to read message prefix on control stream”.
+
+Answer
+Each I/O node logs only a handful of these failures, but nodes across every affected rack fail together, within about a second of each other. All 5,983 matching events [r_477e0959.f4] name the same peer, 172.16.96.116. That points to something they all depend on: the endpoint at that address, the network path to it, or the job’s control session. It does not look like one flaky node. Even so, a single failing component, such as the host at .116, could still be the cause.
+
+Evidence
+• 5,983 matching log events [r_9f370eb4.f11]. All are logged by APP at FATAL level, and the dataset labels them APPREAD.
+• The failures are spread across 512 nodes [r_4b8c4753.f12] in 32 racks [r_4b8c4753.f13].
+• The busiest node, R00-M0-N0-I:J18-U01, has only 15 events [r_7fb18605.f2], which is 0.25 % [r_7fb18605.f3] of the total. 502 other nodes are summed in “other”, so per-node counts below the top rows aren’t shown individually.
+• Rack R00 has 240 events [r_f0506932.f2] and R31 has 144 [r_f0506932.f34]. The two counts are different but both evenly spread, which fits differently sized partitions in different jobs.
+• Every one of the 5,983 events [r_477e0959.f4] also contains 172.16.96.116.
+
+Timeline
+• The pattern recurs: 7 episodes [r_4b8c4753.f8] over 5 active days [r_4b8c4753.f5].
+• First seen 2005-06-04T07:24:32 [r_4b8c4753.f10], last seen 2005-06-20T08:42:45 [r_4b8c4753.f11].
+Day (UTC) | Events
+2005-06-04 | 2,040 [r_2e056b7a.f3]
+2005-06-09 | 124 [r_2e056b7a.f8]
+2005-06-13 | 1,017 [r_2e056b7a.f12]
+2005-06-16 | 2,040 [r_2e056b7a.f15]
+2005-06-20 | 762 [r_2e056b7a.f19]
+• The first burst is tightly synchronized. Different racks (R23, R04, R35, R36 …) log the error between 07:24:32.398 [r_9f370eb4.f1] and 07:24:33.385 [r_9f370eb4.f10], each from a different source port to the same peer.
+• Precursor: across the 7 episode starts [r_05adea23.f1], 6 [r_05adea23.f6] were preceded within 10 minutes by ciod: LOGIN chdir(<PATH>) failed: No such file or directory. That message shows up in only 0.59 % [r_05adea23.f7] of 10-minute windows overall, so it appears before these bursts about 145.2× [r_05adea23.f9] more often than its base rate. This is a temporal association, not a proven cause.
+• Link-card bit sparing appears before only 1 [r_05adea23.f11] episode start, so it is weak and likely incidental.
+
+Hypotheses
+Hypothesis | Status | Check
+Symptoms confined to one bad compute/I/O node | contradicted. Its necessary assumption, that the errors come from a single node, fails because they come from 512 nodes [r_4b8c4753.f12]. | node/rack breadth
+Shared cause: the peer at 172.16.96.116 dropped or reset control connections, or the job’s control session ended abnormally | supported. Every event names the same peer [r_477e0959.f4], and failures across racks are synchronized. This shows association, not proven cause. | IP filter count, first-burst timestamps
+Job launch/setup failure (bad working directory) precedes the control-stream loss | supported as a precursor only, see the LOGIN chdir row above. Whether one causes the other is open. | aggregate precursor analysis
+A single faulty component (e.g. the .116 host, or one service/switch) is the origin | open. Breadth and synchrony can’t rule out one shared component. | —
+
+Next check
+• Find out what 172.16.96.116 was: most likely the service/front-end node running the job’s control or debugger process. Pull its own logs (MMCS/ciodb, the job scheduler, syslog) for the 07:24 window on 2005-06-04 and the other burst days. If it shows a job kill, crash or restart just before each burst, the shared-endpoint hypothesis gets stronger. If it is healthy and saw no disconnects, look instead at the network path to it.
+• Join each burst to the job/partition records, using the LOGIN chdir lines to identify the job. If each burst matches one job’s partition (the different per-rack counts hint at different partition sizes), the problem is job-wide. If bursts cross job boundaries, it is a system-wide control-plane issue.
+• Check whether the missing directory from the chdir lines is on a shared filesystem mount. That would separate a user/config error (wrong working directory) from a filesystem outage.
+• The application team (fictional owner of APP: Workload Runtime) and the control plane team (MMCS/ciodb) would own these checks.
+
+Unknown
+• The root cause, and whether jobs actually failed.
+• There are no job IDs, scheduler data or logs from the .116 host in this corpus.
+• The baseline before June isn’t available (it falls outside the data span), so “first ever” and escalation can’t be determined.
+• Search hits shown are examples only; the node list is truncated beyond the top 10.
+
+Verification
+27 claims checked · 0 mismatch · 0 unresolved [r_3fd3eee6.f1][r_3fd3eee6.f2][r_3fd3eee6.f3]. Only these numbers were checked, not the reasoning above.

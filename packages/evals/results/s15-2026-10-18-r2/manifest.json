@@ -1,0 +1,97 @@
+{
+  "run_id": "s15-2026-10-18-r2",
+  "frozen_at": "2026-10-18T10:21:34.373133+00:00",
+  "scope": "LOG-21 acceptance 3 / LOG-19; focused S-15 development evaluation only",
+  "split": "regression",
+  "question_id": "dev-eng-01",
+  "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+  "role": "engineer",
+  "variant": "production_playbook",
+  "client": "Claude Desktop",
+  "model_requested": "claude-opus-5-5",
+  "model_ui": "Opus 5.5 Mittel",
+  "served_model_id": null,
+  "served_model_note": "Desktop exposes a display label, not an API response model ID.",
+  "prompt_selection": false,
+  "trials": [
+    {
+      "id": "r2-01",
+      "fresh_chat": true,
+      "same_question": true,
+      "started_at": "2026-10-18T10:21:52.109723+00:00",
+      "chat_url": "https://claude.ai/chat/a41921df-6a7d-4df8-877d-d36296d96cc9",
+      "completed_at": "2026-10-18T10:26:55.304954+00:00",
+      "answer": "r2-01-answer.txt",
+      "capture": "Accessibility transcription; visible text preserved, layout normalized."
+    },
+    {
+      "id": "r2-02",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T10:27:13.524604+00:00",
+      "chat_url": "https://claude.ai/chat/142232bd-f631-4a6a-85fb-e5080b7bc0e9",
+      "completed_at": "2026-10-18T10:33:42.031036+00:00",
+      "answer": "r2-02-answer.txt",
+      "capture": "Accessibility transcription; visible text preserved, layout normalized."
+    },
+    {
+      "id": "r2-03",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T10:33:42.031125+00:00",
+      "chat_url": "https://claude.ai/chat/86547f90-251c-4fab-a226-47587b8821c5",
+      "completed_at": "2026-10-18T10:39:44.490531+00:00",
+      "answer": "r2-03-answer.txt",
+      "capture": "Accessibility transcription; visible text preserved, layout normalized."
+    }
+  ],
+  "retry_policy": "No corrective follow-ups, replacements, or retries; retain every planned attempt, including failures.",
+  "execution_limits": {
+    "client_default": true,
+    "steps": null,
+    "context_tokens": null,
+    "output_tokens": null,
+    "note": "Desktop owns provider limits and retries; unavailable fields remain null."
+  },
+  "acceptance": [
+    "A real get_log_context aggregate check executes before recommendation.",
+    "The answer names the discriminating check and grounds its hypothesis status in its fact IDs.",
+    "Temporal precursors are explicitly separated from proven causes."
+  ],
+  "review": "Independent reviewer did not author the production playbooks. All attempts are rated.",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "Causal effect of guidance changes in a controlled comparison"
+  ],
+  "telemetry": {
+    "tokens": null,
+    "estimated_api_cost": null,
+    "pricing_provenance": null,
+    "reason": "Not exposed by the subscription Desktop UI; no fabricated API estimate."
+  },
+  "baseline_code_commit": "c58285bce791e3d50f68593e9eb75c3963df86bc",
+  "source_sha256": {
+    "packages/agent/src/playbooks/common.md": "fd480a3b1c897a93859b547ec34e9cf03f4f0b9698a8280ca71a4378e2754962",
+    "packages/agent/src/playbooks/engineer.md": "06b4a62eca2ffa00e9c390bb83341770bd931ac2b724e3361181c56ab7b7c02f",
+    "packages/agent/src/playbooks/manager.md": "524f8d2ef9c3423eb5a6c3ba8d60e8f77028cd9afd653e557f50b6cb27f207b2",
+    "packages/agent/src/playbooks/team-lead.md": "d2ad074bfe64a9da1c7fb6ecd611cef93b4736dfaa5ddc78261e1fff5ca20ea1",
+    "packages/agent/src/playbooks.test.ts": "54b2d20d9c7a77da35b6e6454b49001c4159564402d2be108abec942617e6d00",
+    "packages/agent/src/playbooks.ts": "89c9bd9a0182888dd6307bfcdb4e4e6eb3d88a2eec76ca528464c02bfa3340fe"
+  },
+  "execution_status": "all_planned_trials_completed",
+  "approval_gate": {
+    "result": "Explicit user approval for up to six additional Desktop trials; this round plans three.",
+    "new_model_attempts_started": 3
+  },
+  "time_measurement_note": "UI observation timestamps bound capture, not exact provider latency. Tool durations are taken from receipts; Desktop end-to-end generation time/tokens are not instrumented.",
+  "prior_round": "../s15-2026-10-18",
+  "guidance_diff_sha256": "c568ba9f5049106ad9bfbeaab9b9189c7415aeb6995548ce7021cf288e1b1d1d",
+  "guidance_version_requested": "1.0.3",
+  "runtime_source_note": "Desktop is restarted after the guidance change; each corpus receipt will attest runtime contract/guidance versions. No prompt tuning within this round.",
+  "runtime_contract_version_observed": "2.9.0",
+  "guidance_commit": "d0d55c6"
+}

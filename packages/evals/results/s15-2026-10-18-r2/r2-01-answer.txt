@@ -1,0 +1,59 @@
+I’ll check your local BGL logs to see how these ciod failures are spread across nodes and jobs.
+
+Scope: BGL dataset, [2005-06-01 [r_d863eec7.f46], 2005-07-01 [r_d863eec7.f47]) UTC. The filter is the message text “ciod failed to read message prefix on control stream”. BGL data only starts partway into that window.
+
+Answer
+This is not one bad node. The failures are broad and happen in synchronized bursts, which fits a shared or job-level trigger. Each burst hits I/O nodes across the machine within seconds, and every line names the same control-stream peer. In most bursts, an earlier ciod LOGIN chdir failure shows up shortly before. My leading hypothesis is a job-launch problem: the job’s working directory is missing. That is not proven, and a single shared failing component (the peer host) is still possible.
+
+Evidence
+Observation | Value
+Matching log events, all logged as FATAL | 5,983 [r_d863eec7.f45] / 5,983 FATAL [r_26a885b3.f2]
+Distinct nodes affected | 512 [r_1684fa49.f12]
+Distinct racks affected | 32 [r_1684fa49.f13]
+Highest single node (R00-M0-N0-I:J18-U01, tied with others) | 15 events [r_fd448e96.f2]
+Example rack R00 | 240 events [r_d863eec7.f2]
+Events naming peer 172.16.96.116 | 5,983 [r_26a885b3.f4], the same total as all matches
+
+Timeline
+- First seen 2005-06-04T07:24:32Z [r_1684fa49.f10], last seen 2005-06-20T08:42:45Z [r_1684fa49.f11].
+- 7 episodes [r_1684fa49.f8] over 5 active days [r_1684fa49.f5]. So it recurred; it was not a one-off.
+- Events per day:
+  - 06-04: 2,040 [r_8ba82cf5.f3]
+  - 06-09: 124 [r_8ba82cf5.f8]
+  - 06-13: 1,017 [r_8ba82cf5.f12]
+  - 06-16: 2,040 [r_8ba82cf5.f15]
+  - 06-20: 762 [r_8ba82cf5.f19]
+- The sample lines show many different I/O nodes failing within about one second of each other.
+
+Narrowing
+- The highest-count node is no higher than many others. No single node or rack stands out.
+- The pattern belongs to component APP, owned by Workload Runtime in the tool’s made-up ownership table.
+
+Hypotheses
+- A single bad node is the cause. Contradicted. The failures cover 512 nodes [r_1684fa49.f12] and 32 racks [r_1684fa49.f13], and the top node is no outlier [r_fd448e96.f2].
+- A job-launch failure on the compute side (bad working directory) brings down the whole partition’s control streams. Supported, not proven.
+  - Check run: what appears in the 10 minutes before each episode starts.
+  - “ciod: LOGIN chdir(<PATH>) failed: No such file or directory” came before 6 of the 7 burst starts [r_b62bf789.f6, r_b62bf789.f1].
+  - That is about 145.2× its normal rate [r_b62bf789.f9].
+  - This only shows timing, not cause.
+- The shared peer 172.16.96.116 (front-end or service node) is failing. Open. Every line names that peer [r_26a885b3.f4], but the same would happen if the job died first. The logs can’t tell these apart.
+- Hardware. Open, weak. A LINKCARD bit-sparing message came before only 1 burst start [r_b62bf789.f11].
+
+Next check
+- First: open the chdir failure just before the first burst (it starts at event 14736). Find the path it tried and which job or user submitted it.
+  - If each burst matches a launch that used a bad or unmounted directory, the job-level hypothesis gets stronger.
+- Then: check the scheduler and job accounting records for the burst times, plus the file system mount status on the I/O nodes.
+  - A job or mount problem matching each burst points at the job.
+  - Healthy launches that still fail would point back at the peer host.
+- On the peer: look at the service and front-end logs for 172.16.96.116 at those times, which aren’t in this corpus.
+  - A crash or restart there before the bursts would point at the peer instead.
+
+Unknown
+- The root cause is not established. The precursor link is timing only.
+- Job IDs, scheduler data and peer-host logs aren’t in the corpus.
+- There is no BGL data before the start of the data span, so the earlier comparison period couldn’t be checked.
+- One of the 7 bursts had no chdir failure before it, and its trigger is unexplained.
+- Business impact is unknown.
+
+Verification
+22 claims checked [r_f993e2b8.f1] · 0 mismatch [r_f993e2b8.f2] · 0 unresolved [r_f993e2b8.f3]. This covers the numbers and times only, not the explanations.

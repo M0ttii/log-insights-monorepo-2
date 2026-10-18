@@ -1,0 +1,51 @@
+It’s machine-wide, not one bad node. Every I/O node in the partition reports the same error at the same moment, and they all name the same remote peer. The I/O nodes are the ones complaining; the thing they share is the other end of the control connection, or the job being launched.
+
+Scope: BGL, [2005-06-01 [r_76b8079e.f15], 2005-07-01 [r_76b8079e.f16]) UTC. The data only begins at 2005-06-03T22:42:50Z [r_dc400c09.f30]. The filter was the message text “ciod failed to read message prefix on control stream”.
+
+Evidence
+What | Value
+Matching log events | 5,983 [r_7993be96.f11]
+Of those naming peer 172.16.96.116 | 5,983 [r_16db950e.f4]
+Distinct nodes | 512 [r_76b8079e.f12] (all I:J18 I/O nodes in the sample lines)
+Distinct racks | 32 [r_76b8079e.f13]
+Largest per-node count | 15 [r_4df71dc2.f2] (R00-M0-N0-I:J18-U01); the other 507 [r_4df71dc2.f13] node groups are not listed individually
+Example rack R00 | 240 [r_07fe9d25.f2]
+Episodes (30-min gap) / active days | 7 [r_76b8079e.f8] / 5 [r_76b8079e.f5]
+
+Timeline
+• The first event is at 2005-06-04T07:24:32Z [r_76b8079e.f10] and the last at 2005-06-20T08:42:45Z [r_76b8079e.f11].
+• Daily counts:
+  ◦ Jun 4: 2,040 [r_dc400c09.f3]
+  ◦ Jun 9: 124 [r_dc400c09.f8]
+  ◦ Jun 13: 1,017 [r_dc400c09.f12]
+  ◦ Jun 16: 2,040 [r_dc400c09.f15]
+  ◦ Jun 20: 762 [r_dc400c09.f19]
+  ◦ Every other day: 0.
+• Each burst hits many racks within milliseconds. That looks like whole-partition teardowns, not a node degrading over time.
+
+Narrowing
+Before the bursts: in the 10 minutes before each episode start, “ciod: LOGIN chdir(<PATH>) failed: No such file or directory” appeared before 6 [r_9c5fa74a.f6] of 7 [r_9c5fa74a.f1] episodes. That is about 145.2× its normal rate [r_9c5fa74a.f9]. A LINKCARD bit-sparing message preceded only 1 [r_9c5fa74a.f11]. Both of these are timing observations, not proof of a cause.
+
+Hypotheses
+• Symptoms confined to one bad node: contradicted. This would require the errors to come from one node, but they come from 512 nodes [r_76b8079e.f12]. A single shared component could still be the cause; that stays open.
+• The peer at 172.16.96.116 drops or closes the control streams: supported. Every matching line names that peer.
+  ◦ Background: this is probably the service or front-end node running the job-control side of ciod.
+  ◦ Whether it failed, or closed the streams deliberately because a job aborted, is not established.
+• Job launch fails because a working directory is missing, and ciod streams are then torn down: supported, as an association only. It rests on the precursor seen before 6 of 7 episodes.
+  ◦ Background: the LOGIN chdir error usually means the job’s working directory doesn’t exist on the I/O nodes’ filesystem. That could be a bad user path or a missing NFS/GPFS mount.
+
+Next check
+• Check what the LOGIN chdir errors share. Search LOGIN chdir around each episode start and compare the <PATH> values and nodes.
+  ◦ Same path every time: points to one user or job config. That supports the job-side explanation over a peer fault.
+  ◦ Different paths, or all I/O nodes failing together: points to a filesystem mount problem on the I/O nodes.
+  ◦ Either way, the logs can’t rule out the peer host as the root cause.
+• Look at the one episode without the chdir precursor. Open its start with get_log_context at dataset scope and look for MMCS or job-kill events. Seeing a different precursor there doesn’t prove a different cause.
+• Get records from outside these logs. Scheduler and job records for those timestamps, and syslog from 172.16.96.116, are what would actually tell you whether a job aborted or the peer failed.
+
+Unknown
+• There is no data before Jun 3, so I can’t tell whether this happened before the logs start.
+• The job IDs and users involved aren’t in these logs.
+• Neither the cause nor the impact is established.
+• Team ownership in this tool is fictional.
+
+Verification: 23 claims checked · 0 mismatch · 0 unresolved [r_2914bf1e.f1, r_2914bf1e.f2, r_2914bf1e.f3]. This checks the numbers only, not the reasoning.

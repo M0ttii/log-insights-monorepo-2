@@ -1,0 +1,5 @@
+I’ve stopped: you declined the log search, so I’ve only read the corpus overview and haven’t looked at any of the ciod control-stream errors yet. That means I can’t tell you yet whether this is one bad node or something job-wide. So far, the BGL logs cover 2005-06-03 to 2006-01-04. ciod messages are usually logged under the APP component, which has 228,536 log events in that period. Here’s what I’d run next, if you want me to go ahead:
+• Find the matching lines: search for “failed to read message prefix on control stream” in June 2005 to get the exact number of matches and some example lines.
+• Count by node: count those events per node and per rack. If they all come from one node, that points to a bad node. If many nodes report them at the same time, it’s a job-wide pattern. Even then, one failed node or shared service could still be the cause.
+• Check what came just before: look at the log lines leading up to a few of these errors to see what happens right before.
+Should I go ahead with these checks, or would you rather I narrow the scope (a specific day, node or rack) or use a different source?

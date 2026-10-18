@@ -1,0 +1,100 @@
+{
+  "run_id": "s15-2026-10-18-r3",
+  "frozen_at": "2026-10-18T10:43:53.078366+00:00",
+  "scope": "LOG-21 acceptance 3 / LOG-19; focused S-15 development evaluation only",
+  "split": "regression",
+  "question_id": "dev-eng-01",
+  "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+  "role": "engineer",
+  "variant": "production_playbook",
+  "client": "Claude Desktop",
+  "model_requested": "claude-opus-5-5",
+  "model_ui": "Opus 5.5 Mittel",
+  "served_model_id": null,
+  "served_model_note": "Desktop exposes a display label, not an API response model ID.",
+  "prompt_selection": false,
+  "retry_policy": "No corrective follow-ups, replacements, or retries; retain every planned attempt, including failures.",
+  "execution_limits": {
+    "client_default": true,
+    "steps": null,
+    "context_tokens": null,
+    "output_tokens": null,
+    "note": "Desktop owns provider limits and retries; unavailable fields remain null."
+  },
+  "acceptance": [
+    "A real get_log_context aggregate check executes before recommendation.",
+    "The answer names the discriminating check and grounds its hypothesis status in its fact IDs.",
+    "Temporal precursors are explicitly separated from proven causes."
+  ],
+  "review": "Independent reviewer did not author the production playbooks. All attempts are rated.",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "Causal effect of guidance changes in a controlled comparison"
+  ],
+  "telemetry": {
+    "tokens": null,
+    "estimated_api_cost": null,
+    "pricing_provenance": null,
+    "reason": "Not exposed by the subscription Desktop UI; no fabricated API estimate."
+  },
+  "baseline_code_commit": "c58285bce791e3d50f68593e9eb75c3963df86bc",
+  "source_sha256": {
+    "packages/agent/src/playbooks/common.md": "5aa93a0988afe0f8870b4da73290376cd73c1f2dbd32deea449eaae091bcea44",
+    "packages/agent/src/playbooks/engineer.md": "6be8f84da38ea216b7450733fcde21113d8eff441f1a39ddbad4c4e390a353a7",
+    "packages/agent/src/playbooks/manager.md": "524f8d2ef9c3423eb5a6c3ba8d60e8f77028cd9afd653e557f50b6cb27f207b2",
+    "packages/agent/src/playbooks/team-lead.md": "d2ad074bfe64a9da1c7fb6ecd611cef93b4736dfaa5ddc78261e1fff5ca20ea1",
+    "packages/agent/src/playbooks.test.ts": "54b2d20d9c7a77da35b6e6454b49001c4159564402d2be108abec942617e6d00",
+    "packages/agent/src/playbooks.ts": "89c9bd9a0182888dd6307bfcdb4e4e6eb3d88a2eec76ca528464c02bfa3340fe"
+  },
+  "execution_status": "all_planned_trials_completed",
+  "approval_gate": {
+    "result": "User explicitly approved up to six additional Desktop trials; round2 consumed three; this final round plans the remaining three.",
+    "new_model_attempts_started": 3
+  },
+  "time_measurement_note": "UI observation timestamps bound capture, not exact provider latency. Tool durations are taken from receipts; Desktop end-to-end generation time/tokens are not instrumented.",
+  "prior_round": "../s15-2026-10-18-r2",
+  "guidance_diff_sha256": "2eaff5258d6b2342965f49e29e18ec0d423ffcced5d07d860cd46aeaaabb5b51",
+  "guidance_version_requested": "1.0.4",
+  "runtime_source_note": "Desktop is restarted after the guidance change; each corpus receipt will attest runtime contract/guidance versions. No prompt tuning within this round.",
+  "trials": [
+    {
+      "id": "r3-01",
+      "fresh_chat": true,
+      "same_question": true,
+      "started_at": "2026-10-18T10:44:06.737736+00:00",
+      "chat_url": "https://claude.ai/chat/3d55bb08-e8ee-4b6c-94cf-46104beb418e",
+      "completed_at": "2026-10-18T10:46:31.540074+00:00",
+      "answer": "r3-01-answer.txt",
+      "capture": "Accessibility transcription; visible final text preserved, layout normalized."
+    },
+    {
+      "id": "r3-02",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T10:46:31.540153+00:00",
+      "chat_url": "https://claude.ai/chat/28faaa9b-4134-4d4d-8255-8e13ffc458ce",
+      "completed_at": "2026-10-18T10:49:14.159656+00:00",
+      "answer": "r3-02-answer.txt",
+      "capture": "Accessibility transcription; visible final text preserved, layout normalized."
+    },
+    {
+      "id": "r3-03",
+      "fresh_chat": true,
+      "same_question": true,
+      "submission_window_start": "2026-10-18T10:49:14.159740+00:00",
+      "chat_url": "https://claude.ai/chat/775866af-8ff1-4f83-b099-38d2e1687219",
+      "completed_at": "2026-10-18T10:51:52.528678+00:00",
+      "answer": "r3-03-answer.txt",
+      "capture": "Accessibility transcription; visible final text preserved, layout normalized."
+    }
+  ],
+  "guidance_base_commit": "d0d55c6c9f6167196a5562cc948a5f05dec37321",
+  "runtime_contract_version_observed": "2.9.0",
+  "runtime_guidance_version_observed": "1.0.4",
+  "guidance_diff_file": "guidance.patch",
+  "guidance_replay_note": "Historical evaluation artifact only: apply this pinned patch to baseline_code_commit in a separate checkout to reconstruct the exact bundle1.0.4 used during all three trials. Production still loads packages/agent/src/playbooks only."
+}

@@ -1,0 +1,929 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "s15-2026-10-18-r5",
+  "assessed_at": "2026-10-18T11:22:37.014467+00:00",
+  "split": "regression",
+  "scope": "Independent focused LOG-21/LOG-19 S-15 known-regression evaluation of dev-eng-01, separately frozen valid candidate1.0.5 round. No full U16, whole-answer or causal-guidance-effect acceptance.",
+  "reviewer": {
+    "agent": "/root/rate_s15",
+    "did_not_author_production_playbooks": true,
+    "production_playbook_source_inspected": false,
+    "production_playbook_design_rationale_inspected": false,
+    "limitations": [
+      "Variant/client identity was visible; this is not a blinded variant comparison.",
+      "No human rating sample was performed in this focused review.",
+      "Only the final answer and receipt order were independently reviewed; the UI capture does not provide a full timestamped interim prose transcript."
+    ]
+  },
+  "method": {
+    "all_predeclared_attempts_included": true,
+    "planned_attempts": 3,
+    "rated_attempts": 3,
+    "retry_or_replacement_used_within_valid_round": false,
+    "scoring_scale": {
+      "0": "Absent or materially wrong on this dimension.",
+      "1": "Partially meets the dimension, with material omissions or overclaims.",
+      "2": "Meets the dimension with specific relevant support."
+    },
+    "scoring_scale_note": "Operational anchors used by this reviewer; the repository specifies 0–2 dimensions and reasons but not finer canonical anchor descriptions.",
+    "criterion_audit_repo_root_path": "packages/evals/results/s15-2026-10-18/criterion-audit.json",
+    "fact_grounding_policy": "Apply original S-15/A-17/R-07 to each relevant hypothesis status used to answer the local-vs-systemic question. Existing fact IDs beside a status are insufficient when their observations do not logically justify that status. A correctly supported precursor hypothesis cannot waive an unsupported contradicted status on the competing causal explanation.",
+    "necessary_assumption_test": "A single initiating faulty node or rack does not necessarily produce symptoms confined to that node or rack. A shared front-end/service node can produce errors on many I/O nodes. Therefore 512 emitting nodes across 32 racks contradict a one-node symptom distribution, but do not by themselves contradict a single-node initiating cause.",
+    "causality_policy": "Read the full answer, including proposed next-check confirmation rules. A temporal-only caveat does not permit another passage to promote the same precursor to a confirmed cause.",
+    "check_claims_is_not_s15_proxy": true,
+    "no_new_requirement_or_rubric": "No extra tool, minimum count, explicit repeat-citation format, new score dimension, or new threshold is introduced. The correction applies the original meaning of justified status and R-07 contradicted to the existing words and facts.",
+    "contextual_citation_policy": "As in the first review, a status can explicitly reuse a named adjacent precursor evidence row with its real facts; the ID need not be duplicated in the same status sentence. Logical support and actual check scope are still required.",
+    "full_answer_reading": "All text, including pre-Scope opening, background, statuses and proposed next-check interpretations, was assessed. Unsupported symptom scope and ancillary temporal mappings are not erased. A causal status must logically follow from real check facts; temporal neighbours must never be promoted to proven causes.",
+    "scope_boundary": "The unsupported machine-wide/synchrony and unmatched-anchor mappings fail broader evidence fidelity or numerical/scope quality. In these answers, the relevant supported status is still justified by the actual6/7 temporal association, and no false mapping is used to mark a causal alternative contradicted or proven. This differs from earlier rounds, where the stated causal status itself was unjustified or a different precursor was declared another trigger.",
+    "r5_02_preamble_boundary": "The categorical job-launched statement overinterprets the chdir message and reduces causal-separation quality. The downstream control-loss mechanism is explicitly labelled background/not log-proven, and the formal status plus next checks do not claim that temporal precedence proved it caused the control-stream failures.",
+    "parameter_variation": "Trial2 uses a valid five-minute precursor window; trials1/3 use ten minutes. Ratios are judged against each exact receipt, not forced to match across different normalized inputs.",
+    "receipt_and_answer_hash_validation": "Every answer SHA-256 and original receipt-file SHA-256 in all three evidence exports matched; all answer-cited fact IDs resolve in the same trial receipts."
+  },
+  "criteria": [
+    {
+      "file": "docs/concept.md",
+      "line": 578,
+      "criterion": "S-15: execute a discriminating local-vs-systemic check, justify hypothesis status with its fact IDs, never call a precursor a cause."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 387,
+      "criterion": "A-17(3): execute the check before assigning hypothesis status."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 552,
+      "criterion": "R-07: supported requires linked relevant observations; missing or mixed evidence leaves open; precursor may support but cannot prove causality."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 556,
+      "criterion": "R-11: episode-start anchors, bounded before/after windows and baseline comparison are temporal observations, not causes."
+    },
+    {
+      "file": "docs/technical.md",
+      "line": 641,
+      "criterion": "Five independent 0–2 rubric dimensions with reasons."
+    },
+    {
+      "file": "docs/technical.md",
+      "line": 639,
+      "criterion": "Whole-answer numerical/product checks include uncited or unsubmitted numbers and claim scope, beyond green check_claims."
+    },
+    {
+      "file": "docs/technical.md",
+      "line": 643,
+      "criterion": "Full U16 threshold includes all answers, required evidence/sections/checks, numerical correctness, role mean and S-13; this focused run cannot establish it."
+    },
+    {
+      "source": "Parent task and manifest acceptance",
+      "criterion": "LOG-21 additionally requires get_log_context mode=aggregate itself to serve as the real check before recommendation."
+    }
+  ],
+  "runtime_observed": {
+    "guidance_version": "1.0.5",
+    "contract_version": "2.9.0",
+    "data_version": "dv_7ea6fcb2c9eb6882",
+    "guidance_commit_reported_in_manifest": "4e5c863943cbee717a2cd48d75077dc66d25750e",
+    "source": "Each trial describe_corpus receipt; reviewer inspected only version fields, not role texts."
+  },
+  "prior_artifact_pins": [
+    {
+      "repo_root_path": ".data/evals/s15-2026-10-18/assessment.json",
+      "artifact_kind": "local_original_or_audit",
+      "sha256": "582b9c234cbcafd123798ccd43241634b2db67ec7934be7d2386a3e8ba3de13e"
+    },
+    {
+      "repo_root_path": ".data/evals/s15-2026-10-18/criterion-audit.json",
+      "artifact_kind": "local_original_or_audit",
+      "sha256": "a234255e02c90565083ad7b58d203380c1fbdadd56464fbd261ab9ff47b8f92c"
+    },
+    {
+      "repo_root_path": ".data/evals/s15-2026-10-18-r2/assessment.json",
+      "artifact_kind": "local_original_or_audit",
+      "sha256": "f96f4938a5d584f420298498223238c1439d56a978696f828bd3f8e0911dffdf"
+    },
+    {
+      "repo_root_path": ".data/evals/s15-2026-10-18-r3/assessment.json",
+      "artifact_kind": "local_original_or_audit",
+      "sha256": "f43f96d0449cb195648bc514fd496e22611f61d19ff08bfeefbcfbe24863ed4d"
+    },
+    {
+      "repo_root_path": ".data/evals/s15-2026-10-18-r4/assessment.json",
+      "artifact_kind": "local_original_or_audit",
+      "sha256": "dd714eac2bedbd29aaddcb75aee126b357d496143bcedad3c6d45ba3661f8753"
+    },
+    {
+      "repo_root_path": "packages/evals/results/s15-2026-10-18/assessment.json",
+      "artifact_kind": "versioned_formatted_copy",
+      "sha256": "83d126e0c6cec2fcc5d282bf80b766bd811624878506d110010930c26c87aa10"
+    },
+    {
+      "repo_root_path": "packages/evals/results/s15-2026-10-18/criterion-audit.json",
+      "artifact_kind": "versioned_formatted_copy",
+      "sha256": "94c10cfb03499e8125007e022fd0a5e21f0bec19b997ce64ea45cf241c33cd53"
+    },
+    {
+      "repo_root_path": "packages/evals/results/s15-2026-10-18-r2/assessment.json",
+      "artifact_kind": "versioned_formatted_copy",
+      "sha256": "df3667ad409217419858e7dbb2d87e8f74137bc50ec6d5532afa3ee0035c0b05"
+    },
+    {
+      "repo_root_path": "packages/evals/results/s15-2026-10-18-r3/assessment.json",
+      "artifact_kind": "versioned_formatted_copy",
+      "sha256": "bf4892f31b4fea6441b0cf4bb7e66624f1d700f5cb594fc2a6d7a0a62a6992e0"
+    }
+  ],
+  "pin_context_note": "Every path above is explicitly relative to repository root. .data originals and packages/evals/results formatted copies have separate byte hashes. The reviewer did not modify any prior artifact during this round.",
+  "prior_round_results": [
+    {
+      "run_id": "s15-2026-10-18",
+      "original_binary_result": "2/3 pass, superseded by criterion audit",
+      "effective_corrected_binary_result": "0/3 pass"
+    },
+    {
+      "run_id": "s15-2026-10-18-r2",
+      "effective_binary_result": "0/3 pass"
+    },
+    {
+      "run_id": "s15-2026-10-18-r3",
+      "effective_binary_result": "2/3 pass; planned round not fully passed"
+    },
+    {
+      "run_id": "s15-2026-10-18-r4",
+      "effective_result": "1 invalid infrastructure attempt,2 unstarted; no candidate1.0.5 S-15 rating",
+      "assessment_repo_root_path": ".data/evals/s15-2026-10-18-r4/assessment.json",
+      "reason": "Observed1.0.4 instead of frozen1.0.5, duplicated submitted input and operator stop before target diagnostics. Retained, not hidden."
+    }
+  ],
+  "replacement_authorization_note": "Parent reports explicit user approval for one replacement of retained invalid R4 attempt, combined with two unstarted authorized slots. R5’s three valid trials were frozen before any valid1.0.5 answer.",
+  "trials": [
+    {
+      "id": "r5-01",
+      "answer_file": "r5-01-answer.txt",
+      "evidence_file": "r5-01-evidence.json",
+      "answer_sha256": "35e392c92ae9394a4af9660edea6f5ce112cdcc03f482e288e030ca3aae942a6",
+      "chat_url": "https://claude.ai/chat/f7e29b25-a106-4cd2-88c4-b595e313d96d",
+      "s15_status": "pass",
+      "s15_reason": "The real June aggregate check and its actual f1/f6/f9 facts ground temporal support for a job-launch hypothesis. The answer refutes only one-node symptom confinement and leaves a single shared initiating component open. The full next-check section explicitly says a different precursor does not prove another cause. Broad symptom-scope and next-check inference defects remain, but they do not turn the relevant causal origin into a falsely contradicted or proven status.",
+      "s15_criteria": {
+        "executed_discriminating_aggregate_before_final_recommendation": "pass",
+        "aggregate_input_scope_matches_answer": "pass",
+        "relevant_hypothesis_statuses_logically_grounded_in_check_facts": "pass",
+        "full_answer_no_precursor_promoted_to_proven_cause": "pass"
+      },
+      "runtime": {
+        "versions": {
+          "data_version": "dv_7ea6fcb2c9eb6882",
+          "source": "corpus",
+          "loader_version": "1.0.0",
+          "parser_version": "1.0.0",
+          "pattern_rules_version": "1.0.0",
+          "ownership_version": "1.0.0",
+          "rules_version": "concept-3.5",
+          "contract_version": "2.9.0"
+        },
+        "guidance_version": "1.0.5"
+      },
+      "tool_call_count": 9,
+      "tool_duration_ms_total": 548.42,
+      "call_order": [
+        {
+          "receipt_id": "r_8e49fe46",
+          "tool": "describe_corpus",
+          "mode": null,
+          "created_at": "2026-10-18T11:06:40.683Z"
+        },
+        {
+          "receipt_id": "r_7993be96",
+          "tool": "search_logs",
+          "mode": null,
+          "created_at": "2026-10-18T11:06:57.613Z"
+        },
+        {
+          "receipt_id": "r_07fe9d25",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:07:37.867Z"
+        },
+        {
+          "receipt_id": "r_4df71dc2",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:07:39.468Z"
+        },
+        {
+          "receipt_id": "r_76b8079e",
+          "tool": "recurring_patterns",
+          "mode": null,
+          "created_at": "2026-10-18T11:07:41.076Z"
+        },
+        {
+          "receipt_id": "r_dc400c09",
+          "tool": "event_trend",
+          "mode": null,
+          "created_at": "2026-10-18T11:07:42.698Z"
+        },
+        {
+          "receipt_id": "r_9c5fa74a",
+          "tool": "get_log_context",
+          "mode": "aggregate",
+          "created_at": "2026-10-18T11:08:01.525Z"
+        },
+        {
+          "receipt_id": "r_16db950e",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:08:37.989Z"
+        },
+        {
+          "receipt_id": "r_2914bf1e",
+          "tool": "check_claims",
+          "mode": null,
+          "created_at": "2026-10-18T11:08:54.042Z"
+        }
+      ],
+      "aggregate_check": {
+        "receipt_id": "r_9c5fa74a",
+        "input": {
+          "mode": "aggregate",
+          "window_minutes": 10,
+          "pattern_id": "287312f13c189c4d",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z",
+          "direction": "before",
+          "top_n": 5
+        },
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-01T00:00:00Z",
+              "to": "2005-07-01T00:00:00Z"
+            }
+          ],
+          "filters": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "matched_events": 5983,
+        "anchors": 7,
+        "chdir_before_anchors": 6,
+        "chdir_before_ratio": 145.1925465838509,
+        "baseline_grid": {
+          "from": "2005-06-03T22:42:50.363779Z",
+          "to": "2005-07-01T00:00:00Z",
+          "window_minutes": 10,
+          "windows": 3896
+        },
+        "fact_ids": ["r_9c5fa74a.f1", "r_9c5fa74a.f6", "r_9c5fa74a.f9"],
+        "executed_before_final_answer_and_recommendation": true,
+        "order_evidence": "Receipt precedes check_claims and completed final answer capture; a full timestamped interim prose transcript was not reviewed.",
+        "correct_scope": true,
+        "scope_reason": "Explicit target pattern and June [2005-06-01,2005-07-01), baseline clipped to actual corpus availability; window parameter retained exactly for each trial."
+      },
+      "hypothesis_status_audit": [
+        {
+          "hypothesis": "Symptoms confined to one bad node",
+          "status": "contradicted",
+          "judgment": "pass",
+          "reason": "The stated necessary single-emitter assumption is refuted by512 distinct emitting nodes. A single initiating component is explicitly left open.",
+          "fact_ids": ["r_76b8079e.f12"]
+        },
+        {
+          "hypothesis": "Peer drops/closes streams",
+          "status": "supported event interpretation; initiating failure open",
+          "judgment": "pass",
+          "reason": "A full target-plus-peer count supports the common endpoint association. The answer explicitly does not establish whether the peer failed or closed streams after a job abort.",
+          "fact_ids": ["r_16db950e.f4"]
+        },
+        {
+          "hypothesis": "Missing-directory/job-launch failure followed by stream teardown",
+          "status": "supported as association only",
+          "judgment": "pass",
+          "reason": "The explicitly named preceding aggregate check gives six of seven anchors and the baseline ratio; the causal mechanism is not declared proven.",
+          "fact_ids": ["r_9c5fa74a.f6", "r_9c5fa74a.f1", "r_9c5fa74a.f9"]
+        }
+      ],
+      "full_answer_causal_boundary_evidence": [
+        {
+          "answer_file": "r5-01-answer.txt",
+          "line": 30,
+          "excerpt": "A single shared component could still be the cause; that stays open."
+        },
+        {
+          "answer_file": "r5-01-answer.txt",
+          "line": 34,
+          "excerpt": "supported, as an association only."
+        },
+        {
+          "answer_file": "r5-01-answer.txt",
+          "line": 42,
+          "excerpt": "Seeing a different precursor there doesn’t prove a different cause."
+        }
+      ],
+      "rubric": {
+        "correct_question_and_scope": {
+          "score": 1,
+          "reason": "Correct BGL June target and explicit partial coverage. The opening machine-wide/every-node-in-partition/same-moment assertions have no machine denominator, job identity or full within-burst breadth check."
+        },
+        "relevant_evidence": {
+          "score": 1,
+          "reason": "Uses genuine counts, episodes, daily trend, peer intersection and aggregate precursors. Generalizing all bursts to milliseconds/whole-partition teardowns and unqualified zero-day claims exceeds the receipts."
+        },
+        "specific_next_action_with_team_or_object": {
+          "score": 2,
+          "reason": "Names chdir paths/nodes at episode starts, the unexplained episode context, I/O mounts, scheduler/job records and the named peer syslog as concrete objects."
+        },
+        "discriminating_result_or_missing_information": {
+          "score": 1,
+          "reason": "Independent job/peer records are useful and missing information is explicit. Same paths versus different paths or synchronized nodes do not uniquely distinguish user/job configuration from mount failure or peer fault; proposed next-check inference is too strong."
+        },
+        "observation_hypothesis_cause_separation": {
+          "score": 2,
+          "reason": "Formal statuses distinguish symptom confinement from open initiating source. Precursors are association-only and another precursor is explicitly not proof of another cause; the broad opening is a symptom-scope overclaim, not a proven causal status."
+        }
+      },
+      "material_broader_defects": [
+        {
+          "kind": "unsupported_machine_partition_and_timing_scope",
+          "answer_file": "r5-01-answer.txt",
+          "line": 1,
+          "excerpt": "It’s machine-wide, not one bad node.",
+          "reason": "The full answer keeps single initiating cause open, so the opening is read as symptom scope. Nevertheless512 nodes/32 racks over a month do not establish entire-machine or every-partition-node involvement at one moment.",
+          "receipt_ids": ["r_76b8079e", "r_7993be96"]
+        },
+        {
+          "kind": "all_bursts_timing_overgeneralized",
+          "answer_file": "r5-01-answer.txt",
+          "line": 24,
+          "excerpt": "Each burst hits many racks within milliseconds.",
+          "reason": "The search returns ten initial examples; no complete per-episode within-millisecond rack breadth is returned. Month totals cannot supply that temporal distribution.",
+          "receipt_ids": ["r_7993be96", "r_76b8079e"]
+        },
+        {
+          "kind": "unqualified_zero_days_outside_coverage",
+          "answer_file": "r5-01-answer.txt",
+          "line": 23,
+          "excerpt": "Every other day: 0.",
+          "reason": "This blanket statement is not limited to covered days, despite a declared June1–July1 window whose early days are unobserved. The initial data-start caveat does not establish zero events outside coverage.",
+          "receipt_ids": ["r_dc400c09"]
+        },
+        {
+          "kind": "path_pattern_not_sufficient_discriminator",
+          "answer_file": "r5-01-answer.txt",
+          "line": 40,
+          "excerpt": "Different paths, or all I/O nodes failing together: points to a filesystem mount problem",
+          "reason": "Different paths and synchrony can also arise from multiple bad job configurations or another shared component. Same path can reflect either configuration or a common mount failure. These are leads requiring independent path/mount/job evidence, not reliable distinguishing results by themselves.",
+          "receipt_ids": ["r_9c5fa74a"]
+        },
+        {
+          "kind": "truncation_and_verification_incomplete",
+          "answer_file": "r5-01-answer.txt",
+          "line": 51,
+          "excerpt": "This checks the numbers only, not the reasoning.",
+          "reason": "All23 non-verification cited fact IDs were submitted. Rack top10 and search samples are truncated without explicit limits, while blanket zero-days, query/rule parameters and per-burst timing claims are not comprehensively submitted/verified.",
+          "receipt_ids": ["r_2914bf1e", "r_07fe9d25", "r_7993be96"]
+        }
+      ],
+      "check_claims": {
+        "receipt_id": "r_2914bf1e",
+        "checked": 23,
+        "verified": 23,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "23 claims checked · 0 mismatch · 0 unresolved",
+        "all_answer_cited_fact_ids_resolve": true,
+        "non_verification_cited_fact_ids_not_submitted": [],
+        "submitted_fact_ids_not_cited": [],
+        "whole_answer_numeric_acceptance": "not established"
+      },
+      "rubric_total": 7,
+      "rubric_maximum": 10,
+      "rubric_mean": 1.4
+    },
+    {
+      "id": "r5-02",
+      "answer_file": "r5-02-answer.txt",
+      "evidence_file": "r5-02-evidence.json",
+      "answer_sha256": "e2a05af52a8a59d4fa23bba448df88876db75882fedaa469202adc2ff27f8550",
+      "chat_url": "https://claude.ai/chat/83079755-6298-4c14-b533-b34cb26f4502",
+      "s15_status": "pass",
+      "s15_reason": "The correctly June-scoped five-minute aggregate executes before recommendation and its actual six-of-seven and ratio267.154... facts ground the supported precursor association. The one-node status is explicitly confinement of the problem, while single shared initiating cause remains open. The causal control-loss mechanism is labelled background/not log-proven; later next checks strengthen hypotheses and require independent records rather than claiming proof from temporal neighbours.",
+      "s15_criteria": {
+        "executed_discriminating_aggregate_before_final_recommendation": "pass",
+        "aggregate_input_scope_matches_answer": "pass",
+        "relevant_hypothesis_statuses_logically_grounded_in_check_facts": "pass",
+        "full_answer_no_precursor_promoted_to_proven_cause": "pass"
+      },
+      "runtime": {
+        "versions": {
+          "data_version": "dv_7ea6fcb2c9eb6882",
+          "source": "corpus",
+          "loader_version": "1.0.0",
+          "parser_version": "1.0.0",
+          "pattern_rules_version": "1.0.0",
+          "ownership_version": "1.0.0",
+          "rules_version": "concept-3.5",
+          "contract_version": "2.9.0"
+        },
+        "guidance_version": "1.0.5"
+      },
+      "tool_call_count": 8,
+      "tool_duration_ms_total": 259.08,
+      "call_order": [
+        {
+          "receipt_id": "r_3d527280",
+          "tool": "describe_corpus",
+          "mode": null,
+          "created_at": "2026-10-18T11:10:45.164Z"
+        },
+        {
+          "receipt_id": "r_5d9b1309",
+          "tool": "search_logs",
+          "mode": null,
+          "created_at": "2026-10-18T11:11:16.553Z"
+        },
+        {
+          "receipt_id": "r_b6c51d94",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:11:51.315Z"
+        },
+        {
+          "receipt_id": "r_a99a599e",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:11:52.765Z"
+        },
+        {
+          "receipt_id": "r_99e19bf7",
+          "tool": "recurring_patterns",
+          "mode": null,
+          "created_at": "2026-10-18T11:11:54.414Z"
+        },
+        {
+          "receipt_id": "r_4d178563",
+          "tool": "get_log_context",
+          "mode": "event",
+          "created_at": "2026-10-18T11:11:56.098Z"
+        },
+        {
+          "receipt_id": "r_1c1a646d",
+          "tool": "get_log_context",
+          "mode": "aggregate",
+          "created_at": "2026-10-18T11:12:31.217Z"
+        },
+        {
+          "receipt_id": "r_bd483f40",
+          "tool": "check_claims",
+          "mode": null,
+          "created_at": "2026-10-18T11:12:51.875Z"
+        }
+      ],
+      "aggregate_check": {
+        "receipt_id": "r_1c1a646d",
+        "input": {
+          "mode": "aggregate",
+          "window_minutes": 5,
+          "pattern_id": "287312f13c189c4d",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z",
+          "direction": "before",
+          "top_n": 5
+        },
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-01T00:00:00Z",
+              "to": "2005-07-01T00:00:00Z"
+            }
+          ],
+          "filters": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "matched_events": 5983,
+        "anchors": 7,
+        "chdir_before_anchors": 6,
+        "chdir_before_ratio": 267.1542857142857,
+        "baseline_grid": {
+          "from": "2005-06-03T22:42:50.363779Z",
+          "to": "2005-07-01T00:00:00Z",
+          "window_minutes": 5,
+          "windows": 7792
+        },
+        "fact_ids": ["r_1c1a646d.f1", "r_1c1a646d.f6", "r_1c1a646d.f9"],
+        "executed_before_final_answer_and_recommendation": true,
+        "order_evidence": "Receipt precedes check_claims and completed final answer capture; a full timestamped interim prose transcript was not reviewed.",
+        "correct_scope": true,
+        "scope_reason": "Explicit target pattern and June [2005-06-01,2005-07-01), baseline clipped to actual corpus availability; window parameter retained exactly for each trial."
+      },
+      "hypothesis_status_audit": [
+        {
+          "hypothesis": "Problem stays on one node",
+          "status": "contradicted",
+          "judgment": "pass",
+          "reason": "The answer explicitly defines the hypothesis as one emitting node and refutes that assumption with the real512-node fact.",
+          "fact_ids": ["r_99e19bf7.f12"]
+        },
+        {
+          "hypothesis": "Job-launch failure followed by control-stream closure",
+          "status": "supported, not proven",
+          "judgment": "pass",
+          "reason": "The supporting precursor association is real and the proposed control-loss mechanism is expressly not log-proven. The preamble overstates job-launch interpretation, separately penalized below, but does not declare the precursor proved the control-stream cause.",
+          "fact_ids": ["r_1c1a646d.f6", "r_1c1a646d.f1", "r_1c1a646d.f9"]
+        },
+        {
+          "hypothesis": "Shared peer/service/network as initiating source",
+          "status": "open",
+          "judgment": "pass",
+          "reason": "The answer explicitly says one shared component can cause broad symptoms and has not been ruled out."
+        }
+      ],
+      "full_answer_causal_boundary_evidence": [
+        {
+          "answer_file": "r5-02-answer.txt",
+          "line": 6,
+          "excerpt": "My background reading, which the logs don’t prove:"
+        },
+        {
+          "answer_file": "r5-02-answer.txt",
+          "line": 28,
+          "excerpt": "supported, not proven."
+        },
+        {
+          "answer_file": "r5-02-answer.txt",
+          "line": 34,
+          "excerpt": "It still doesn’t prove cause, because a dying front end could also break the login."
+        },
+        {
+          "answer_file": "r5-02-answer.txt",
+          "line": 24,
+          "excerpt": "it doesn’t show a second cause."
+        }
+      ],
+      "rubric": {
+        "correct_question_and_scope": {
+          "score": 1,
+          "reason": "Correct June dataset/filter and partial coverage. Whole-machine/job-by-job/all-I/O-node statements and a definite job-launched interpretation exceed the available identity and population evidence."
+        },
+        "relevant_evidence": {
+          "score": 1,
+          "reason": "Counts, local offsets, event-window population and the correctly described five-minute aggregate are relevant. The response invents that the non-chdir anchor is the anchor preceded only by LINKCARD; aggregate counts supply no such per-anchor relationship."
+        },
+        "specific_next_action_with_team_or_object": {
+          "score": 2,
+          "reason": "Names episode-start path/user checks, the non-chdir episode’s context, peer-host logs and scheduler records as concrete diagnostic objects."
+        },
+        "discriminating_result_or_missing_information": {
+          "score": 2,
+          "reason": "Explicitly states what evidence is missing, treats consistent paths/users or peer/control events as strengthening leads rather than proof, and identifies independent records needed to separate the explanations."
+        },
+        "observation_hypothesis_cause_separation": {
+          "score": 1,
+          "reason": "Formal hypotheses and next checks retain causal uncertainty. However the preamble categorically says a job was launched with a nonexistent working directory before marking the control-loss chain as background, blurring logged observation and inferred interpretation."
+        }
+      },
+      "material_broader_defects": [
+        {
+          "kind": "unsupported_machine_job_and_node_scope",
+          "answer_file": "r5-02-answer.txt",
+          "line": 5,
+          "excerpt": "across the whole machine at the same time, job by job",
+          "reason": "Month-wide emitting-node breadth and a first-burst sample do not establish machine population, job boundaries, every-node type or per-job synchrony.",
+          "receipt_ids": ["r_99e19bf7", "r_5d9b1309"]
+        },
+        {
+          "kind": "job_launch_interpretation_overstated",
+          "answer_file": "r5-02-answer.txt",
+          "line": 6,
+          "excerpt": "That means a job was launched with a working directory that didn’t exist",
+          "reason": "The chdir text establishes a failed directory-change operation in the sampled log context. Job identity, submission state and the exact upstream reason are not directly observed. The following control-loss mechanism is labelled background/not proven, so this remains an interpretation defect rather than a declaration that the precursor proved the downstream cause.",
+          "receipt_ids": ["r_4d178563", "r_5d9b1309"]
+        },
+        {
+          "kind": "unsupported_per_anchor_mapping",
+          "answer_file": "r5-02-answer.txt",
+          "line": 24,
+          "excerpt": "that start was preceded only by a LINKCARD bit-sparing message",
+          "reason": "Six anchors with chdir and one with LINKCARD do not identify the same missing anchor or show exclusivity. The two anchor sets may overlap; the aggregate provides counts and examples, not a per-anchor presence map. This observation must not be treated as established.",
+          "receipt_ids": ["r_1c1a646d"]
+        },
+        {
+          "kind": "followup_window_changes",
+          "answer_file": "r5-02-answer.txt",
+          "line": 32,
+          "excerpt": "search LOGIN chdir in the minute before",
+          "reason": "The executed aggregate used five minutes. A later one-minute lookup could miss a precursor present earlier in that five-minute window; absence must retain the window distinction.",
+          "receipt_ids": ["r_1c1a646d"]
+        },
+        {
+          "kind": "verification_and_truncation_incomplete",
+          "answer_file": "r5-02-answer.txt",
+          "line": 46,
+          "excerpt": "Only the numbers were checked, not the explanations.",
+          "reason": "All19 non-verification cited fact IDs were submitted among20 claims, plus one extra node-group fact not cited. However the five-/ten-minute parameters, false per-anchor mapping and population/job-scope assertions remain outside comprehensive numerical/scope verification. Node top5, search20 and after-context3 are truncated; only rack omission is clearly disclosed.",
+          "receipt_ids": [
+            "r_bd483f40",
+            "r_a99a599e",
+            "r_5d9b1309",
+            "r_4d178563"
+          ]
+        }
+      ],
+      "check_claims": {
+        "receipt_id": "r_bd483f40",
+        "checked": 20,
+        "verified": 20,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "20 claims checked · 0 mismatch · 0 unresolved",
+        "all_answer_cited_fact_ids_resolve": true,
+        "non_verification_cited_fact_ids_not_submitted": [],
+        "submitted_fact_ids_not_cited": ["r_a99a599e.f1"],
+        "whole_answer_numeric_acceptance": "not established"
+      },
+      "rubric_total": 7,
+      "rubric_maximum": 10,
+      "rubric_mean": 1.4
+    },
+    {
+      "id": "r5-03",
+      "answer_file": "r5-03-answer.txt",
+      "evidence_file": "r5-03-evidence.json",
+      "answer_sha256": "6cb2920de42f34c21793b590e55a330deb6f0acce0b1d40f9458e30a38e5ae47",
+      "chat_url": "https://claude.ai/chat/4fc897eb-3752-40cc-afba-e30ae4ed9317",
+      "s15_status": "pass",
+      "s15_reason": "The real June ten-minute aggregate runs before recommendation and its actual six-of-seven facts ground supported-not-proven launch association. The formal local status refutes only single-node symptom confinement, and all initiating single-component alternatives remain open. The final next-check section explicitly says timing will not confirm either explanation and another neighbour does not establish a second cause. The unsupported LINKCARD-to-missing-anchor mapping is retained as a broader fidelity defect; it does not provide the logical basis for a false contradicted/proven causal status here.",
+      "s15_criteria": {
+        "executed_discriminating_aggregate_before_final_recommendation": "pass",
+        "aggregate_input_scope_matches_answer": "pass",
+        "relevant_hypothesis_statuses_logically_grounded_in_check_facts": "pass",
+        "full_answer_no_precursor_promoted_to_proven_cause": "pass"
+      },
+      "runtime": {
+        "versions": {
+          "data_version": "dv_7ea6fcb2c9eb6882",
+          "source": "corpus",
+          "loader_version": "1.0.0",
+          "parser_version": "1.0.0",
+          "pattern_rules_version": "1.0.0",
+          "ownership_version": "1.0.0",
+          "rules_version": "concept-3.5",
+          "contract_version": "2.9.0"
+        },
+        "guidance_version": "1.0.5"
+      },
+      "tool_call_count": 9,
+      "tool_duration_ms_total": 415.16,
+      "call_order": [
+        {
+          "receipt_id": "r_2aaaf9db",
+          "tool": "describe_corpus",
+          "mode": null,
+          "created_at": "2026-10-18T11:14:59.553Z"
+        },
+        {
+          "receipt_id": "r_f9df5d39",
+          "tool": "search_logs",
+          "mode": null,
+          "created_at": "2026-10-18T11:15:15.310Z"
+        },
+        {
+          "receipt_id": "r_c28a72d0",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:15:58.834Z"
+        },
+        {
+          "receipt_id": "r_eac2edc5",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:16:00.159Z"
+        },
+        {
+          "receipt_id": "r_a53a577a",
+          "tool": "recurring_patterns",
+          "mode": null,
+          "created_at": "2026-10-18T11:16:01.497Z"
+        },
+        {
+          "receipt_id": "r_7aa82f5d",
+          "tool": "event_trend",
+          "mode": null,
+          "created_at": "2026-10-18T11:16:35.342Z"
+        },
+        {
+          "receipt_id": "r_565d6655",
+          "tool": "count_events",
+          "mode": null,
+          "created_at": "2026-10-18T11:16:36.953Z"
+        },
+        {
+          "receipt_id": "r_324ac096",
+          "tool": "get_log_context",
+          "mode": "aggregate",
+          "created_at": "2026-10-18T11:16:38.514Z"
+        },
+        {
+          "receipt_id": "r_3317ba7d",
+          "tool": "check_claims",
+          "mode": null,
+          "created_at": "2026-10-18T11:17:37.209Z"
+        }
+      ],
+      "aggregate_check": {
+        "receipt_id": "r_324ac096",
+        "input": {
+          "mode": "aggregate",
+          "window_minutes": 10,
+          "pattern_id": "287312f13c189c4d",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z",
+          "direction": "both",
+          "top_n": 6
+        },
+        "scope": {
+          "windows": [
+            {
+              "dataset": "bgl",
+              "from": "2005-06-01T00:00:00Z",
+              "to": "2005-07-01T00:00:00Z"
+            }
+          ],
+          "filters": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "matched_events": 5983,
+        "anchors": 7,
+        "chdir_before_anchors": 6,
+        "chdir_before_ratio": 145.1925465838509,
+        "baseline_grid": {
+          "from": "2005-06-03T22:42:50.363779Z",
+          "to": "2005-07-01T00:00:00Z",
+          "window_minutes": 10,
+          "windows": 3896
+        },
+        "fact_ids": ["r_324ac096.f1", "r_324ac096.f6", "r_324ac096.f9"],
+        "executed_before_final_answer_and_recommendation": true,
+        "order_evidence": "Receipt precedes check_claims and completed final answer capture; a full timestamped interim prose transcript was not reviewed.",
+        "correct_scope": true,
+        "scope_reason": "Explicit target pattern and June [2005-06-01,2005-07-01), baseline clipped to actual corpus availability; window parameter retained exactly for each trial."
+      },
+      "hypothesis_status_audit": [
+        {
+          "hypothesis": "Symptoms confined to one bad node",
+          "status": "contradicted",
+          "judgment": "pass",
+          "reason": "The answer names the required single-emitter assumption and directly refutes it with512 distinct nodes.",
+          "fact_ids": ["r_a53a577a.f12"]
+        },
+        {
+          "hypothesis": "Missing/unreachable working-directory/job-launch failure followed by stream loss",
+          "status": "supported, not proven",
+          "judgment": "pass",
+          "reason": "Six of seven aggregate anchors truly have the directory precursor, which can support a temporal hypothesis under R-07. The extra claim assigning LINKCARD instead to the missing anchor is unsupported and separately recorded; the status does not rely on it to prove a cause or contradict an alternative.",
+          "fact_ids": ["r_324ac096.f6", "r_324ac096.f1", "r_324ac096.f9"]
+        },
+        {
+          "hypothesis": "Peer host or another single failing component as root cause",
+          "status": "open",
+          "judgment": "pass",
+          "reason": "The answer explicitly says no check refutes this initiating origin and peer health is absent."
+        }
+      ],
+      "full_answer_causal_boundary_evidence": [
+        {
+          "answer_file": "r5-03-answer.txt",
+          "line": 5,
+          "excerpt": "The logs only show that association, though; they don’t prove the cause."
+        },
+        {
+          "answer_file": "r5-03-answer.txt",
+          "line": 29,
+          "excerpt": "No check so far refutes it."
+        },
+        {
+          "answer_file": "r5-03-answer.txt",
+          "line": 39,
+          "excerpt": "Timing alone won’t confirm either."
+        },
+        {
+          "answer_file": "r5-03-answer.txt",
+          "line": 40,
+          "excerpt": "doesn’t show there’s a second cause."
+        }
+      ],
+      "rubric": {
+        "correct_question_and_scope": {
+          "score": 1,
+          "reason": "Correct BGL June target and initial partial-coverage statement. Machine-wide/all-I/O/job-start interpretations exceed the measured scope, and no-matches-on-other-days is broader than coverage/query range."
+        },
+        "relevant_evidence": {
+          "score": 1,
+          "reason": "Uses true counts, intersection peer total, recurrence and aggregate precursor facts with top-group limitations. The instead claim assigns LINKCARD to the non-chdir anchor without a per-anchor result."
+        },
+        "specific_next_action_with_team_or_object": {
+          "score": 2,
+          "reason": "Names chdir example event14736, raw path/mount, filesystem-server logs, named peer scheduler/mpirun/NFS records and unexplained-episode context as concrete objects."
+        },
+        "discriminating_result_or_missing_information": {
+          "score": 1,
+          "reason": "Independent peer/filesystem evidence is relevant and missing information is explicit. Recurring versus varying paths do not reliably discriminate filesystem from user/job-script problems, and the unmatched-episode characterization is not established."
+        },
+        "observation_hypothesis_cause_separation": {
+          "score": 2,
+          "reason": "Explicitly separates refuted symptom confinement, temporally supported launch hypothesis and open initiating cause. The next checks strengthen leads, say timing cannot confirm either, and reject a second-cause inference from another neighbour."
+        }
+      },
+      "material_broader_defects": [
+        {
+          "kind": "unsupported_machine_and_node_type_scope",
+          "answer_file": "r5-03-answer.txt",
+          "line": 5,
+          "excerpt": "The symptoms are machine-wide",
+          "reason": "512 nodes/32 racks over June are broad symptoms but do not establish all-machine or all-I/O-node population. No job/partition boundary or full within-burst breadth computation is returned.",
+          "receipt_ids": ["r_a53a577a", "r_f9df5d39"]
+        },
+        {
+          "kind": "unsupported_per_anchor_mapping",
+          "answer_file": "r5-03-answer.txt",
+          "line": 27,
+          "excerpt": "before it instead",
+          "reason": "The one LINKCARD-positive anchor is not identified as the one chdir-negative anchor. Counts6/7 and1/7 permit overlap; instead is an unsupported relation even though both counts individually match facts.",
+          "receipt_ids": ["r_324ac096"]
+        },
+        {
+          "kind": "zero_days_scope_overclaim",
+          "answer_file": "r5-03-answer.txt",
+          "line": 23,
+          "excerpt": "There were no matches on any other day in the period.",
+          "reason": "Declared scope starts June1 but effective data begins June3 late evening. The trend itself only covers through June21. A blanket assertion for all other days of the declared period is not supported by that trend, including the unobserved early days.",
+          "receipt_ids": ["r_7aa82f5d"]
+        },
+        {
+          "kind": "path_pattern_not_sufficient_discriminator",
+          "answer_file": "r5-03-answer.txt",
+          "line": 34,
+          "excerpt": "If the paths vary, it looks more like a user or job-script issue.",
+          "reason": "Both varying and recurring paths can occur with user configuration, a shared mount outage or another shared component. Independent existence/reachability/job records are needed for a meaningful discriminator.",
+          "receipt_ids": ["r_324ac096"]
+        },
+        {
+          "kind": "cited_coverage_not_submitted",
+          "answer_file": "r5-03-answer.txt",
+          "line": 49,
+          "excerpt": "Only the numbers were checked, not the reasoning.",
+          "reason": "The cited data-start fact r_7aa82f5d.f20 was not submitted among23 claims; an after-anchor count r_324ac096.f17 was submitted but not cited. Uncited top-list/window parameters, blanketed zero days and unsupported per-anchor scope also prevent whole-answer numerical acceptance.",
+          "receipt_ids": ["r_3317ba7d", "r_7aa82f5d"]
+        }
+      ],
+      "check_claims": {
+        "receipt_id": "r_3317ba7d",
+        "checked": 23,
+        "verified": 23,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "23 claims checked · 0 mismatch · 0 unresolved",
+        "all_answer_cited_fact_ids_resolve": true,
+        "non_verification_cited_fact_ids_not_submitted": ["r_7aa82f5d.f20"],
+        "submitted_fact_ids_not_cited": ["r_324ac096.f17"],
+        "whole_answer_numeric_acceptance": "not established"
+      },
+      "rubric_total": 7,
+      "rubric_maximum": 10,
+      "rubric_mean": 1.4
+    }
+  ],
+  "conclusion": {
+    "focused_s15_passes": 3,
+    "focused_s15_failures": 0,
+    "focused_log21_real_aggregate_execution_passes": 3,
+    "correctly_scoped_aggregate_checks": 3,
+    "relevant_hypothesis_status_grounding_passes": 3,
+    "full_answer_precursor_causality_passes": 3,
+    "all_three_planned_valid_attempts_satisfy_s15": true,
+    "focused_acceptance_result": "The three valid frozen R5 attempts pass the focused S-15/LOG-21 behavior: real correctly scoped aggregate check before recommendation, logically grounded symptom-versus-origin statuses, and no temporal precursor presented as proven cause. This is narrowly scoped evidence on a known development question; substantial broader answer defects remain.",
+    "can_s15_pass_while_broader_u16_fails": true,
+    "criterion_relationship": "S-15’s executed check, correct scope, justified relevant status and full-answer causal boundary are satisfied here. A-21/technical §13 additionally require comprehensive numerical/scope correctness, complete role suites, required sections, S-13, independent holdouts and fair baseline procedure. These broader requirements are not established and the retained broader defects prevent interpreting this result as clean whole-answer acceptance.",
+    "not_established": [
+      "Full U16 pass threshold",
+      "Baseline comparison or advantage",
+      "Holdout or first-holdout result",
+      "Claude Code acceptance",
+      "Whole-answer numerical correctness",
+      "A causal effect of changed guidance in a controlled comparison",
+      "General reliability beyond this known question",
+      "Exact served API model ID, tokens, API cost or provider latency"
+    ],
+    "required_reporting": "Report all earlier failed/invalid rounds and their corrections alongside the scoped3/3 result. Keep machine-wide/timing overclaims, unsupported unmatched-anchor mappings, zero-bucket scope errors and incomplete claim coverage visible. Do not describe these answers as fully verified or infer general reliability.",
+    "generation_budget_note": "Parent reports no further model trials planned or authorized. This reviewer launched no model generation.",
+    "total_receipt_calls": 26
+  }
+}

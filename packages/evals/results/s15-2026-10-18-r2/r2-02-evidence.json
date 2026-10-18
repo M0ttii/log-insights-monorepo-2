@@ -1,0 +1,2245 @@
+{
+  "trial_id": "r2-02",
+  "capture_kind": "Receipt excerpts; original complete receipts remain in .data/receipts, pinned by file SHA-256. describe_corpus includes versions only.",
+  "answer_sha256": "23b4ee9d32efc014dfbbfc89c45c39ede75c517e8f687900034eab32a7f3aa41",
+  "chat_url": "https://claude.ai/chat/142232bd-f631-4a6a-85fb-e5080b7bc0e9",
+  "tool_calls": [
+    {
+      "receipt_id": "r_4c5eb974",
+      "created_at": "2026-10-18T10:27:29.078Z",
+      "client": "mcp",
+      "tool": "describe_corpus",
+      "tool_version": "1.0.0",
+      "input": {},
+      "signature": "407df2e074a0a25742dda7d3ec5c5b0de43f4c299af9753d797a4e67f1c2835b",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT dataset, lines_read, events, rejected, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_event, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_event, error_events, patterns, single_event_patterns, time_basis, label_source, levels, components, labels, api_accesses, api_accesses_without_request_id, requests FROM corpus_stats ORDER BY dataset",
+        "SELECT dataset, component, team, note FROM ownership ORDER BY team, dataset, component",
+        "SELECT data_version, source, loader_version, parser_version, pattern_rules_version, ownership_version, rules_version FROM load_manifest"
+      ],
+      "params": [[], [], []],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-03T22:42:50.363779Z",
+            "to": "2006-01-04T16:00:05.233640Z"
+          },
+          {
+            "dataset": "openstack",
+            "from": "2017-05-14T19:39:01.445000Z",
+            "to": "2017-05-17T12:02:35.320001Z"
+          }
+        ],
+        "filters": {}
+      },
+      "population": {
+        "count": 4955765,
+        "unit": "log_events"
+      },
+      "rows_returned": 15,
+      "truncated": false,
+      "row_limit": null,
+      "duration_ms": 14.25,
+      "result_digest": "0ddf476aa8bd3cdb4f2daf0584c32f31efbe4e653f2e4700dee09e20c9f02112",
+      "receipt_file": ".data/receipts/r_4c5eb974.json",
+      "receipt_file_sha256": "ea27924d1286776c732697de7f45adec3c46abc77038ec77f8de34b9bed1b02c",
+      "cited_facts": [],
+      "result": {
+        "versions": {
+          "data_version": "dv_7ea6fcb2c9eb6882",
+          "source": "corpus",
+          "loader_version": "1.0.0",
+          "parser_version": "1.0.0",
+          "pattern_rules_version": "1.0.0",
+          "ownership_version": "1.0.0",
+          "rules_version": "concept-3.5",
+          "contract_version": "2.9.0"
+        },
+        "guidance_version": "1.0.3"
+      }
+    },
+    {
+      "receipt_id": "r_c432cc28",
+      "created_at": "2026-10-18T10:28:59.609Z",
+      "client": "mcp",
+      "tool": "search_logs",
+      "tool_version": "1.0.1",
+      "input": {
+        "query": "ciod failed to read message prefix on control stream",
+        "match": "terms",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "sort": "time_asc",
+        "limit": 10
+      },
+      "signature": "0f0787266d2d031f6cab126cc3c09029a9f03c9db9df76aa43d8cc69dc7a9549",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ",
+        "SELECT log_events_idx.event_id, log_events_idx.dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.component, log_events_idx.level, log_events_idx.node, log_events_idx.alert_label, log_events_idx.request_id, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ ORDER BY log_events_idx.ts, log_events_idx.event_id LIMIT $5"
+      ],
+      "params": [
+        ["ciod failed to read message prefix on control stream"],
+        ["bgl"],
+        [
+          "ciod failed to read message prefix on control stream",
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z"
+        ],
+        [
+          "ciod failed to read message prefix on control stream",
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          10
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-01T00:00:00Z",
+            "to": "2005-07-01T00:00:00Z"
+          }
+        ],
+        "filters": {}
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 10,
+      "truncated": true,
+      "row_limit": 10,
+      "duration_ms": 21.81,
+      "result_digest": "dab2e91c248f70fe8949b77963ce536eba297ff40f89fe245bc9f6172b67fce2",
+      "receipt_file": ".data/receipts/r_c432cc28.json",
+      "receipt_file_sha256": "c15bc808b2b4b728b6d029e7d7e228057b22b5790beb5eb92ff0b00dac760be6",
+      "cited_facts": [
+        {
+          "id": "r_c432cc28.f12",
+          "path": "/scope/windows/0/from",
+          "value": "2005-06-01T00:00:00Z",
+          "metric": "window_start",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        {
+          "id": "r_c432cc28.f13",
+          "path": "/scope/windows/0/to",
+          "value": "2005-07-01T00:00:00Z",
+          "metric": "window_end",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl"
+          }
+        }
+      ],
+      "result": {
+        "query": "ciod failed to read message prefix on control stream",
+        "match_mode": "terms",
+        "max_edits": null,
+        "sort": "time_asc",
+        "total_matches": 5983,
+        "hits": [
+          {
+            "event_id": 14738,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:32.398284Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R23-M1-N8-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14739,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:32.432192Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R04-M1-N4-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33569",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14740,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:32.481570Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R04-M1-N4-I:J18-U01",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33570",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14741,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.168659Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R35-M1-N0-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33459",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14742,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.203068Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R35-M1-N0-I:J18-U01",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33460",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14743,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.236793Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R36-M0-N8-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33231",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14744,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.270584Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R36-M0-N8-I:J18-U01",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33232",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14745,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.304903Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R36-M0-NC-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33229",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14746,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.352044Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R36-M0-NC-I:J18-U01",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33230",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 14747,
+            "dataset": "bgl",
+            "ts": "2005-06-04T07:24:33.385805Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R36-M0-N0-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33235",
+            "message_truncated": false,
+            "score": 14.509279
+          }
+        ],
+        "truncated": true,
+        "row_limit": 10
+      }
+    },
+    {
+      "receipt_id": "r_0f79733d",
+      "created_at": "2026-10-18T10:29:01.196Z",
+      "client": "mcp",
+      "tool": "count_events",
+      "tool_version": "1.1.0",
+      "input": {
+        "group_by": ["node"],
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "top_n": 10
+      },
+      "signature": "7574c544db7d91d50b194bbb433e3005d6b5808b16ac3051a225ad502f5d3423",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "WITH grouped AS (SELECT log_events_idx.node AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events_idx WHERE log_events_idx.dataset = $1 AND log_events_idx.ts >= $2::TIMESTAMPTZ AND log_events_idx.ts < $3::TIMESTAMPTZ AND log_events_idx.message @@ plainto_tsquery($4) GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) FILTER (WHERE rank > $5) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $5), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $5) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= $5 ORDER BY rank"
+      ],
+      "params": [
+        ["bgl"],
+        [
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          "ciod failed to read message prefix on control stream",
+          10
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-01T00:00:00Z",
+            "to": "2005-07-01T00:00:00Z"
+          }
+        ],
+        "filters": {
+          "text": "ciod failed to read message prefix on control stream"
+        }
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 10,
+      "truncated": true,
+      "row_limit": 10,
+      "duration_ms": 47.72,
+      "result_digest": "c6324c06ac17f780e8c6c5a6a6e6a923268d6b8e6846886d47407ba76c5fd279",
+      "receipt_file": ".data/receipts/r_0f79733d.json",
+      "receipt_file_sha256": "c03f57c047c78b51669945d0fc09054a32cb7ddb6b1a985a1be2dd48532246b2",
+      "cited_facts": [
+        {
+          "id": "r_0f79733d.f2",
+          "path": "/result/groups/0/events",
+          "value": 15,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "node": "R00-M0-N0-I:J18-U01"
+          }
+        },
+        {
+          "id": "r_0f79733d.f25",
+          "path": "/result/total",
+          "value": 5983,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        }
+      ],
+      "result": {
+        "group_by": ["node"],
+        "unit": "log_events",
+        "total": 5983,
+        "group_count": 512,
+        "groups": [
+          {
+            "node": "R00-M0-N0-I:J18-U01",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-N0-I:J18-U11",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-N4-I:J18-U01",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-N4-I:J18-U11",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-N8-I:J18-U01",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-N8-I:J18-U11",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-NC-I:J18-U01",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M0-NC-I:J18-U11",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M1-N0-I:J18-U01",
+            "events": 15,
+            "share": 0.0025071034598027745
+          },
+          {
+            "node": "R00-M1-N0-I:J18-U11",
+            "events": 15,
+            "share": 0.0025071034598027745
+          }
+        ],
+        "other": {
+          "groups": 502,
+          "events": 5833,
+          "share": 0.9749289654019723
+        },
+        "comparison": null,
+        "truncated": true,
+        "top_n": 10
+      }
+    },
+    {
+      "receipt_id": "r_7143b1be",
+      "created_at": "2026-10-18T10:29:02.820Z",
+      "client": "mcp",
+      "tool": "count_events",
+      "tool_version": "1.1.0",
+      "input": {
+        "group_by": ["rack"],
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "top_n": 10
+      },
+      "signature": "52bcfcbd894e9e79e9c49c22d8fda1d96d2e1eb8bcd5694ad0eadc13c8d137e3",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "WITH grouped AS (SELECT log_events_idx.rack AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events_idx WHERE log_events_idx.dataset = $1 AND log_events_idx.ts >= $2::TIMESTAMPTZ AND log_events_idx.ts < $3::TIMESTAMPTZ AND log_events_idx.message @@ plainto_tsquery($4) GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) FILTER (WHERE rank > $5) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $5), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $5) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= $5 ORDER BY rank"
+      ],
+      "params": [
+        ["bgl"],
+        [
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          "ciod failed to read message prefix on control stream",
+          10
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-01T00:00:00Z",
+            "to": "2005-07-01T00:00:00Z"
+          }
+        ],
+        "filters": {
+          "text": "ciod failed to read message prefix on control stream"
+        }
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 10,
+      "truncated": true,
+      "row_limit": 10,
+      "duration_ms": 15.8,
+      "result_digest": "ad1709a80fc2496d66f19908768a0c3cfeaadc85b8d6cda727790a989812560f",
+      "receipt_file": ".data/receipts/r_7143b1be.json",
+      "receipt_file_sha256": "36e3acbc4ead873a6f122bd33512b08e2899e4cba7b88e8a6afb906e0238704a",
+      "cited_facts": [],
+      "result": {
+        "group_by": ["rack"],
+        "unit": "log_events",
+        "total": 5983,
+        "group_count": 32,
+        "groups": [
+          {
+            "rack": "R00",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R01",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R02",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R03",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R04",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R05",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R06",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R07",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R10",
+            "events": 240,
+            "share": 0.04011365535684439
+          },
+          {
+            "rack": "R11",
+            "events": 240,
+            "share": 0.04011365535684439
+          }
+        ],
+        "other": {
+          "groups": 22,
+          "events": 3583,
+          "share": 0.5988634464315561
+        },
+        "comparison": null,
+        "truncated": true,
+        "top_n": 10
+      }
+    },
+    {
+      "receipt_id": "r_60c767f5",
+      "created_at": "2026-10-18T10:29:04.408Z",
+      "client": "mcp",
+      "tool": "recurring_patterns",
+      "tool_version": "1.0.0",
+      "input": {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "rank": "episodes",
+        "limit": 5
+      },
+      "signature": "0968a35db8b8657483e4cda42560ef6f6e5e4eb1fe231d7f8b40dc3d5308c829",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "SELECT rules_version, pattern_rules_version FROM load_manifest",
+        "WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.node AS u1, e.rack AS u2, lag(e.ts) OVER (PARTITION BY e.pattern_id ORDER BY e.ts, e.event_id) AS prev_ts FROM log_events_idx e WHERE e.dataset = $1 AND e.message @@ plainto_tsquery($2) AND e.ts >= $4::TIMESTAMPTZ AND e.ts < $5::TIMESTAMPTZ), c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE prev_ts IS NULL OR ts - prev_ts >= $3::INTERVAL) AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE prev_ts IS NULL) AS example_event_id FROM cur GROUP BY pattern_id), joined AS (SELECT *, NULL::BIGINT AS baseline, NULL::BIGINT AS delta FROM c), ranked AS (SELECT *, row_number() OVER (ORDER BY episodes DESC, events DESC, pattern_id ASC) AS rank, sum(events) OVER () AS total, sum(CASE WHEN events > 0 THEN 1 ELSE 0 END) OVER () AS active, sum(CASE WHEN events = 0 THEN 1 ELSE 0 END) OVER () AS quiet FROM joined) SELECT pattern_id, pattern, dataset, component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = ranked.dataset AND o.component = ranked.component), 'unowned') AS team, events, episodes, active_days, active_weeks, b1, b2, components, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_seen, example_event_id, baseline, delta, events::DOUBLE / NULLIF(total, 0) AS share, total::BIGINT AS total, active::BIGINT AS active, quiet::BIGINT AS quiet FROM ranked WHERE rank <= $6 ORDER BY rank"
+      ],
+      "params": [
+        ["bgl"],
+        [],
+        [
+          "bgl",
+          "ciod failed to read message prefix on control stream",
+          "30 minutes",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          5
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-01T00:00:00Z",
+            "to": "2005-07-01T00:00:00Z",
+            "period": "current"
+          },
+          {
+            "dataset": "bgl",
+            "from": "2005-05-02T00:00:00.000000Z",
+            "to": "2005-06-01T00:00:00.000000Z",
+            "period": "baseline"
+          }
+        ],
+        "filters": {
+          "text": "ciod failed to read message prefix on control stream"
+        }
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 1,
+      "truncated": false,
+      "row_limit": 5,
+      "duration_ms": 33.72,
+      "result_digest": "ccc2f043e5ef746008f580f6df2b1934be364bdd81787dd51b2f067aec93d25c",
+      "receipt_file": ".data/receipts/r_60c767f5.json",
+      "receipt_file_sha256": "072b4ec389b21f1cf65ffe7af7c6a5ee82fdcb8310da79f5cf3c13bfc3bec6b9",
+      "cited_facts": [
+        {
+          "id": "r_60c767f5.f5",
+          "path": "/result/patterns/0/active_days",
+          "value": 5,
+          "metric": "active_days",
+          "unit": "days",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        {
+          "id": "r_60c767f5.f8",
+          "path": "/result/patterns/0/episodes",
+          "value": 7,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        {
+          "id": "r_60c767f5.f10",
+          "path": "/result/patterns/0/first_seen",
+          "value": "2005-06-04T07:24:32.398284Z",
+          "metric": "first_seen",
+          "unit": "utc_time",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        {
+          "id": "r_60c767f5.f11",
+          "path": "/result/patterns/0/last_seen",
+          "value": "2005-06-20T08:42:45.024863Z",
+          "metric": "last_seen",
+          "unit": "utc_time",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        {
+          "id": "r_60c767f5.f12",
+          "path": "/result/patterns/0/nodes",
+          "value": 512,
+          "metric": "nodes",
+          "unit": "nodes",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        {
+          "id": "r_60c767f5.f13",
+          "path": "/result/patterns/0/racks",
+          "value": 32,
+          "metric": "racks",
+          "unit": "racks",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        }
+      ],
+      "result": {
+        "dataset": "bgl",
+        "rank": "episodes",
+        "limit": 5,
+        "rules": {
+          "rules_version": "concept-3.5",
+          "pattern_rules_version": "1.0.0",
+          "episode_gap_minutes": 30,
+          "recurring_min_episodes": 2,
+          "breadth_unit": "nodes"
+        },
+        "comparison": {
+          "baseline": {
+            "from": "2005-05-02T00:00:00.000000Z",
+            "to": "2005-06-01T00:00:00.000000Z"
+          },
+          "coverage": {
+            "current": "partial",
+            "baseline": "none"
+          },
+          "determinable": false
+        },
+        "events": 5983,
+        "pattern_count": 1,
+        "quiet_count": null,
+        "patterns": [
+          {
+            "pattern_id": "287312f13c189c4d",
+            "pattern": "ciod: failed to read message prefix on control stream (CioStream socket to <IP>",
+            "component": "APP",
+            "team": "Workload Runtime",
+            "events": 5983,
+            "first_seen": "2005-06-04T07:24:32.398284Z",
+            "last_seen": "2005-06-20T08:42:45.024863Z",
+            "episodes": 7,
+            "recurring": true,
+            "active_days": 5,
+            "active_weeks": 4,
+            "nodes": 512,
+            "racks": 32,
+            "components": 1,
+            "baseline": null,
+            "delta": null,
+            "status": "ongoing",
+            "first_seen_before_window": null,
+            "example_event_id": 14738
+          }
+        ],
+        "truncated": false,
+        "investigation": null
+      }
+    },
+    {
+      "receipt_id": "r_afda7bc0",
+      "created_at": "2026-10-18T10:29:40.790Z",
+      "client": "mcp",
+      "tool": "event_trend",
+      "tool_version": "1.0.0",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-03T00:00:00Z",
+        "to": "2005-06-22T00:00:00Z",
+        "pattern_id": "287312f13c189c4d"
+      },
+      "signature": "bd862ca5b8724055d5520b486c2796fe09bd65bb7a6e3b4e9fe0f3fa1579434e",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "SELECT strftime(c.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket FROM (SELECT date_trunc('day', log_events.ts) AS bucket FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ GROUP BY 1) c ORDER BY c.bucket",
+        "SELECT strftime(c.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, c.events, sum(c.events) OVER () AS total FROM (SELECT date_trunc('day', log_events.ts) AS bucket, count(*) AS events FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.pattern_id = $4 GROUP BY 1) c ORDER BY c.bucket"
+      ],
+      "params": [
+        ["bgl"],
+        ["bgl", "2005-06-03T22:42:50.363779Z", "2005-06-22T00:00:00.000000Z"],
+        [
+          "bgl",
+          "2005-06-03T22:42:50.363779Z",
+          "2005-06-22T00:00:00.000000Z",
+          "287312f13c189c4d"
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-03T22:42:50.363779Z",
+            "to": "2005-06-22T00:00:00.000000Z"
+          }
+        ],
+        "filters": {
+          "pattern_id": "287312f13c189c4d"
+        }
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 19,
+      "truncated": false,
+      "row_limit": 120,
+      "duration_ms": 14.99,
+      "result_digest": "575610ec3e2dc87b6ee4209f5d227e4be4c51786e9b94ae62cc85da6c9eaa2bc",
+      "receipt_file": ".data/receipts/r_afda7bc0.json",
+      "receipt_file_sha256": "c8465017d9e675fcd8dbd79679df6219a557e7c1c060cba837d4bbb519159a12",
+      "cited_facts": [
+        {
+          "id": "r_afda7bc0.f3",
+          "path": "/result/buckets/1/events",
+          "value": 2040,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl",
+            "bucket_start": "2005-06-04T00:00:00.000000Z"
+          }
+        },
+        {
+          "id": "r_afda7bc0.f8",
+          "path": "/result/buckets/6/events",
+          "value": 124,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl",
+            "bucket_start": "2005-06-09T00:00:00.000000Z"
+          }
+        },
+        {
+          "id": "r_afda7bc0.f12",
+          "path": "/result/buckets/10/events",
+          "value": 1017,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl",
+            "bucket_start": "2005-06-13T00:00:00.000000Z"
+          }
+        },
+        {
+          "id": "r_afda7bc0.f15",
+          "path": "/result/buckets/13/events",
+          "value": 2040,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl",
+            "bucket_start": "2005-06-16T00:00:00.000000Z"
+          }
+        },
+        {
+          "id": "r_afda7bc0.f19",
+          "path": "/result/buckets/17/events",
+          "value": 762,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl",
+            "bucket_start": "2005-06-20T00:00:00.000000Z"
+          }
+        }
+      ],
+      "result": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "split_by": null,
+        "data_span": {
+          "first": "2005-06-03T22:42:50.363779Z",
+          "last": "2006-01-04T16:00:05.233639Z"
+        },
+        "effective_range": {
+          "from": "2005-06-03T22:42:50.363779Z",
+          "to": "2005-06-22T00:00:00.000000Z"
+        },
+        "bucket_count": 19,
+        "total": 5983,
+        "series": [],
+        "other": null,
+        "buckets": [
+          {
+            "bucket_start": "2005-06-03T00:00:00.000000Z",
+            "bucket_end": "2005-06-04T00:00:00.000000Z",
+            "partial": true,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-04T00:00:00.000000Z",
+            "bucket_end": "2005-06-05T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 2040,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-05T00:00:00.000000Z",
+            "bucket_end": "2005-06-06T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-06T00:00:00.000000Z",
+            "bucket_end": "2005-06-07T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-07T00:00:00.000000Z",
+            "bucket_end": "2005-06-08T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-08T00:00:00.000000Z",
+            "bucket_end": "2005-06-09T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-09T00:00:00.000000Z",
+            "bucket_end": "2005-06-10T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 124,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-10T00:00:00.000000Z",
+            "bucket_end": "2005-06-11T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-11T00:00:00.000000Z",
+            "bucket_end": "2005-06-12T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-12T00:00:00.000000Z",
+            "bucket_end": "2005-06-13T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-13T00:00:00.000000Z",
+            "bucket_end": "2005-06-14T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 1017,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-14T00:00:00.000000Z",
+            "bucket_end": "2005-06-15T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-15T00:00:00.000000Z",
+            "bucket_end": "2005-06-16T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-16T00:00:00.000000Z",
+            "bucket_end": "2005-06-17T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 2040,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-17T00:00:00.000000Z",
+            "bucket_end": "2005-06-18T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-18T00:00:00.000000Z",
+            "bucket_end": "2005-06-19T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-19T00:00:00.000000Z",
+            "bucket_end": "2005-06-20T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-20T00:00:00.000000Z",
+            "bucket_end": "2005-06-21T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 762,
+            "series": [],
+            "other_events": null
+          },
+          {
+            "bucket_start": "2005-06-21T00:00:00.000000Z",
+            "bucket_end": "2005-06-22T00:00:00.000000Z",
+            "partial": false,
+            "capture_gap": false,
+            "events": 0,
+            "series": [],
+            "other_events": null
+          }
+        ]
+      }
+    },
+    {
+      "receipt_id": "r_7b6f03e4",
+      "created_at": "2026-10-18T10:29:42.429Z",
+      "client": "mcp",
+      "tool": "get_log_context",
+      "tool_version": "1.0.0",
+      "input": {
+        "mode": "aggregate",
+        "window_minutes": 10,
+        "pattern_id": "287312f13c189c4d",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "direction": "before",
+        "top_n": 8
+      },
+      "signature": "e3803ac1e4dc2e5dcdf9de685db81c7a0e32ec740857da4011dfe7638082e1fb",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.pattern_id = $4), anchors AS (SELECT event_id, ts FROM (SELECT event_id, ts, lag(ts) OVER (ORDER BY ts, event_id) AS prev_ts FROM matched) s WHERE prev_ts IS NULL OR ts - prev_ts >= $5::INTERVAL) SELECT (SELECT count(*) FROM matched) AS matched_events, (SELECT count(*) FROM anchors) AS anchors, (SELECT count(DISTINCT pattern_id) FROM matched) AS excluded_patterns, (epoch_us($6::TIMESTAMPTZ) - epoch_us($7::TIMESTAMPTZ) + $8::BIGINT - 1) // $9::BIGINT AS grid_windows",
+        "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.pattern_id = $4), anchors AS (SELECT event_id, ts FROM (SELECT event_id, ts, lag(ts) OVER (ORDER BY ts, event_id) AS prev_ts FROM matched) s WHERE prev_ts IS NULL OR ts - prev_ts >= $5::INTERVAL), excluded AS (SELECT DISTINCT pattern_id FROM matched WHERE pattern_id IS NOT NULL), hits AS (SELECT 'before' AS direction, e.pattern_id, count(DISTINCT a.event_id) AS anchors_with_pattern, min(e.event_id) AS example_event_id FROM anchors a JOIN log_events e ON e.dataset = $6 AND e.ts >= a.ts - $7::INTERVAL AND e.ts < a.ts WHERE e.pattern_id NOT IN (SELECT pattern_id FROM excluded) GROUP BY e.pattern_id), ranked AS (SELECT *, row_number() OVER (PARTITION BY direction ORDER BY anchors_with_pattern DESC, pattern_id) AS rank, count(*) OVER (PARTITION BY direction) AS patterns_found FROM hits), top AS (SELECT * FROM ranked WHERE rank <= $8::BIGINT), info AS (SELECT e.dataset, e.pattern_id, any_value(e.component) AS component, any_value(e.pattern) AS pattern FROM log_events e WHERE e.dataset = $6 AND e.pattern_id IN (SELECT pattern_id FROM top) GROUP BY e.dataset, e.pattern_id), n AS (SELECT count(*) AS anchors FROM anchors), grid AS (SELECT e.pattern_id, count(DISTINCT (epoch_us(e.ts) - epoch_us($9::TIMESTAMPTZ)) // $11::BIGINT) AS windows_with_pattern FROM log_events e WHERE e.dataset = $6 AND e.ts >= $9::TIMESTAMPTZ AND e.ts < $10::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM top) GROUP BY e.pattern_id), grid_size AS (SELECT (epoch_us($12::TIMESTAMPTZ) - epoch_us($13::TIMESTAMPTZ) + $14::BIGINT - 1) // $15::BIGINT AS windows) SELECT t.direction, t.patterns_found, t.pattern_id, left(i.pattern, 400) AS pattern, length(i.pattern) > 400 AS pattern_truncated, i.component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = i.dataset AND o.component = i.component), 'unowned') AS team, t.anchors_with_pattern, t.anchors_with_pattern / n.anchors::DOUBLE AS anchor_share, coalesce(g.windows_with_pattern, 0) AS base_rate_windows, coalesce(g.windows_with_pattern, 0) / gs.windows::DOUBLE AS base_rate, CASE WHEN g.windows_with_pattern > 0 THEN (t.anchors_with_pattern / n.anchors::DOUBLE) / (g.windows_with_pattern / gs.windows::DOUBLE) END AS ratio, t.example_event_id FROM top t JOIN info i ON i.pattern_id = t.pattern_id CROSS JOIN n CROSS JOIN grid_size gs LEFT JOIN grid g ON g.pattern_id = t.pattern_id ORDER BY CASE t.direction WHEN 'before' THEN 0 ELSE 1 END, t.rank"
+      ],
+      "params": [
+        ["bgl"],
+        [
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          "287312f13c189c4d",
+          "30 minutes",
+          "2005-07-01T00:00:00Z",
+          "2005-06-03T22:42:50.363779Z",
+          600000000,
+          600000000
+        ],
+        [
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          "287312f13c189c4d",
+          "30 minutes",
+          "bgl",
+          "10 minutes",
+          8,
+          "2005-06-03T22:42:50.363779Z",
+          "2005-07-01T00:00:00Z",
+          600000000,
+          "2005-07-01T00:00:00Z",
+          "2005-06-03T22:42:50.363779Z",
+          600000000,
+          600000000
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-01T00:00:00Z",
+            "to": "2005-07-01T00:00:00Z"
+          }
+        ],
+        "filters": {
+          "pattern_id": "287312f13c189c4d"
+        }
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 2,
+      "truncated": false,
+      "row_limit": 8,
+      "duration_ms": 75.5,
+      "result_digest": "572dc6eff4c855532613e536cf1f173cb16039bb21bbfa0c67d5a09af5838530",
+      "receipt_file": ".data/receipts/r_7b6f03e4.json",
+      "receipt_file_sha256": "6f7d7d069a4b796f23ef9f38a4168b8ed6a7fd19dc650cf55dc8a499568ce2b7",
+      "cited_facts": [
+        {
+          "id": "r_7b6f03e4.f1",
+          "path": "/result/anchors",
+          "value": 7,
+          "metric": "anchors",
+          "unit": "anchors",
+          "group": {}
+        },
+        {
+          "id": "r_7b6f03e4.f6",
+          "path": "/result/by_direction/0/patterns/0/anchors_with_pattern",
+          "value": 6,
+          "metric": "anchors_with_pattern",
+          "unit": "anchors",
+          "group": {
+            "pattern_id": "bdec89f666f62cf9",
+            "direction": "before"
+          }
+        },
+        {
+          "id": "r_7b6f03e4.f9",
+          "path": "/result/by_direction/0/patterns/0/ratio",
+          "value": 145.1925465838509,
+          "metric": "precursor_ratio",
+          "unit": "ratio",
+          "group": {
+            "pattern_id": "bdec89f666f62cf9",
+            "direction": "before"
+          }
+        }
+      ],
+      "result": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "anchor_pattern_id": "287312f13c189c4d",
+        "anchor_query": null,
+        "matched_events": 5983,
+        "anchors": 7,
+        "episode_gap_minutes": 30,
+        "window_minutes": 10,
+        "direction": "before",
+        "top_n": 8,
+        "excluded_patterns": 1,
+        "base_rate_grid": {
+          "from": "2005-06-03T22:42:50.363779Z",
+          "to": "2005-07-01T00:00:00Z",
+          "window_minutes": 10,
+          "windows": 3896
+        },
+        "by_direction": [
+          {
+            "direction": "before",
+            "window": "[anchor \u2212 10 min, anchor)",
+            "patterns_found": 2,
+            "truncated": false,
+            "patterns": [
+              {
+                "pattern_id": "bdec89f666f62cf9",
+                "pattern": "ciod: LOGIN chdir(<PATH>) failed: No such file or directory",
+                "pattern_truncated": false,
+                "component": "APP",
+                "team": "Workload Runtime",
+                "anchors_with_pattern": 6,
+                "anchor_share": 0.8571428571428571,
+                "base_rate_windows": 23,
+                "base_rate": 0.005903490759753593,
+                "ratio": 145.1925465838509,
+                "example_event_id": 14736
+              },
+              {
+                "pattern_id": "c4de774642754d2a",
+                "pattern": "MidplaneSwitchController performing bit sparing on <NODE> bit <NUM>",
+                "pattern_truncated": false,
+                "component": "LINKCARD",
+                "team": "Hardware Operations",
+                "anchors_with_pattern": 1,
+                "anchor_share": 0.14285714285714285,
+                "base_rate_windows": 155,
+                "base_rate": 0.03978439425051335,
+                "ratio": 3.5907834101382488,
+                "example_event_id": 194195
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "receipt_id": "r_9608a767",
+      "created_at": "2026-10-18T10:29:44.005Z",
+      "client": "mcp",
+      "tool": "search_logs",
+      "tool_version": "1.0.1",
+      "input": {
+        "query": "ciod failed to read message prefix on control stream",
+        "match": "terms",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "sort": "time_desc",
+        "limit": 3
+      },
+      "signature": "194620c86da3d22947c425e6f766aea3ea37c20b21fa76366742838b2ad99c14",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [
+        "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+        "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+        "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ",
+        "SELECT log_events_idx.event_id, log_events_idx.dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.component, log_events_idx.level, log_events_idx.node, log_events_idx.alert_label, log_events_idx.request_id, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ plainto_tsquery($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ ORDER BY log_events_idx.ts DESC, log_events_idx.event_id DESC LIMIT $5"
+      ],
+      "params": [
+        ["ciod failed to read message prefix on control stream"],
+        ["bgl"],
+        [
+          "ciod failed to read message prefix on control stream",
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z"
+        ],
+        [
+          "ciod failed to read message prefix on control stream",
+          "bgl",
+          "2005-06-01T00:00:00Z",
+          "2005-07-01T00:00:00Z",
+          3
+        ]
+      ],
+      "scope": {
+        "windows": [
+          {
+            "dataset": "bgl",
+            "from": "2005-06-01T00:00:00Z",
+            "to": "2005-07-01T00:00:00Z"
+          }
+        ],
+        "filters": {}
+      },
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 3,
+      "truncated": true,
+      "row_limit": 3,
+      "duration_ms": 14.87,
+      "result_digest": "f19e7769484cdd095d96f9bff7c9b81767976da1c87a053419c221227758b176",
+      "receipt_file": ".data/receipts/r_9608a767.json",
+      "receipt_file_sha256": "c5496faffa9ef644bbbc60400267dc47e9dd9676d061753e2f44f6dd9a3bde26",
+      "cited_facts": [],
+      "result": {
+        "query": "ciod failed to read message prefix on control stream",
+        "match_mode": "terms",
+        "max_edits": null,
+        "sort": "time_desc",
+        "total_matches": 5983,
+        "hits": [
+          {
+            "event_id": 850698,
+            "dataset": "bgl",
+            "ts": "2005-06-20T08:42:45.024863Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R04-M1-N4-I:J18-U01",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:58285",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 850697,
+            "dataset": "bgl",
+            "ts": "2005-06-20T08:42:44.998286Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R04-M1-N4-I:J18-U11",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:58284",
+            "message_truncated": false,
+            "score": 14.509279
+          },
+          {
+            "event_id": 850696,
+            "dataset": "bgl",
+            "ts": "2005-06-20T08:42:44.971726Z",
+            "component": "APP",
+            "level": "FATAL",
+            "node": "R13-M0-NC-I:J18-U01",
+            "alert_label": "APPREAD",
+            "request_id": null,
+            "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:58257",
+            "message_truncated": false,
+            "score": 14.509279
+          }
+        ],
+        "truncated": true,
+        "row_limit": 3
+      }
+    },
+    {
+      "receipt_id": "r_f65335a5",
+      "created_at": "2026-10-18T10:32:11.714Z",
+      "client": "mcp",
+      "tool": "check_claims",
+      "tool_version": "1.0.0",
+      "input": {
+        "claims": [
+          {
+            "fact": "r_c432cc28.f12",
+            "value": "2005-06-01",
+            "metric": "window_start",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_c432cc28.f13",
+            "value": "2005-07-01",
+            "metric": "window_end",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_0f79733d.f25",
+            "value": "5,983",
+            "metric": "events",
+            "group": {}
+          },
+          {
+            "fact": "r_60c767f5.f12",
+            "value": 512,
+            "metric": "nodes",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_60c767f5.f13",
+            "value": 32,
+            "metric": "racks",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_0f79733d.f2",
+            "value": 15,
+            "metric": "events",
+            "group": {
+              "node": "R00-M0-N0-I:J18-U01"
+            }
+          },
+          {
+            "fact": "r_60c767f5.f8",
+            "value": 7,
+            "metric": "episodes",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_60c767f5.f5",
+            "value": 5,
+            "metric": "active_days",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_60c767f5.f10",
+            "value": "2005-06-04T07:24Z",
+            "metric": "first_seen",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_60c767f5.f11",
+            "value": "2005-06-20T08:42Z",
+            "metric": "last_seen",
+            "group": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          },
+          {
+            "fact": "r_afda7bc0.f3",
+            "value": "2,040",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_afda7bc0.f8",
+            "value": 124,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-09T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_afda7bc0.f12",
+            "value": "1,017",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-13T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_afda7bc0.f15",
+            "value": "2,040",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-16T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_afda7bc0.f19",
+            "value": 762,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-20T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_7b6f03e4.f6",
+            "value": 6,
+            "metric": "anchors_with_pattern",
+            "group": {
+              "pattern_id": "bdec89f666f62cf9",
+              "direction": "before"
+            }
+          },
+          {
+            "fact": "r_7b6f03e4.f1",
+            "value": 7,
+            "metric": "anchors",
+            "group": {}
+          },
+          {
+            "fact": "r_7b6f03e4.f9",
+            "value": "145.2",
+            "metric": "precursor_ratio",
+            "group": {
+              "pattern_id": "bdec89f666f62cf9",
+              "direction": "before"
+            }
+          }
+        ]
+      },
+      "signature": "e3e391c1a4ebc33cf91878c87ef1216b2e2c48230d8204affdfac30cd59c360f",
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "sql": [],
+      "params": [],
+      "scope": {
+        "windows": [],
+        "filters": {}
+      },
+      "population": null,
+      "rows_returned": 18,
+      "truncated": false,
+      "row_limit": null,
+      "duration_ms": 0,
+      "result_digest": "2aabd7077913f389d3c5c136757a562139b1ed0af05b3096959ab7288bc60830",
+      "receipt_file": ".data/receipts/r_f65335a5.json",
+      "receipt_file_sha256": "62205b64cc61ce9e6eb80960535a6f6434b32056369b141d66fa9d32e71d3bac",
+      "cited_facts": [
+        {
+          "id": "r_f65335a5.f1",
+          "path": "/result/summary/checked",
+          "value": 18,
+          "metric": "claims_checked",
+          "unit": "claims",
+          "group": {}
+        },
+        {
+          "id": "r_f65335a5.f2",
+          "path": "/result/summary/mismatch",
+          "value": 0,
+          "metric": "claims_mismatch",
+          "unit": "claims",
+          "group": {}
+        },
+        {
+          "id": "r_f65335a5.f3",
+          "path": "/result/summary/unresolved",
+          "value": 0,
+          "metric": "claims_unresolved",
+          "unit": "claims",
+          "group": {}
+        }
+      ],
+      "result": {
+        "claims": [
+          {
+            "claim": {
+              "fact": "r_c432cc28.f12",
+              "value": "2005-06-01",
+              "metric": "window_start",
+              "group": {
+                "dataset": "bgl"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": "2005-06-01T00:00:00Z",
+              "metric": "window_start",
+              "unit": "utc_time",
+              "group": {
+                "dataset": "bgl"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_c432cc28",
+              "tool": "search_logs",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {}
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_c432cc28.f13",
+              "value": "2005-07-01",
+              "metric": "window_end",
+              "group": {
+                "dataset": "bgl"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": "2005-07-01T00:00:00Z",
+              "metric": "window_end",
+              "unit": "utc_time",
+              "group": {
+                "dataset": "bgl"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_c432cc28",
+              "tool": "search_logs",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {}
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_0f79733d.f25",
+              "value": "5,983",
+              "metric": "events",
+              "group": {}
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 5983,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {}
+            },
+            "receipt": {
+              "receipt_id": "r_0f79733d",
+              "tool": "count_events",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_60c767f5.f12",
+              "value": 512,
+              "metric": "nodes",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 512,
+              "metric": "nodes",
+              "unit": "nodes",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_60c767f5",
+              "tool": "recurring_patterns",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z",
+                    "period": "current"
+                  },
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-05-02T00:00:00.000000Z",
+                    "to": "2005-06-01T00:00:00.000000Z",
+                    "period": "baseline"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_60c767f5.f13",
+              "value": 32,
+              "metric": "racks",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 32,
+              "metric": "racks",
+              "unit": "racks",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_60c767f5",
+              "tool": "recurring_patterns",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z",
+                    "period": "current"
+                  },
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-05-02T00:00:00.000000Z",
+                    "to": "2005-06-01T00:00:00.000000Z",
+                    "period": "baseline"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_0f79733d.f2",
+              "value": 15,
+              "metric": "events",
+              "group": {
+                "node": "R00-M0-N0-I:J18-U01"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 15,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {
+                "node": "R00-M0-N0-I:J18-U01"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_0f79733d",
+              "tool": "count_events",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_60c767f5.f8",
+              "value": 7,
+              "metric": "episodes",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 7,
+              "metric": "episodes",
+              "unit": "episodes",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_60c767f5",
+              "tool": "recurring_patterns",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z",
+                    "period": "current"
+                  },
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-05-02T00:00:00.000000Z",
+                    "to": "2005-06-01T00:00:00.000000Z",
+                    "period": "baseline"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_60c767f5.f5",
+              "value": 5,
+              "metric": "active_days",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 5,
+              "metric": "active_days",
+              "unit": "days",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_60c767f5",
+              "tool": "recurring_patterns",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z",
+                    "period": "current"
+                  },
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-05-02T00:00:00.000000Z",
+                    "to": "2005-06-01T00:00:00.000000Z",
+                    "period": "baseline"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_60c767f5.f10",
+              "value": "2005-06-04T07:24Z",
+              "metric": "first_seen",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": "2005-06-04T07:24:32.398284Z",
+              "metric": "first_seen",
+              "unit": "utc_time",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_60c767f5",
+              "tool": "recurring_patterns",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z",
+                    "period": "current"
+                  },
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-05-02T00:00:00.000000Z",
+                    "to": "2005-06-01T00:00:00.000000Z",
+                    "period": "baseline"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_60c767f5.f11",
+              "value": "2005-06-20T08:42Z",
+              "metric": "last_seen",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": "2005-06-20T08:42:45.024863Z",
+              "metric": "last_seen",
+              "unit": "utc_time",
+              "group": {
+                "pattern_id": "287312f13c189c4d"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_60c767f5",
+              "tool": "recurring_patterns",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z",
+                    "period": "current"
+                  },
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-05-02T00:00:00.000000Z",
+                    "to": "2005-06-01T00:00:00.000000Z",
+                    "period": "baseline"
+                  }
+                ],
+                "filters": {
+                  "text": "ciod failed to read message prefix on control stream"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_afda7bc0.f3",
+              "value": "2,040",
+              "metric": "events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-04T00:00:00.000000Z"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 2040,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-04T00:00:00.000000Z"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_afda7bc0",
+              "tool": "event_trend",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-03T22:42:50.363779Z",
+                    "to": "2005-06-22T00:00:00.000000Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_afda7bc0.f8",
+              "value": 124,
+              "metric": "events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-09T00:00:00.000000Z"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 124,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-09T00:00:00.000000Z"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_afda7bc0",
+              "tool": "event_trend",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-03T22:42:50.363779Z",
+                    "to": "2005-06-22T00:00:00.000000Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_afda7bc0.f12",
+              "value": "1,017",
+              "metric": "events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-13T00:00:00.000000Z"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 1017,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-13T00:00:00.000000Z"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_afda7bc0",
+              "tool": "event_trend",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-03T22:42:50.363779Z",
+                    "to": "2005-06-22T00:00:00.000000Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_afda7bc0.f15",
+              "value": "2,040",
+              "metric": "events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-16T00:00:00.000000Z"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 2040,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-16T00:00:00.000000Z"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_afda7bc0",
+              "tool": "event_trend",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-03T22:42:50.363779Z",
+                    "to": "2005-06-22T00:00:00.000000Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_afda7bc0.f19",
+              "value": 762,
+              "metric": "events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-20T00:00:00.000000Z"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 762,
+              "metric": "events",
+              "unit": "log_events",
+              "group": {
+                "dataset": "bgl",
+                "bucket_start": "2005-06-20T00:00:00.000000Z"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_afda7bc0",
+              "tool": "event_trend",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-03T22:42:50.363779Z",
+                    "to": "2005-06-22T00:00:00.000000Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_7b6f03e4.f6",
+              "value": 6,
+              "metric": "anchors_with_pattern",
+              "group": {
+                "pattern_id": "bdec89f666f62cf9",
+                "direction": "before"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 6,
+              "metric": "anchors_with_pattern",
+              "unit": "anchors",
+              "group": {
+                "pattern_id": "bdec89f666f62cf9",
+                "direction": "before"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_7b6f03e4",
+              "tool": "get_log_context",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_7b6f03e4.f1",
+              "value": 7,
+              "metric": "anchors",
+              "group": {}
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 7,
+              "metric": "anchors",
+              "unit": "anchors",
+              "group": {}
+            },
+            "receipt": {
+              "receipt_id": "r_7b6f03e4",
+              "tool": "get_log_context",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          },
+          {
+            "claim": {
+              "fact": "r_7b6f03e4.f9",
+              "value": "145.2",
+              "metric": "precursor_ratio",
+              "group": {
+                "pattern_id": "bdec89f666f62cf9",
+                "direction": "before"
+              }
+            },
+            "status": "verified",
+            "mismatch_on": [],
+            "reason": null,
+            "fact": {
+              "value": 145.1925465838509,
+              "metric": "precursor_ratio",
+              "unit": "ratio",
+              "group": {
+                "pattern_id": "bdec89f666f62cf9",
+                "direction": "before"
+              }
+            },
+            "receipt": {
+              "receipt_id": "r_7b6f03e4",
+              "tool": "get_log_context",
+              "data_version": "dv_7ea6fcb2c9eb6882",
+              "scope": {
+                "windows": [
+                  {
+                    "dataset": "bgl",
+                    "from": "2005-06-01T00:00:00Z",
+                    "to": "2005-07-01T00:00:00Z"
+                  }
+                ],
+                "filters": {
+                  "pattern_id": "287312f13c189c4d"
+                }
+              }
+            }
+          }
+        ],
+        "summary": {
+          "checked": 18,
+          "verified": 18,
+          "mismatch": 0,
+          "unresolved": 0,
+          "text": "18 claims checked \u00b7 0 mismatch \u00b7 0 unresolved"
+        }
+      }
+    }
+  ]
+}

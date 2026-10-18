@@ -1,0 +1,48 @@
+Scope
+BGL dataset, window [2005-06-01T00:00:00Z [r_cc0143a9.f12], 2005-07-01T00:00:00Z [r_cc0143a9.f13]) UTC. BGL data actually starts 2005-06-03T22:42:50Z [r_5930f079.f13], so the observed part of June is shorter than the window. The filter is the message text “failed to read message prefix on control stream”.
+
+Answer
+This is not one bad node. The errors are spread across the whole partition and arrive in synchronized bursts on all I/O nodes at once. Each burst is usually preceded by a ciod LOGIN chdir(...) failed: No such file or directory message. That points to a job launch problem, such as a missing working directory or filesystem path, rather than node hardware. It is a hypothesis, not a proven cause.
+
+Evidence
+Measure | Value
+Matching log events | 5,983 [r_cc0143a9.f11]
+Distinct nodes | 512 [r_6b12267c.f12]
+Distinct racks | 32 [r_6b12267c.f13]
+Highest node count (e.g. R00-M0-N0-I:J18-U01) | 15 events [r_cfc55f52.f2]; other listed nodes are similar, rest not individually listed
+Highest rack count (e.g. R00) | 240 events [r_371fa0b7.f2]
+Episodes (30-minute gap) | 7 [r_6b12267c.f8] over 5 active days [r_6b12267c.f5]
+All hits are from I/O nodes (…-I:J18-U01/U11) talking to the same host, 172.16.96.116, which suggests a common front-end or service node.
+
+Timeline
+Day (UTC) | Events
+2005-06-04 | 2,040 [r_ae15e9ef.f3]
+2005-06-09 | 124 [r_ae15e9ef.f8]
+2005-06-13 | 1,017 [r_ae15e9ef.f12]
+2005-06-16 | 2,040 [r_ae15e9ef.f15]
+2005-06-20 | 762 [r_ae15e9ef.f19]
+The first error was at 2005-06-04T07:24:32Z [r_6b12267c.f10] and the last at 2005-06-20T08:42:45Z [r_6b12267c.f11]. The pattern recurs in discrete bursts with quiet days in between; it does not grow steadily.
+
+Narrowing
+The distribution is flat across nodes and racks rather than concentrated on any one of them. That flat spread is what you would expect from a job-wide event, where every I/O node in the block fails at the same moment. A single faulty node would instead show a few nodes far above the rest.
+The node-level check also points away from a local fault. On R23-M1-N8-I:J18-U11, there were 0 events [r_a50782b8.f4] on that node in the 10 minutes before the first error. The only nearby event was a repeat of the same error at +42,258.222 ms [r_a50782b8.f2].
+
+Hypotheses
+- Single faulty node: contradicted. Errors cover 512 nodes [r_6b12267c.f12] across 32 racks [r_6b12267c.f13] with a flat distribution, and the sampled node had no local precursor [r_a50782b8.f4].
+- Job launch or working-directory failure: supported, not proven. The burst start was checked against what came before it. ciod: LOGIN chdir(<PATH>) failed: No such file or directory (bdec89f666f62cf9) appeared in the 10 minutes before 6 [r_5c5968b2.f6] of 7 [r_5c5968b2.f1] burst starts. That is about 145.2× its normal rate [r_5c5968b2.f9]. This is a timing association only.
+- Link or midplane hardware: open, weak. A LINKCARD bit-sparing message preceded only 1 [r_5c5968b2.f11] burst start.
+
+Next check
+- Look at the chdir failures. Search for “LOGIN chdir failed” in June and read the actual <PATH> values. If they show the same nonexistent directory or an unmounted filesystem path, that supports the launch hypothesis. If the paths differ randomly, that weakens it.
+- Check the burst that lacked the chdir precursor. Run the same precursor analysis with direction: both, and inspect the 9 June burst manually. The other 6 bursts had the chdir precursor, so this one may show a second cause.
+- Check outside the logs. Look at the job scheduler records and the mount or NFS status of the 172.16.96.116 service node for those times.
+
+Unknown
+- The root cause is unproven, since a precursor is not proof of causation.
+- There are no job IDs or scheduler data in this corpus, so I can’t confirm that these were the same job or user.
+- No comparison with May is possible because it falls before the data starts.
+- The node and rack breakdowns only list the top 10 groups individually.
+- Impact on users or jobs is unknown.
+
+Verification
+23 claims checked [r_e3d3d31f.f1] · 0 mismatch [r_e3d3d31f.f2] · 0 unresolved [r_e3d3d31f.f3]. This covers the numbers and times only, not the reasoning.

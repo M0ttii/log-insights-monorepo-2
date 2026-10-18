@@ -1,0 +1,25 @@
+{
+  "run_id": "s15-2026-10-18-r2",
+  "scope": "Focused S-15 / LOG-21 acceptance3; complete known-question regression round, not full U16.",
+  "outcome": "failed_round",
+  "assessment": "assessment.json",
+  "planned_attempts": 3,
+  "retained_attempts": 3,
+  "s15_passes": 0,
+  "s15_failures": 3,
+  "guidance_version": "1.0.3",
+  "contract_version": "2.9.0",
+  "failure": "Every answer marks a single-node causal origin contradicted from symptom breadth without refuting a necessary causal assumption. Trial3 also presents a full-span precursor baseline within a June-scoped answer without disclosing the difference.",
+  "improvement_observed": "Every answer executes the real aggregate check and treats the precursor and proposed timing checks as temporal evidence, not causal proof. These observations do not establish the causal effect of the guidance change.",
+  "decision": "Keep LOG-21 and LOG-19 In Progress. Preserve all failures. A final predeclared three-trial regression round will use bundle1.0.4.",
+  "prior_round": "../s15-2026-10-18/report.json",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "Causal effect of guidance changes in a controlled comparison"
+  ],
+  "evidence": "Full answer transcriptions, exact tool inputs/SQL/parameters/results, original receipt hashes and actual cited facts are retained. Tokens, provider latency and subscription cost are unavailable."
+}
