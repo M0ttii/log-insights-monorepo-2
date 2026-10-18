@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "exports": {
+    "./answer": "./src/answer.ts",
     "./bigint": "./src/bigint.ts",
     "./claims": "./src/claims.ts",
     "./endpoint": "./src/endpoint.ts",
@@ -36,6 +37,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@types/node": "24.19.2",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^10",
