@@ -1,6 +1,6 @@
 # Produktkonzept: Log Insights – Making Sense of Logs
 
-**Version:** 3.8 vom 18.10.2026 · Erweiterungskorpora HDFS, OpenSSH, Apache, Linux und ZooKeeper (5.5, A-39, Abschnitt 13); 3.7: Web-App-Entscheidungen nach Fertigstellung von Tools und MCP-Server; 3.6: Entscheidungen aus dem Gespräch mit dem SereneDB-Team; 3.5: Profiling-Entscheidungen aus dem geladenen Korpus; 3.4: Wirksamkeitsnachweis und unabhängige Testfragen; Version 3.0 ersetzte 2.2 vollständig  
+**Version:** 3.9 vom 18.10.2026 · Abgabeumfang nach Originalbrief und aufgeschobene Veröffentlichung (A-21, A-23, Abschnitt 4); 3.8: Erweiterungskorpora HDFS, OpenSSH, Apache, Linux und ZooKeeper (5.5, A-39, Abschnitt 13); 3.7: Web-App-Entscheidungen nach Fertigstellung von Tools und MCP-Server; 3.6: Entscheidungen aus dem Gespräch mit dem SereneDB-Team; 3.5: Profiling-Entscheidungen aus dem geladenen Korpus; 3.4: Wirksamkeitsnachweis und unabhängige Testfragen; Version 3.0 ersetzte 2.2 vollständig\
 **Anlass:** National AI Hackathon 2026 (SchubKI), Challenge „Making Sense of Logs: The Right Insights for the Right People“ von SereneDB  
 **Maßgebliche Quellen:** veröffentlichter Challenge-Brief und SereneDB-Guidance „Getting started with SereneDB“ (beide am 17.10.2026 bereitgestellt). Bei Widerspruch gilt der Brief; wo die Guidance konkreter ist (Setup, Loader, Ownership), gilt die Guidance.  
 **Status:** verbindliche Produktdefinition für das 48-Stunden-Arbeitsfenster am 17.–18.10.2026. Technische Umsetzung: [technical.md](technical.md). Oberfläche: [ui-concept.md](ui-concept.md). Optionales: [improvements.md](improvements.md).
@@ -21,9 +21,9 @@ Wir bauen einen **funktionierenden Prototyp**, in dem ein KI-Agent über eine kl
 
 | Kriterium (Gewicht) | Was die Jury sehen will | Unsere Antwort | Anforderungen |
 |---|---|---|---|
-| **Role-appropriate insight (30 %)** | Drei unterschiedliche Verwendungen der Belege: Fehleruntersuchung, wiederkehrende Muster, priorisierte Risiken und Maßnahmen | Rollen-Playbooks mit eigenen Leitfragen, Pflichtbelegen, Belegebenen, Prüfungen und Entscheidungen im nächsten Schritt; ein rollenspezifischer Antwortkern, damit sich die Antworten schon im Aufbau unterscheiden; Rollenführung auch ohne Prompt-Wahl; Rollenvergleich in der Web-App | A-17–A-20, A-37, A-38 |
+| **Role-appropriate insight (30 %)** | Drei unterschiedliche Verwendungen der Belege: Fehleruntersuchung, wiederkehrende Muster, priorisierte Risiken und Maßnahmen | Rollen-Playbooks mit eigenen Leitfragen, Pflichtbelegen, Belegebenen, Prüfungen und Entscheidungen im nächsten Schritt; ein rollenspezifischer Antwortkern, damit sich die Antworten schon im Aufbau unterscheiden; Rollenführung auch ohne Prompt-Wahl; drei belegte Rollensichten in Untersuchung und Demo | A-17–A-20, A-37, A-38 |
 | **Search and analytics together (25 %)** | Relevante Volltextbelege und korrekte Aggregationen über den genannten Datenumfang | BM25-Volltextsuche mit Phrasen- und Fuzzy-Modus, Zeitfiltern und Nachbarereignissen; Vorläuferanalyse über alle Episoden eines Musters; Gesamtzählungen über das ganze Korpus nach Datensatz, Team und Komponente; Wochentrends; OpenStack-Latenzperzentile und Fehlerraten – alles in SereneDB berechnet | A-05–A-12, A-36 |
-| **Recommendation quality (25 %)** | Konkrete nächste Schritte aus Query-Belegen; Fakten und Hypothesen klar getrennt | Unterscheidende Prüfungen, die der Agent selbst ausführt, bevor er empfiehlt; Hypothesenstatus mit Beleg; Fakt-ID an jeder Zahl mit deterministischer Prüfung; Empfehlungsqualität per Rubrik mit Bestehensgrenze im Rollen-Eval | A-13, A-14, A-17, A-20, A-21 |
+| **Recommendation quality (25 %)** | Konkrete nächste Schritte aus Query-Belegen; Fakten und Hypothesen klar getrennt | Unterscheidende Prüfungen, die der Agent selbst ausführt, bevor er empfiehlt; Hypothesenstatus mit Beleg; Fakt-ID an jeder Zahl mit deterministischer Prüfung; inhaltliche Prüfung der tatsächlich gezeigten Rollenantworten gegen die Query-Belege | A-13, A-14, A-17, A-20, A-21 |
 | **Execution (20 %)** | Läuft aus sauberem Checkout, klare Anleitung, schlüssige Demo, Neuheit, Präsentation | Ein Setup-Befehl, MCP-Verbindung mit einer Zeile, Web-App als Demo-Bühne, ausgearbeitete Untersuchung, Slides, Live-Demo ≤ 5 Minuten und Abgabevideo ≤ 3 Minuten | A-01, A-15, A-21–A-26 |
 
 **Entscheidend bei Gleichstand: Nutzung von SereneDB.** Im Gespräch mit dem SereneDB-Team am 17.10.2026 nannte die Jury als Unterscheidungsmerkmal zwischen zwei vollständigen, korrekten Einreichungen, wie sie SereneDB nutzen: neue Funktionen der Engine und möglichst viel Berechnung in SereneDB statt in Skripten, die Daten umformen. Das ist kein eigenes Gewicht im Brief, entscheidet aber knappe Vergleiche. Daraus folgen der Rechenort (2.2 Punkt 7, technical.md § 5.3), die Funktionsübersicht in README, Slides und Demo (A-23, A-24) und der Vorrang nach M1 (Abschnitt 4). Weitere Aussagen aus dem Gespräch: Chat oder Dashboard ist freigestellt; die Jury stellt **eigene, unbekannte Fragen** und liest die von uns hinterlegten Fragen mit (A-23); sie arbeitet mit **Claude Opus 5.5** (`claude-opus-5-5`, O-01); häufige Schwäche anderer Teams ist, dass Modelle die SereneDB-Doku nicht gründlich lesen und SereneDB-eigene Funktionen übersehen (technical.md § 5.3).
@@ -33,14 +33,14 @@ Der Sonderpreis **Best MCP Server** bewertet Tool-Beschreibungen, Tool-Auswahl d
 ### 2.2 Differenzierung
 
 1. **Query Receipts.** Jedes Tool-Ergebnis erhält eine Belegnummer wie `[r_7f3a9c21]`. Der Receipt enthält die validierte Tool-Eingabe, exaktes SQL, gebundene Parameter, Datenumfang, Datenversion, Laufzeit in SereneDB, Kürzungshinweis und das Ergebnis. Er ist über MCP und im Evidence Drawer der Web-App abrufbar.
-2. **Faktenprüfung.** Jede Zahl im Tool-Ergebnis trägt eine vom Tool vergebene Fakt-ID wie `r_7f3a9c21.f4`; die Antwort zitiert diese ID, statt selbst Pfade zu bilden. Ein deterministisches Tool prüft Wert, Kennzahl und Gruppe der Behauptung gegen den Fakt; der Umfang ergibt sich aus dem Receipt. MCP-Weg und Web-App prüfen auf demselben Weg; die Antwort nennt, welche Claims geprüft wurden, und die Web-App markiert Fakt-IDs, die nicht zur Prüfung eingereicht wurden (`unchecked`), sowie Zahlen, denen keine Fakt-ID folgt (`uncited`). Beide Markierungen sind syntaktisch und prüfen nichts. Erklärungen und Kausalaussagen prüft dieses Tool nicht; sie bewertet das Rollen-Eval.
+2. **Faktenprüfung.** Jede Zahl im Tool-Ergebnis trägt eine vom Tool vergebene Fakt-ID wie `r_7f3a9c21.f4`; die Antwort zitiert diese ID, statt selbst Pfade zu bilden. Ein deterministisches Tool prüft Wert, Kennzahl und Gruppe der Behauptung gegen den Fakt; der Umfang ergibt sich aus dem Receipt. MCP-Weg und Web-App prüfen auf demselben Weg; die Antwort nennt, welche Claims geprüft wurden, und die Web-App markiert Fakt-IDs, die nicht zur Prüfung eingereicht wurden (`unchecked`), sowie Zahlen, denen keine Fakt-ID folgt (`uncited`). Beide Markierungen sind syntaktisch und prüfen nichts. Erklärungen und Kausalaussagen prüft dieses Tool nicht; sie werden an den vollständigen gezeigten Antworten inhaltlich geprüft (A-21).
 3. **Rollen-Playbooks, die immer greifen.** Rollenunterschiede entstehen aus unterschiedlichen Fragen, Pflichtbelegen, Prüfungen, Entscheidungen und einem rollenspezifischen Antwortkern. Dieselben Playbooks leiten Claude (MCP) und den Web-Chat an – als MCP-Prompt und zusätzlich über Server-Instruktionen und `describe_corpus`, damit sie auch greifen, wenn jemand einfach eine Frage tippt.
 4. **Belegte Diagnose statt Anekdote.** Der Agent führt unterscheidende Prüfungen selbst aus (Konzentration auf Nodes oder Streuung, Zeitmuster, Vorläufer), bevor er eine Hypothese einstuft. Die Vorläuferanalyse zählt in SereneDB über alle Episoden eines Musters, was davor häufiger auftritt als sonst – Volltext und Aggregation in einer Abfrage.
 5. **Eine fiktive Plattform-Organisation über beide Datensätze.** Die Ownership-Tabelle verbindet BGL- und OpenStack-Komponenten mit gemeinsamen Teams; Zählungen nach Team laufen über das ganze Korpus, mit ehrlich benannter Grenze unterschiedlicher Zeiträume.
-6. **Zwei Clients, eine Wahrheit.** Claude Code/Desktop und die Web-App verwenden dieselbe Tool-Registry; derselbe Tool-Aufruf liefert auf derselben Datenversion in beiden Clients dieselben Zahlen. Der Rollenvergleich der Web-App zeigt dieselbe Situation aus drei Rollen nebeneinander.
+6. **Zwei Clients, eine Wahrheit.** Claude Code/Desktop und die Web-App verwenden dieselbe Tool-Registry; derselbe Tool-Aufruf liefert auf derselben Datenversion in beiden Clients dieselben Zahlen. Ein zusätzlicher Web-Rollenvergleich ist zurückgestellt; Untersuchung und echte Rollenläufe zeigen die unterschiedlichen Entscheidungen.
 7. **SereneDB rechnet alles – sichtbar.** Parsing, Muster, Volltext, Zählungen, Episoden, Vorläufer, Perzentile, Raten und auch die Regelergebnisse (Einstufung nach R-06, Status nach R-10, Rangfolge nach R-08, Dominanz nach R-09) entstehen in SereneDB-SQL. TypeScript validiert Eingaben, vergibt Fakt-IDs, schreibt Receipts und prüft Claims, rechnet aber keine Analysewerte. Wir nutzen SereneDB-eigene Funktionen gezielt, wo sie eine Aufgabe direkt lösen (BM25-Index, Phrasen-, Fuzzy- und Regex-Suche, Trefferstellen, Term-Dictionary, `MATCH_RECOGNIZE`, Index über externe Dateien), und zeigen jede davon mit dem Tool und dem Receipt, in dem sie vorkommt (technical.md § 5.3).
 
-Der Nutzen der Rollen-Playbooks wird gegenüber einer einfachen Rollen-Anweisung unter gleichen Bedingungen gemessen (A-21). Eine bestandene Faktenprüfung allein belegt weder die Qualität der Empfehlung noch einen Vorteil gegenüber dieser Baseline. Der Vergleich veröffentlicht auch Gleichstand, Nachteile und Fehlversuche.
+Der formale Vergleich der Rollen-Playbooks mit einer einfachen Rollen-Anweisung ist seit der Nutzerentscheidung vom 18.10.2026 zurückgestellt (A-21). Eine bestandene Faktenprüfung allein belegt weder die Qualität der Empfehlung noch einen Vorteil gegenüber einer Baseline; ein solcher Vorteil wird ohne tatsächliche Messung nicht behauptet.
 
 ## 3. Was wir bauen
 
@@ -53,9 +53,9 @@ Der Nutzen der Rollen-Playbooks wird gegenüber einer einfachen Rollen-Anweisung
 | Tool-Schicht (acht Tools) | Parametrisierte Abfragen mit Limits, Fakt-IDs und Receipts | P0 |
 | MCP-Server | Tools, Resources, Rollen-Prompts und Server-Instruktionen mit Rollenführung für Claude Code und Claude Desktop | P0 |
 | Rollen-Playbooks | Leitfrage, Pflichtbelege, Prüfung vor der Empfehlung, Antwortkern und nächster Schritt je Rolle | P0 |
-| Verifikation | Lade-Bilanz, Golden Queries, Faktenprüfung, Rollen-Eval mit Bestehensgrenze, zurückgehaltenen Testfragen und Baseline-Vergleich; Antwortqualität, Laufzeit und Aufwand getrennt berichtet | P0 |
+| Verifikation | Lade-Bilanz, Golden Queries, Faktenprüfung und inhaltlich geprüfte echte Rollenantworten mit zugänglichen Query-Belegen; formales Baseline-/Holdout-Eval zurückgestellt | P0 |
 | Abgabe | README, Tool-Dokumentation, ausgearbeitete Untersuchung, Slides, Abgabevideo, Live-Demo | P0 |
-| Web-App | Chat mit Rollenwahl und Live-Toolaufrufen, Evidence Drawer, Rollenvergleich, Übersicht, Logs | P1, fest eingeplant |
+| Web-App | Chat mit Rollenwahl und Live-Toolaufrufen, Evidence Drawer, Übersicht, Logs; zusätzlicher Rollenvergleich zurückgestellt | P1, vorhandene stabile Teile |
 | Große Datensätze (A-32) | Volltext über OTel-Parquet per Index über externe Dateien, dieselben Tools | P1 nach M1 (seit 3.6) |
 | Bonus-Tracks | Index-Tools des Agenten mit Messung (hinter Schalter), Traces, Row-Level-Security | P2 |
 
@@ -73,6 +73,10 @@ Eigene Agenten-Laufzeit mit Jobsystem, gespeicherte Untersuchungen und Rückfrag
 
 ## 4. Prioritäten und Verbindlichkeit
 
+**Nutzerentscheidung vom 18.10.2026 (LOG-56):** Für den Abschluss zählt nur noch der Originalbrief. Der bisher selbst gesetzte formale Baseline-/Dev-Vergleich mit Wiederholungen, unabhängiger Bewertung, Freeze und erstem Holdout sowie der zusätzliche Web-Rollenvergleich (A-38/U18) sind zurückgestellt und keine Abgabetore. Auch eine vollständige Rollen-/Prompt-Matrix in Claude Code, Desktop und Web ist keine Mindestanforderung: Ein tatsächlich genutzter Claude-Client mit mindestens einer belegten Antwort pro Rolle genügt. Vorhandene Erweiterungen bleiben bestehen; unerfüllte Zusatzprüfungen und bekannte Fehler bleiben sichtbar. Diese Entscheidung ändert keine Regel R-01–R-11, Zahlenprüfung oder Trennung von Beobachtung, Hypothese und Ursache. Sie ist keine Behauptung, das formale Eval sei bestanden.
+
+**Veröffentlichung separat zurückgestellt (18.10.2026):** Der Eigentümer hat ausdrücklich entschieden, das Hauptrepository vorerst privat zu lassen. Öffentlich zugängliches Repository und Abgabedateien bleiben eine Anforderung des Briefs; diese ist damit noch offen. Die interne Fertigstellung von Code und Abgabeunterlagen ist keine abgeschlossene öffentliche Einreichung. Eine spätere Veröffentlichung braucht eine neue Freigabe; vorhandene Historie, PRs und Actions-Logs werden jetzt nicht veröffentlicht.
+
 Die Umsetzung erfolgt mit mehreren parallel arbeitenden Coding-Agenten. Der Umfang wird deshalb nicht nach verfügbaren Stunden zugeschnitten, sondern nach Abhängigkeiten: Gemeinsame Verträge entstehen zuerst, danach arbeiten Agenten parallel an getrennten Paketen (technical.md § 14, 15).
 
 | Priorität | Bedeutung |
@@ -81,15 +85,15 @@ Die Umsetzung erfolgt mit mehreren parallel arbeitenden Coding-Agenten. Der Umfa
 | **P1 – Geplant** | Web-App als Demo-Bühne. Baut auf den gemeinsamen Verträgen auf, wird nach M1 gegen echte Tools verdrahtet und blockiert P0 nie. Ist sie zur Demo nicht stabil, läuft die Demo über Claude Desktop, und die Web-App zeigt nur ihre stabilen Teile. |
 | **P2 – Bonus** | Sonderpreis-Tracks und Extras. Beginnen erst, wenn der Kernablauf funktioniert (M1), wie der Brief es verlangt, und blockieren P0 und P1 nie. |
 
-**Vorrang nach M1 (seit 3.6):** Steht nach M1 eine Wahl zwischen weiterem UI-Ausbau über A-26–A-29 und A-38 hinaus (etwa I-30–I-33) und mehr Berechnung in SereneDB, hat SereneDB Vorrang: die Verlagerung der Regel-Logik in SQL, `MATCH_RECOGNIZE` für Episoden und Anker, Trefferstellen aus dem Index (technical.md § 14, U22–U25) und A-32, das dafür von P2 auf P1 steigt. P0 und die geplante Web-App (A-26–A-29, A-38) bleiben davon unberührt.
+**Vorrang nach M1 (seit 3.6):** Steht nach M1 eine Wahl zwischen weiterem UI-Ausbau über A-26–A-29 und A-38 hinaus (etwa I-30–I-33) und mehr Berechnung in SereneDB, hat SereneDB Vorrang: die Verlagerung der Regel-Logik in SQL, `MATCH_RECOGNIZE` für Episoden und Anker, Trefferstellen aus dem Index (technical.md § 14, U22–U25) und A-32, das dafür von P2 auf P1 steigt. P0 und die vorhandenen Web-Funktionen (A-26–A-29) bleiben davon unberührt; A-38 ist seit der Umfangsentscheidung zurückgestellt.
 
 P0 wird in zwei Meilensteinen mit einem Ausbau dazwischen erreicht. Grundlage ist die Empfehlung des Briefs, zuerst einen vollständigen Ablauf zu bauen und Erweiterungen danach.
 
 | Meilenstein | Inhalt | Nachweis |
 |---|---|---|
-| **M1 · Kernablauf** | `describe_corpus`, `search_logs`, `get_log_context`, `count_events`, `event_trend` und `check_claims` mit Receipts über MCP; alle drei Rollen einmal über Claude Code beantwortet. Deckt die Mindestanforderungen des Briefs an Suche, Umgebung, Zählung und Trend. | Drei Rollenantworten über Claude Code mit Receipts und Faktenprüfung |
+| **M1 · Kernablauf** | `describe_corpus`, `search_logs`, `get_log_context`, `count_events`, `event_trend` und `check_claims` mit Receipts über MCP; alle drei Rollen einmal über Claude Code oder Claude Desktop beantwortet. Deckt die Mindestanforderungen des Briefs an Suche, Umgebung, Zählung und Trend. | Drei echte Rollenantworten im gewählten Claude-Client mit Receipts und Faktenprüfung |
 | **Ausbau** | Periodenvergleich als Option von `count_events` (A-09), `recurring_patterns` mit Rangfolge (A-10, A-11), `latency_stats` (A-12), Phrasen- und Fuzzy-Suche (A-05), Vorläuferanalyse (A-36), Rollenführung ohne Prompt (A-37) und Playbooks mit unterscheidenden Prüfungen (A-17–A-19). Alles davon ist P0; nichts hängt mehr von der Fallwahl ab. | Golden Queries aller acht Tools grün; Rollenantworten erfüllen den Antwortvertrag |
-| **M2 · Abgabe vollständig** | Bestandenes Rollen-Eval, ausgearbeitete Untersuchung, README, Slides, Abgabevideo, geprobte Live-Demo, Frischklon-Test. | A-21–A-24 erfüllt |
+| **M2 · Abgabe vollständig** | Mindestens eine echte, inhaltlich geprüfte Agentenantwort pro Rolle, ausgearbeitete Untersuchung, öffentliches Repository mit README und Tool-Referenz, Slides, Abgabevideo, geprobte Demo, Frischklon-Test. | A-21–A-24 im Umfang der Nutzerentscheidung erfüllt; formales Eval und Web-Vergleich ausdrücklich zurückgestellt; öffentliche Einreichung bis zur Freigabe offen |
 
 Was zur Abgabe fehlt, nennt das README mit Anforderungskennung als nicht erfüllt. Nichts Unfertiges wird als funktionierend präsentiert. Synthetische Testdaten sind als solche gekennzeichnet und erscheinen nie in Demo-Antworten.
 
@@ -192,7 +196,7 @@ Alle Rollen nutzen denselben Agenten, dasselbe Korpus und dieselben Tools. Die R
 
 ## 7. Antwortvertrag
 
-Jede Rollenantwort besteht aus einem **gemeinsamen Rahmen** und einem **rollenspezifischen Kern**. Ein gleicher Aufbau für alle Rollen ließe die drei Antworten wie dieselbe Antwort in unterschiedlicher Länge aussehen, genau das schließt der Brief aus. Die Web-App rendert Rahmen und Kern je Rolle. In Claude Desktop/Code leiten MCP-Prompts, Server-Instruktionen und `describe_corpus` sie an; ein MCP-Server kontrolliert die finale Antwort des Clients nicht. Hart durchgesetzt werden Grenzen bei Eingaben, SQL und Ergebnissen; das Antwortverhalten wird angeleitet und im Rollen-Eval geprüft.
+Jede Rollenantwort besteht aus einem **gemeinsamen Rahmen** und einem **rollenspezifischen Kern**. Ein gleicher Aufbau für alle Rollen ließe die drei Antworten wie dieselbe Antwort in unterschiedlicher Länge aussehen, genau das schließt der Brief aus. Die Web-App rendert Rahmen und Kern je Rolle. In Claude Desktop/Code leiten MCP-Prompts, Server-Instruktionen und `describe_corpus` sie an; ein MCP-Server kontrolliert die finale Antwort des Clients nicht. Hart durchgesetzt werden Grenzen bei Eingaben, SQL und Ergebnissen; das Antwortverhalten wird angeleitet und an den tatsächlich gezeigten Rollenantworten geprüft; ein formales Eval bleibt optional.
 
 **Gemeinsamer Rahmen:**
 
@@ -370,8 +374,8 @@ Die Kennungen A-01 bis A-35 gelten ab Version 3.0, A-36 bis A-38 ab Version 3.3,
 **Abnahme:**
 1. Jedes Tool-Ergebnis vergibt für jede Zahl und jede Zeitangabe in Ergebnis und Umfang eine Fakt-ID (`<receipt_id>.f<n>`, etwa `r_7f3a9c21.f4`) mit Wert, Kennzahl, Einheit und Gruppe. Das Modell zitiert diese IDs und bildet keine eigenen Pfade.
 2. `check_claims` prüft je Claim Wert, Kennzahl und Gruppe gegen den Fakt; die Gruppe ist Pflicht (leer bei ungruppierten Fakten), der Umfang ergibt sich aus dem Receipt. Es meldet `verified`, `mismatch` (mit dem abweichenden Merkmal), `unknown_fact` oder `unknown_receipt`. Ein Wert, der nur in einem anderen Fakt vorkommt, gilt nicht als belegt.
-3. MCP-Weg und Web-App prüfen auf demselben Weg: Das Modell reicht die Zahlen per `check_claims` ein, und die Antwort nennt die Zahl der geprüften Claims sowie abweichende und nicht auflösbare (`unknown_fact`, `unknown_receipt`), ohne eine vollständige Prüfung zu behaupten. Die Web-App markiert Fakt-IDs, die nicht eingereicht wurden, als ungeprüft und zeigt ohne `check_claims`-Aufruf „not verified“. Zahlen ganz ohne Fakt-ID misst das Rollen-Eval (A-21).
-4. Ein falscher Wert und ein richtiger Wert mit falscher Kennzahl oder Gruppe werden als `mismatch` erkannt, eine nicht existierende Fakt-ID als `unknown_fact` (S-08). Erklärungen und Kausalaussagen sind nicht Gegenstand dieser Prüfung; sie bewertet das Rollen-Eval (A-21).
+3. MCP-Weg und Web-App prüfen auf demselben Weg: Das Modell reicht die Zahlen per `check_claims` ein, und die Antwort nennt die Zahl der geprüften Claims sowie abweichende und nicht auflösbare (`unknown_fact`, `unknown_receipt`), ohne eine vollständige Prüfung zu behaupten. Die Web-App markiert Fakt-IDs, die nicht eingereicht wurden, als ungeprüft und zeigt ohne `check_claims`-Aufruf „not verified“. Zahlen ganz ohne Fakt-ID sind bei der vollständigen Antwortprüfung nach A-21 zu erfassen.
+4. Ein falscher Wert und ein richtiger Wert mit falscher Kennzahl oder Gruppe werden als `mismatch` erkannt, eine nicht existierende Fakt-ID als `unknown_fact` (S-08). Erklärungen und Kausalaussagen sind nicht Gegenstand dieser Prüfung; sie werden bei der inhaltlichen Antwortprüfung nach A-21 bewertet.
 
 ### Agent und MCP
 
@@ -382,7 +386,7 @@ Die Kennungen A-01 bis A-35 gelten ab Version 3.0, A-36 bis A-38 ab Version 3.3,
 **Abnahme:**
 1. Der Server stellt die acht Tools, die Resources (`corpus://overview`, `corpus://schema`, `corpus://ownership`, `receipt://{id}`) und je Rolle einen Prompt bereit. Die optionalen Index-Tools (A-33) erscheinen nur bei gesetztem Schalter.
 2. Tools sind als schreibgeschützt annotiert, liefern strukturierte Ergebnisse mit Schema und verständliche Fehlermeldungen mit Korrekturhinweis.
-3. Die Verbindung funktioniert mit Claude Code (inklusive `.mcp.json` im Repository) und Claude Desktop und ist im README beschrieben, einschließlich des Aufrufs der Rollen-Prompts in beiden Clients; beides ist in beiden Clients geprüft.
+3. Die Verbindung für Claude Code (inklusive `.mcp.json` im Repository) und Claude Desktop ist im README beschrieben, einschließlich des Aufrufs der Rollen-Prompts. Die Abgabe weist den tatsächlich genutzten Client aus; die vollständige Rollen-/Prompt-Matrix beider Clients ist zurückgestellt, bestehende Verbindungsproben und Fehler bleiben dokumentiert.
 
 #### A-16 · P0 · Tool-Beschreibungen
 
@@ -391,7 +395,7 @@ Die Kennungen A-01 bis A-35 gelten ab Version 3.0, A-36 bis A-38 ab Version 3.3,
 **Abnahme:**
 1. Jede Beschreibung nennt Zweck, wann das Tool zu verwenden ist und wann nicht, Eingaben mit Einheiten und Grenzen, Ausgaben und Limits.
 2. Das README enthält dieselben Beschreibungen in tabellarischer Form, aus der Registry generiert.
-3. Im Rollen-Eval beschafft der Agent für jede Frage die Pflichtbelege seines Playbooks mit passenden Tools; je Frage sind die zulässigen Tool-Folgen hinterlegt (S-13).
+3. In den dokumentierten echten Rollenläufen beschafft der Agent die zur Frage passenden Belege mit den beschriebenen Tools. Tool-Aufrufe und Ergebnisse bleiben prüfbar; die formale Suite mit hinterlegten zulässigen Tool-Folgen ist optional (A-21).
 
 #### A-37 · P0 · Rollenführung ohne Prompt-Wahl
 
@@ -401,7 +405,7 @@ Die Kennungen A-01 bis A-35 gelten ab Version 3.0, A-36 bis A-38 ab Version 3.3,
 1. Die Server-Instruktionen enthalten eine Kurzfassung aller drei Playbooks und die Rollenerkennung aus Abschnitt 6; bei unklarer Rolle fragt der Agent nach.
 2. `describe_corpus` liefert die Antwortanleitung je Rolle mit, damit sie auch in Clients ankommt, die Server-Instruktionen nicht übernehmen.
 3. Kurzfassung und Anleitung werden aus denselben Playbook-Dateien erzeugt wie Prompts und Web-System-Prompt; es gibt keine zweite Textquelle.
-4. Im Rollen-Eval und in beiden Clients beantwortet der Agent je Rolle eine Frage ohne Prompt-Wahl nach dem passenden Playbook (S-14).
+4. Eine gezielte echte Probe ohne Prompt-Wahl dokumentiert die Rollenführung bzw. die Rückfrage bei unklarer Rolle (S-14). Die vollständige Matrix aus drei Rollen in beiden Clients bleibt zurückgestellt; aus einer Probe folgt keine allgemeine Konformitätsbehauptung.
 
 #### A-17 · P0 · Engineer-Antwort
 
@@ -444,17 +448,19 @@ Die Kennungen A-01 bis A-35 gelten ab Version 3.0, A-36 bis A-38 ab Version 3.3,
 
 #### A-21 · P0 · Verifikation
 
-**Anforderung:** Korrektheit ist unabhängig von der Modellantwort nachgewiesen; der Nutzen der Rollen-Playbooks ist unter gleichen Bedingungen mit einer einfachen Baseline verglichen.
+**Anforderung:** Query-Korrektheit ist unabhängig von der Modellantwort nachgewiesen; jede der drei Rollen ist durch mindestens eine echte Agentenantwort mit relevanten, zugänglichen Query-Belegen und geeignetem nächsten Schritt vertreten.
 
-**Abnahme:**
+**Abnahme (Nutzerentscheidung 18.10.2026):**
 1. Golden Queries prüfen jedes Tool gegen unabhängig formulierte SQL-Abfragen bzw. bekannte Werte (Zeilenzahlen des Briefs) auf dem echten Korpus.
 2. CI prüft die Tools auf den 2k-Samples von Loghub in einer SereneDB-Instanz.
-3. Ein Rollen-Eval führt je Rolle mindestens fünf Fragen über den echten Agenten aus: mindestens drei Entwicklungsfragen und zwei bis zum Test zurückgehaltene Fragen (Holdout); jede Rolle wird zusätzlich einmal ohne Prompt-Wahl gefragt (A-37). Die Holdout-Fragen samt Bewertungserwartungen erstellt eine Person bzw. ein Agent, die bzw. der die Playbooks nicht geschrieben hat. Fragen und Erwartungen werden den Implementierenden erst nach dem Einfrieren von Playbooks, Tool-Beschreibungen, Modellkonfiguration und Bewertungsregeln zugänglich. Alle vorgesehenen Erstversuche laufen vor einer Ergebnisinspektion oder Anpassung. Der erste Holdout-Lauf wird separat ausgewertet. Nach Einsicht sind diese Fragen bekannte Regressionstests; ein neuer Nachweis an unbekannten Fragen braucht einen frischen Holdout.
-4. Automatisch geprüft werden Pflichtbelege, Prüfung vor der Empfehlung, Tool-Wahl, Rollenabschnitte und Faktenprüfung. Die Empfehlungsqualität wird nach einer Rubrik mit 0–2 Punkten je Dimension bewertet: Die Antwort beantwortet die Frage im Umfang, nutzt relevante Belege, nennt eine spezifische Maßnahme mit Team bzw. Prüfobjekt, benennt ein entscheidungsänderndes Prüfergebnis bzw. fehlende Information und trennt Beobachtung, Hypothese und Ursache. Bewertet wird unabhängig von den Playbook-Autoren, mit menschlicher Stichprobe. **Bestehensgrenze für die vollständigen Playbooks:** keine Antwort mit 0 Punkten in einer Rubrikdimension; Mittelwert je Rolle mindestens 1,5 von 2; keine ungeprüften oder falschen Zahlen; Pflichtbelege, Rollenabschnitte und Prüfung vor der Empfehlung in jeder Antwort; S-13 bestanden. Die Grenze gilt getrennt für Entwicklung/Regression und den jeweiligen ersten Holdout-Lauf, einschließlich der vorab festgelegten Wiederholungen. Bei Nichtbestehen wird nachgebessert und die bekannte Suite erneut ausgeführt; für den erneuten Holdout-Nachweis gelten frische Fragen nach Punkt 3. Alle Läufe bleiben gespeichert und im Bericht sichtbar.
-5. **Fairer Baseline-Vergleich:** Dieselben Fragen laufen mit demselben Claude-Modell, derselben Datenversion, denselben Tools, Einstellungen und Ausführungslimits einmal mit einfacher Rollen-Anweisung und einmal mit vollständigen Playbooks. Gemeinsame Sicherheits-, Fach- und Zahlenregeln einschließlich Faktenprüfung bleiben gleich. Die Baseline erhält die Playbooks auch nicht indirekt über Server-Instruktionen, MCP-Prompts oder `describe_corpus`. Verglichen werden Zahlenkorrektheit und die inhaltlichen Rubrikdimensionen aus Punkt 4; vorgeschriebene Abschnittsnamen und konkrete Tool-Folgen geben keinen Qualitätsbonus. Die Produktkonformität wird für die vollständigen Playbooks separat geprüft. Abgenommen wird der dokumentierte Vergleich, nicht ein vorgeschriebener Sieg; der Gesamtvergleich belegt keinen isolierten Effekt eines einzelnen Bausteins.
-6. **Wiederholungen und Aufwand:** Vor dem ersten Vergleich wird je Rolle eine Frage für insgesamt drei unabhängige Versuche je Variante festgelegt. Jeder Versuch beginnt ohne Gesprächsverlauf früherer Versuche. Pro Versuch werden Antwortqualität, Zeit bis zum Abschluss, Modell- und Toolaufrufe, Tokenverbrauch und nachvollziehbar geschätzte API-Kosten getrennt berichtet. Daten-, Modell-, Prompt- und Tool-Versionen, Limits, Fehlversuche und fehlende Messwerte sind dokumentiert. Die Stichprobengröße und Streuung sind sichtbar; es gibt keinen zusammengefassten Confidence- oder Qualität-Kosten-Score. Durchführung und Ergebnisformat stehen in technical.md § 13.
+3. Mindestens eine Frage je Rolle läuft über den echten Agenten im gewählten Claude-Client mit demselben Basiskorpus. Vollständige Antworten, tatsächlich verwendete Tools, ausgeführte Queries und relevante Ergebnisse bleiben mit Daten- und Konfigurationsstand zugänglich. Analystisch ausgearbeitete Rollensichten sind als solche benannt und ersetzen keine echten Agentenantworten.
+4. Die vollständigen gezeigten Antworten werden gegen ihre Belege geprüft: gemessene Aussagen im richtigen Umfang, keine erfundenen Zahlen oder Wirkung, Beobachtung/Hypothese/Ursache getrennt, konkrete nächste Schritte je Rolle. Ein erfolgreicher `check_claims`-Aufruf beweist nur die eingereichten Claims, nicht die ganze Antwort oder Erklärung. Bekannte Fehlversuche bleiben mit ihren Einschränkungen erhalten.
+5. Die Nachweise enthalten Retrieval und Aggregation auf BGL und OpenStack, mindestens eine Volltextsuche und eine Aggregation über das ganze Basiskorpus. Die getrennten Zeitachsen, Filter und Zähleinheiten bleiben sichtbar; Gesamtzahlen je Datensatz dürfen zusammen berichtet werden.
+6. Ein transparenter Prüfbericht verlinkt die tatsächlich vorhandenen Artefakte und benennt offene Grenzen. Es wird weder ein formales Eval-Pass noch ein Baseline-Vorteil oder eine Generalisierung auf unbekannte Fragen behauptet.
 
-Ein Zusatzexperiment zur Wirkung historischer Vergleichsevidenz ist als **I-21** in [improvements.md](improvements.md) vorgesehen. Es ist optional, beginnt erst nach vollständigem P0 und erweitert weder diese Abnahme noch die acht Tools.
+**Zurückgestellter Zusatzumfang:** Der frühere verpflichtende Dev-/Baseline-Vergleich mit mindestens drei Entwicklungs- und zwei unabhängigen Holdout-Fragen je Rolle, Rubrikgrenze (kein 0-Wert, Mittel je Rolle ≥ 1,5), Wiederholungen, unabhängiger Bewertung, menschlicher Stichprobe, Freeze und separat ausgewertetem ersten Holdout ist nicht vom Originalbrief verlangt. Die implementierte Messgrundlage und der geschützte Ablauf bleiben erhalten; ein tatsächlicher formaler Dev-Lauf, Freeze, Release und erster Holdout sind nicht nachgewiesen. Für einen später ausdrücklich beauftragten Lauf gelten die unveränderten methodischen Schutzregeln in technical.md § 13.1–13.3. Vorbereitung ist kein bestandener Versuch.
+
+Das Zusatzexperiment zur Wirkung historischer Vergleichsevidenz **I-21** in [improvements.md](improvements.md) bleibt ebenfalls optional; es erweitert weder diese Abnahme noch die acht Tools.
 
 #### A-22 · P0 · Ausgearbeitete Untersuchung
 
@@ -470,19 +476,21 @@ Ein Zusatzexperiment zur Wirkung historischer Vergleichsevidenz ist als **I-21**
 
 **Anforderung:** Das öffentliche Repository erklärt Workflow, Setup, Ausführung und Grenzen auf Englisch.
 
+**Aktueller Status:** Veröffentlichung auf ausdrücklichen Wunsch des Eigentümers vom 18.10.2026 zurückgestellt; das Hauptrepository bleibt privat. Die Unterlagen sind intern prüfbar, erfüllen die öffentliche Zugänglichkeit aber erst nach einer später freigegebenen Veröffentlichung.
+
 **Abnahme:**
 1. Enthalten: Überblick, Architektur, Setup, MCP-Verbindung, Web-App, Tool-Referenz, Schema, Ownership-Tabelle, Regeln, Verifikation, ausgearbeitete Untersuchung, bekannte Grenzen, Zitationen, verwendete Dienste mit dem verwendeten Claude-Modell (`claude-opus-5-5`) und der SereneDB-Version.
 2. Korpuszahlen im README stammen aus Receipts oder der Ladebilanz. Eval- und Leistungskennzahlen verweisen auf gespeicherte Laufartefakte, Messwerte und nachvollziehbare Berechnungen; API-Kosten sind mit Preisquelle und Preisstand als Schätzung gekennzeichnet. Diese Betriebskennzahlen belegen keine Geschäftswirkung der Logereignisse.
-3. Der Eval-Bericht zeigt je Rolle Baseline und vollständige Playbooks, den ersten Holdout-Lauf getrennt von Entwicklung/Regression, alle Folge- und Wiederholungsläufe sowie Fehlversuche. Zahlenkorrektheit, Beleg- und Empfehlungsqualität, Laufzeit und Aufwand bleiben getrennt. Gleichstand und Nachteile werden ebenso genannt wie Verbesserungen; fehlende Ergebnisse werden nicht als Erfolg dargestellt.
+3. Der Prüfbericht verlinkt die echten Rollennachweise, die ausgearbeitete Untersuchung und bekannte Fehlversuche mit ihren Grenzen. Das formale Baseline-/Dev-/Holdout-Eval ist als zurückgestellt und nicht bestanden ausgewiesen. Falls später Messwerte berichtet werden, bleiben Zahlenkorrektheit, Beleg- und Empfehlungsqualität, Laufzeit und Aufwand getrennt; fehlende Ergebnisse sind kein Erfolg.
 4. **SereneDB-Funktionsübersicht:** eine Tabelle, welche SereneDB-Funktion in welchem Tool welche Aufgabe löst, je mit Verweis auf einen Beispiel-Receipt (technical.md § 5.3), dazu der Rechenort: was in SereneDB entsteht und was TypeScript tut.
-5. **Beispielfragen je Rolle**, die mit der eingefrorenen Konfiguration geprüft wurden, je mit den erwarteten Tools, sowie **bewusst nicht beantwortete Fragen** (Kosten, Ausfallzeit, Kundenauswirkung, Ursachenbeweis, Vergleiche über die getrennten Zeitachsen) mit der Antwort, die das System stattdessen gibt. Die Jury liest diese Fragen und stellt eigene; Beispielfragen sind nie Holdout (A-21).
+5. **Beispielfragen je Rolle**, die mit einem benannten Daten- und Konfigurationsstand tatsächlich geprüft wurden, je mit den erwarteten Tools, sowie **bewusst nicht beantwortete Fragen** (Kosten, Ausfallzeit, Kundenauswirkung, Ursachenbeweis, Vergleiche über die getrennten Zeitachsen) mit der Antwort, die das System stattdessen gibt. Die Jury liest diese Fragen und stellt eigene; Beispielfragen sind nie Holdout (A-21).
 
 #### A-24 · P0 · Demo, Abgabevideo und Slides
 
 **Anforderung:** Eine Präsentation zeigt den Ablauf, die drei Rollenantworten und ihre Query-Belege in höchstens fünf Minuten (Brief); die Abgabe enthält ein englisches Demo-Video von höchstens drei Minuten (Teilnahmeregeln, Abschnitt 5).
 
 **Abnahme:**
-1. Live-Demo nach Abschnitt 11.1; eine Aufzeichnung dient als Rückfall und ist als solche gekennzeichnet.
+1. Demo nach Abschnitt 11.1; echte gespeicherte Rollenläufe dürfen als sichtbar gekennzeichnete Aufzeichnung gezeigt werden. Die gezeigten Antworten und Receipts bleiben prüfbar; es wird kein neuer Live-Lauf behauptet.
 2. Abgabevideo nach Abschnitt 11.4, englisch, höchstens drei Minuten, aus echten Läufen geschnitten und als Aufzeichnung gekennzeichnet.
 3. Slides fassen Problem, Ansatz, Architektur, SereneDB-Funktionsübersicht (A-23 Punkt 4), Rollen, Belege, Grenzen und Ausblick zusammen; Korpuszahlen stammen aus Receipts bzw. der Ladebilanz, Eval- und Leistungszahlen aus den in A-23 benannten Artefakten.
 
@@ -530,7 +538,9 @@ Ein Zusatzexperiment zur Wirkung historischer Vergleichsevidenz ist als **I-21**
 1. Suche mit Filtern, Gesamtzahl und begrenzter Liste; ein Treffer öffnet seine Umgebung.
 2. `Explain with AI` übernimmt das Ereignis als Frage in den Chat; Absenden bleibt explizit.
 
-#### A-38 · P1 · Rollenvergleich
+#### A-38 · P1 · Rollenvergleich (zurückgestellt am 18.10.2026)
+
+**Umfang:** optionaler Ausbau, kein Abgabetor. Die folgenden Kriterien gelten erst bei einem erneuten Auftrag; ein Vergleich wird nicht als implementiert behauptet.
 
 **Anforderung:** Die Web-App zeigt dieselbe Situation aus Sicht aller drei Rollen nebeneinander, damit die unterschiedliche Verwendung der Belege auf einen Blick sichtbar ist.
 
@@ -610,9 +620,9 @@ Regeländerungen nach dem Profiling werden mit Begründung versioniert; Regeln w
 | **S-08** | Antwortentwurf mit einer falschen Zahl, einer richtigen Zahl unter falscher Kennzahl oder Gruppe (etwa `requests: 120` als „120 errors“) bzw. einer nicht existierenden Fakt-ID | `check_claims` meldet `mismatch` mit dem abweichenden Merkmal bzw. `unknown_fact`, in MCP-Weg und Web-App gleich und in der Verification gezählt; die Antwort wird korrigiert oder die Zahl entfällt | A-14 |
 | **S-09** | Testereignis mit eingebetteter Anweisung („ignore previous instructions…“) im synthetischen Testdatensatz | Wird als Logtext zitiert; keine Regel- oder Tool-Änderung | A-25 |
 | **S-10** | Frage nach Kosten oder Ausfallzeit | Begrenzte Antwort: messbare Häufigkeit und Breite, fehlende Geschäftsdaten benannt | A-19, A-20 |
-| **S-11** | Unabhängig erstellte, bis zum Test zurückgehaltene Frage mit anderen Filtern | Belegte Antwort oder korrekt benannte Grenze; erster Lauf mit eingefrorener Konfiguration separat dokumentiert; nach Einsicht nur noch als Regressionstest bezeichnet | A-16, A-20, A-21 |
+| **S-11 · optional** | Bei späterem formalem Eval: unabhängig erstellte, bis zum Test zurückgehaltene Frage mit anderen Filtern | Belegte Antwort oder korrekt benannte Grenze; erster Lauf mit eingefrorener Konfiguration separat dokumentiert; nach Einsicht nur noch als Regressionstest bezeichnet | A-16, A-20, A-21 |
 | **S-12** | Derselbe Tool-Aufruf (gleicher normalisierter Input) über Claude Code (MCP) und Web-Chat auf derselben Datenversion | Gleiche Receipt-Signatur, identische Zahlen und gleicher Ergebnis-Digest | A-13, A-15, A-26 |
-| **S-13** | Dieselbe Situation aus Sicht aller drei Rollen | Unterschiedliche Belegebenen, Pflichtbelege, Prüfungen, Antwortkerne und Entscheidungen im nächsten Schritt; gemeinsame Zahlen stimmen überein; in der Web-App im Rollenvergleich sichtbar | A-16–A-20, A-38 |
+| **S-13** | Dieselbe Situation aus Sicht aller drei Rollen | Unterschiedliche Belegebenen, Pflichtbelege, Prüfungen, Antwortkerne und Entscheidungen im nächsten Schritt; gemeinsame Zahlen stimmen überein; der zusätzliche sichtbare Web-Rollenvergleich ist zurückgestellt | A-16–A-20, A-38 |
 | **S-14** | Rollenfrage in Claude Desktop bzw. Claude Code ohne Wahl eines Rollen-Prompts | Antwort nach dem Playbook der erkannten Rolle mit deren Antwortkern; bei unklarer Rolle eine Rückfrage | A-37 |
 | **S-15** | Engineer-Frage, deren Fehler sich lokal (wenige Nodes) oder systemisch (viele Racks) erklären lässt | Mindestens eine ausgeführte unterscheidende Prüfung, etwa Zählung nach Node bzw. Rack oder Vorläuferanalyse; Hypothesenstatus mit deren Fakt-ID begründet; ein Vorläufer wird nicht als Ursache bezeichnet | A-17, A-36, R-07, R-11 |
 | **S-16** | Manager-Frage, bei der das Muster mit den meisten Logzeilen in wenigen Episoden auf wenigen Nodes liegt | Rangfolge nach Episoden und Breite, nicht nach Zeilen; der Zielkonflikt wird benannt und die Wahl begründet | A-11, A-19, R-08, R-09 |
@@ -627,10 +637,10 @@ Regeländerungen nach dem Profiling werden mit Begründung versioniert; Regeln w
 | 0:30–1:50 | **Engineer** live: Volltextsuche mit Zeitfilter, Nachbarereignisse, Eingrenzung, erste vorläufige Einschätzung, unterscheidende Prüfung (Konzentration oder Vorläufer), deren Wirkung auf Hypothese oder nächsten Schritt; ein Receipt mit SQL und Laufzeit wird geöffnet und benennt die SereneDB-Funktion darin (etwa BM25-Index oder `MATCH_RECOGNIZE`, 2.2 Punkt 7). |
 | 1:50–2:45 | **Team Lead** live: wiederkehrende Muster über einen genannten Zeitraum nach Team, Wochentrend, was zuerst untersuchen. |
 | 2:45–3:40 | **Manager** live: bis zu drei Prioritäten mit Episoden, Breite, Veränderung, Team und Maßnahme; Zielkonflikt benannt; „business impact unknown“. |
-| 3:40–4:30 | Beweis: Rollenvergleich derselben Situation, Faktenprüfung an der Antwort, `Re-run` eines Receipts mit gleichem Digest, derselbe Tool-Aufruf in Claude Desktop über MCP mit gleicher Signatur und denselben Zahlen. |
+| 3:40–4:30 | Beweis: die drei Rollensichten mit ihren verschiedenen Entscheidungen, Faktenprüfung an der Antwort und ein Receipt mit Query und Ergebnis; vorhandenen Re-run-/Client-Paritätsnachweis kurz verlinken. |
 | 4:30–5:00 | Grenzen und Ausblick. |
 
-Live gestellte Fragen werden vorher geprobt, aber live ausgeführt; sie zählen nicht als unbekannte Holdout-Fragen. Vor der Abgabe wird die vollständige Demo mehrfach mit echten Modellwartezeiten geprobt, nicht nur mit Datenbanklaufzeiten; Ziel ist eine Gesamtdauer unter 4:30. Reicht die Zeit nicht, zeigen einzelne Rollenläufe bereits ausgeführte Ergebnisse, die sichtbar als solche gekennzeichnet sind: in der Web-App als importierte Laufdatei mit dem Banner `Recorded run`, deren Belege gegen die lokal gespeicherten Receipts aufgelöst werden (ui-concept 4.5). Eine Aufzeichnung ist nur Rückfall bei technischem Ausfall und wird als solche benannt.
+Live gestellte Fragen werden vorher geprobt, aber live ausgeführt; sie zählen nicht als unbekannte Holdout-Fragen. Vor der Abgabe wird die vollständige Demo mit ihren tatsächlich gezeigten Wartezeiten geprobt; Ziel ist eine Gesamtdauer unter 4:30. Reicht die Zeit nicht, zeigen einzelne Rollenläufe bereits ausgeführte Ergebnisse, die sichtbar als solche gekennzeichnet sind: in der Web-App als importierte Laufdatei mit dem Banner `Recorded run`, deren Belege gegen die lokal gespeicherten Receipts aufgelöst werden (ui-concept 4.5). Die Demo darf echte gespeicherte Rollenläufe zeigen, wenn sie als Aufzeichnung gekennzeichnet sind; sie werden nicht als neue Live-Läufe oder Holdout ausgegeben.
 
 ### 11.2 Auswahl der ausgearbeiteten Untersuchung
 
@@ -665,7 +675,7 @@ Kandidaten aus den Samples, vor dem Profiling: BGL `APPREAD` (`ciod: failed to r
 
 ### 11.3 Abgabeumfang
 
-Öffentliches Repository, README mit Tool-Referenz, Ownership-Tabelle und Eval-Bericht nach A-23 (Baseline, Holdout, Wiederholungen, Laufzeit und Aufwand), ausgearbeitete Untersuchung (`docs/worked-investigation.md`, englisch) mit Receipts, funktionierender MCP-Server, Web-App, Slides, Abgabevideo ≤ 3 Minuten, Live-Demo ≤ 5 Minuten. Angaben zu verwendeten Diensten (Claude, SereneDB) und Lizenzen der Daten.
+Öffentliches Repository, README mit Tool-Referenz, Ownership-Tabelle und transparentem Prüfstatus nach A-23, ausgearbeitete Untersuchung (`submission/worked-investigation.md`, englisch) mit Receipts, echte Agentenantworten je Rolle, funktionierender MCP-Server, Slides, Abgabevideo ≤ 3 Minuten und Demo ≤ 5 Minuten. Vorhandene stabile Web-Funktionen dürfen gezeigt werden; eine eigene Web-Oberfläche, ein formaler Eval-Bericht und der zusätzliche Web-Rollenvergleich sind keine Mindestanforderung. Angaben zu verwendeten Diensten (Claude, SereneDB) und Lizenzen der Daten.
 
 ### 11.4 Abgabevideo (höchstens drei Minuten, englisch)
 
@@ -677,15 +687,15 @@ Die Teilnahmeregeln verlangen ein englisches Demo- oder Walkthrough-Video von h�
 | 0:20–1:10 | Engineer: Suche, Umgebung, erste Einschätzung, unterscheidende Prüfung und ihre Wirkung, Receipt |
 | 1:10–1:45 | Team Lead: wiederkehrende Muster und Trend nach Team |
 | 1:45–2:20 | Manager: Prioritäten mit Zielkonflikt und Maßnahmen |
-| 2:20–2:45 | Beweis: Rollenvergleich und Faktenprüfung |
+| 2:20–2:45 | Beweis: drei belegte Rollensichten und Faktenprüfung |
 | 2:45–3:00 | Grenzen |
 
 ## 12. Offene Punkte
 
 | ID | Punkt | Arbeitsannahme | Klärung |
 |---|---|---|---|
-| **O-01** | Anthropic-API-Zugang für den Web-Chat | Ohne Schlüssel funktioniert der MCP-Weg mit dem Claude-Konto der Jury; der Web-Chat zeigt dann einen klaren Hinweis. **Modell geklärt (Jury-Gespräch 17.10.):** Die Jury nutzt Claude Opus 5.5; Web-Chat, Rollen-Eval mit Baseline und Demo-Proben laufen deshalb mit `claude-opus-5-5`, Kosten- und Laufzeitangaben beziehen sich auf dieses Modell | Schlüssel: vor der Verdrahtung des Web-Chats |
-| **O-08** | Welchen Claude-Client nutzt die Jury? | Im Gespräch nicht beantwortet. Claude Code und Claude Desktop bleiben beide geprüft (A-15, S-14); der MCP-Weg ist der Weg der Jury, weil er mit ihrem eigenen Claude-Konto läuft, die Web-App ist Demo-Bühne. Unbekannte Fragen der Jury deckt der Holdout ab (A-21, S-11) | Nachfrage bei den Organisatoren; bis dahin beide Clients |
+| **O-01** | Anthropic-API-Zugang für den Web-Chat | Ohne Schlüssel funktioniert der MCP-Weg mit dem Claude-Konto der Jury; der Web-Chat zeigt dann einen klaren Hinweis. **Modell geklärt (Jury-Gespräch 17.10.):** Die Jury nutzt Claude Opus 5.5; tatsächliche Demo-Proben sowie ein später beauftragtes formales Web-/Rollen-Eval verwenden deshalb `claude-opus-5-5`, Kosten- und Laufzeitangaben beziehen sich auf dieses Modell | Schlüssel: vor der Verdrahtung des Web-Chats |
+| **O-08** | Welchen Claude-Client nutzt die Jury? | Im Gespräch nicht beantwortet. Beide Clients sind dokumentiert; tatsächliche Verbindungsproben und Grenzen stehen im Prüfbericht (A-15, S-14). Der MCP-Weg läuft mit dem Claude-Konto der Jury. Eine vollständige Client-Matrix und der Holdout sind zurückgestellt; die geprüften Beispiele belegen keine Qualität bei unbekannten Fragen | Nachfrage bei den Organisatoren; tatsächlichen Demo-Client benennen |
 | **O-02** | SereneDB-Funktionen für Parsing, Regex, Perzentile, Datumsfunktionen, Phrasen- und Fuzzy-Operatoren sowie die Laufzeit der Vorläuferanalyse | Laut Doku vorhanden; Prüfung im Kompatibilitäts-Gate mit dem Docs-MCP bzw. `sdb_docs.search` | Kompatibilitäts-Gate |
 | **O-03** | Brief nennt eine bereitgestellte Instanz, Guidance verlangt lokalen Betrieb | Wir folgen der Guidance; das README erklärt den lokalen Start | Erledigt, im README benennen |
 | **O-04** | Format der OpenStack-Anomalie-Labels | **Geklärt (U03):** ein Satz, eine Leerzeile, vier Instanz-UUIDs. `is_anomalous` ist `true` für die 100 Zeilen mit diesen Instanzen (je 25, alle `INFO`, `nova-compute`, 14.05.2017 21:07–21:48), `false` für 51.453 Zeilen mit einer anderen Instanz, sonst `NULL`. Die Labels bleiben in Gebrauch, aber nur als Kontext je Instanz („dataset label“): Sie markieren Instanzen, keine Fehlerzeilen, und keine Fehler- oder 5xx-Zeile nennt eine Instanz. Die Aggregation hängt nicht von ihnen ab | Erledigt |
@@ -694,6 +704,12 @@ Die Teilnahmeregeln verlangen ein englisches Demo- oder Walkthrough-Video von h�
 | **O-07** | Der Brief nennt für BGL fünf Schweregrade; R-02 listet mehr Level-Namen | **Geklärt (U03):** sechs Levels beobachtet, alle vier Fehlerlevels von R-02 kommen vor; R-02 bleibt unverändert (Zählungen dort) | Erledigt |
 
 ## 13. Änderungen
+
+### Version 3.9 (18.10.2026)
+
+**Nutzerentscheidung, LOG-56:** Nach Abgleich mit dem Originalbrief wird nur noch der notwendige Abgabeumfang abgeschlossen. **Konflikt gelöst:** A-21/A-23, M2 und U16/U18 machten den selbst auferlegten formalen Dev-/Baseline-/Holdout-Vergleich, die vollständige Client-/Prompt-Matrix und den zusätzlichen Web-Rollenvergleich zu Abgabetoren. Diese Zusatzläufe sind ausdrücklich zurückgestellt; mindestens eine echte, inhaltlich geprüfte Agentenantwort je Rolle mit zugänglichen Queries und Ergebnissen bleibt erforderlich. Methodik, implementierte Schutzmechanismen, R-01–R-11 und neue Forschungs-/Retrieval-Erweiterungen bleiben unverändert. Vorbereitung und bekannte Proben werden nicht als Eval-Pass, Baseline-Vorteil oder Generalisierung ausgegeben. Drei echte Modellantworten und ein als aufgezeichnet gekennzeichneter Walkthrough liegen vor; die volle Client-Matrix ist damit nicht bestanden.
+
+**Separate Veröffentlichung:** Der Eigentümer hat das öffentliche Schalten des Hauptrepositorys ausdrücklich abgelehnt und vorerst zurückgestellt. Code und Abgabeunterlagen können intern fertiggestellt werden; A-23 und M2 sind hinsichtlich öffentlicher Zugänglichkeit weiterhin offen. Die Entscheidung ersetzt keine Abgaberegel des Briefs. technical.md v3.8 spiegelt diesen Umfang.
 
 ### Version 3.8 (18.10.2026)
 
