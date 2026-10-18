@@ -10,7 +10,13 @@ import type { ToolResult } from "@workspace/domain/tool"
 import { z } from "zod"
 import { describe, expect, it } from "vitest"
 
-import { buildTools, modelView, type ToolExecuteResult } from "./tools.ts"
+import {
+  buildTools,
+  modelView,
+  toExecuteResult,
+  toolErrorValue,
+  type ToolExecuteResult,
+} from "./tools.ts"
 
 import type { ToolSet } from "ai"
 
@@ -251,5 +257,58 @@ describe("buildTools", () => {
         }
       )
     ).rejects.toThrow("cancelled")
+  })
+})
+
+describe("toExecuteResult / toolErrorValue (shared mapping, LOG-48)", () => {
+  it("maps a successful outcome to the full result, identically to the adapter", () => {
+    const result = okResult()
+    expect(toExecuteResult({ ok: true, result })).toEqual({
+      ok: true,
+      result,
+    })
+  })
+
+  it("maps a ToolError to the model-facing error value with no stack/DB text", () => {
+    const error = invalidInput([{ path: "dataset", message: "bad" }])
+    const value = toExecuteResult({ ok: false, error })
+    expect(value).toEqual({
+      ok: false,
+      error: {
+        error: {
+          kind: "invalid_input",
+          message: error.message,
+          hint: error.hint,
+        },
+      },
+    })
+    expect(toolErrorValue(error)).toEqual({
+      error: {
+        kind: "invalid_input",
+        message: error.message,
+        hint: error.hint,
+      },
+    })
+    expect(JSON.stringify(value)).not.toContain("stack")
+  })
+
+  it("the adapter's expected-failure value equals toExecuteResult of the same error", async () => {
+    const error = invalidInput([{ path: "dataset", message: "bad" }])
+    const registry = fakeRegistry(["count_events"], async () => ({
+      ok: false,
+      error,
+    }))
+    const tools = buildTools(registry, ctx)
+    const tool = getTool(tools, "count_events")
+    const out = (await tool.execute?.(
+      { dataset: 1 },
+      {
+        toolCallId: "t1",
+        messages: [],
+        abortSignal: new AbortController().signal,
+        context: undefined,
+      }
+    )) as ToolExecuteResult
+    expect(out).toEqual(toExecuteResult({ ok: false, error }))
   })
 })

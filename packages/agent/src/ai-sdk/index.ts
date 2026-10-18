@@ -30,7 +30,6 @@ export {
 } from "./investigation.ts"
 
 export {
-  BASELINE_INSTRUCTIONS,
   baselineRegistryGuidance,
   baselineRoleInstruction,
   type BaselineRole,
@@ -51,6 +50,8 @@ export {
 export {
   buildTools,
   modelView,
+  toExecuteResult,
+  toolErrorValue,
   type ModelToolError,
   type ModelToolView,
   type ToolExecuteResult,

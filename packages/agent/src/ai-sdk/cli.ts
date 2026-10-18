@@ -215,6 +215,7 @@ export async function main(
           version: playbooks.version,
           instructions: playbooks.instructions,
           systemPrompt: playbooks.systemPrompt,
+          sharedRules: playbooks.sharedRules,
         },
         runs: runsStore,
         model,

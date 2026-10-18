@@ -8,7 +8,6 @@ import {
   type GateFinding,
   type SubmittedCheck,
 } from "@workspace/domain/answer"
-import type { Fact } from "@workspace/domain/facts"
 import { filterSchema } from "@workspace/domain/filters"
 import {
   checkClaimsOutputSchema,
@@ -30,11 +29,7 @@ import {
 } from "ai"
 import { z } from "zod"
 
-import {
-  BASELINE_INSTRUCTIONS,
-  baselineRoleInstruction,
-  type BaselineRole,
-} from "./baseline.ts"
+import { baselineRoleInstruction } from "./baseline.ts"
 import {
   claimsHint,
   coverageHint,
@@ -53,7 +48,7 @@ import {
   type RunStore,
   type RunUsage,
 } from "./run-record.ts"
-import { buildTools } from "./tools.ts"
+import { buildTools, modelView, toExecuteResult } from "./tools.ts"
 
 /**
  * The phase machine `runInvestigation` (technical.md § 11.1, U17): one AI SDK
@@ -132,6 +127,14 @@ export type InvestigationPlaybooks = {
   version: string
   instructions: string
   systemPrompt: (role: AnswerRole) => string
+  /**
+   * The shared safety/domain/number rules (common.md without Routing), exactly
+   * the eval baseline's "gemeinsame Grundlage" (technical.md § 10, § 13.2):
+   * `loadPlaybooks().sharedRules`. The baseline system prompt and recorded
+   * instruction texts are built from this — there is no second hand-written
+   * copy of the playbook rules (AGENTS.md).
+   */
+  sharedRules: string
   /**
    * LOG-47 (not merged): per-role required evidence. When absent, only
    * `mismatch`/`unresolved` in the last check_claims trigger a follow-up —
@@ -268,6 +271,12 @@ class PhaseMachine {
   private status: RunStatus = "completed"
   private errorKind: string | null = null
   private finalText: string | null = null
+  /**
+   * The run's data version (technical.md § 11.1): the preflight describe_corpus
+   * receipt's `data_version`, falling back to the first successful tool
+   * receipt; null only when no tool succeeded.
+   */
+  private dataVersion: string | null = null
 
   constructor(
     private readonly input: ParsedInput,
@@ -364,18 +373,19 @@ class PhaseMachine {
       input: {},
     })
 
+    // The UI tool part carries the FULL ToolResult, in the same
+    // ToolExecuteResult shape the tool adapter returns, so both paths map a
+    // ToolError identically (technical.md § 11.1: "die UI erhält das volle
+    // ToolResult"). The shared helper lives in tools.ts.
+    writer.write({
+      type: "tool-output-available",
+      toolCallId,
+      output: toExecuteResult(outcome),
+    })
+
     let contextLine: string
     if (outcome.ok) {
-      const { data, facts, receipt } = outcome.result
-      writer.write({
-        type: "tool-output-available",
-        toolCallId,
-        output: {
-          facts: facts.map(compactFact),
-          receipt_id: receipt.receipt_id,
-          truncated: receipt.truncated,
-        },
-      })
+      const { receipt } = outcome.result
       this.recordStep("preflight", {
         tool: "describe_corpus",
         input: {},
@@ -384,13 +394,15 @@ class PhaseMachine {
         error_kind: null,
       })
       this.coverageSteps.push({ tool: "describe_corpus", input: {}, ok: true })
-      contextLine = describeCorpusContext(data, facts)
+      // The run's data version is the preflight describe_corpus receipt's.
+      this.recordDataVersion(receipt.data_version)
+      // The first user message gets the SAME compact model view every other
+      // tool produces: data, all facts (id/metric/value/unit/group), notes,
+      // truncated, receipt_id — no SQL, no params. No truncation of facts or
+      // the datasets JSON, so every fact ID and answer_guidance reaches the
+      // model (technical.md § 11.1).
+      contextLine = JSON.stringify(modelView(outcome.result))
     } else {
-      writer.write({
-        type: "tool-output-available",
-        toolCallId,
-        output: { error: outcome.error.code },
-      })
       this.recordStep("preflight", {
         tool: "describe_corpus",
         input: {},
@@ -623,6 +635,9 @@ class PhaseMachine {
         input: step.input,
         ok: view.errorKind === null,
       })
+      // Fallback data version: the first successful tool receipt of the run,
+      // used only when the preflight describe_corpus did not set it.
+      if (view.errorKind === null) this.recordDataVersion(view.dataVersion)
       if (step.toolName === "check_claims" && view.checkOutput !== null) {
         this.checks.push({
           receipt_id: view.receiptId ?? "",
@@ -630,6 +645,12 @@ class PhaseMachine {
         })
       }
     }
+  }
+
+  /** Records the run's data version from the first tool receipt that has one. */
+  private recordDataVersion(dataVersion: string | null | undefined): void {
+    if (this.dataVersion === null && typeof dataVersion === "string")
+      this.dataVersion = dataVersion
   }
 
   // --- record assembly ----------------------------------------------------
@@ -657,7 +678,7 @@ class PhaseMachine {
       effort: this.deps.model.effort,
       guidance_version: this.deps.playbooks.version,
       contract_version: CONTRACT_VERSION,
-      data_version: null,
+      data_version: this.dataVersion,
       instruction_texts: this.instructionTexts(),
       phases: this.phases,
       coverage_requests: this.coverageRequests,
@@ -683,8 +704,10 @@ class PhaseMachine {
 
   private instructionTexts(): string[] {
     if (this.input.variant === "baseline") {
+      // The actual parts of the baseline system text (§ 11.1, § 13.2): the
+      // shared rules from the playbooks and the simple role instruction.
       return [
-        BASELINE_INSTRUCTIONS.sharedRules,
+        this.deps.playbooks.sharedRules,
         baselineRoleInstruction(this.input.role),
       ]
     }
@@ -757,9 +780,10 @@ function buildSystem(
   playbooks: InvestigationPlaybooks
 ): string {
   if (input.variant === "baseline") {
-    return `${BASELINE_INSTRUCTIONS.sharedRules}\n\n${baselineRoleInstruction(
-      input.role as BaselineRole
-    )}`
+    // Baseline (§ 13.2): the SAME shared safety/domain/number rules as the
+    // playbook variant (playbooks.sharedRules, § 10) plus only the simple role
+    // instruction — no playbook content, no second copy of the rules.
+    return `${playbooks.sharedRules}\n\n${baselineRoleInstruction(input.role)}`
   }
   if (input.role === "auto") return playbooks.instructions
   return playbooks.systemPrompt(input.role)
@@ -776,35 +800,6 @@ function firstUserMessage(input: ParsedInput, contextLine: string): string {
     scope,
     `Corpus context (from describe_corpus, cite these fact IDs): ${contextLine}`,
   ].join("\n\n")
-}
-
-function compactFact(fact: Fact): {
-  id: string
-  metric: string
-  value: Fact["value"]
-  unit: string
-  group: Record<string, string>
-} {
-  return {
-    id: fact.id,
-    metric: fact.metric,
-    value: fact.value,
-    unit: fact.unit,
-    group: fact.group,
-  }
-}
-
-/** A compact one-line context from describe_corpus incl. fact IDs. */
-function describeCorpusContext(data: unknown, facts: readonly Fact[]): string {
-  const ids = facts
-    .slice(0, 12)
-    .map((fact) => `${fact.metric}=${String(fact.value)} [${fact.id}]`)
-    .join(", ")
-  const datasets =
-    typeof data === "object" && data !== null && "datasets" in data
-      ? JSON.stringify((data as { datasets: unknown }).datasets).slice(0, 2000)
-      : ""
-  return `${ids}. datasets=${datasets}`
 }
 
 /** Stops a phase after check_claims has run anywhere in its steps. */
@@ -845,16 +840,20 @@ function flattenToolResults(
 
 type StepView = {
   receiptId: string | null
+  dataVersion: string | null
   errorKind: string | null
   checkOutput: CheckClaimsOutput | null
 }
 
 /**
- * Reads the adapter's tool output into a compact view. The adapter's model
- * output is `{ data, facts, receipt_id }` on success or `{ error: {...} }` on an
- * expected failure (tools.ts `toModelOutput`). The raw `ToolExecuteResult`
- * (`{ ok, result | error }`) is also handled, so the reader works whether the
- * SDK hands back the model view or the execute value.
+ * Reads the adapter's tool output into a compact view. The adapter's execute
+ * value is `{ ok: true, result }` with the full `ToolResult` on success or
+ * `{ ok: false, error: {...} }` on an expected failure (tools.ts). The compact
+ * model-output shapes (`{ data, facts, receipt_id }` / `{ error: {...} }`) are
+ * also handled, so the reader works whether the SDK hands back the execute
+ * value or the model view. `dataVersion` is only available from the full
+ * result (the model view omits it), which the run record takes for its
+ * `data_version` fallback.
  */
 function stepView(output: unknown): StepView {
   if (typeof output !== "object" || output === null) return empty()
@@ -863,6 +862,7 @@ function stepView(output: unknown): StepView {
   if (record.ok === false)
     return {
       receiptId: null,
+      dataVersion: null,
       errorKind: readErrorKind(
         (record.error as Record<string, unknown>)?.error
       ),
@@ -870,11 +870,12 @@ function stepView(output: unknown): StepView {
     }
   if (record.ok === true) {
     const result = record.result as {
-      receipt?: { receipt_id?: string }
+      receipt?: { receipt_id?: string; data_version?: string }
       data?: unknown
     }
     return {
       receiptId: result.receipt?.receipt_id ?? null,
+      dataVersion: result.receipt?.data_version ?? null,
       errorKind: null,
       checkOutput: parseCheck(result.data),
     }
@@ -882,19 +883,26 @@ function stepView(output: unknown): StepView {
   if ("error" in record)
     return {
       receiptId: null,
+      dataVersion: null,
       errorKind: readErrorKind(record.error),
       checkOutput: null,
     }
 
   return {
     receiptId: typeof record.receipt_id === "string" ? record.receipt_id : null,
+    dataVersion: null,
     errorKind: null,
     checkOutput: parseCheck(record.data),
   }
 }
 
 function empty(): StepView {
-  return { receiptId: null, errorKind: null, checkOutput: null }
+  return {
+    receiptId: null,
+    dataVersion: null,
+    errorKind: null,
+    checkOutput: null,
+  }
 }
 
 function readErrorKind(error: unknown): string {

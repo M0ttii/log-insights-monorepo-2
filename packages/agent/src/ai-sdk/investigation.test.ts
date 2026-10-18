@@ -22,6 +22,8 @@ import {
 import type { ModelConfig } from "./model.ts"
 import type { RunRecord, RunStore } from "./run-record.ts"
 
+import { loadPlaybooks } from "../playbooks.ts"
+
 /* ----------------------------------------------------------------------- *
  * Mock model harness: one scripted stream per model phase, capturing the
  * prompt (the normalized messages) the model received on each call.
@@ -229,6 +231,8 @@ const playbooks: InvestigationPlaybooks = {
   version: "1.0.0",
   instructions: "COMMON RULES\nROUTING\nSUMMARIES",
   systemPrompt: (role) => `COMMON RULES\nENGINEER PLAYBOOK for ${role}`,
+  sharedRules:
+    "SHARED RULES: cite every number with its fact ID and run check_claims before answering.",
 }
 
 function modelConfig(model: LanguageModel): ModelConfig {
@@ -836,5 +840,280 @@ describe("baseline instructions", () => {
         new RegExp(`^[ \\t]*#{1,6}[ \\t]+${name}`, "im")
       )
     expect(guidanceText).not.toMatch(/coverage/i)
+  })
+})
+
+/* ----------------------------------------------------------------------- *
+ * LOG-48 regression tests.
+ * ----------------------------------------------------------------------- */
+
+/** The `output` of the preflight describe_corpus tool-output-available chunk. */
+function preflightOutput(chunks: unknown[]): unknown {
+  const chunk = chunks.find(
+    (c): c is { type: string; toolCallId: string; output: unknown } =>
+      typeof c === "object" &&
+      c !== null &&
+      (c as { type?: string }).type === "tool-output-available" &&
+      String((c as { toolCallId?: string }).toolCallId).startsWith(
+        "preflight_describe_corpus_"
+      )
+  )
+  return chunk?.output
+}
+
+/** The text content of the first user message sent to the model (phase 1). */
+function firstUserMessageText(prompts: Prompt[]): string {
+  const first = prompts[0] ?? []
+  const user = first.find((message) => message.role === "user")
+  return user === undefined ? "" : JSON.stringify(user.content)
+}
+
+describe("LOG-48 · baseline shares the playbook rules (no second copy)", () => {
+  it("baseline instruction_texts are the real loadPlaybooks().sharedRules + the role instruction", async () => {
+    // The baseline system text is built from the SAME shared rules the playbook
+    // variant uses (§ 10, § 13.2). Prove it against the REAL playbooks, not a
+    // fixture: the recorded shared-rules part must be byte-equal to
+    // loadPlaybooks().sharedRules, carry check_claims, and never the routing.
+    const real = loadPlaybooks()
+    const { model } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      { ...baseInput, variant: "baseline" },
+      deps(model, {
+        playbooks: {
+          version: real.version,
+          instructions: real.instructions,
+          systemPrompt: real.systemPrompt,
+          sharedRules: real.sharedRules,
+        },
+      }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.instruction_texts).toHaveLength(2)
+    expect(record.instruction_texts[0]).toBe(real.sharedRules)
+    expect(record.instruction_texts[0]).toContain("check_claims")
+    expect(record.instruction_texts[0]).not.toContain(real.guidance.routing)
+  })
+
+  it("the real sharedRules carries no role-core section name nor Coverage (would fail the baseline check otherwise)", () => {
+    // Guard against indirect playbook feed with the REAL shared rules: no
+    // role-core section STRUCTURE is detectable as a heading/bold, and there
+    // is no Coverage section. If this fails, the finding is reported, not the
+    // test weakened — the real sharedRules would be leaking role-core text.
+    const shared = loadPlaybooks().sharedRules
+    const coreNames = [
+      ...ROLE_SECTIONS.core.engineer,
+      ...ROLE_SECTIONS.core.team_lead,
+      ...ROLE_SECTIONS.core.manager,
+    ]
+    const present = new Set(
+      [
+        ...detectSections(shared, "engineer").present,
+        ...detectSections(shared, "team_lead").present,
+        ...detectSections(shared, "manager").present,
+      ].map((name) => name.toLowerCase())
+    )
+    for (const name of coreNames)
+      expect(present.has(name.toLowerCase())).toBe(false)
+    expect(shared).not.toMatch(/coverage/i)
+  })
+})
+
+describe("LOG-48 · preflight context is the full compact model view", () => {
+  it("every describe_corpus fact ID reaches the first user message; no SQL/params do", async () => {
+    // describe_corpus returns many facts and real SQL/params; the model view
+    // must carry every fact ID and no SQL or params.
+    const facts = Array.from({ length: 20 }, (_, i) => ({
+      id: `r_00000001.f${i + 1}`,
+      path: `/result/x${i}`,
+      value: i,
+      metric: `metric_${i}`,
+      unit: "log_events",
+      group: { dataset: i % 2 === 0 ? "bgl" : "openstack" },
+    }))
+    const describeResult: ToolResult<unknown> = {
+      data: {
+        datasets: [{ dataset: "bgl", answer_guidance: "GUIDANCE_MARKER" }],
+      },
+      facts,
+      notes: ["note"],
+      receipt: {
+        receipt_id: "r_00000001",
+        input: {},
+        signature: "a".repeat(64),
+        data_version: "dv_test",
+        sql: ["SELECT secret_column FROM log_events WHERE dataset = $1"],
+        params: [["SENSITIVE_PARAM"]],
+        scope: { windows: [], filters: {} },
+        population: null,
+        rows_returned: 20,
+        truncated: false,
+        duration_ms: 3,
+        result_digest: "b".repeat(64),
+      },
+    }
+    const registry = fakeRegistry(async (name) => {
+      if (name === "describe_corpus")
+        return { ok: true, result: describeResult }
+      if (name === "check_claims")
+        return { ok: true, result: okResult("r_0000000c", checkOutput(0, 0)) }
+      return { ok: true, result: okResult("r_0000000a", { count: 1 }) }
+    })
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { registry }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    await done
+
+    const userText = firstUserMessageText(prompts)
+    for (const fact of facts) expect(userText).toContain(fact.id)
+    expect(userText).toContain("GUIDANCE_MARKER")
+    expect(userText).not.toContain("SELECT")
+    expect(userText).not.toContain("secret_column")
+    expect(userText).not.toContain("SENSITIVE_PARAM")
+  })
+})
+
+describe("LOG-48 · preflight UI tool part carries the full ToolResult", () => {
+  it("emits the ok ToolExecuteResult with the full result (data, facts, receipt)", async () => {
+    const { model } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    await done
+    const output = preflightOutput(chunks) as {
+      ok: boolean
+      result: ToolResult<unknown>
+    }
+    expect(output.ok).toBe(true)
+    // The full ToolResult, not a trimmed projection.
+    expect(output.result).toEqual(okResult("r_00000001", describeData))
+    expect(output.result.receipt.receipt_id).toBe("r_00000001")
+    expect(output.result.facts.length).toBeGreaterThan(0)
+  })
+
+  it("emits the error ToolExecuteResult shape on a describe_corpus failure", async () => {
+    const registry = fakeRegistry(async (name) => {
+      if (name === "describe_corpus")
+        return {
+          ok: false,
+          error: invalidInput(
+            [{ path: "dataset", message: "bad" }],
+            "fix the dataset"
+          ),
+        }
+      if (name === "check_claims")
+        return { ok: true, result: okResult("r_0000000c", checkOutput(0, 0)) }
+      return { ok: true, result: okResult("r_0000000a", {}) }
+    })
+    const { model } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { registry }),
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    await done
+    const output = preflightOutput(chunks) as {
+      ok: boolean
+      error: { error: { kind: string; message: string; hint: string } }
+    }
+    expect(output.ok).toBe(false)
+    expect(output.error.error.kind).toBe("invalid_input")
+    expect(output.error.error.hint).toBe("fix the dataset")
+  })
+})
+
+describe("LOG-48 · data_version in the run record", () => {
+  it("takes data_version from the preflight describe_corpus receipt", async () => {
+    const { model } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    // okResult's receipt carries data_version "dv_test".
+    expect(record.data_version).toBe("dv_test")
+  })
+
+  it("falls back to the first successful tool receipt when preflight failed", async () => {
+    const registry = fakeRegistry(async (name) => {
+      if (name === "describe_corpus")
+        return {
+          ok: false,
+          error: invalidInput(
+            [{ path: "dataset", message: "bad" }],
+            "fix the dataset"
+          ),
+        }
+      if (name === "check_claims")
+        return { ok: true, result: okResult("r_0000000c", checkOutput(0, 0)) }
+      return { ok: true, result: okResult("r_0000000a", { count: 1 }) }
+    })
+    const { model } = scriptModel([
+      {
+        tools: [
+          { name: "count_events", input: { dataset: "bgl" } },
+          { name: "check_claims", input: { claims: [] } },
+        ],
+      },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { registry }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    // Preflight failed (no receipt); the first successful model-phase tool
+    // receipt supplies the data version.
+    expect(record.data_version).toBe("dv_test")
+  })
+
+  it("is null when no tool succeeded", async () => {
+    const registry = fakeRegistry(async () => ({
+      ok: false,
+      error: invalidInput(
+        [{ path: "dataset", message: "bad" }],
+        "fix the dataset"
+      ),
+    }))
+    const { model } = scriptModel([
+      { tools: [{ name: "count_events", input: { dataset: "bgl" } }] },
+      { text: "## Scope\n## Answer\nok\n## Unknown\n## Verification\n" },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { registry, limits: { maxFollowUps: 0 } }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.data_version).toBeNull()
   })
 })

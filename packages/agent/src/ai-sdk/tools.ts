@@ -1,5 +1,4 @@
 import type { CallContext, Registry } from "@workspace/analytics/registry"
-import { ToolFailure } from "@workspace/analytics/registry"
 import type { ToolError } from "@workspace/domain/errors"
 import type { Fact } from "@workspace/domain/facts"
 import type { ToolResult } from "@workspace/domain/tool"
@@ -83,6 +82,28 @@ export function modelView(result: ToolResult<unknown>): ModelToolView {
   }
 }
 
+/** Maps a `ToolError` to the model-facing error value (no stack, no DB text). */
+export function toolErrorValue(error: ToolError): ModelToolError {
+  return {
+    error: { kind: error.code, message: error.message, hint: error.hint },
+  }
+}
+
+/**
+ * Maps a registry `ToolOutcome` to the `ToolExecuteResult` the adapter returns,
+ * so the preflight `describe_corpus` path and the tool adapter produce the same
+ * UI tool-part shape and map `ToolError` identically (technical.md § 11.1: the
+ * UI tool part carries the full result).
+ */
+export function toExecuteResult(
+  outcome:
+    { ok: true; result: ToolResult<unknown> } | { ok: false; error: ToolError }
+): ToolExecuteResult {
+  return outcome.ok
+    ? { ok: true, result: outcome.result }
+    : { ok: false, error: toolErrorValue(outcome.error) }
+}
+
 /**
  * Builds the AI SDK tool set from the registry, in the registry's fixed order.
  * The returned object preserves that key order, so the tool definitions are
@@ -110,25 +131,15 @@ export function buildTools(
             input,
             callContext(signal)
           )
-          if (outcome.ok) return { ok: true, result: outcome.result }
-          // Expected failures go back as a value with the correction hint,
-          // never thrown (technical.md § 11.1, § 8.4).
-          return {
-            ok: false,
-            error: {
-              error: {
-                kind: outcome.error.code,
-                message: outcome.error.message,
-                hint: outcome.error.hint,
-              },
-            },
-          }
+          // Success carries the full result; an expected failure goes back as a
+          // value with the correction hint, never thrown (§ 11.1, § 8.4). The
+          // same mapping is reused for the preflight describe_corpus path.
+          return toExecuteResult(outcome)
         } catch (error) {
-          // A cancellation must propagate so the SDK aborts the step; a
-          // ToolFailure and anything else map to one generic sanitized value.
+          // A cancellation must propagate so the SDK aborts the step; every
+          // other failure (a ToolFailure or anything unexpected) maps to the
+          // one generic sanitized value.
           if (signal.aborted) throw error
-          if (error instanceof ToolFailure)
-            return { ok: false, error: GENERIC_ERROR }
           return { ok: false, error: GENERIC_ERROR }
         }
       },
