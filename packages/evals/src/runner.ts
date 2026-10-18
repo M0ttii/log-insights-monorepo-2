@@ -6,7 +6,6 @@ import {
   baselineRegistryGuidance,
   baselineRoleInstruction,
   DEFAULT_LIMITS,
-  investigationScopeSchema,
   FileRunStore,
   resolveModel,
   runInvestigation,
@@ -18,17 +17,30 @@ import { createDatabase } from "@workspace/analytics/db"
 import { FileReceiptStore } from "@workspace/analytics/receipts"
 import { createRegistry } from "@workspace/analytics/registry"
 import { CONTRACT_VERSION } from "@workspace/domain/version"
-import { digest, exportAttempt, writeArtifact } from "./artifacts.ts"
+import {
+  digest,
+  exportAttempt,
+  readArtifact,
+  writeArtifact,
+} from "./artifacts.ts"
 import {
   EVAL_VERSION,
   loadQuestions,
   makePlan,
   manifestSchema,
+  questionBankSchema,
+  normalizeQuestionScope,
   type EvalManifest,
-  type EvalQuestion,
   type QuestionBank,
 } from "./contracts.ts"
 import { saveReport } from "./report.ts"
+import {
+  EXPERIMENT_LIMITS,
+  experimentPlan,
+  experimentProjection,
+  OPUS_PRICING,
+  REPEATED_QUESTIONS,
+} from "./experiment.ts"
 
 async function sourceVersion(
   root: string
@@ -71,6 +83,7 @@ async function createManifest(input: {
   repeated: string[]
   root: string
   fixture?: boolean
+  experiment?: boolean
 }): Promise<EvalManifest> {
   const playbooks = loadPlaybooks()
   const instructions = {
@@ -147,52 +160,109 @@ async function createManifest(input: {
       max_retries: 0,
       output_limit: null,
       context_limit: null,
+      ...(input.experiment === true
+        ? {
+            max_model_calls: EXPERIMENT_LIMITS.maxModelCalls,
+            max_output_tokens: EXPERIMENT_LIMITS.maxOutputTokens,
+            max_input_bytes: EXPERIMENT_LIMITS.maxInputBytes,
+            output_limit: EXPERIMENT_LIMITS.maxOutputTokens,
+          }
+        : {}),
     },
     initial_history: "empty",
-    pricing: null,
+    pricing: input.experiment === true ? OPUS_PRICING : null,
     instructions,
     tool_catalog: tools,
     repeated_questions: input.repeated,
-    attempts: makePlan(input.bank, input.repeated),
+    attempts:
+      input.experiment === true
+        ? experimentPlan(input.bank)
+        : makePlan(input.bank, input.repeated),
+    ...(input.experiment === true
+      ? {
+          experiment: experimentProjection(
+            experimentPlan(input.bank),
+            input.bank
+          ),
+        }
+      : {}),
   })
-}
-function scopeInput(question: EvalQuestion) {
-  const { dataset, from, to, ...other } = question.scope
-  const filters = { ...other }
-  // The question bank's human-readable singular aliases become canonical
-  // domain filters, never inferred equivalence between dataset-specific fields.
-  if (typeof filters.component === "string") {
-    filters.components = [filters.component]
-    delete filters.component
-  }
-  if (typeof filters.team === "string") {
-    filters.teams = [filters.team]
-    delete filters.team
-  }
-  return investigationScopeSchema.parse({ dataset, from, to, filters })
 }
 export async function runLiveRound(
   dir: string,
   dataVersion: string,
   signal: AbortSignal
 ): Promise<void> {
+  await prepareRound(dir, dataVersion)
+  await executeRound(dir, signal)
+}
+
+/** Saves the entire plan without reading credentials or touching a DB/provider. */
+export async function prepareRound(
+  dir: string,
+  dataVersion: string
+): Promise<EvalManifest> {
   if (!/^dv_[a-zA-Z0-9]+$/.test(dataVersion))
     throw new Error("An explicit current --data-version is required")
   const root = findWorkspaceRoot(),
-    bank = await loadQuestions(),
-    config = loadConfig()
-  const model = resolveModel({ modelId: "claude-opus-5-5", effort: "high" })
-  const playbooks = loadPlaybooks()
+    bank = await loadQuestions()
   const manifest = await createManifest({
     round_id: dir.split("/").filter(Boolean).at(-1) ?? "round",
     root,
     bank,
     data_version: dataVersion,
-    repeated: ["dev-eng-01", "dev-tl-01", "dev-mgr-01"],
+    repeated: REPEATED_QUESTIONS,
+    experiment: true,
   })
   await mkdir(dir, { recursive: false })
   await writeArtifact(dir, "manifest.json", manifest)
   await writeArtifact(dir, "questions.json", bank)
+  return manifest
+}
+
+/** Only this explicit operation can call the paid provider. No round resumes. */
+export async function executeRound(
+  dir: string,
+  signal: AbortSignal
+): Promise<void> {
+  const root = findWorkspaceRoot()
+  const manifest = manifestSchema.parse(
+    await readArtifact(dir, "manifest.json")
+  )
+  const bank = questionBankSchema.parse(
+    await readArtifact(dir, "questions.json")
+  )
+  if (manifest.fixture_only || manifest.experiment === undefined)
+    throw new Error("A prepared LOG-53 development round is required")
+  const current = await createManifest({
+    round_id: manifest.round_id,
+    bank,
+    root,
+    data_version: manifest.versions.data_version,
+    repeated: REPEATED_QUESTIONS,
+    experiment: true,
+  })
+  if (
+    digest(bank) !== manifest.versions.questions_sha256 ||
+    digest(current.versions) !== digest(manifest.versions) ||
+    digest(current.attempts) !== digest(manifest.attempts) ||
+    digest(current.instructions) !== digest(manifest.instructions) ||
+    digest(current.tool_catalog) !== digest(manifest.tool_catalog) ||
+    digest(current.model) !== digest(manifest.model) ||
+    digest(current.limits) !== digest(manifest.limits) ||
+    digest(current.pricing) !== digest(manifest.pricing) ||
+    digest(current.experiment) !== digest(manifest.experiment)
+  )
+    throw new Error(
+      "Prepared configuration changed; prepare a new versioned round"
+    )
+  const config = loadConfig(),
+    playbooks = loadPlaybooks()
+  // Append-only execution marker prevents rerunning/cherry-picking attempts.
+  await writeArtifact(dir, "execution.json", {
+    started_at: new Date().toISOString(),
+    manifest_sha256: digest(manifest),
+  })
   const db = createDatabase(config.connection),
     receipts = new FileReceiptStore(join(dir, "receipts"))
   try {
@@ -205,6 +275,10 @@ export async function runLiveRound(
       let record: RunRecord | null = null,
         errorKind: string | undefined
       try {
+        const model = resolveModel({
+          modelId: manifest.model.id,
+          effort: plan.effort ?? "high",
+        })
         const registry = createRegistry({
           db,
           receipts,
@@ -218,7 +292,7 @@ export async function runLiveRound(
           {
             question: question.question,
             role: question.role ?? "auto",
-            scope: scopeInput(question),
+            scope: normalizeQuestionScope(question),
             variant: plan.variant,
             history: [],
           },
@@ -227,6 +301,8 @@ export async function runLiveRound(
             playbooks,
             runs: new FileRunStore(join(root, ".data", "runs")),
             model,
+            limits: EXPERIMENT_LIMITS,
+            expectedDataVersion: manifest.versions.data_version,
             callContext: (toolSignal) => ({
               client: "eval",
               signal: toolSignal,

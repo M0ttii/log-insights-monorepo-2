@@ -111,13 +111,13 @@ describe("round cancellation with offline dependencies", () => {
       )
       expect(state.calls).toBe(1)
       expect(state.disposed).toBe(1)
-      expect(manifest.attempts).toHaveLength(40)
+      expect(manifest.attempts).toHaveLength(58)
       expect(report.attempts[0].status).toBe("aborted")
       expect(
         report.attempts.filter(
           (attempt: { status: string }) => attempt.status === "missing"
         )
-      ).toHaveLength(39)
+      ).toHaveLength(57)
       expect(report.measurement_complete).toBe(false)
       expect(report.acceptance).not.toBe("pending_external_acceptance")
     } finally {

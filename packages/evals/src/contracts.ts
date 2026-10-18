@@ -1,4 +1,7 @@
-import { runLimitsSchema } from "@workspace/agent/ai-sdk"
+import {
+  investigationScopeSchema,
+  runLimitsSchema,
+} from "@workspace/agent/ai-sdk"
 import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { answerRoleSchema } from "@workspace/domain/answer"
@@ -15,6 +18,7 @@ export const questionSchema = z
     role: answerRoleSchema.nullable(),
     effective_role: answerRoleSchema.nullable(),
     covers: z.array(z.string()),
+    common_case: id.optional(),
     question: z.string().min(1).max(4000),
     scope: z.record(z.string(), z.json()),
     required_evidence: z.array(z.string()).min(1),
@@ -40,6 +44,30 @@ export const questionSchema = z
       })
   })
 export type EvalQuestion = z.infer<typeof questionSchema>
+/** Normalize the bank's human-readable aliases exactly once for run/review. */
+export function normalizeQuestionScope(question: Pick<EvalQuestion, "scope">) {
+  const { dataset, from, to, filters: nestedFilters, ...other } = question.scope
+  const filters = {
+    ...z
+      .record(z.string(), z.json())
+      .parse(nestedFilters === undefined ? {} : nestedFilters),
+    ...other,
+  }
+  if (typeof filters.component === "string") {
+    filters.components = [filters.component]
+    delete filters.component
+  }
+  if (typeof filters.team === "string") {
+    filters.teams = [filters.team]
+    delete filters.team
+  }
+  return investigationScopeSchema.parse({
+    ...(dataset === undefined ? {} : { dataset }),
+    ...(from === undefined ? {} : { from }),
+    ...(to === undefined ? {} : { to }),
+    filters,
+  })
+}
 export const questionBankSchema = z
   .strictObject({
     version: z.literal(2),
@@ -94,6 +122,8 @@ const plannedAttemptSchema = z.strictObject({
   repetition: z.number().int().positive(),
   order: z.number().int().nonnegative(),
   required: z.literal(true),
+  experiment: z.enum(["roles", "effort"]).optional(),
+  effort: z.enum(["high", "medium"]).optional(),
 })
 export type PlannedAttempt = z.infer<typeof plannedAttemptSchema>
 export function makePlan(
@@ -187,6 +217,22 @@ export const manifestSchema = z
     tool_catalog: z.array(z.json()),
     repeated_questions: z.array(id),
     attempts: z.array(plannedAttemptSchema).min(1),
+    experiment: z
+      .strictObject({
+        version: z.literal("log53-v1"),
+        effort_question_ids: z.array(id).length(3),
+        human_question_ids: z.array(id).length(3),
+        common_case: id,
+        judge_max_bytes: z.number().int().positive(),
+        planned_judge_calls: z.number().int().positive(),
+        input_tokens_per_call_estimate: z.number().int().positive(),
+        estimated_model_cost: z.number().nonnegative(),
+        estimated_judge_cost: z.number().nonnegative().nullable(),
+        estimate_note: z.string().min(1),
+        maximum_model_calls: z.number().int().positive(),
+        maximum_elapsed_ms: z.number().int().positive(),
+      })
+      .optional(),
   })
   .superRefine((manifest, ctx) => {
     const ids = manifest.attempts.map((a) => a.id)

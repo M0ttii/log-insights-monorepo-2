@@ -23,10 +23,39 @@ describe("predeclared evaluation plan", () => {
 import { mkdtemp, readFile, rm, writeFile, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { runFixtureRound } from "./runner.ts"
+import { executeRound, prepareRound, runFixtureRound } from "./runner.ts"
 import { recomputeReport, saveReport } from "./report.ts"
 
 describe("saved evaluation artifacts", () => {
+  it("prepares offline and rejects altered execution limits before external access", async () => {
+    const root = await mkdtemp(join(tmpdir(), "log53-plan-")),
+      dir = join(root, "round")
+    try {
+      const manifest = await prepareRound(dir, "dv_planControl")
+      expect(manifest.attempts).toHaveLength(58)
+      expect(manifest.experiment?.human_question_ids).toHaveLength(3)
+      expect(manifest.limits.max_model_calls).toBe(16)
+      expect(manifest.pricing?.cache_write_per_million).toBe(8)
+      await writeFile(
+        join(dir, "manifest.json"),
+        JSON.stringify({
+          ...manifest,
+          limits: { ...manifest.limits, max_model_calls: 100 },
+        })
+      )
+      await expect(
+        executeRound(dir, new AbortController().signal)
+      ).rejects.toThrow(/configuration changed/)
+      await expect(readFile(join(dir, "execution.json"))).rejects.toThrow(
+        /ENOENT/
+      )
+      await expect(prepareRound(dir, "dv_planControl")).rejects.toThrow(
+        /EEXIST/
+      )
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
   it("replays without any model or DB run and retains missing/error attempts", async () => {
     const root = await mkdtemp(join(tmpdir(), "log52-replay-"))
     const dir = join(root, "fixture")
