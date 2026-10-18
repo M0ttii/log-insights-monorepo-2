@@ -203,7 +203,10 @@ const otlpReplaySourceSchema = z
   .describe("OTLP replay source of the run (otel_replay).")
 
 export const receiptSourceSchema = z
-  .discriminatedUnion("kind", [remoteParquetSourceSchema, otlpReplaySourceSchema])
+  .discriminatedUnion("kind", [
+    remoteParquetSourceSchema,
+    otlpReplaySourceSchema,
+  ])
   .describe("Source of the run; only for datasets outside log_events.")
 
 export type ReceiptSource = z.infer<typeof receiptSourceSchema>

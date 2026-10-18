@@ -184,7 +184,9 @@ function replayLoad(kind: "corpus" | "samples"): ReplayLoad {
   const { fixture, listener } = DATASETS.otel_replay.replay
   const target = kind === "corpus" ? listener.corpus : listener.samples
   if (kind === "samples" && target.database !== SAMPLES_REMOTE_DATABASE)
-    throw new Error("the samples OTLP listener must write the otel samples database")
+    throw new Error(
+      "the samples OTLP listener must write the otel samples database"
+    )
   return {
     dataset: "otel_replay",
     fixture,

@@ -53,7 +53,11 @@ describe("dataset catalog", () => {
       )
       expect(isTableDataset(id)).toBe(!isExternal(id))
       expect(DATASETS[id].storage).toBe(
-        isExternal(id) ? "remote_parquet" : "log_events"
+        id === "otel_replay"
+          ? "otlp_replay"
+          : isExternal(id)
+            ? "remote_parquet"
+            : "log_events"
       )
     }
   })
@@ -156,7 +160,12 @@ describe("dataset catalog", () => {
     const base = DATASETS.otel.eventIdBase
     expect(externalDatasetOfEventId(base)).toBe("otel")
     expect(externalDatasetOfEventId(base + EXTERNAL_ID_RANGE - 1)).toBe("otel")
-    expect(externalDatasetOfEventId(base + EXTERNAL_ID_RANGE)).toBeNull()
+    const replayBase = DATASETS.otel_replay.eventIdBase
+    expect(externalDatasetOfEventId(replayBase)).toBe("otel_replay")
+    expect(externalDatasetOfEventId(replayBase + EXTERNAL_ID_RANGE - 1)).toBe(
+      "otel_replay"
+    )
+    expect(externalDatasetOfEventId(replayBase + EXTERNAL_ID_RANGE)).toBeNull()
     // The largest otel ID stays below the external range and is a safe integer.
     const { files, eventIdFileStride } = DATASETS.otel.remote
     const largest = base + files.length * eventIdFileStride

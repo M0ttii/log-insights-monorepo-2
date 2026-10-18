@@ -536,6 +536,7 @@ const remoteFileRow = z.object({
   etag: z.string().nullable(),
   last_modified: z.string(),
   footer_rows: exactCount,
+  total_footer_rows: exactCount,
   row_groups: exactCount,
   ts_min: nanoInstant,
   ts_max: nanoInstant,
@@ -543,7 +544,7 @@ const remoteFileRow = z.object({
   assigned_to: nanoInstant.nullable(),
 })
 
-const REMOTE_FILES_SQL = `SELECT file_index, url, size AS bytes, etag, ${isoTime("last_modified")} AS last_modified, footer_rows, row_groups, ${isoNanos("ts_min")} AS ts_min, ${isoNanos("ts_max")} AS ts_max, ${isoNanos("assigned_from")} AS assigned_from, ${isoNanos("assigned_to")} AS assigned_to FROM otel_sources ORDER BY file_index`
+const REMOTE_FILES_SQL = `SELECT file_index, url, size AS bytes, etag, ${isoTime("last_modified")} AS last_modified, footer_rows, sum(footer_rows) OVER () AS total_footer_rows, row_groups, ${isoNanos("ts_min")} AS ts_min, ${isoNanos("ts_max")} AS ts_max, ${isoNanos("assigned_from")} AS assigned_from, ${isoNanos("assigned_to")} AS assigned_to FROM otel_sources ORDER BY file_index`
 
 const NO_GUIDANCE_NOTE =
   "answer_guidance is null: this client injected no role playbooks. Follow the server instructions, or ask which role (engineer, team lead, manager) the user has."
@@ -757,11 +758,12 @@ export const describeCorpus = defineTool({
                   pin_kind: spec.remote.pinKind,
                   not_allowlisted: spec.remote.notAllowlisted,
                   mapping_version: reference.mapping_version,
-                  footer_rows: remoteFiles.reduce(
-                    (sum, file) => sum + file.footer_rows,
-                    0
+                  footer_rows: exactCount.parse(
+                    remoteFiles[0]?.total_footer_rows
                   ),
-                  files: remoteFiles,
+                  files: remoteFiles.map(
+                    ({ total_footer_rows: _totalFooterRows, ...file }) => file
+                  ),
                   reference_window: {
                     from: reference.window_from,
                     to: reference.window_to,

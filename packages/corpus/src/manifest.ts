@@ -40,7 +40,17 @@ export type ManifestInput = {
       etag: string | null
       last_modified: string | null
       sha256: string | null
+      footer?: {
+        rows: string
+        row_groups: string
+        ts_min: string
+        ts_max: string
+        assigned_from: string
+        assigned_to: string | null
+      }
     }>
+    /** Actual index snapshot, including freshness; available after the build. */
+    index?: Readonly<Record<string, unknown>>
   }>
   /**
    * The OTLP replay (LOG-35, D7): replay ID and time, the fixture pin and
@@ -76,8 +86,9 @@ export function canonicalJson(value: unknown): string {
 /**
  * data_version: `dv_` + the first 16 hex digits of SHA-256 over the canonical
  * manifest without created_at. The same files, image (reference and image
- * ID), server version, rule versions and SQL give
- * the same version on every run and machine.
+ * ID), server version, rule versions and SQL give the same version when
+ * their full snapshot metadata also agrees. Rebuilding an external index or
+ * replaying records changes freshness/observed times and therefore the version.
  */
 export function dataVersion(input: ManifestInput): string {
   const digest = createHash("sha256").update(canonicalJson(input)).digest("hex")

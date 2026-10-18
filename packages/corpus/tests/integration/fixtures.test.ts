@@ -83,7 +83,7 @@ const FIXTURES: Source = {
   database: DATABASE,
   archives: [],
   external: [],
-      replay: null,
+  replay: null,
   downloads: Object.entries(files).map(([name, content]) =>
     pinned(name, content)
   ),

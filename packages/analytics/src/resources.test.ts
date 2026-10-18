@@ -68,6 +68,7 @@ const DATA = describeCorpus.output.parse({
       api_accesses_without_request_id: null,
       requests: null,
       remote: null,
+      replay: null,
     },
   ],
   license: "Loghub CC BY 4.0.",

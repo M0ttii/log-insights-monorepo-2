@@ -30,7 +30,10 @@ let client: Client
 let firstOutput = ""
 
 beforeAll(async () => {
-  firstOutput = await runSetupCli(["--samples", "--with", "otel"], "UTC")
+  firstOutput = await runSetupCli(
+    ["--samples", "--with", "otel,otel_replay"],
+    "UTC"
+  )
   client = await connectTo(DATABASE)
 })
 
@@ -152,9 +155,146 @@ describe("otel samples load", () => {
     expect(external[0]?.index.build_ms).toBeGreaterThanOrEqual(0)
   })
 
-  it("is idempotent: a second run copies nothing and keeps the data version", async () => {
-    const second = await runSetupCli(["--samples", "--with", "otel"], "UTC")
+  it("keeps the replay count, original ns times and load-time observed timestamps", async () => {
+    const [stored] = await rows(
+      client,
+      `SELECT count(*)::VARCHAR AS records, count(DISTINCT event_id)::VARCHAR AS ids,
+         min(epoch_ns(ts))::VARCHAR AS first_ns, max(epoch_ns(ts))::VARCHAR AS last_ns,
+         count(DISTINCT observed_ts)::VARCHAR AS observed_times,
+         bool_and(observed_ts = (SELECT replayed_at FROM otel_replay)) AS observed_is_replay
+       FROM otel_replay_events`
+    )
+    expect(stored).toEqual({
+      records: "365",
+      ids: "365",
+      first_ns: "1758586800000000000",
+      last_ns: "1758586800000997454",
+      observed_times: "1",
+      observed_is_replay: true,
+    })
+    expect(
+      await rows(
+        client,
+        "SELECT count(*)::VARCHAR AS n FROM log_events WHERE dataset = 'otel_replay'"
+      )
+    ).toEqual([{ n: "0" }])
+    const [manifest] = await rows(
+      client,
+      "SELECT otlp_replay::VARCHAR AS replay FROM load_manifest"
+    )
+    expect(JSON.parse(String(manifest?.["replay"]))).toMatchObject({
+      dataset: "otel_replay",
+      fixture: {
+        records: 365,
+        sha256: DATASETS.otel_replay.replay.fixture.sha256,
+      },
+      listener: { database: DATABASE, table: "otlp.otel_logs" },
+    })
+  })
+
+  it("stores duplicate POSTs twice; a rerun clears them and replaces the replay without accumulating rows", async () => {
+    // An isolated regression export, sent byte-for-byte twice. It carries
+    // the repo replay marker so the following load must clear it as well.
+    const body = JSON.stringify({
+      resourceLogs: [
+        {
+          scopeLogs: [
+            {
+              logRecords: [
+                {
+                  timeUnixNano: "1758586800000000001",
+                  body: { stringValue: "duplicate export regression" },
+                  attributes: [
+                    {
+                      key: "log_insights.replay_id",
+                      value: { stringValue: "log35_duplicate_regression" },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    const port = process.env["SERENEDB_OTLP_SAMPLES_PORT"]
+    if (port === undefined)
+      throw new Error("SERENEDB_OTLP_SAMPLES_PORT is required")
+    const auth = Buffer.from(
+      `${process.env["SERENEDB_USER"]}:${process.env["SERENEDB_PASSWORD"]}`
+    ).toString("base64")
+    let second = ""
+    try {
+      for (let post = 0; post < 2; post++) {
+        const response = await fetch(`http://127.0.0.1:${port}/v1/logs`, {
+          method: "POST",
+          body,
+          headers: {
+            "content-type": "application/json",
+            authorization: `Basic ${auth}`,
+          },
+          signal: AbortSignal.timeout(10_000),
+        })
+        expect(response.status).toBe(200)
+        expect(await response.json()).toEqual({})
+      }
+      await client.query("VACUUM (REFRESH_TABLE) otlp.otel_logs")
+      expect(
+        await rows(
+          client,
+          `SELECT count(*)::VARCHAR AS n FROM otlp.otel_logs WHERE log_attributes ->> 'log_insights.replay_id' = 'log35_duplicate_regression'`
+        )
+      ).toEqual([{ n: "2" }])
+      // Tools read the built index snapshot, not arbitrary later exports.
+      expect(
+        await rows(client, "SELECT count(*)::VARCHAR AS n FROM otel_replay_idx")
+      ).toEqual([{ n: "365" }])
+    } finally {
+      // Leave the database ready for the registry tests even after a failed
+      // assertion; the loader deletes all rows with a replay marker.
+      second = await runSetupCli(
+        ["--samples", "--with", "otel,otel_replay"],
+        "America/Los_Angeles"
+      )
+    }
     expect(second).toContain("present  otel/part_000.parquet")
-    expect(dataVersionOf(second)).toBe(dataVersionOf(firstOutput))
+    // Each rerun records its new observed time and replay ID in the version.
+    expect(dataVersionOf(second)).not.toBe(dataVersionOf(firstOutput))
+    expect(
+      await rows(
+        client,
+        "SELECT count(*)::VARCHAR AS n FROM otlp.otel_logs WHERE log_attributes ->> 'log_insights.replay_id' IS NOT NULL"
+      )
+    ).toEqual([{ n: "365" }])
+    expect(
+      await rows(
+        client,
+        "SELECT count(*)::VARCHAR AS n FROM otel_replay_events"
+      )
+    ).toEqual([{ n: "365" }])
+    expect(
+      (await rows(client, "SELECT ok FROM load_checks")).every(
+        (check) => check["ok"] === true
+      )
+    ).toBe(true)
+  })
+
+  it("versions a changed reference index snapshot even when remote-only source pins are equal", async () => {
+    try {
+      const first = await runSetupCli(["--samples", "--with", "otel"], "UTC")
+      const [before] = await rows(
+        client,
+        "SELECT built_at::VARCHAR AS built_at FROM otel_reference"
+      )
+      const second = await runSetupCli(["--samples", "--with", "otel"], "UTC")
+      const [after] = await rows(
+        client,
+        "SELECT built_at::VARCHAR AS built_at FROM otel_reference"
+      )
+      expect(after?.["built_at"]).not.toBe(before?.["built_at"])
+      expect(dataVersionOf(second)).not.toBe(dataVersionOf(first))
+    } finally {
+      await runSetupCli(["--samples", "--with", "otel,otel_replay"], "UTC")
+    }
   })
 })

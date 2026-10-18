@@ -10,6 +10,7 @@ import {
 
 import { CONTAINER_RAW_DIR } from "./config.ts"
 import type { ExternalPin } from "./remote.ts"
+import { replayTable } from "./replay.ts"
 import {
   datasetLoad,
   joinPosix,
@@ -572,14 +573,16 @@ function otelChecks(
     "UNION ALL SELECT 31, 'otel: files ascend in time; each assigned range [ts_min(n), ts_min(n+1)) is non-empty', '0 out of order', " +
       "count(*) FILTER (WHERE assigned_to IS NOT NULL AND assigned_to <= assigned_from)::VARCHAR || ' out of order', " +
       "count(*) FILTER (WHERE assigned_to IS NOT NULL AND assigned_to <= assigned_from) = 0 FROM otel_sources",
-    `UNION ALL SELECT 32, 'otel: reference index count = view count = direct per-file scan of the window', (${direct})::VARCHAR, ` +
-      "(SELECT count(*) FROM otel_ref_idx)::VARCHAR || ' index, ' || (SELECT count(*) FROM otel_ref) || ' view', " +
-      `(SELECT count(*) FROM otel_ref_idx) = (${direct}) AND (SELECT count(*) FROM otel_ref) = (${direct}) AND (${direct}) > 0`,
-    `UNION ALL SELECT 33, 'otel: boundary rows removed by the half-open rule are identical twins in the next file', (${twins})::VARCHAR || ' twins', ` +
-      `(SELECT duplicates_removed FROM otel_reference)::VARCHAR || ' removed', (SELECT duplicates_removed FROM otel_reference) = (${twins})`,
-    `UNION ALL SELECT 34, 'otel: full-text index @@ ''${term}'' = regex count over the reference window', ` +
-      `(SELECT count(*) FROM otel_ref WHERE ${regex})::VARCHAR, (SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}')::VARCHAR, ` +
-      `(SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}') = (SELECT count(*) FROM otel_ref WHERE ${regex}) AND (SELECT count(*) FROM otel_ref WHERE ${regex}) > 0`,
+    `UNION ALL SELECT 32, 'otel: reference index count = view count = direct per-file scan of the window', direct_count::VARCHAR, ` +
+      "index_count::VARCHAR || ' index, ' || view_count || ' view', " +
+      "index_count = direct_count AND view_count = direct_count AND direct_count > 0 " +
+      `FROM (WITH measured AS MATERIALIZED (SELECT (${direct}) AS direct_count, (SELECT count(*) FROM otel_ref_idx) AS index_count, (SELECT count(*) FROM otel_ref) AS view_count) SELECT * FROM measured) counts`,
+    "UNION ALL SELECT 33, 'otel: boundary rows removed by the half-open rule are identical twins in the next file', twin_count::VARCHAR || ' twins', " +
+      "removed::VARCHAR || ' removed', removed = twin_count " +
+      `FROM (WITH measured AS MATERIALIZED (SELECT (${twins}) AS twin_count, (SELECT duplicates_removed FROM otel_reference) AS removed) SELECT * FROM measured) counts`,
+    `UNION ALL SELECT 34, 'otel: full-text index @@ ''${term}'' = regex count over the reference window', regex_count::VARCHAR, index_count::VARCHAR, ` +
+      "index_count = regex_count AND regex_count > 0 " +
+      `FROM (WITH measured AS MATERIALIZED (SELECT (SELECT count(*) FROM otel_ref WHERE ${regex}) AS regex_count, (SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}') AS index_count) SELECT * FROM measured) counts`,
   ]
 }
 
@@ -587,7 +590,6 @@ function otelChecks(
 
 const REPLAY_ID = /^rp_[0-9a-f]{12}$/
 const ATTRIBUTE = /^[a-z_.]+$/
-const IDENTIFIER = /^[a-z_][a-z0-9_]*$/
 
 function replayFacts(facts: LoadFacts): NonNullable<LoadFacts["replay"]> {
   const replay = facts.replay
@@ -604,15 +606,12 @@ function replayFacts(facts: LoadFacts): NonNullable<LoadFacts["replay"]> {
   return replay
 }
 
-function replayTableSql(load: ReplayLoad): string {
-  if (!IDENTIFIER.test(load.schema) || !IDENTIFIER.test(load.table))
-    throw new Error(`invalid listener table ${load.schema}.${load.table}`)
-  return `${load.schema}.${load.table}`
-}
-
 function replayAttributes(): { replayId: string; fixtureRow: string } {
   const { attributes } = DATASETS.otel_replay.replay
-  if (!ATTRIBUTE.test(attributes.replayId) || !ATTRIBUTE.test(attributes.fixtureRow))
+  if (
+    !ATTRIBUTE.test(attributes.replayId) ||
+    !ATTRIBUTE.test(attributes.fixtureRow)
+  )
     throw new Error("invalid replay attribute names")
   return attributes
 }
@@ -621,6 +620,11 @@ function replayErrorLevels(): string {
   return DATASETS.otel_replay.replay.errorLevels
     .map((level) => sqlString(level))
     .join(", ")
+}
+
+function replayGuideColumn(column: DatasetColumn): string {
+  if (!/^[a-z_]+$/.test(column)) throw new Error(column)
+  return column
 }
 
 /** 63_otel_replay.sql, after the loader has posted the fixture (load.ts). */
@@ -632,14 +636,10 @@ function replayStep(load: ReplayLoad): Step {
       const replay = replayFacts(facts)
       const attributes = replayAttributes()
       const columns = guideColumns(load.dataset)
-      const value = (column: DatasetColumn) => {
-        if (!/^[a-z_]+$/.test(column)) throw new Error(column)
-        return column
-      }
       if (replay.sourceUrl.includes("'") || load.fixture.path.includes("'"))
         throw new Error("fixture path and source must not contain quotes")
       return {
-        TABLE: replayTableSql(load),
+        TABLE: replayTable(load),
         REPLAY_ATTR: attributes.replayId,
         ROW_ATTR: attributes.fixtureRow,
         REPLAY_ID: replay.replayId,
@@ -654,7 +654,7 @@ function replayStep(load: ReplayLoad): Step {
         LABEL_SOURCE: sqlString("none: this dataset has no labels"),
         FIELD_STATS: columns
           .map((column) => {
-            const c = value(column)
+            const c = replayGuideColumn(column)
             return (
               `SELECT ${literal(load.dataset)} AS dataset, ${sqlString(column)} AS field, count(${c}) AS events_with_value, count(DISTINCT ${c}) AS distinct_values, ` +
               `coalesce((SELECT to_json(list({'value': v, 'events': n} ORDER BY n DESC, v)) FROM (SELECT ${c}::VARCHAR AS v, count(*) AS n FROM otel_replay_events ` +

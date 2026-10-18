@@ -82,8 +82,8 @@ const ORDER: Record<SearchSort, (rel: Relation) => string> = {
 
 const HIT_ORDER: Record<SearchSort, string> = {
   relevance: "hits.score DESC, hits.event_id",
-  time_asc: "hits.ts, hits.event_id",
-  time_desc: "hits.ts DESC, hits.event_id DESC",
+  time_asc: "hits.sort_ts, hits.event_id",
+  time_desc: "hits.sort_ts DESC, hits.event_id DESC",
 }
 
 const BASE_NOTE =
@@ -247,10 +247,12 @@ export const searchLogs = defineTool({
     )
     const listed = await ctx.db.query(
       // Keep the original filtered/ranked top-k query intact: scalar index
-      // filters contribute to its BM25 score in 26.10.1. Those filters also
+      // filters contribute to its BM25 score in 26.10.1. Keep a hidden raw
+      // sort timestamp so the outer join preserves nanosecond order even
+      // when public timestamps truncate to the same microsecond. Those filters also
       // erase ts_offsets, so read positions in a second FTS scan, restricted
       // to the selected IDs by a residual CASE (not an index predicate).
-      `WITH hits AS MATERIALIZED (SELECT ${id} AS event_id, ${rel.col("dataset")} AS dataset, ${isoTime(rel.col("ts"))} AS ts, ${rel.col("component")} AS component, ${rel.col("level")} AS level, ${rel.col("node")} AS node, ${rel.col("alert_label")} AS alert_label, ${rel.col("request_id")} AS request_id, ${extensionSelect(rel)}, left(${rel.col("message")}, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${rel.col("message")}) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, BM25(${rel.q}.tableoid) AS score FROM ${rel.from} WHERE ${where} ORDER BY ${ORDER[input.sort](rel)} LIMIT ${limitRef}) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT ${id} AS event_id, ts_offsets(${rel.col("message")}) AS match_offsets FROM ${rel.from} WHERE ${condition} AND CASE WHEN ${id} IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY ${HIT_ORDER[input.sort]}`,
+      `WITH hits AS MATERIALIZED (SELECT ${id} AS event_id, ${rel.col("dataset")} AS dataset, ${isoTime(rel.col("ts"))} AS ts, ${rel.col("ts")} AS sort_ts, ${rel.col("component")} AS component, ${rel.col("level")} AS level, ${rel.col("node")} AS node, ${rel.col("alert_label")} AS alert_label, ${rel.col("request_id")} AS request_id, ${extensionSelect(rel)}, left(${rel.col("message")}, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${rel.col("message")}) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, BM25(${rel.q}.tableoid) AS score FROM ${rel.from} WHERE ${where} ORDER BY ${ORDER[input.sort](rel)} LIMIT ${limitRef}) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT ${id} AS event_id, ts_offsets(${rel.col("message")}) AS match_offsets FROM ${rel.from} WHERE ${condition} AND CASE WHEN ${id} IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY ${HIT_ORDER[input.sort]}`,
       params.values,
       ctx.signal
     )

@@ -333,7 +333,9 @@ describe("otel indexed reference window", () => {
     const result = await ok("count_events", { group_by: ["dataset"] })
     const groups = (result.data as { groups: { dataset: string }[] }).groups
     expect(groups.map((group) => group.dataset)).toEqual(["bgl", "openstack"])
-    expect(result.notes.join(" ")).toContain("otel is loaded but not included")
+    expect(result.notes.join(" ")).toMatch(
+      /otel(?:, otel_replay)? (?:is|are) loaded but not included/
+    )
   })
 })
 

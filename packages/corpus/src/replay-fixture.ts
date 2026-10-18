@@ -32,6 +32,11 @@ const SENSITIVE = [
   "(?i)(email|credit|card|cvv|password|ssn)",
 ]
 
+const sensitive = (expr: string) =>
+  SENSITIVE.map(
+    (pattern) => `regexp_matches(coalesce(${expr}, ''), ${sqlString(pattern)})`
+  ).join(" OR ")
+
 async function main(): Promise<void> {
   const { fixture } = DATASETS.otel_replay.replay
   const url = DATASETS.otel.remote.files.find(
@@ -39,11 +44,6 @@ async function main(): Promise<void> {
   )?.url
   if (url === undefined) throw new Error("source file is not allowlisted")
   const keys = fixture.resourceKeys
-  const sensitive = (expr: string) =>
-    SENSITIVE.map(
-      (pattern) =>
-        `regexp_matches(coalesce(${expr}, ''), ${sqlString(pattern)})`
-    ).join(" OR ")
   const kept = [
     '"Body"',
     '"ScopeName"',
@@ -64,9 +64,8 @@ async function main(): Promise<void> {
   try {
     await client.query("SET http_timeout = 3")
     await client.query("SET http_retries = 1")
-    const { rows } = await client.query<Record<string, string | number | null>>(
-      sql
-    )
+    const { rows } =
+      await client.query<Record<string, string | number | null>>(sql)
     const records = rows.map((row, index) => ({
       fixture_row: index,
       file_row_number: String(row["file_row_number"]),
@@ -94,7 +93,7 @@ async function main(): Promise<void> {
       selection: fixture.selection,
       records,
     }
-    const text = `${JSON.stringify(document, null, 1)}\n`
+    const text = `${JSON.stringify(document, null, 2)}\n`
     const path = join(CORPUS_DIR, fixture.path)
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, text)

@@ -299,7 +299,9 @@ function replayUrl(
   const raw = process.env[load.portEnv]
   const port = Number(raw)
   if (raw === undefined || !Number.isInteger(port) || port < 1 || port > 65_535)
-    throw new Error(`${load.portEnv} is not set to a TCP port; see .env.example`)
+    throw new Error(
+      `${load.portEnv} is not set to a TCP port; see .env.example`
+    )
   const container = OTLP_CONTAINER_PORT[load.portEnv]
   const expected = `127.0.0.1:${String(port)}`
   const bound = container === undefined ? [] : (ports[container] ?? [])
@@ -533,7 +535,6 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
           },
         }),
   }
-  const version = dataVersion(manifest)
 
   const client = await openClient(connection)
   try {
@@ -643,8 +644,8 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     }
     if (checks.some((check) => !check.ok)) throw new LoadCheckFailed(checks)
 
-    // Remote summary and index facts for the manifest (not part of
-    // data_version: the build time differs on every run).
+    // Finalize the source snapshot after the build: describe_corpus exposes
+    // freshness, so a changed index snapshot must change data_version too.
     const external: ExternalSummary[] = []
     for (const load of source.external) {
       const { rows } = await client.query<{
@@ -677,6 +678,25 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
         index_disk_kib: await indexDiskKib(root, client),
       })
     }
+    const footerFacts =
+      externalSources.length === 0
+        ? []
+        : (
+            await client.query<{
+              file_index: number
+              rows: string
+              row_groups: string
+              ts_min: string
+              ts_max: string
+              assigned_from: string
+              assigned_to: string | null
+            }>(`SELECT file_index, footer_rows::VARCHAR AS rows, row_groups::VARCHAR AS row_groups,
+        strftime(ts_min, '%Y-%m-%dT%H:%M:%S.%nZ') AS ts_min,
+        strftime(ts_max, '%Y-%m-%dT%H:%M:%S.%nZ') AS ts_max,
+        strftime(assigned_from, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_from,
+        strftime(assigned_to, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_to
+        FROM otel_sources ORDER BY file_index`)
+          ).rows
     const externalManifest =
       externalSources.length === 0
         ? null
@@ -684,16 +704,35 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
             const summary = external.find(
               (row) => row.dataset === entry.dataset
             )
+            if (summary === undefined)
+              throw new Error("external index summary missing")
             return {
               ...entry,
+              files: entry.files.map((file) => {
+                const footer = footerFacts.find(
+                  (row) => row.file_index === file.file_index
+                )
+                if (footer === undefined)
+                  throw new Error("external footer facts missing")
+                const { file_index: _fileIndex, ...footerValues } = footer
+                return { ...file, footer: footerValues }
+              }),
               index: {
-                ...summary?.reference,
-                build_ms: summary?.index_ms ?? null,
-                disk_kib: summary?.index_disk_kib ?? null,
+                ...summary.reference,
+                build_ms: summary.index_ms,
+                disk_kib: summary.index_disk_kib,
               },
             }
           })
 
+    const version = dataVersion(
+      externalManifest === null
+        ? manifest
+        : {
+            ...manifest,
+            externalSources: externalManifest,
+          }
+    )
     const [manifestStatement, ...extra] = splitSqlScript(sql("95_manifest.sql"))
     if (manifestStatement === undefined || extra.length > 0) {
       throw new Error("95_manifest.sql must hold exactly one statement")

@@ -85,8 +85,13 @@ function parseRecord(value: unknown, index: number): ReplayRecord {
     ),
   }
   if (record.fixture_row !== index)
-    throw new Error(`fixture record ${index} has fixture_row ${record.fixture_row}`)
-  if (!DIGITS.test(record.time_unix_nano) || !DIGITS.test(record.file_row_number))
+    throw new Error(
+      `fixture record ${index} has fixture_row ${record.fixture_row}`
+    )
+  if (
+    !DIGITS.test(record.time_unix_nano) ||
+    !DIGITS.test(record.file_row_number)
+  )
     throw new Error(`fixture record ${index}: times and row numbers are digits`)
   return record
 }
@@ -126,7 +131,10 @@ export type ReplayRun = {
 }
 
 /** A replay ID and time for a fixture; the ID hashes both. */
-export function newReplayRun(fixtureSha256: string, now: Date = new Date()): ReplayRun {
+export function newReplayRun(
+  fixtureSha256: string,
+  now: Date = new Date()
+): ReplayRun {
   const iso = now.toISOString()
   const replayedAt = `${iso.slice(0, 23)}000000Z`
   const replayedAtNanos = `${BigInt(now.getTime()) * 1_000_000n}`
@@ -194,9 +202,9 @@ export async function postOtlp(
   body: string,
   fetchImpl: typeof fetch = fetch
 ): Promise<void> {
-  const auth = Buffer.from(`${credentials.user}:${credentials.password}`).toString(
-    "base64"
-  )
+  const auth = Buffer.from(
+    `${credentials.user}:${credentials.password}`
+  ).toString("base64")
   const response = await fetchImpl(url, {
     method: "POST",
     headers: {

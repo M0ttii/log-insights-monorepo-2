@@ -86,13 +86,18 @@ function deferred<T>() {
 
 const ready: Result = { rows: [{ pid: "123", n: "1" }], fields: [] }
 
-function client(stall?: "timezone" | "pid", blocked = deferred<Result>()) {
+const SETUP_SQL = {
+  timezone: "SET TimeZone = 'UTC'",
+  http_timeout: "SET GLOBAL http_timeout = 3",
+  http_retries: "SET GLOBAL http_retries = 1",
+  pid: "SELECT pg_backend_pid() AS pid",
+} as const
+
+type SetupStage = keyof typeof SETUP_SQL
+
+function client(stall?: SetupStage, blocked = deferred<Result>()) {
   const query = vi.fn<TestClient["query"]>().mockImplementation(async (sql) => {
-    if (
-      (stall === "timezone" && sql === "SET TimeZone = 'UTC'") ||
-      (stall === "pid" && sql === "SELECT pg_backend_pid() AS pid")
-    )
-      return blocked.promise
+    if (stall !== undefined && sql === SETUP_SQL[stall]) return blocked.promise
     return ready
   })
   return {
@@ -119,6 +124,10 @@ describe("database acquisition and session setup", () => {
   it.each([
     { stage: "timezone", stop: "abort" },
     { stage: "timezone", stop: "deadline" },
+    { stage: "http_timeout", stop: "abort" },
+    { stage: "http_timeout", stop: "deadline" },
+    { stage: "http_retries", stop: "abort" },
+    { stage: "http_retries", stop: "deadline" },
     { stage: "pid", stop: "abort" },
     { stage: "pid", stop: "deadline" },
   ] as const)(
@@ -139,11 +148,7 @@ describe("database acquisition and session setup", () => {
         .query("SELECT 1", [], controller.signal)
         .catch((error: unknown) => error)
       await vi.advanceTimersByTimeAsync(0)
-      expect(stalled.query).toHaveBeenCalledWith(
-        stage === "timezone"
-          ? "SET TimeZone = 'UTC'"
-          : "SELECT pg_backend_pid() AS pid"
-      )
+      expect(stalled.query).toHaveBeenCalledWith(SETUP_SQL[stage])
 
       if (stop === "abort") controller.abort()
       else await vi.advanceTimersByTimeAsync(1_000)
@@ -216,7 +221,7 @@ describe("database acquisition and session setup", () => {
     const active = client("timezone", setup)
     active.query.mockImplementation(async (sql) => {
       if (sql === "SET TimeZone = 'UTC'") return setup.promise
-      if (sql === "SELECT pg_backend_pid() AS pid") return ready
+      if (typeof sql === "string") return ready
       return running.promise
     })
     driver.connect.mockResolvedValue(active)

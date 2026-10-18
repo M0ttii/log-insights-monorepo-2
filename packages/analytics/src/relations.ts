@@ -46,10 +46,9 @@ export type Relation = {
    * Row count of a grouped aggregate. On an index relation it counts the
    * never-NULL ts instead of `*`: `count(*) … GROUP BY <indexed column>`
    * under a full-text filter is answered from the term dictionary (TsDict)
-   * and miscounts on 26.10.1 (LOG-35: otel 'called' by component gave cart
-   * 3,216,496 + email 273 + frontend 1,358 instead of cart 3,218,839; BGL
-   * 'parity' by level INFO 119,931 instead of 119,930), while counting a
-   * column scans the matching rows and is exact.
+   * and miscounts on 26.10.1 (G13: otel 'visa cache full' includes spurious
+   * cart/email groups). Counting a column scans the matching rows and agrees
+   * with independent raw evidence; no BGL miscount is claimed.
    */
   readonly countRows: string
 }
@@ -327,7 +326,8 @@ export function otelReplayRelation(): Relation {
     from: q,
     indexed: true,
     dataset: "otel_replay",
-    col: (column) => (REPLAY_COLUMNS.has(column) ? `${q}.${column}` : nullOf(column)),
+    col: (column) =>
+      REPLAY_COLUMNS.has(column) ? `${q}.${column}` : nullOf(column),
     bound: (ref) => `${ref}::TIMESTAMPTZ_NS`,
     epochMicros: (expr) => `(epoch_ns(${expr}) // 1000)`,
     bucket: (unit) => nanoBucket(unit, `${q}.ts`),

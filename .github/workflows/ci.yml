@@ -75,9 +75,9 @@ jobs:
       # The five Loghub extensions (U26) into log_insights_samples_ext, so the
       # extension integration tests have their database next to the base one.
       - run: pnpm --silent data:setup --samples --with all
-      # The otel dataset (LOG-35) from its committed Parquet fixtures, read
-      # through local paths (no network), into log_insights_samples_otel.
-      - run: pnpm --silent data:setup --samples --with otel
+      # OpenTelemetry fixtures and bounded OTLP/HTTP replay (LOG-35), all
+      # local inputs in log_insights_samples_otel; no public bucket access.
+      - run: pnpm --silent data:setup --samples --with otel,otel_replay
       - run: pnpm test:integration
       - name: MCP stdio smoke (Loghub 2k samples)
         run: pnpm test:mcp

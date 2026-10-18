@@ -1146,9 +1146,9 @@ export const DATASETS: { readonly [K in TableDataset]: TableDatasetSpec } & {
         "Public bucket listed in the challenge brief; licence not stated. The fixture keeps no LogAttributes and no record with email-, card- or long-number-like strings; Body is verbatim.",
       fixture: {
         path: "fixtures/otel-replay/part_000.json",
-        bytes: 210_689,
+        bytes: 232_827,
         sha256:
-          "abed94bf944b2177ae6f5ffcd0cb6bc06b67d2ddbd871b9980a6e510f0e1a93d",
+          "a93def09bff4cf51b0531b0cbeb21a9dd1c3d883570f7b3de8536a88806aa42a",
         records: 365,
         sourceFileIndex: 0,
         from: "2025-09-23T00:20:00.000000000Z",
