@@ -4,7 +4,7 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "lib": ["es2023", "DOM"],
-    "types": []
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["node_modules"]
