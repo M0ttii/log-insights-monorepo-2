@@ -7,6 +7,11 @@ import {
   type FilterField,
 } from "@workspace/domain/filters"
 
+import {
+  logEventsRelation,
+  type Relation,
+  type RelationColumn,
+} from "./relations.ts"
 import type { SqlParams } from "./sql.ts"
 
 /**
@@ -16,18 +21,21 @@ import type { SqlParams } from "./sql.ts"
  */
 
 /** Searches read the full-text index relation; everything else reads the table (gate G4). */
-type Relation = "log_events" | "log_events_idx"
+type TableName = "log_events" | "log_events_idx"
 
 export type CompiledFilter = {
   /** Conditions joined with AND; `TRUE` when the filter is empty. */
   where: string
-  relation: Relation
+  /** Table name of a log_events relation; the qualifier of other relations. */
+  relation: string
+  /** The relation the conditions are written against (LOG-35). */
+  rel: Relation
 }
 
 const QUALIFIER = /^[a-z_][a-z0-9_]*$/
 
 /** Plain column per equality field. */
-const EQUALS: Partial<Record<FilterField, string>> = {
+const EQUALS: Partial<Record<FilterField, RelationColumn>> = {
   dataset: "dataset",
   node: "node",
   rack: "rack",
@@ -39,32 +47,33 @@ const EQUALS: Partial<Record<FilterField, string>> = {
   process_id: "process_id",
   client_ip: "client_ip",
   thread: "thread",
+  trace_id: "trace_id",
   pattern_id: "pattern_id",
 }
 
 /** Plain column per list field. */
-const IN_LIST: Partial<Record<FilterField, string>> = {
+const IN_LIST: Partial<Record<FilterField, RelationColumn>> = {
   components: "component",
   levels: "level",
   endpoints: "endpoint",
 }
 
 /** Grouping dimensions (§ 8.1) and the SQL they read. */
-const DIMENSIONS: Record<Dimension, (q: string) => string> = {
-  dataset: (q) => `${q}.dataset`,
+const DIMENSIONS: Record<Dimension, (rel: Relation) => string> = {
+  dataset: (rel) => rel.col("dataset"),
   team: teamExpression,
-  component: (q) => `${q}.component`,
-  level: (q) => `${q}.level`,
-  alert_label: (q) => `${q}.alert_label`,
-  rack: (q) => `${q}.rack`,
-  node: (q) => `${q}.node`,
-  pattern: (q) => `${q}.pattern_id`,
-  http_status: (q) => `${q}.http_status`,
-  endpoint: (q) => `${q}.endpoint`,
-  host: (q) => `${q}.host`,
-  client_ip: (q) => `${q}.client_ip`,
-  thread: (q) => `${q}.thread`,
-  block_id: (q) => `${q}.block_id`,
+  component: (rel) => rel.col("component"),
+  level: (rel) => rel.col("level"),
+  alert_label: (rel) => rel.col("alert_label"),
+  rack: (rel) => rel.col("rack"),
+  node: (rel) => rel.col("node"),
+  pattern: (rel) => rel.col("pattern_id"),
+  http_status: (rel) => rel.col("http_status"),
+  endpoint: (rel) => rel.col("endpoint"),
+  host: (rel) => rel.col("host"),
+  client_ip: (rel) => rel.col("client_ip"),
+  thread: (rel) => rel.col("thread"),
+  block_id: (rel) => rel.col("block_id"),
 }
 
 /**
@@ -72,8 +81,15 @@ const DIMENSIONS: Record<Dimension, (q: string) => string> = {
  * without an entry are `unowned` (concept § 5.3). Outer columns are always
  * qualified, otherwise they would bind to `ownership` inside the subquery.
  */
-function teamExpression(q: string): string {
-  return `coalesce((SELECT o.team FROM ownership o WHERE o.dataset = ${q}.dataset AND o.component = ${q}.component), 'unowned')`
+function teamExpression(rel: Relation): string {
+  return `coalesce((SELECT o.team FROM ownership o WHERE o.dataset = ${rel.col("dataset")} AND o.component = ${rel.col("component")}), 'unowned')`
+}
+
+/** A plain qualifier (log_events columns), or a relation with its own column SQL. */
+function relationOf(target: string | Relation): Relation {
+  if (typeof target !== "string") return target
+  checkQualifier(target)
+  return logEventsRelation({ alias: target })
 }
 
 /**
@@ -82,12 +98,11 @@ function teamExpression(q: string): string {
  */
 export function dimensionExpression(
   dimension: string,
-  qualifier: string
+  target: string | Relation
 ): string {
-  checkQualifier(qualifier)
   const parsed = dimensionSchema.safeParse(dimension)
   if (!parsed.success) throw new RangeError(`unknown dimension: ${dimension}`)
-  return DIMENSIONS[parsed.data](qualifier)
+  return DIMENSIONS[parsed.data](relationOf(target))
 }
 
 /**
@@ -109,10 +124,11 @@ export type CompileOptions = {
   alias?: string
   /**
    * Reads the full-text index relation even without `text`, for tools that
-   * add their own full-text condition (search_logs). Default: the index only
+   * add their own full-text condition (search_logs), or another relation
+   * (LOG-35: the otel index or a direct scan). Default: the index only
    * when `text` is present.
    */
-  relation?: Relation
+  relation?: TableName | Relation
 }
 
 /**
@@ -139,61 +155,81 @@ export function compileFilter(
     }
   }
 
-  const relation: Relation =
+  const requested: TableName | Relation =
     options.relation ??
     (filter.text === undefined ? "log_events" : "log_events_idx")
-  if (filter.text !== undefined && relation !== "log_events_idx")
+  const rel =
+    typeof requested === "string"
+      ? logEventsRelation({
+          indexed: requested === "log_events_idx",
+          ...(options.alias === undefined ? {} : { alias: options.alias }),
+        })
+      : requested
+  if (filter.text !== undefined && !rel.indexed)
     throw new Error("a text filter needs the full-text index relation")
-  const q = options.alias ?? relation
-  checkQualifier(q)
+  if (
+    rel.dataset !== null &&
+    filter.dataset !== undefined &&
+    filter.dataset !== rel.dataset
+  )
+    throw new Error(`relation of ${rel.dataset} filtered by ${filter.dataset}`)
+  const relation =
+    typeof requested === "string"
+      ? requested
+      : rel.dataset === null
+        ? rel.from
+        : rel.q
   const { params } = options
   const conditions: string[] = []
 
   for (const field of present) {
     const column = EQUALS[field]
     const listColumn = IN_LIST[field]
-    if (column !== undefined) {
+    if (field === "dataset" && rel.dataset !== null) {
+      // A single-dataset relation holds only rows of that dataset.
+      continue
+    } else if (column !== undefined) {
       conditions.push(
-        `${q}.${column} = ${params.add(stringValue(filter, field))}`
+        `${rel.col(column)} = ${params.add(stringValue(filter, field))}`
       )
     } else if (listColumn !== undefined) {
       conditions.push(
-        `${q}.${listColumn} IN (${params.list(listValue(filter, field))})`
+        `${rel.col(listColumn)} IN (${params.list(listValue(filter, field))})`
       )
     } else {
       switch (field) {
         case "from":
           conditions.push(
-            `${q}.ts >= ${params.add(stringValue(filter, field))}::TIMESTAMPTZ`
+            `${rel.col("ts")} >= ${rel.bound(params.add(stringValue(filter, field)))}`
           )
           break
         case "to":
           conditions.push(
-            `${q}.ts < ${params.add(stringValue(filter, field))}::TIMESTAMPTZ`
+            `${rel.col("ts")} < ${rel.bound(params.add(stringValue(filter, field)))}`
           )
           break
         case "teams":
           conditions.push(
-            `${teamExpression(q)} IN (${params.list(listValue(filter, field))})`
+            `${teamExpression(rel)} IN (${params.list(listValue(filter, field))})`
           )
           break
         case "only_errors":
-          if (filter.only_errors === true) conditions.push(`${q}.is_error`)
+          if (filter.only_errors === true) conditions.push(rel.col("is_error"))
           break
         case "only_alerts":
-          if (filter.only_alerts === true) conditions.push(`${q}.is_alert`)
+          if (filter.only_alerts === true) conditions.push(rel.col("is_alert"))
           break
         case "http_status": {
           const range = filter.http_status
           if (range === undefined) throw new TypeError("http_status is unset")
           conditions.push(
-            `${q}.http_status BETWEEN ${params.add(range.min)} AND ${params.add(range.max)}`
+            `${rel.col("http_status")} BETWEEN ${params.add(range.min)} AND ${params.add(range.max)}`
           )
           break
         }
         case "text":
           conditions.push(
-            `${q}.message @@ plainto_tsquery(${params.add(stringValue(filter, field))})`
+            `${rel.col("message")} @@ plainto_tsquery(${params.add(stringValue(filter, field))})`
           )
           break
         default:
@@ -207,6 +243,7 @@ export function compileFilter(
     filter: {
       where: conditions.length === 0 ? "TRUE" : conditions.join(" AND "),
       relation,
+      rel,
     },
   }
 }

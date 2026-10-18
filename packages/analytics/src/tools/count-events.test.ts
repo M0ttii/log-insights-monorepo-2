@@ -304,6 +304,50 @@ describe("count_events validation", () => {
   })
 })
 
+describe("count_events on the remote otel dataset (LOG-35)", () => {
+  const WINDOW = {
+    from: "2025-09-23T00:29:00Z",
+    to: "2025-09-23T00:29:30Z",
+  }
+
+  it("needs a bounded window without text before any query", async () => {
+    expect(
+      await issues({ group_by: ["level"], dataset: "otel" })
+    ).toMatchObject({
+      code: "invalid_input",
+      issues: [{ path: "from" }, { path: "to" }],
+    })
+    expect(
+      await issues({
+        group_by: ["level"],
+        dataset: "otel",
+        from: "2025-09-23T00:29:00Z",
+        to: "2025-09-23T00:31:00Z",
+      })
+    ).toMatchObject({ code: "limit_exceeded", limit: 60, requested: 120 })
+  })
+
+  it("rejects patterns, compare and dimensions without meaning for otel", async () => {
+    expect(
+      await issues({ group_by: ["pattern"], dataset: "otel", ...WINDOW })
+    ).toMatchObject({ code: "invalid_input", issues: [{ path: "group_by" }] })
+    expect(
+      await issues({
+        group_by: ["level"],
+        dataset: "otel",
+        ...WINDOW,
+        compare: "previous_period",
+      })
+    ).toMatchObject({ code: "invalid_input", issues: [{ path: "compare" }] })
+    expect(
+      await issues({ group_by: ["node"], dataset: "otel", ...WINDOW })
+    ).toMatchObject({ code: "invalid_input", issues: [{ path: "group_by" }] })
+    expect(
+      await issues({ group_by: ["http_status"], dataset: "otel", ...WINDOW })
+    ).toMatchObject({ code: "invalid_input" })
+  })
+})
+
 describe("count_events result", () => {
   it("maps the groups, other and facts keyed by group_by", async () => {
     const { stored, count, summarize } = setup()

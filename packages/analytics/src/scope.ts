@@ -1,4 +1,4 @@
-import { DATASETS, type Dataset } from "@workspace/domain/datasets"
+import { DATASETS, isExternal, type Dataset } from "@workspace/domain/datasets"
 import type { ToolError } from "@workspace/domain/errors"
 import type { Filter, FilterField } from "@workspace/domain/filters"
 import type { Scope } from "@workspace/domain/receipt"
@@ -14,7 +14,11 @@ import {
 
 /** Scope of a tool run (technical.md § 6.2): one window per dataset plus the other filters. */
 
-/** Every dataset of the current load, in catalog order (U26). */
+/**
+ * Every log_events dataset of the current load, in catalog order (U26).
+ * External datasets (otel, LOG-35) are read only when named: a call without
+ * a dataset never touches remote files.
+ */
 export const LOADED = "loaded"
 
 export type ResolvedWindow = {
@@ -34,9 +38,20 @@ export async function resolveWindows(
   bounds: Pick<Filter, "from" | "to">,
   signal: AbortSignal
 ): Promise<
-  { ok: true; windows: ResolvedWindow[] } | { ok: false; error: ToolError }
+  | {
+      ok: true
+      windows: ResolvedWindow[]
+      /** Loaded external datasets left out of a LOADED scope. */
+      excluded: Dataset[]
+    }
+  | { ok: false; error: ToolError }
 > {
-  const list = datasets === LOADED ? await loadedDatasets(db, signal) : datasets
+  const loaded = datasets === LOADED ? await loadedDatasets(db, signal) : []
+  const list =
+    datasets === LOADED
+      ? loaded.filter((dataset) => !isExternal(dataset))
+      : datasets
+  const excluded = loaded.filter(isExternal)
   if (list.length === 0) return { ok: false, error: corpusNotLoaded }
   const windows: ResolvedWindow[] = []
   for (const dataset of list) {
@@ -52,7 +67,16 @@ export async function resolveWindows(
       span,
     })
   }
-  return { ok: true, windows }
+  return { ok: true, windows, excluded }
+}
+
+/** Note for a scope without dataset while an external dataset is loaded. */
+export function excludedNote(excluded: readonly Dataset[]): string[] {
+  return excluded.length === 0
+    ? []
+    : [
+        `${excluded.join(", ")} is loaded but not included: remote datasets are read only when named (dataset ${excluded[0]}), so these totals cover the log_events datasets only.`,
+      ]
 }
 
 /** The filters besides dataset and window, as given. */

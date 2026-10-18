@@ -18,22 +18,27 @@ const ANCHOR = {
   node: "R01-M0-N0-C:J02-U01",
   alert_label: null,
   request_id: null,
-  // The five extension columns SereneDB always selects; null for a BGL event.
+  // The eight attribute columns SereneDB always selects (five extension
+  // columns, three OpenTelemetry columns); null for a BGL event.
   host: null,
   process_id: null,
   client_ip: null,
   thread: null,
   block_id: null,
+  trace_id: null,
+  span_id: null,
+  severity_number: null,
   pattern_id: "aaaa",
   message: "anchor",
   message_truncated: false,
+  // The anchor's exact time; equals ts for log_events.
+  ts_exact: "2005-07-01T12:00:00.000000Z",
 }
 
-const neighbour = (event_id: string, offset_ms: number) => ({
-  ...ANCHOR,
-  event_id,
-  offset_ms,
-})
+const neighbour = (event_id: string, offset_ms: number) => {
+  const { ts_exact: _exact, ...event } = ANCHOR
+  return { ...event, event_id, offset_ms }
+}
 
 type Call = { sql: string; params: readonly unknown[] }
 

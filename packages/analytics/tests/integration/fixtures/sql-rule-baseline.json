@@ -1,6 +1,6 @@
 {
   "source": "LOG-31 pre-change characterization, Loghub 2k samples on SereneDB 26.10.1",
-  "data_version": "dv_f9c4be888db8f242",
+  "data_version": "dv_81f1b1f4d0ae464c",
   "cases": [
     {
       "name": "count-totals",
@@ -317,15 +317,15 @@
       "name": "describe",
       "tool": "describe_corpus",
       "input": {},
-      "result_digest": "1e805bd446c09be542cd46fb8c152c5b0ccecfbde8388d1310a161369c153b18",
+      "result_digest": "1064c34d91bff7abe2fc863b7e84b7004dce1b143b78ba7f4b8f4422e6d4a8d2",
       "normalized_facts_sha256": "7936705d5b872bb0d59b7df7bd7d287ec7e74ddc21987ef4b0cd3beeaad0daab"
     }
   ],
   "loads": [
     {
       "image": "local/serenedb:26.10.1-arm64",
-      "data_version": "dv_f9c4be888db8f242",
-      "describe_result_digest": "1e805bd446c09be542cd46fb8c152c5b0ccecfbde8388d1310a161369c153b18"
+      "data_version": "dv_81f1b1f4d0ae464c",
+      "describe_result_digest": "1064c34d91bff7abe2fc863b7e84b7004dce1b143b78ba7f4b8f4422e6d4a8d2"
     },
     {
       "image": "serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9",
@@ -344,6 +344,8 @@
           "Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu: Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics. ISSRE 2023.",
           "Adam Oliner, Jon Stearley: What Supercomputers Say: A Study of Five System Logs. DSN 2007."
         ],
+        "storage": "log_events",
+        "counts_cover": "dataset",
         "events": 2000,
         "lines_read": 2000,
         "rejected": 0,
@@ -563,7 +565,10 @@
           "breadth_unit": "nodes",
           "context_scopes": ["same_node", "same_component", "dataset"],
           "api_accesses": false,
-          "labels": "line"
+          "labels": "line",
+          "patterns": true,
+          "full_text": "all",
+          "direct_scan": null
         },
         "levels": [
           {
@@ -670,7 +675,8 @@
         ],
         "api_accesses": null,
         "api_accesses_without_request_id": null,
-        "requests": null
+        "requests": null,
+        "remote": null
       },
       {
         "dataset": "openstack",
@@ -679,6 +685,8 @@
         "citation": [
           "Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu: Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics. ISSRE 2023."
         ],
+        "storage": "log_events",
+        "counts_cover": "dataset",
         "events": 2000,
         "lines_read": 2000,
         "rejected": 0,
@@ -951,7 +959,10 @@
           "breadth_unit": "instances",
           "context_scopes": ["same_request", "same_component", "dataset"],
           "api_accesses": true,
-          "labels": "instance"
+          "labels": "instance",
+          "patterns": true,
+          "full_text": "all",
+          "direct_scan": null
         },
         "levels": [
           {
@@ -988,7 +999,8 @@
         ],
         "api_accesses": 1017,
         "api_accesses_without_request_id": 89,
-        "requests": 928
+        "requests": 928,
+        "remote": null
       }
     ],
     "license": "Zenodo record 8196385 (CC BY 4.0): refer to https://github.com/logpai/loghub and cite the Loghub paper.",
@@ -1080,14 +1092,14 @@
       "unowned": []
     },
     "versions": {
-      "data_version": "dv_f9c4be888db8f242",
+      "data_version": "dv_81f1b1f4d0ae464c",
       "source": "samples",
-      "loader_version": "1.1.0",
+      "loader_version": "1.2.0",
       "parser_version": "1.1.0",
       "pattern_rules_version": "1.1.0",
       "ownership_version": "1.1.0",
       "rules_version": "concept-3.8",
-      "contract_version": "3.0.0"
+      "contract_version": "4.0.0"
     },
     "answer_guidance": null,
     "guidance_version": null

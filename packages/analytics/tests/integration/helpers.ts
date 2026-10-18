@@ -30,6 +30,13 @@ const SAMPLES_DATABASE = "log_insights_samples"
  */
 const SAMPLES_EXTENDED_DATABASE = "log_insights_samples_ext"
 
+/**
+ * Database of the base 2k samples plus the otel Parquet fixtures
+ * (`pnpm data:setup --samples --with otel`, SAMPLES_REMOTE_DATABASE in
+ * corpus/src/sources.ts; LOG-35).
+ */
+const SAMPLES_REMOTE_DATABASE = "log_insights_samples_otel"
+
 /** Loads the root .env like the Node scripts do (--env-file-if-exists). */
 export function loadEnv(): void {
   const file = join(root, ".env")
@@ -42,6 +49,15 @@ export function samplesConnection(): Connection {
 
 export function extendedSamplesConnection(): Connection {
   return { ...loadConfig().connection, database: SAMPLES_EXTENDED_DATABASE }
+}
+
+export function otelSamplesConnection(): Connection {
+  return { ...loadConfig().connection, database: SAMPLES_REMOTE_DATABASE }
+}
+
+/** Host directory below the container's /data/raw mount (compose.yaml). */
+export function hostRawDir(): string {
+  return join(root, ".data", "raw")
 }
 
 export async function temporaryDir(prefix: string): Promise<string> {

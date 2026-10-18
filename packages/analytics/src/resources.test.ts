@@ -14,6 +14,9 @@ const CAPABILITIES = {
   context_scopes: ["same_node", "same_component", "dataset"],
   api_accesses: false,
   labels: "line" as const,
+  patterns: true,
+  full_text: "all" as const,
+  direct_scan: null,
 }
 
 const FIELDS = [
@@ -44,6 +47,8 @@ const DATA = describeCorpus.output.parse({
       title: "BGL",
       origin: "BlueGene/L supercomputer.",
       citation: ["Loghub paper."],
+      storage: "log_events",
+      counts_cover: "dataset",
       events: 3,
       lines_read: 3,
       rejected: 0,
@@ -62,6 +67,7 @@ const DATA = describeCorpus.output.parse({
       api_accesses: null,
       api_accesses_without_request_id: null,
       requests: null,
+      remote: null,
     },
   ],
   license: "Loghub CC BY 4.0.",

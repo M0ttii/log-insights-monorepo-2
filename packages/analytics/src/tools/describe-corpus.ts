@@ -3,6 +3,8 @@ import {
   DATASET_COLUMNS,
   DATASETS,
   LICENSE,
+  REMOTE_SCAN_MAX_FILES,
+  REMOTE_SCAN_MAX_SECONDS,
   type Dataset,
   type DatasetColumn,
 } from "@workspace/domain/datasets"
@@ -19,6 +21,8 @@ import { CONTRACT_VERSION } from "@workspace/domain/version"
 import { z } from "zod"
 
 import { corpusNotLoaded, spanEnd } from "../corpus.ts"
+import { isoNanos } from "../relations.ts"
+import { readReference } from "../remote.ts"
 import { isoTime } from "../sql.ts"
 
 /**
@@ -84,9 +88,96 @@ const capabilitiesSchema = z
       .describe(
         "What the dataset labels mark; null without labels. Labels are never findings."
       ),
+    patterns: z
+      .boolean()
+      .describe(
+        "Message patterns (R-04): pattern_id, the pattern dimension, recurring_patterns and get_log_context mode aggregate. False for otel (messages stay in remote files)."
+      ),
+    full_text: z
+      .enum(["all", "reference_window"])
+      .describe(
+        "Where search_logs and text filters work: the whole dataset, or only the indexed reference window (otel)."
+      ),
+    direct_scan: z
+      .strictObject({
+        max_seconds: z.number().int().positive(),
+        max_files: z.number().int().positive(),
+      })
+      .nullable()
+      .describe(
+        "Remote datasets: count_events and event_trend without text read the files directly and need from/to at most max_seconds apart; null for log_events datasets."
+      ),
   })
   .describe(
     "Tool functions for this dataset; any other use returns invalid_input with a hint, never a zero."
+  )
+
+const nanoInstant = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}Z$/)
+  .describe("UTC instant with nanoseconds, as pinned from the Parquet footer.")
+
+const remoteSchema = z
+  .strictObject({
+    licence: z.string(),
+    pin_kind: z.string().describe("What the loader pins per file."),
+    not_allowlisted: z.string(),
+    mapping_version: z.string(),
+    footer_rows: count.describe(
+      "Sum of the Parquet footer row counts of the allowlisted files. Footer counts include the rows duplicated on file boundaries, so this is not a count of distinct events."
+    ),
+    files: z
+      .array(
+        z.strictObject({
+          file_index: count,
+          url: z.string(),
+          bytes: count.describe("Content-Length pinned at load."),
+          etag: z
+            .string()
+            .nullable()
+            .describe("ETag pinned at load; null for local fixtures."),
+          last_modified: z.string().describe("Last-Modified pinned at load."),
+          footer_rows: count.describe(
+            "Rows in the file's Parquet footer (incl. boundary duplicates)."
+          ),
+          row_groups: count,
+          ts_min: nanoInstant,
+          ts_max: nanoInstant,
+          assigned_from: nanoInstant.describe(
+            "Start of the half-open range this file answers for, [ts_min(n), ts_min(n+1))."
+          ),
+          assigned_to: nanoInstant
+            .nullable()
+            .describe("Exclusive end; null for the last file."),
+        })
+      )
+      .describe("The allowlisted files with their load-time pins."),
+    reference_window: z
+      .strictObject({
+        from: instantSchema,
+        to: instantSchema.describe("Exclusive."),
+        index: z.string(),
+        glob: z.string().describe("The glob the index view reads."),
+        built_at: instantSchema.describe("When the index snapshot was built."),
+        build_ms: z.number().nonnegative(),
+        events: count.describe(
+          "Exact events in the window after boundary deduplication."
+        ),
+        duplicates_removed: count.describe(
+          "Boundary rows present in two files, counted once."
+        ),
+      })
+      .describe(
+        "The indexed reference window: full text works only here; a frozen snapshot of the postings."
+      ),
+    scan_limits: z.strictObject({
+      max_seconds: z.number().int().positive(),
+      max_files: z.number().int().positive(),
+    }),
+  })
+  .nullable()
+  .describe(
+    "Remote Parquet source (otel); null for log_events datasets. Facts here describe the files, not counted events."
   )
 
 const datasetSummarySchema = z.strictObject({
@@ -94,11 +185,29 @@ const datasetSummarySchema = z.strictObject({
   title: z.string(),
   origin: z.string().describe("System and collection as Loghub describes it."),
   citation: z.array(z.string()).describe("Papers to cite for this dataset."),
-  events: count.describe("Parsed log events (lines) loaded."),
-  lines_read: count.describe("Lines read from the raw files."),
-  rejected: count.describe(
-    "Lines rejected by the loader, with reasons in load_rejects."
-  ),
+  storage: z
+    .enum(["log_events", "remote_parquet"])
+    .describe(
+      "log_events: loaded into SereneDB. remote_parquet: read in place from remote files (otel); queried only when named."
+    ),
+  counts_cover: z
+    .enum(["dataset", "reference_window"])
+    .describe(
+      "What error_events, levels, components and the field guide count: the whole dataset, or only the indexed reference window (otel)."
+    ),
+  events: count
+    .nullable()
+    .describe(
+      "Parsed log events (lines) loaded; null for remote datasets, whose rows are not loaded (see remote)."
+    ),
+  lines_read: count
+    .nullable()
+    .describe("Lines read from the raw files; null for remote datasets."),
+  rejected: count
+    .nullable()
+    .describe(
+      "Lines rejected by the loader, with reasons in load_rejects; null for remote datasets."
+    ),
   first_event: instantSchema.describe("Time of the first event, UTC."),
   last_event: instantSchema.describe(
     "Time of the last event, UTC; the span includes it."
@@ -108,8 +217,14 @@ const datasetSummarySchema = z.strictObject({
     .describe(
       "Events with an error after R-02; null when the dataset has no error definition (unknown, not zero)."
     ),
-  patterns: count.describe("Distinct normalised message patterns (R-04)."),
-  single_event_patterns: count.describe("Patterns seen exactly once."),
+  patterns: count
+    .nullable()
+    .describe(
+      "Distinct normalised message patterns (R-04); null when the dataset has none (otel), never 0."
+    ),
+  single_event_patterns: count
+    .nullable()
+    .describe("Patterns seen exactly once; null without patterns."),
   time_basis: z
     .string()
     .describe("How event times were derived, with every assumption."),
@@ -158,6 +273,7 @@ const datasetSummarySchema = z.strictObject({
     .describe(
       "Distinct request IDs among API accesses; null for other datasets."
     ),
+  remote: remoteSchema,
 })
 
 const outputSchema = z.strictObject({
@@ -232,6 +348,9 @@ const LIMITS = [
   "Times without a zone in the log are assumed UTC, and missing years (OpenSSH, Linux) are inferred from the data; time_basis names the assumption per dataset.",
 ]
 
+/** Added when a remote dataset is loaded (LOG-35). */
+const REMOTE_LIMIT = `otel is read in place from remote Parquet files: it is never included without dataset otel; full text works only in its indexed reference window; counts and trends without text scan at most ${REMOTE_SCAN_MAX_SECONDS} s of data in at most ${REMOTE_SCAN_MAX_FILES} files per call, so no answer covers the whole dataset; it has no patterns. Its counts are exact over the queried window only.`
+
 /** Filter field and dimension per column (technical.md § 8.1). */
 const COLUMN_FILTER: Partial<Record<DatasetColumn, string>> = {
   level: "levels",
@@ -267,7 +386,15 @@ const COLUMN_DIMENSION: Partial<Record<DatasetColumn, string>> = {
 
 /** Fields of every dataset that the catalog does not repeat per entry. */
 function commonFields(dataset: Dataset): { field: string; meaning: string }[] {
-  const base = DATASETS[dataset].eventIdBase
+  const spec = DATASETS[dataset]
+  const base = spec.eventIdBase
+  if (spec.storage === "remote_parquet")
+    return [
+      {
+        field: "event_id",
+        meaning: `Stable event ID: ${base.toLocaleString("en-US")} + file index · ${spec.remote.eventIdFileStride.toLocaleString("en-US")} + row number in the file (file_row_number). otel has no pattern_id: its messages are not normalised.`,
+      },
+    ]
   return [
     {
       field: "event_id",
@@ -308,14 +435,14 @@ const exactCount = z
 
 const statsRow = z.object({
   dataset: datasetSchema,
-  lines_read: exactCount,
-  events: exactCount,
-  rejected: exactCount,
+  lines_read: exactCount.nullable(),
+  events: exactCount.nullable(),
+  rejected: exactCount.nullable(),
   first_event: instantSchema,
   last_event: instantSchema,
   error_events: exactCount.nullable(),
-  patterns: exactCount,
-  single_event_patterns: exactCount,
+  patterns: exactCount.nullable(),
+  single_event_patterns: exactCount.nullable(),
   time_basis: z.string(),
   label_source: z.string(),
   levels: z.array(z.object({ level: z.string().nullable(), events: count })),
@@ -357,13 +484,29 @@ const OWNERSHIP_SQL =
 const MANIFEST_SQL =
   "SELECT data_version, source, loader_version, parser_version, pattern_rules_version, ownership_version, rules_version FROM load_manifest"
 
+const remoteFileRow = z.object({
+  file_index: count,
+  url: z.string(),
+  bytes: exactCount,
+  etag: z.string().nullable(),
+  last_modified: z.string(),
+  footer_rows: exactCount,
+  row_groups: exactCount,
+  ts_min: nanoInstant,
+  ts_max: nanoInstant,
+  assigned_from: nanoInstant,
+  assigned_to: nanoInstant.nullable(),
+})
+
+const REMOTE_FILES_SQL = `SELECT file_index, url, size AS bytes, etag, ${isoTime("last_modified")} AS last_modified, footer_rows, row_groups, ${isoNanos("ts_min")} AS ts_min, ${isoNanos("ts_max")} AS ts_max, ${isoNanos("assigned_from")} AS assigned_from, ${isoNanos("assigned_to")} AS assigned_to FROM otel_sources ORDER BY file_index`
+
 const NO_GUIDANCE_NOTE =
   "answer_guidance is null: this client injected no role playbooks. Follow the server instructions, or ask which role (engineer, team lead, manager) the user has."
 
 export const describeCorpus = defineTool({
   name: "describe_corpus",
   title: "Describe corpus",
-  version: "2.0.0",
+  version: "3.0.0",
   description: renderDescription({
     purpose:
       "Describes the loaded log corpus: which datasets are loaded and, per dataset, the events, time span and time basis, a field guide (meaning, filter and dimension of every column with real example values), capabilities (error definition, breadth unit, context scopes, API accesses), levels, components with their fictional owning team, dataset labels and known limits, plus ownership, rule and data versions and the answer guidance per role.",
@@ -379,7 +522,7 @@ export const describeCorpus = defineTool({
     ],
     inputs: "none (empty object).",
     outputs:
-      "datasets[] with title, origin, citation, events, lines_read, rejected, first_event and last_event (UTC, both included), error_events (null without an error definition), patterns, time_basis, fields (field guide: field, meaning, filter, dimension, events_with_value, distinct_values, up to three examples from the data), capabilities, levels, components (with team), labels and for OpenStack api_accesses and requests; license; limits; ownership (fictional) with unowned components; versions; answer_guidance per role (null without playbooks) and guidance_version. Cite numbers by their fact IDs.",
+      "datasets[] with title, origin, citation, storage, counts_cover, events, lines_read, rejected (null for remote datasets), first_event and last_event (UTC, both included), error_events (null without an error definition), patterns (null without patterns), time_basis, fields (field guide: field, meaning, filter, dimension, events_with_value, distinct_values, up to three examples from the data), capabilities, levels, components (with team), labels and for OpenStack api_accesses and requests; remote (otel: allowlisted files with pins and footer facts, labelled footer counts incl. boundary duplicates, the indexed reference window with its exact events and removed duplicates, scan limits); license; limits; ownership (fictional) with unowned components; versions; answer_guidance per role (null without playbooks) and guidance_version. Cite numbers by their fact IDs.",
     truncation: "none; every list is complete.",
     countingUnit:
       "log events (parsed lines), not incidents; OpenStack also api_accesses and requests (R-01); distinct_values counts values.",
@@ -471,6 +614,30 @@ export const describeCorpus = defineTool({
       unit: "requests",
       groupKeys: ["dataset"],
     },
+    {
+      path: "/result/datasets/*/remote/footer_rows",
+      metric: "footer_rows",
+      unit: "parquet_footer_rows",
+      groupKeys: ["dataset"],
+    },
+    {
+      path: "/result/datasets/*/remote/files/*/footer_rows",
+      metric: "footer_rows",
+      unit: "parquet_footer_rows",
+      groupKeys: ["dataset", "file_index"],
+    },
+    {
+      path: "/result/datasets/*/remote/reference_window/events",
+      metric: "reference_window_events",
+      unit: "log_events",
+      groupKeys: ["dataset"],
+    },
+    {
+      path: "/result/datasets/*/remote/reference_window/duplicates_removed",
+      metric: "boundary_duplicates_removed",
+      unit: "log_events",
+      groupKeys: ["dataset"],
+    },
   ],
   annotations: READ_ONLY_ANNOTATIONS,
   async run(ctx) {
@@ -480,6 +647,17 @@ export const describeCorpus = defineTool({
     const manifest = await ctx.db.query(MANIFEST_SQL, [], ctx.signal)
 
     const datasets = stats.rows.map((row) => statsRow.parse(row))
+    // Remote datasets (LOG-35): pins, footer facts and the reference window.
+    const hasRemote = datasets.some(
+      (row) => DATASETS[row.dataset].storage === "remote_parquet"
+    )
+    const reference = hasRemote ? await readReference(ctx.db, ctx.signal) : null
+    const remoteFiles =
+      hasRemote && reference !== null
+        ? (await ctx.db.query(REMOTE_FILES_SQL, [], ctx.signal)).rows.map(
+            (row) => remoteFileRow.parse(row)
+          )
+        : []
     const manifestRows = manifest.rows.map((row) => manifestRow.parse(row))
     const versions = manifestRows[0]
     const first = datasets[0]
@@ -507,11 +685,44 @@ export const describeCorpus = defineTool({
     const data: DescribeCorpusOutput = {
       datasets: datasets.map((row) => {
         const spec = DATASETS[row.dataset]
+        const remote = spec.storage === "remote_parquet"
         return {
           ...row,
           title: spec.title,
           origin: spec.origin,
           citation: [...spec.citation],
+          storage: spec.storage,
+          counts_cover: remote
+            ? ("reference_window" as const)
+            : ("dataset" as const),
+          remote:
+            spec.storage === "remote_parquet" && reference !== null
+              ? {
+                  licence: spec.remote.licence,
+                  pin_kind: spec.remote.pinKind,
+                  not_allowlisted: spec.remote.notAllowlisted,
+                  mapping_version: reference.mapping_version,
+                  footer_rows: remoteFiles.reduce(
+                    (sum, file) => sum + file.footer_rows,
+                    0
+                  ),
+                  files: remoteFiles,
+                  reference_window: {
+                    from: reference.window_from,
+                    to: reference.window_to,
+                    index: reference.index_name,
+                    glob: reference.source_glob,
+                    built_at: reference.built_at,
+                    build_ms: reference.build_ms,
+                    events: reference.events,
+                    duplicates_removed: reference.duplicates_removed,
+                  },
+                  scan_limits: {
+                    max_seconds: REMOTE_SCAN_MAX_SECONDS,
+                    max_files: REMOTE_SCAN_MAX_FILES,
+                  },
+                }
+              : null,
           fields: [
             ...commonFields(row.dataset).map((field) => ({
               ...field,
@@ -541,7 +752,7 @@ export const describeCorpus = defineTool({
           capabilities: {
             error_definition: spec.errorDefinition,
             only_errors: spec.errorDefinition !== null,
-            investigation_order: spec.errorDefinition !== null,
+            investigation_order: spec.errorDefinition !== null && spec.patterns,
             breadth_unit: spec.breadth?.unit ?? null,
             context_scopes: [
               ...spec.contextScopes,
@@ -550,11 +761,19 @@ export const describeCorpus = defineTool({
             ],
             api_accesses: spec.apiAccesses,
             labels: spec.labels?.marks ?? null,
+            patterns: spec.patterns,
+            full_text: remote ? "reference_window" : "all",
+            direct_scan: remote
+              ? {
+                  max_seconds: REMOTE_SCAN_MAX_SECONDS,
+                  max_files: REMOTE_SCAN_MAX_FILES,
+                }
+              : null,
           },
         }
       }),
       license: LICENSE,
-      limits: [...LIMITS],
+      limits: hasRemote ? [...LIMITS, REMOTE_LIMIT] : [...LIMITS],
       ownership: {
         fictional: true,
         note: [...new Set(owned.map((row) => row.note))].join("; "),
@@ -604,6 +823,11 @@ export const describeCorpus = defineTool({
           "Counts are log events (parsed lines), not incidents or outages.",
           "Teams come from a fictional ownership table; unmapped components are 'unowned'.",
           ...(guidance === null ? [NO_GUIDANCE_NOTE] : []),
+          ...(hasRemote
+            ? [
+                "otel: footer_rows are Parquet footer counts including boundary duplicates, not distinct events; error_events, levels, components and fields cover the indexed reference window only (counts_cover).",
+              ]
+            : []),
         ],
       },
     }

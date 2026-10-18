@@ -6,9 +6,11 @@ import {
 import {
   extensionAttributes,
   extensionColumnsRow,
+  splitAttributes,
 } from "@workspace/domain/attributes"
+import { isExternal } from "@workspace/domain/datasets"
 import { datasetSchema, validateFilter } from "@workspace/domain/filters"
-import type { Scope } from "@workspace/domain/receipt"
+import type { ReceiptSource, Scope } from "@workspace/domain/receipt"
 import { instantSchema } from "@workspace/domain/time"
 import {
   defineTool,
@@ -34,17 +36,19 @@ import {
 import { z } from "zod"
 
 import { compileFilter } from "../filters.ts"
+import { extensionSelect, LOG_EVENTS_IDX, type Relation } from "../relations.ts"
+import { openReference, remoteNotes } from "../remote.ts"
 import {
   LOADED,
   describeFilters,
   describeWindows,
+  excludedNote,
   resolveWindows,
   unknownErrorsNote,
   scopeFilters,
 } from "../scope.ts"
-import { exactCount, extensionSelect, isoTime, SqlParams } from "../sql.ts"
+import { exactCount, isoTime, SqlParams } from "../sql.ts"
 import {
-  INDEX,
   NO_SEARCHABLE_WORD,
   NO_SEARCHABLE_WORD_HINT,
   tokenize,
@@ -52,7 +56,9 @@ import {
 
 /**
  * search_logs (A-05): full-text search over the message through the
- * inverted index `log_events_idx` with BM25 ranking.
+ * inverted index `log_events_idx` with BM25 ranking; for the remote otel
+ * dataset through the index of its reference window (LOG-35, D3.1), with
+ * the same SQL shapes on that relation.
  *
  * Every call runs, in this order: the tokenisation of the query with the
  * index dictionary (so "no searchable word" and the single-term rule of
@@ -67,10 +73,10 @@ import {
  * fixed and adjacent, and words that may sit apart are what `terms` finds.
  */
 
-const ORDER: Record<SearchSort, string> = {
-  relevance: `BM25(${INDEX}.tableoid) DESC, ${INDEX}.event_id`,
-  time_asc: `${INDEX}.ts, ${INDEX}.event_id`,
-  time_desc: `${INDEX}.ts DESC, ${INDEX}.event_id DESC`,
+const ORDER: Record<SearchSort, (rel: Relation) => string> = {
+  relevance: (rel) => `BM25(${rel.q}.tableoid) DESC, ${rel.col("event_id")}`,
+  time_asc: (rel) => `${rel.col("ts")}, ${rel.col("event_id")}`,
+  time_desc: (rel) => `${rel.col("ts")} DESC, ${rel.col("event_id")} DESC`,
 }
 
 const HIT_ORDER: Record<SearchSort, string> = {
@@ -105,10 +111,10 @@ const hitRow = z
 export const searchLogs = defineTool({
   name: "search_logs",
   title: "Search logs",
-  version: "1.1.0",
+  version: "1.2.0",
   description: renderDescription({
     purpose:
-      "Full-text search over log messages with BM25 ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message.",
+      "Full-text search over log messages with BM25 ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message. For dataset otel (remote OpenTelemetry Parquet, read in place) the search runs on the indexed reference window only.",
     useWhen:
       "you need concrete log lines as evidence for an error, a message text or a time window, or event IDs to open with get_log_context. Choose the mode: terms (default) when all words must occur in any order; phrase when the exact word sequence matters, e.g. 'cache parity error'; fuzzy for one term whose spelling is uncertain, e.g. 'parrity'.",
     doNotUseWhen: [
@@ -127,10 +133,10 @@ export const searchLogs = defineTool({
         use: "get_log_context",
       },
     ],
-    inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy, default terms), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion.`,
+    inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy, default terms), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion. Without dataset every log_events dataset is searched, never otel. With dataset otel, from/to default to the indexed reference window (describe_corpus) and must stay inside it, else invalid_input; the call fails with source_changed when a remote file no longer matches its load-time pin.`,
     filters: SEARCH_FILTER.summary,
     outputs:
-      "total_matches (exact, same condition as the hits), hits[] with event_id, dataset, ts (UTC, microseconds), component, level, node, alert_label, request_id, message (verbatim, untrusted), message_truncated, match_ranges (index-derived, zero-based Unicode code points, start inclusive/end exclusive; no HTML) and score (BM25, comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. Cite total_matches and times by their fact IDs.",
+      "total_matches (exact, same condition as the hits), hits[] with event_id, dataset, ts (UTC, microseconds; otel nanoseconds are truncated), component, level, node, alert_label, request_id, the dataset's own fields (otel: trace_id, span_id, severity_number), message (verbatim, untrusted), message_truncated, match_ranges (index-derived, zero-based Unicode code points, start inclusive/end exclusive; no HTML) and score (BM25, comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. Cite total_matches and times by their fact IDs.",
     truncation: `at most limit hits; truncated is true when total_matches is larger. Messages are cut to ${SEARCH_MESSAGE_MAX_CHARS} characters (message_truncated). Match ranges are clipped to that prefix; matches entirely beyond it have no visible range.`,
     countingUnit:
       "log events (parsed lines), not incidents; hits are examples, never a frequency.",
@@ -171,19 +177,44 @@ export const searchLogs = defineTool({
     const tokenError = checkTokens(input, tokens)
     if (tokenError !== null) return { ok: false, error: tokenError }
 
-    const datasets = input.dataset === undefined ? LOADED : [input.dataset]
-    const resolved = await resolveWindows(ctx.db, datasets, input, ctx.signal)
-    if (!resolved.ok) return resolved
-    const windows = resolved.windows.map(({ window }) => window)
+    // log_events datasets read log_events_idx; otel reads the index of its
+    // reference window, after the window and source checks (LOG-35).
+    let rel: Relation = LOG_EVENTS_IDX
+    let windows: Scope["windows"]
+    let excluded: string[] = []
+    let source: ReceiptSource | undefined
+    if (input.dataset !== undefined && isExternal(input.dataset)) {
+      const opened = await openReference(
+        ctx.db,
+        input,
+        "Full-text search",
+        ctx.signal
+      )
+      if (!opened.ok) return opened
+      rel = opened.opened.rel
+      windows = [opened.opened.window]
+      source = opened.opened.source
+    } else {
+      const datasets = input.dataset === undefined ? LOADED : [input.dataset]
+      const resolved = await resolveWindows(ctx.db, datasets, input, ctx.signal)
+      if (!resolved.ok) return resolved
+      windows = resolved.windows.map(({ window }) => window)
+      excluded = excludedNote(resolved.excluded)
+    }
+    const [window] = windows
+    const bounds =
+      source === undefined || window === undefined
+        ? input
+        : { ...input, from: window.from, to: window.to }
 
     const params = new SqlParams()
     const maxEdits =
       input.match === "fuzzy" ? (input.max_edits ?? FUZZY_DEFAULT_EDITS) : null
-    const condition = textCondition(input, tokens, maxEdits, params)
-    const compiled = compileFilter(input, {
+    const condition = textCondition(rel, input, tokens, maxEdits, params)
+    const compiled = compileFilter(bounds, {
       accepted: SEARCH_FILTER.fields,
       params,
-      relation: INDEX,
+      relation: rel,
     })
     if (!compiled.ok) return compiled
     const where =
@@ -192,9 +223,10 @@ export const searchLogs = defineTool({
         : `${condition} AND ${compiled.filter.where}`
     const countParams = [...params.values]
     const limitRef = params.add(input.limit)
+    const id = rel.col("event_id")
 
     const counted = await ctx.db.query(
-      `SELECT count(*) AS total FROM ${INDEX} WHERE ${where}`,
+      `SELECT count(*) AS total FROM ${rel.from} WHERE ${where}`,
       countParams,
       ctx.signal
     )
@@ -203,32 +235,20 @@ export const searchLogs = defineTool({
       // filters contribute to its BM25 score in 26.10.1. Those filters also
       // erase ts_offsets, so read positions in a second FTS scan, restricted
       // to the selected IDs by a residual CASE (not an index predicate).
-      `WITH hits AS MATERIALIZED (SELECT ${INDEX}.event_id, ${INDEX}.dataset, ${isoTime(`${INDEX}.ts`)} AS ts, ${INDEX}.component, ${INDEX}.level, ${INDEX}.node, ${INDEX}.alert_label, ${INDEX}.request_id, ${extensionSelect(INDEX)}, left(${INDEX}.message, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${INDEX}.message) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, BM25(${INDEX}.tableoid) AS score FROM ${INDEX} WHERE ${where} ORDER BY ${ORDER[input.sort]} LIMIT ${limitRef}) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT ${INDEX}.event_id, ts_offsets(${INDEX}.message) AS match_offsets FROM ${INDEX} WHERE ${condition} AND CASE WHEN ${INDEX}.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY ${HIT_ORDER[input.sort]}`,
+      `WITH hits AS MATERIALIZED (SELECT ${id} AS event_id, ${rel.col("dataset")} AS dataset, ${isoTime(rel.col("ts"))} AS ts, ${rel.col("component")} AS component, ${rel.col("level")} AS level, ${rel.col("node")} AS node, ${rel.col("alert_label")} AS alert_label, ${rel.col("request_id")} AS request_id, ${extensionSelect(rel)}, left(${rel.col("message")}, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${rel.col("message")}) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, BM25(${rel.q}.tableoid) AS score FROM ${rel.from} WHERE ${where} ORDER BY ${ORDER[input.sort](rel)} LIMIT ${limitRef}) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT ${id} AS event_id, ts_offsets(${rel.col("message")}) AS match_offsets FROM ${rel.from} WHERE ${condition} AND CASE WHEN ${id} IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY ${HIT_ORDER[input.sort]}`,
       params.values,
       ctx.signal
     )
 
     const total = countRow.parse(counted.rows[0]).total
     const hits: SearchHit[] = listed.rows.map((row) => {
-      const {
-        match_offsets: offsets,
-        host,
-        process_id,
-        client_ip,
-        thread,
-        block_id,
-        ...hit
-      } = hitRow.parse(row)
+      const [{ match_offsets: offsets, ...hit }, attributes] = splitAttributes(
+        hitRow.parse(row)
+      )
       // A NULL message has no length; it is not cut.
       return {
         ...hit,
-        ...extensionAttributes(hit.dataset, {
-          host,
-          process_id,
-          client_ip,
-          thread,
-          block_id,
-        }),
+        ...extensionAttributes(hit.dataset, attributes),
         message_truncated: hit.message_truncated === true,
         match_ranges: characterRanges(hit.message, offsets),
       }
@@ -260,7 +280,10 @@ export const searchLogs = defineTool({
         notes: [
           ...notesFor(input, scope, total, hits, maxEdits),
           ...unknownErrorsNote(input, windows),
+          ...excluded,
+          ...(source === undefined ? [] : remoteNotes(source.path)),
         ],
+        ...(source === undefined ? {} : { source }),
       },
     }
   },
@@ -313,12 +336,13 @@ function checkTokens(
  * lower-cased index terms as given.
  */
 function textCondition(
+  rel: Relation,
   input: SearchLogsInput,
   tokens: readonly string[],
   maxEdits: number | null,
   params: SqlParams
 ): string {
-  const column = `${INDEX}.message`
+  const column = rel.col("message")
   switch (input.match) {
     case "terms":
       return `${column} @@ plainto_tsquery(${params.add(input.query)})`
