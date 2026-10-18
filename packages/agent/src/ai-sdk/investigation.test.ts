@@ -9,11 +9,10 @@ import type { ToolResult } from "@workspace/domain/tool"
 import { simulateReadableStream, type LanguageModel } from "ai"
 import { MockLanguageModelV4 } from "ai/test"
 import { z } from "zod"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { baselineRegistryGuidance } from "./baseline.ts"
 import {
-  DEFAULT_LIMITS,
   runInvestigation,
   type InvestigationDeps,
   type InvestigationInput,
@@ -378,6 +377,25 @@ describe("investigate stops after check_claims", () => {
     // Two model calls only: investigate, answer. No re-investigate.
     expect(prompts).toHaveLength(2)
   })
+
+  it("lets the answer continue after another claim check", async () => {
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    const record = await done
+    expect(record.final_text).toBe(CLEAN_ENGINEER_ANSWER)
+    expect(record.gate_findings).toEqual([[]])
+    expect(phaseKinds(chunks)).not.toContain("revise")
+    expect(prompts).toHaveLength(3)
+  })
 })
 
 describe("coverage follow-up", () => {
@@ -404,7 +422,7 @@ describe("coverage follow-up", () => {
       d,
       new AbortController().signal
     )
-    await drain(stream)
+    const chunks = await drain(stream)
     const record = await done
     expect(record.coverage_requests.length).toBeGreaterThanOrEqual(1)
     expect(record.coverage_requests[0]).toContain(
@@ -412,6 +430,18 @@ describe("coverage follow-up", () => {
     )
     // 3 model calls: investigate, re-investigate (after follow-up), answer.
     expect(prompts.length).toBeGreaterThanOrEqual(3)
+    expect(chunks).toContainEqual({
+      type: "data-phase",
+      data: { kind: "investigate", draft: "draft", requirement: "a trend" },
+    })
+    expect(chunks).not.toContainEqual(
+      expect.objectContaining({
+        type: "data-phase",
+        data: expect.objectContaining({
+          requirement: expect.stringContaining("Fetch it"),
+        }),
+      })
+    )
   })
 
   it("asks no coverage follow-up in the baseline variant", async () => {
@@ -452,14 +482,86 @@ describe("coverage follow-up", () => {
       d,
       new AbortController().signal
     )
-    await drain(stream)
+    const chunks = await drain(stream)
     const record = await done
     expect(record.coverage_requests).toHaveLength(2) // investigate + 2 follow-up investigates + answer = 4 calls (cap stops a 3rd).
     expect(prompts).toHaveLength(4)
+    expect(chunks).toContainEqual({
+      type: "data-phase",
+      data: {
+        kind: "investigate",
+        draft: "draft",
+        requirement: "1 claim(s) mismatch their cited fact",
+      },
+    })
+  })
+
+  it("bounds public follow-up labels without exposing the system hint", async () => {
+    const { model } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, {
+        playbooks: {
+          ...playbooks,
+          coverage: {
+            engineer: [
+              {
+                label: "x".repeat(1500),
+                anyOf: [{ tool: "event_trend" }],
+              },
+            ],
+          },
+        },
+        limits: { maxFollowUps: 1 },
+      }),
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    await done
+    expect(chunks).toContainEqual({
+      type: "data-phase",
+      data: {
+        kind: "investigate",
+        draft: "draft",
+        requirement: `${"x".repeat(997)}...`,
+      },
+    })
   })
 })
 
 describe("revision", () => {
+  it("continues after the revision claim check to stream the corrected answer", async () => {
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: `${CLEAN_ENGINEER_ANSWER}\n42 events without evidence.` },
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    const record = await done
+    expect(record.final_text).toBe(CLEAN_ENGINEER_ANSWER)
+    expect(record.gate_findings).toHaveLength(2)
+    expect(
+      record.gate_findings[0]?.some((finding) => finding.kind === "uncited")
+    ).toBe(true)
+    expect(record.gate_findings[1]).toEqual([])
+    expect(chunks).toContainEqual({
+      type: "text-delta",
+      id: expect.any(String),
+      delta: CLEAN_ENGINEER_ANSWER,
+    })
+    expect(prompts).toHaveLength(4)
+  })
+
   it("revises exactly once when the gate finds something", async () => {
     // The draft cites a number with no fact ID → uncited finding → one revise.
     const { model, prompts } = scriptModel([
@@ -564,6 +666,77 @@ describe("revision", () => {
 })
 
 describe("append-only history and identical prompt prefix", () => {
+  it("ends a failed provider phase without another request or raw error logging", async () => {
+    const rawLog = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined)
+    const model = new MockLanguageModelV4({
+      doStream: async () => {
+        throw new Error("private provider payload")
+      },
+    })
+    try {
+      const { stream, done } = runInvestigation(
+        baseInput,
+        deps(model),
+        new AbortController().signal
+      )
+      const chunks = await drain(stream)
+      const record = await done
+      expect(record.status).toBe("error")
+      expect(record.error_kind).toBe("model_error")
+      expect(phaseKinds(chunks)).toEqual(["preflight", "investigate"])
+      expect(rawLog).not.toHaveBeenCalled()
+    } finally {
+      rawLog.mockRestore()
+    }
+  })
+
+  it("keeps a refusal terminal without requesting an answer or revision", async () => {
+    const { model, prompts } = scriptModel([
+      {
+        text: "I cannot fulfill that request.",
+        finishReason: "content-filter",
+      },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    const record = await done
+    expect(record.status).toBe("refusal")
+    expect(prompts).toHaveLength(1)
+    expect(phaseKinds(chunks)).toEqual(["preflight", "investigate"])
+    expect(record.gate_findings).toEqual([])
+  })
+
+  it("places a continuation before a system hint following assistant text", async () => {
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: "Draft with 9 uncited events." },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    await drain(stream)
+    await done
+    expect(prompts).toHaveLength(3)
+    const previousRoles = prompts.flatMap((prompt) =>
+      prompt.flatMap((message, index) =>
+        index > 0 && message.role === "system" ? [prompt[index - 1]?.role] : []
+      )
+    )
+    expect(previousRoles.length).toBeGreaterThan(0)
+    expect(
+      previousRoles.every((role) => role === "user" || role === "tool")
+    ).toBe(true)
+  })
+
   it("each phase's prompt is a prefix-extension of the previous", async () => {
     const { model, prompts } = scriptModel([
       { tools: [{ name: "count_events", input: { dataset: "bgl" } }] },
@@ -722,6 +895,27 @@ describe("tool errors are values", () => {
 })
 
 describe("step limit", () => {
+  it("marks a revision that exhausts the cap before its text as incomplete", async () => {
+    const draft = `${CLEAN_ENGINEER_ANSWER}\n42 events without evidence.`
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: draft },
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { limits: { maxSteps: 3 } }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(prompts).toHaveLength(3)
+    expect(record.status).toBe("error")
+    expect(record.error_kind).toBe("limit_exceeded")
+    expect(record.final_text).toBe(draft)
+  })
+
   it("stops the run at the shared total step budget", async () => {
     // Each investigate turn makes one non-check tool call (never check_claims),
     // so the phase only ends at the step cap. Keep the budget small.
@@ -741,9 +935,36 @@ describe("step limit", () => {
     const toolSteps = record.phases
       .flatMap((phase) => phase.steps)
       .filter((step) => step.tool === "search_logs").length
-    // Investigate alone consumes the budget; no infinite loop.
-    expect(toolSteps).toBeLessThanOrEqual(DEFAULT_LIMITS.maxSteps)
-    expect(prompts.length).toBeLessThanOrEqual(DEFAULT_LIMITS.maxSteps)
+    // Investigate consumes the entire budget. Answer/revision cannot add calls.
+    expect(toolSteps).toBe(3)
+    expect(prompts).toHaveLength(3)
+    expect(record.status).toBe("error")
+    expect(record.error_kind).toBe("limit_exceeded")
+  })
+
+  it("counts model steps rather than parallel tool calls across phases", async () => {
+    const { model, prompts } = scriptModel([
+      {
+        tools: [
+          { name: "search_logs", input: { text: "x" } },
+          { name: "check_claims", input: { claims: [] } },
+        ],
+      },
+      { tools: [{ name: "search_logs", input: { text: "x" } }] },
+      { tools: [{ name: "search_logs", input: { text: "x" } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { limits: { maxSteps: 4, maxFollowUps: 0 } }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(prompts).toHaveLength(4)
+    expect(record.status).toBe("completed")
+    expect(record.final_text).toBe(CLEAN_ENGINEER_ANSWER)
+    expect(record.gate_findings).toEqual([[]])
   })
 })
 

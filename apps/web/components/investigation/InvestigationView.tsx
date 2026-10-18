@@ -48,7 +48,8 @@ import {
 import { Conversation } from "./Conversation"
 import { ScopeControls } from "./ScopeControls"
 import { readScope, scopeError } from "./scope"
-import type { Interruption } from "./types"
+import { projectMessage, requestMessages } from "./mapper"
+import type { Interruption, RunContext } from "./types"
 
 const roles = {
   engineer: {
@@ -72,16 +73,23 @@ function isRole(value: unknown): value is Role {
   return value === "engineer" || value === "team_lead" || value === "manager"
 }
 
-// LOG-48 owns the server. No endpoint is called until its real integration opts
-// in through `available`. The injectable SDK transport also supports component QA.
-const transport = new DefaultChatTransport({ api: "/api/chat" })
+// The server resolves prior completed answers from trusted run records. Large
+// tool results and private reasoning never travel back in a follow-up request.
+const transport = new DefaultChatTransport({
+  api: "/api/chat",
+  prepareSendMessagesRequest: ({ id, messages, body }) => ({
+    body: { ...body, id, messages: requestMessages(messages) },
+  }),
+})
 export function InvestigationView({
   brief,
   available = false,
+  disabledMessage = "Chat unavailable: no model configured",
   chatTransport = transport,
 }: {
   brief: Brief
   available?: boolean
+  disabledMessage?: string
   chatTransport?: ChatTransport<UIMessage>
 }) {
   const [role, setRole] = useState<Role>("engineer")
@@ -90,6 +98,7 @@ export function InvestigationView({
   const [interruptions, setInterruptions] = useState<
     Record<string, Interruption>
   >({})
+  const [contexts, setContexts] = useState<Record<string, RunContext>>({})
   const input = useRef<HTMLTextAreaElement>(null)
   const form = useRef<HTMLFormElement>(null)
   const chat = useChat({
@@ -100,14 +109,26 @@ export function InvestigationView({
           ...previous,
           [message.id]: isAbort ? "stopped" : "failed",
         }))
-      if (!isAbort && !isError && !isDisconnect) setQuestion("")
+      const completed = projectMessage(message).run?.status
+      if (
+        !isAbort &&
+        !isError &&
+        !isDisconnect &&
+        (!completed || completed === "completed")
+      )
+        setQuestion("")
     },
   })
   const busy = chat.status === "submitted" || chat.status === "streaming"
   const current = brief.roles.find((item) => item.id === role)
   const RoleIcon = roles[role].icon
   const problem = scopeError(scope)
-  const canSend = available && !busy && question.trim().length > 0 && !problem
+  const canSend =
+    available &&
+    !busy &&
+    question.trim().length > 0 &&
+    question.length <= 4000 &&
+    !problem
   const hasMessages = chat.messages.length > 0
 
   function newInvestigation() {
@@ -116,6 +137,7 @@ export function InvestigationView({
     setQuestion("")
     setScope({})
     setInterruptions({})
+    setContexts({})
     input.current?.focus()
   }
 
@@ -154,6 +176,7 @@ export function InvestigationView({
             messages={chat.messages}
             status={chat.status}
             interruptions={interruptions}
+            contexts={contexts}
           />
         </div>
       ) : (
@@ -217,6 +240,15 @@ export function InvestigationView({
             <AlertDescription>
               Your question is preserved. Check the connection and send it
               again.
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                disabled={!canSend}
+                onClick={() => form.current?.requestSubmit()}
+              >
+                Try again
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -226,8 +258,17 @@ export function InvestigationView({
             event.preventDefault()
             if (!canSend) return
             chat.clearError()
+            const id = crypto.randomUUID()
+            setContexts((previous) => ({
+              ...previous,
+              [id]: { role, scope, question: question.trim() },
+            }))
             void chat.sendMessage(
-              { text: question.trim() },
+              {
+                id,
+                role: "user",
+                parts: [{ type: "text", text: question.trim() }],
+              },
               { body: { role, scope } }
             )
           }}
@@ -239,7 +280,7 @@ export function InvestigationView({
               aria-describedby="chat-availability"
               placeholder={roles[role].placeholder}
               value={question}
-              maxLength={12000}
+              maxLength={4000}
               readOnly={busy}
               rows={2}
               className="max-h-48 min-h-24 resize-none px-4 pt-4 pb-2 text-sm leading-7 md:text-sm"
@@ -371,7 +412,7 @@ export function InvestigationView({
             <>
               <Unplug className="mt-1 size-3 shrink-0" aria-hidden="true" />
               <span>
-                Agent connection pending. Your question can be prepared here.{" "}
+                {disabledMessage}. Your question can be prepared here.{" "}
                 <Link
                   className="text-link underline underline-offset-4"
                   href="/datasets#connect"

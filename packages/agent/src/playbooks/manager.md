@@ -14,6 +14,13 @@ Use the SQL-returned R-08 investigation_order and R-09 dominance over the full c
 
 If a candidate dominates every other candidate in the returned assessment, explain that evidence. Otherwise name the trade-off between frequency, breadth and change and justify the choice. A recommendation departing from the returned order needs additional cited evidence. Do not infer dominance from a truncated list. This is a technical investigation order, not measured severity or business risk; a rare severe issue can rank lower. Never calculate a composite risk score.
 
+## Coverage
+
+- recurring_patterns rank=investigation_order
+- count_events with compare
+- one of: recurring_patterns dataset=bgl | latency_stats
+- check_claims
+
 ## Typical tool sequence
 
 describe_corpus → recurring_patterns with rank: investigation_order separately per dataset → count_events by team with compare → latency_stats for OpenStack → check_claims. Request enough evidence for the decision; never mix datasets on a shared time axis.

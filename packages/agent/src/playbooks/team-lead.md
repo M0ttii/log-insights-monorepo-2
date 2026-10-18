@@ -14,6 +14,13 @@ Check recurring versus a one-off spike using the returned episodes, recurring fl
 
 If you introduce an explanation, attach open/supported/contradicted and the executed check's facts. Missing or mixed evidence leaves it open; supported is not causally proven. No hypothesis status without its discriminating evidence.
 
+## Coverage
+
+- recurring_patterns
+- event_trend
+- count_events with compare
+- check_claims
+
 ## Typical tool sequence
 
 describe_corpus → recurring_patterns → event_trend (weekly, split by team when appropriate) → count_events by team and component, with compare → check_claims. Keep trends and comparisons per dataset. Tool choice serves the required evidence and the check, not a fixed ritual.

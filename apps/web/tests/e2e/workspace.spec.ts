@@ -4,6 +4,17 @@ import { z } from "zod"
 import { toolResultSchema } from "@workspace/domain/tool"
 import { toolErrorSchema } from "@workspace/domain/errors"
 
+// Composer tests never call a paid provider, even with a configured local key.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/chat", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Test connection unavailable" }),
+    })
+  )
+})
+
 test("roles, drafts, theme, navigation and accessible layouts", async ({
   page,
 }, testInfo) => {
@@ -26,12 +37,12 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
     page.getByRole("textbox", { name: "Your question" })
   ).toHaveValue(/Workload Runtime/)
   await expect(
-    page.getByRole("button", { name: "Send unavailable" })
-  ).toBeDisabled()
+    page.getByRole("button", { name: "Send question" })
+  ).toBeEnabled()
   await expect(
     page.getByRole("button", { name: /^Remove teams filter/ })
   ).toBeVisible()
-  await expect(page.getByText(/Agent connection pending/)).toBeVisible()
+  await expect(page.getByText(/Follow the receipts/)).toBeVisible()
   expect(
     await page
       .getByRole("textbox", { name: "Your question" })
@@ -122,6 +133,7 @@ test("composer retains the question across roles and validates the UTC scope", a
   await expect(page.getByText("Full span", { exact: true })).toBeVisible()
   await expect(input).toHaveValue("Keep my investigation question")
   await input.press("Enter")
+  await expect(page.getByText("Response interrupted")).toBeVisible()
   await expect(input).toHaveValue("Keep my investigation question")
   await page.getByRole("button", { name: "New chat", exact: true }).click()
   await expect(input).toHaveValue("")

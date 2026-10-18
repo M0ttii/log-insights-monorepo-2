@@ -12,13 +12,13 @@ receipt.
 > tools exist (`describe_corpus`, `search_logs`, `get_log_context`,
 > `count_events` with `compare`, `event_trend`, `recurring_patterns` with
 > `rank: investigation_order`, `latency_stats`, `check_claims`). The stdio MCP
-> server exposes the registry and shared role playbooks to Claude clients. A preliminary web workspace provides role-aware question drafts,
+> server exposes the registry and shared role playbooks to Claude clients. The web workspace provides role-aware investigations,
 > live corpus analytics, log search, event context and shared query receipts.
 > The agent `runInvestigation` (`@workspace/agent/ai-sdk`, AI SDK 7) runs the
 > phases preflight, investigate, coverage, answer, gate and one revision and is
-> callable through `pnpm --silent agent:ask`; the streaming web chat and role
-> comparison are not connected to it yet, and real-client role acceptance is
-> still pending.
+> callable through `pnpm --silent agent:ask` and the streaming Ask chat. Role
+> comparison, complete live acceptance for all three web roles, and full
+> MCP-client role acceptance remain open.
 
 ## Requirements
 
@@ -51,14 +51,26 @@ The password seeds the SereneDB superuser when its data volume is first
 created; to change it later, run `ALTER ROLE` or recreate the volume
 (`docker compose down -v`, which deletes all loaded data).
 
-### Preliminary web workspace
+### Web workspace
 
 Run `pnpm dev` and open [Log Insights](http://127.0.0.1:3000). The app reads the
 repository `.env` and uses the same analytics registry and `.data/receipts/` as
-MCP. It binds to loopback only. Ask offers editable drafts and examples from the
-shared playbooks; sending, role comparison and recorded-run import/export are
-not connected yet. Overview, Logs, Corpus and receipts use real tools; no demo
+MCP. It binds to loopback only. Set `ANTHROPIC_API_KEY` in `.env` to enable Ask;
+without it the composer explains that no model is configured. Ask streams the
+shared agent's tools and answer, shows a collapsed draft when a revision occurs,
+and links cited facts to their receipts. Each `check_claims` call has its own
+verification line; unchecked facts and uncited numbers are separate syntactic
+markings, not a judgment of the explanation. Stop retains completed receipts.
+`Export run` downloads the answer, its tool results and public run metadata,
+without server instructions or credentials. Role comparison and recorded-run
+import remain separate work. Overview, Logs, Corpus and receipts use real tools; no demo
 findings are substituted when the database is unavailable.
+
+Follow-up questions restore the full private model history from a matching
+completed local run, including draft and tool context. Role, model or contract
+changes start from safe text context instead. Uploaded tool outputs and reasoning
+are never trusted as conversation evidence. Requests are limited to 1 MiB, 40 messages and
+4000 characters per question; start a new investigation when the limit is reached.
 
 The shell, sidebar, composer, timeline and receipt presentation adapt the earlier
 `log-insights` demo. Its fixtures, investigation history and quality pages are

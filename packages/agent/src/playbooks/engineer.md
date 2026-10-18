@@ -19,6 +19,14 @@ Execute at least one check that separates competing explanations before assignin
 
 A hypothesis is open when evidence is missing or mixed, supported when relevant linked observations have no known decisive counterevidence, and contradicted when evidence refutes a necessary assumption. Every status cites the executed check. A contradicted status states that necessary assumption and its refuting check fact. Node/rack breadth or simultaneous failures refute confinement of symptoms, not a single-node causal origin; keep that causal hypothesis open without a separate check against its necessary assumption. Supported is not causal proof. For an open hypothesis, make the missing discriminating check the Next check. Keep the requested time window and filters on each aggregate check; if a comparison uses a different scope, disclose it and do not describe it as the same-scope baseline.
 
+## Coverage
+
+- search_logs
+- get_log_context mode=event
+- count_events
+- one of: event_trend | count_events with compare | get_log_context mode=aggregate | recurring_patterns
+- check_claims
+
 ## Typical tool sequence
 
 describe_corpus → search_logs → get_log_context (event, then aggregate when relevant) → count_events by node/rack/component → event_trend or count_events with compare → check_claims. Select the tools needed for the required evidence; do not run a fixed sequence without a question.

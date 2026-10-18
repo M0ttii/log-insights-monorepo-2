@@ -1,28 +1,14 @@
 import type { CheckClaimsOutput } from "@workspace/domain/tools/check-claims"
+import type { CoverageAlternative, RoleCoverage } from "../playbooks.ts"
+
+export type { CoverageAlternative, RoleCoverage } from "../playbooks.ts"
 
 /**
  * Coverage evaluation (technical.md § 10 "Coverage", § 11.1 phase `coverage`).
  *
- * LOG-47 is NOT implemented yet: it will add a `## Coverage` section to each
- * role playbook and have `playbooks.ts` parse it into `loadPlaybooks().coverage`
- * keyed by role. These local types describe the shape that `coverage[role]`
- * will produce, so the phase machine can already consume it; once LOG-47 lands,
- * these move to (or are re-exported from) the playbook loader and the duplicate
- * here is removed.
+ * Requirements and their Zod-derived types come from the playbook loader;
+ * the phase machine only checks successful tool steps against them.
  */
-
-/**
- * One alternative in a requirement: a tool, optionally constrained on input.
- * In `input`, a string means `input[key]` stringifies equal to that value; the
- * literal `true` means the key is present (any value).
- */
-export type CoverageAlternative = {
-  tool: string
-  input?: Record<string, string | true>
-}
-
-/** A role's required evidence: a list of requirements, each with alternatives. */
-export type RoleCoverage = { label: string; anyOf: CoverageAlternative[] }[]
 
 /** A step the model took, as the phase machine records it for coverage. */
 export type CoverageStep = {

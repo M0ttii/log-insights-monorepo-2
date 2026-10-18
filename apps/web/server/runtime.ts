@@ -3,20 +3,29 @@ import { createDatabase } from "@workspace/analytics/db"
 import { loadConfig } from "@workspace/analytics/config"
 import { FileReceiptStore } from "@workspace/analytics/receipts"
 import { createRegistry } from "@workspace/analytics/registry"
+import { FileRunStore, resolveRunsDir } from "@workspace/agent/ai-sdk"
+import { loadPlaybooks } from "@workspace/agent/playbooks"
 import type { ToolOutcome } from "@workspace/domain/tool"
 
 function createRuntime() {
   const config = loadConfig()
   const db = createDatabase(config.connection)
   const receipts = new FileReceiptStore(config.receiptsDir)
-  const registry = createRegistry({ db, receipts })
+  const playbooks = loadPlaybooks()
+  const registry = createRegistry({
+    db,
+    receipts,
+    roleGuidance: playbooks.guidance,
+    workspaceTools: config.workspaceTools,
+  })
+  const runs = new FileRunStore(resolveRunsDir())
   const dispose = () => {
     void db.dispose()
   }
   process.once("SIGINT", dispose)
   process.once("SIGTERM", dispose)
   process.once("beforeExit", dispose)
-  return { db, receipts, registry }
+  return { db, receipts, registry, playbooks, runs }
 }
 // A single lazy pool survives Next development module reloads.
 const runtimes = globalThis as typeof globalThis & {
