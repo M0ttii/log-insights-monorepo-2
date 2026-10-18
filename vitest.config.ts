@@ -26,6 +26,10 @@ export default defineConfig({
       },
       // Unit tests live beside the code in every workspace and run in Node.
       {
+        // Next preserves JSX for its compiler; component tests need Vite's
+        // automatic React transform instead (installed Vite 8 / Oxc).
+        oxc: { jsx: { runtime: "automatic" } },
+        resolve: { tsconfigPaths: true },
         test: {
           name: "packages",
           environment: "node",
