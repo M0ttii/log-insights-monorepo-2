@@ -25,6 +25,13 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
   await expect(
     page.getByRole("button", { name: "Send unavailable" })
   ).toBeDisabled()
+  const ask = await new AxeBuilder({ page }).analyze()
+  expect(
+    ask.violations.filter(
+      (violation) =>
+        violation.impact === "serious" || violation.impact === "critical"
+    )
+  ).toEqual([])
   await page.screenshot({
     path: testInfo.outputPath("ask.png"),
     fullPage: true,

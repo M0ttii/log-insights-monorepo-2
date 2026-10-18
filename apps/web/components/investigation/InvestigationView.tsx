@@ -211,7 +211,7 @@ export function InvestigationView({ brief }: { brief: Brief }) {
             </PopoverContent>
           </Popover>
         </div>
-        <InputGroup className="rounded-xl bg-card shadow-none has-disabled:opacity-100">
+        <InputGroup className="rounded-xl bg-card shadow-none has-disabled:bg-card has-disabled:opacity-100 dark:bg-card dark:has-disabled:bg-card">
           <InputGroupTextarea
             id="question"
             ref={input}
