@@ -503,6 +503,60 @@ describe("revision", () => {
     expect(record.gate_findings[0]).toEqual([])
     expect(prompts).toHaveLength(2)
   })
+
+  it("does not revise when Verification cites the check's own summary facts (LOG-46 rule)", async () => {
+    // The Verification line cites the submitted check_claims receipt's OWN
+    // summary facts (N checked / M mismatch / K unresolved). cleanRegistry's
+    // check_claims returns receipt r_0000000c, so r_0000000c.fN are the check's
+    // summary facts — they come from the check itself and are deliberately not
+    // re-submitted (common.md), so the corrected rule exempts them from
+    // `unchecked`. The answer is otherwise clean (every section present, every
+    // number followed by its summary fact ID), so the gate finds nothing and
+    // the run never enters a revise phase. Before the rule change these three
+    // Verification facts were each flagged `unchecked` → one revise.
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      {
+        text: [
+          "## Scope",
+          "bgl kernel errors",
+          "## Answer",
+          "the symptoms were job-wide, not one node",
+          "## Evidence",
+          "e",
+          "## Timeline",
+          "t",
+          "## Narrowing",
+          "n",
+          "## Hypotheses",
+          "h",
+          "## Next check",
+          "c",
+          "## Unknown",
+          "u",
+          "## Verification",
+          "1 checked [r_0000000c.f1] · 0 mismatch [r_0000000c.f1] · 0 unresolved [r_0000000c.f1]",
+        ].join("\n"),
+      },
+    ])
+    const d = deps(model)
+    const { stream, done } = runInvestigation(
+      baseInput,
+      d,
+      new AbortController().signal
+    )
+    const chunks = await drain(stream)
+    const record = await done
+    expect(phaseKinds(chunks)).not.toContain("revise")
+    expect(record.gate_findings).toHaveLength(1)
+    expect(record.gate_findings[0]).toEqual([])
+    // No unchecked finding for the check's own summary fact.
+    expect(record.gate_findings[0]?.some((f) => f.kind === "unchecked")).toBe(
+      false
+    )
+    // investigate + answer only; no revise call.
+    expect(prompts).toHaveLength(2)
+  })
 })
 
 describe("append-only history and identical prompt prefix", () => {
