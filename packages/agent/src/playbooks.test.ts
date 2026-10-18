@@ -16,7 +16,10 @@ import {
 function coverageDrift(coverage: RoleCoverage, tools: readonly ToolEntry[]) {
   const errors: string[] = []
   for (const requirement of coverage) {
-    for (const alternative of requirement.anyOf) {
+    for (const alternative of [
+      ...requirement.anyOf,
+      ...(requirement.fallback === undefined ? [] : [requirement.fallback]),
+    ]) {
       const tool = tools.find((entry) => entry.name === alternative.tool)
       if (tool === undefined) {
         errors.push(`Unknown default tool: ${alternative.tool}`)
@@ -91,6 +94,7 @@ describe("versioned role playbooks", () => {
           anyOf: [{ tool: "recurring_patterns" }],
         },
         { label: "event_trend", anyOf: [{ tool: "event_trend" }] },
+        { label: "count_events", anyOf: [{ tool: "count_events" }] },
         {
           label: "count_events with compare",
           anyOf: [{ tool: "count_events", input: { compare: true } }],
@@ -100,6 +104,7 @@ describe("versioned role playbooks", () => {
       manager: [
         {
           label: "recurring_patterns rank=investigation_order",
+          fallback: { tool: "event_trend" },
           anyOf: [
             {
               tool: "recurring_patterns",
@@ -107,13 +112,14 @@ describe("versioned role playbooks", () => {
             },
           ],
         },
+        { label: "count_events", anyOf: [{ tool: "count_events" }] },
         {
           label: "count_events with compare",
           anyOf: [{ tool: "count_events", input: { compare: true } }],
         },
         {
-          // The grammar is unconditional. BGL evidence avoids forcing an
-          // OpenStack-only tool; a mixed-dataset run still follows the prose.
+          // Capability applicability keeps OpenStack latency conditional and
+          // never fetches unrelated BGL evidence for another dataset's role.
           label: "one of: recurring_patterns dataset=bgl | latency_stats",
           anyOf: [
             { tool: "recurring_patterns", input: { dataset: "bgl" } },
@@ -123,7 +129,7 @@ describe("versioned role playbooks", () => {
         { label: "check_claims", anyOf: [{ tool: "check_claims" }] },
       ],
     })
-    expect(source.version).toBe("1.0.7")
+    expect(source.version).toBe("1.0.8")
     expect(source.common).not.toContain("## Coverage")
     expect(source.sharedRules).not.toContain("## Coverage")
     expect(source.instructions).not.toContain("## Coverage")
@@ -151,6 +157,26 @@ describe("versioned role playbooks", () => {
       expect(source.prompts[name].render({})).toContain(common)
       expect(source.prompts[name].render({})).toContain(role)
     }
+  })
+
+  it("shares capability limits and role-specific decisions across clients", () => {
+    const source = loadPlaybooks()
+    expect(source.common).toContain("describe_corpus")
+    expect(source.instructions).toContain("Do not fetch an unrelated dataset")
+    expect(source.common).toContain(
+      "patterns, episodes, aggregate context, period comparison, breadth and latency are unavailable"
+    )
+    for (const role of ["engineer", "team_lead", "manager"] as const) {
+      expect(source.systemPrompt(role)).toContain("Unknown")
+      expect(source.guidance.roles[role]).toContain("full role-contract pass")
+    }
+    expect(source.guidance.roles.engineer).toContain("executable checks")
+    expect(source.guidance.roles.team_lead).toContain(
+      "recurrence, episodes, status and prior-period classification stay Unknown"
+    )
+    expect(source.guidance.roles.manager).toContain(
+      "priority remains undetermined"
+    )
   })
 
   it("keeps common rules, routing, summaries and version available separately", () => {
@@ -200,6 +226,24 @@ describe("versioned role playbooks", () => {
 })
 
 describe("playbook coverage parser", () => {
+  it("parses an explicit fallback without weakening the primary requirement", () => {
+    expect(
+      parseCoverage(
+        "- recurring_patterns rank=investigation_order; otherwise: event_trend"
+      )
+    ).toEqual([
+      {
+        label: "recurring_patterns rank=investigation_order",
+        anyOf: [
+          {
+            tool: "recurring_patterns",
+            input: { rank: "investigation_order" },
+          },
+        ],
+        fallback: { tool: "event_trend" },
+      },
+    ])
+  })
   it("parses tools, exact values, present keys and alternatives in source order", () => {
     expect(
       parseCoverage(`
@@ -247,6 +291,8 @@ describe("playbook coverage parser", () => {
     "- one of: | search_logs",
     "- one of: search_logs || count_events",
     "- search_logs | count_events",
+    "- search_logs; otherwise: ",
+    "- search_logs; otherwise: count_events; otherwise: event_trend",
     "- search_logs\nThis is not a coverage requirement.",
   ])("rejects invalid coverage %j", (text) => {
     expect(() => parseCoverage(text)).toThrow(/coverage|Too small/i)

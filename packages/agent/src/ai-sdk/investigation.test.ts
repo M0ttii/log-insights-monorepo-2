@@ -401,7 +401,219 @@ describe("investigate stops after check_claims", () => {
   })
 })
 
+function externalCorpusData(dataset: "otel" | "otel_replay") {
+  return {
+    datasets: [
+      {
+        dataset,
+        storage: dataset === "otel" ? "remote_parquet" : "otlp_replay",
+        capabilities: {
+          error_definition: "Logged errors",
+          only_errors: true,
+          investigation_order: false,
+          breadth_unit: null,
+          context_scopes: ["same_trace", "same_component", "dataset"],
+          api_accesses: false,
+          labels: null,
+          patterns: false,
+          full_text: dataset === "otel" ? "reference_window" : "all",
+          direct_scan:
+            dataset === "otel" ? { max_seconds: 60, max_files: 2 } : null,
+        },
+      },
+      {
+        dataset: "bgl",
+        storage: "log_events",
+        capabilities: {
+          error_definition: "BGL errors",
+          only_errors: true,
+          investigation_order: true,
+          breadth_unit: "nodes",
+          context_scopes: ["same_node", "same_component", "dataset"],
+          api_accesses: false,
+          labels: "line",
+          patterns: true,
+          full_text: "all",
+          direct_scan: null,
+        },
+      },
+    ],
+  }
+}
+
 describe("coverage follow-up", () => {
+  it.each([
+    ["otel", "team_lead", true],
+    ["otel", "manager", true],
+    ["otel_replay", "team_lead", true],
+    ["otel_replay", "manager", true],
+    ["otel", "team_lead", false],
+    ["otel", "manager", false],
+    ["otel_replay", "team_lead", false],
+    ["otel_replay", "manager", false],
+  ] as const)(
+    "uses preflight capabilities for %s %s (structured scope: %s) and requests Unknown once",
+    async (dataset, role, structuredScope) => {
+      const called: string[] = []
+      const baseRegistry = fakeRegistry(async (name, input) => {
+        called.push(name)
+        if (name === "describe_corpus")
+          return {
+            ok: true,
+            result: okResult("r_00000001", externalCorpusData(dataset)),
+          }
+        if (name === "check_claims")
+          return { ok: true, result: okResult("r_0000000c", checkOutput(0, 0)) }
+        if (
+          z.object({ dataset: z.string().optional() }).parse(input).dataset ===
+          "bgl"
+        )
+          return {
+            ok: false,
+            error: invalidInput([
+              { path: "dataset", message: "Unrelated failed attempt" },
+            ]),
+          }
+        return { ok: true, result: okResult("r_0000000a", { count: 1204 }) }
+      })
+      const registry = {
+        ...baseRegistry,
+        tools: [...baseRegistry.tools, toolEntry("event_trend")],
+      }
+      const { model, prompts } = scriptModel([
+        {
+          tools: [
+            ...(!structuredScope
+              ? [{ name: "count_events", input: { dataset: "bgl" } }]
+              : []),
+            {
+              name: "count_events",
+              input: { dataset, group_by: ["component"] },
+            },
+            {
+              name: "event_trend",
+              input: { dataset, bucket: "minute", group_by: "component" },
+            },
+            { name: "check_claims", input: { claims: [] } },
+          ],
+        },
+        {
+          text: "Unavailable role checks remain Unknown; priority remains undetermined.",
+        },
+        {
+          text: "## Scope\n## Answer\nObserved activity only.\n## Unknown\nRecurrence, comparisons and priority are unknown.\n## Verification\n",
+        },
+      ])
+      const { stream, done } = runInvestigation(
+        {
+          question: `Review ${dataset} only`,
+          role,
+          ...(structuredScope ? { scope: { dataset } } : {}),
+        },
+        deps(model, {
+          registry,
+          playbooks: loadPlaybooks(),
+          limits: { maxRevisions: 0 },
+        }),
+        new AbortController().signal
+      )
+      await drain(stream)
+      const record = await done
+      expect(record.coverage_requests).toHaveLength(1)
+      expect(record.coverage_requests[0]).toContain(
+        "Required evidence unavailable"
+      )
+      expect(record.coverage_requests[0]).toContain("Unknown")
+      expect(record.coverage_requests[0]).toContain(
+        "not a full role-contract pass"
+      )
+      expect(record.coverage_requests[0]).not.toContain(
+        "Required evidence still missing"
+      )
+      expect(JSON.stringify(prompts[1])).toContain(
+        "manager priority remains undetermined"
+      )
+      expect(called).toEqual([
+        "describe_corpus",
+        ...(!structuredScope ? ["count_events"] : []),
+        "count_events",
+        "event_trend",
+        "check_claims",
+      ])
+      expect(prompts).toHaveLength(3)
+    }
+  )
+
+  it("infers anchor-only OTel scope from the canonical receipt rather than defaulting to BGL", async () => {
+    const baseRegistry = fakeRegistry(async (name) => {
+      if (name === "describe_corpus")
+        return {
+          ok: true,
+          result: okResult("r_00000001", externalCorpusData("otel")),
+        }
+      if (name === "check_claims")
+        return { ok: true, result: okResult("r_0000000c", checkOutput(0, 0)) }
+      const result = okResult("r_0000000a", { event: "anchor" })
+      result.receipt.scope.windows = [
+        {
+          dataset: "otel",
+          from: "2025-09-23T00:00:00Z",
+          to: "2025-09-23T00:00:01Z",
+        },
+      ]
+      return { ok: true, result }
+    })
+    const registry = {
+      ...baseRegistry,
+      tools: [...baseRegistry.tools, toolEntry("get_log_context")],
+    }
+    const { model } = scriptModel([
+      {
+        tools: [
+          {
+            name: "get_log_context",
+            input: { mode: "event", event_id: "1000000000010" },
+          },
+          { name: "check_claims", input: { claims: [] } },
+        ],
+      },
+      { text: "The pattern check is unavailable and stays Unknown." },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      { question: "Inspect this OTel event", role: "engineer" },
+      deps(model, {
+        registry,
+        playbooks: {
+          ...playbooks,
+          coverage: {
+            engineer: [
+              {
+                label: "event context",
+                anyOf: [{ tool: "get_log_context", input: { mode: "event" } }],
+              },
+              {
+                label: "recurring_patterns",
+                anyOf: [{ tool: "recurring_patterns" }],
+              },
+              { label: "check_claims", anyOf: [{ tool: "check_claims" }] },
+            ],
+          },
+        },
+      }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.coverage_requests).toHaveLength(1)
+    expect(record.coverage_requests[0]).toContain(
+      "Required evidence unavailable"
+    )
+    expect(record.coverage_requests[0]).not.toContain(
+      "Required evidence still missing"
+    )
+  })
+
   const coverage = {
     engineer: [
       {

@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest"
-import { changeDataset, readScope, scopeError } from "./scope"
+import { changeDataset, readScope, scopeError, scopeSummary } from "./scope"
 
 describe("composer scope", () => {
+  it("names external datasets and keeps their effective window explicit", () => {
+    expect(scopeSummary({ dataset: "otel" })).toContain("OpenTelemetry")
+    expect(scopeSummary({ dataset: "otel" })).not.toContain("Full span")
+    expect(scopeSummary({ dataset: "otel_replay" })).toContain("replay")
+    expect(scopeSummary({ dataset: "hdfs", block_id: "blk_123" })).toContain(
+      "blk_123"
+    )
+  })
   it("preserves the complete example scope, including filters", () => {
     expect(
       readScope({ dataset: "bgl", components: ["KERNEL"], only_errors: true })
