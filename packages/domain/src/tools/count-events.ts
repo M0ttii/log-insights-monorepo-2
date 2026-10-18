@@ -85,7 +85,24 @@ export const compareSchema = z
 
 export type Compare = z.infer<typeof compareSchema>
 
+export const entityQuerySchema = z
+  .strictObject({
+    type: z.enum(["ip", "path", "request_id", "object_id"]),
+    value: z
+      .string()
+      .min(1)
+      .max(512)
+      .optional()
+      .describe(
+        "Exact, case-sensitive original entity value; omit for the full distribution."
+      ),
+  })
+  .describe(
+    "Extract original IPv4/IPv6 addresses, absolute paths, req- request IDs or UUID/block/instance object IDs over every matching log event. Repeated mentions in one event count once."
+  )
+
 export const countEventsInputSchema = z.strictObject({
+  entity: entityQuerySchema.optional(),
   group_by: z
     .array(dimensionSchema)
     .min(1)
@@ -104,6 +121,12 @@ export const countEventsInputSchema = z.strictObject({
       `Groups to return (1–${COUNT_MAX_TOP_N}; with compare 1–${COMPARE_MAX_TOP_N}), largest first. Default: ${COUNT_DEFAULT_TOP_N}. The remaining groups are summed in other; total is exact regardless.`
     ),
   compare: compareSchema.optional(),
+  contributions: z
+    .boolean()
+    .optional()
+    .describe(
+      "Opt in to signed contributions and positive/negative delta reconciliation; requires compare. Omit to preserve the ordinary comparison output."
+    ),
 })
 
 export type CountEventsInput = z.infer<typeof countEventsInputSchema>
@@ -115,6 +138,13 @@ const dimensionValue = (description: string) =>
 
 /** Fields a group or other carries with compare; absent without it. */
 const changeShape = {
+  contribution_to_delta: z
+    .number()
+    .nullable()
+    .optional()
+    .describe(
+      "Only with contributions true: 100 * group delta / total delta, computed in SQL; null when the net delta is zero or unknown. Signed contributions may exceed 100%."
+    ),
   baseline: count
     .nullable()
     .optional()
@@ -211,13 +241,59 @@ export const comparisonSchema = z
         "False when a period lies entirely outside the data span: then B, delta, pct_change and classification are null everywhere, never 0."
       ),
     ...changeShape,
+    decomposition: z
+      .strictObject({
+        positive_delta: count,
+        negative_delta: z.number().int().nonpositive(),
+        net_delta: z.number().int(),
+      })
+      .nullable()
+      .optional()
+      .describe(
+        "Only with contributions true: all group deltas; positive plus negative equals net_delta; null when comparison is unknown."
+      ),
     classification: classificationSchema,
   })
   .describe(
     "Totals of the comparison: B, C − B, change and R-06 classification of total (= C)."
   )
 
+export const entityDistributionSchema = z
+  .strictObject({
+    type: entityQuerySchema.shape.type,
+    value: z.string().optional(),
+    total_events: count,
+    matched_events: count.describe(
+      "Events with at least one selected entity; distinct events, never mentions."
+    ),
+    occurrences: count.describe(
+      "Distinct event/entity pairs; one event may contribute to several entities."
+    ),
+    distinct_entities: count,
+    groups: z
+      .array(
+        z.strictObject({
+          entity: z.string(),
+          events: count,
+          share: ratio.nullable(),
+        })
+      )
+      .max(COUNT_MAX_TOP_N),
+    other: z
+      .strictObject({
+        entities: count,
+        events: count,
+        share: z.number().nonnegative().nullable(),
+      })
+      .nullable(),
+    truncated: z.boolean(),
+  })
+  .describe(
+    "Complete-scope entity distribution, original strings unchanged. shares use total_events; their sum can exceed one because an event may contain several entities. other.events sums event/entity pairs, not unique events."
+  )
+
 export const countEventsOutputSchema = z.strictObject({
+  entity_distribution: entityDistributionSchema.optional(),
   group_by: z
     .array(dimensionSchema)
     .describe("The grouping dimensions, in this order."),
@@ -268,7 +344,10 @@ export function countMetric(unit: CountingUnit): string {
  * windows are told apart by `period`.
  */
 export function countEventsFactSpecs(
-  input: Pick<CountEventsInput, "group_by" | "compare">
+  input: Pick<
+    CountEventsInput,
+    "group_by" | "compare" | "entity" | "contributions"
+  >
 ): FactSpec[] {
   const unit: CountingUnit = countsApiAccesses(input.group_by)
     ? "api_accesses"
@@ -306,6 +385,74 @@ export function countEventsFactSpecs(
           },
         ]
       : []
+  const entitySummaryKeys = [
+    "type",
+    ...(input.entity?.value === undefined ? [] : ["value"]),
+  ]
+  const entitySpecs: FactSpec[] = [
+    ...(
+      [
+        "total_events",
+        "matched_events",
+        "occurrences",
+        "distinct_entities",
+      ] as const
+    ).map((field) => ({
+      path: `/result/entity_distribution/${field}`,
+      metric: `entity_${field}`,
+      unit:
+        field === "distinct_entities"
+          ? "entities"
+          : field === "occurrences"
+            ? "event_entity_pairs"
+            : "log_events",
+      groupKeys: entitySummaryKeys,
+    })),
+    {
+      path: "/result/entity_distribution/groups/*/events",
+      metric: "entity_events",
+      unit: "log_events",
+      groupKeys: ["type", "entity"],
+    },
+    {
+      path: "/result/entity_distribution/groups/*/share",
+      metric: "entity_share",
+      unit: "ratio",
+      groupKeys: ["type", "entity"],
+    },
+    {
+      path: "/result/entity_distribution/other/entities",
+      metric: "other_entities",
+      unit: "entities",
+      groupKeys: entitySummaryKeys,
+    },
+    {
+      path: "/result/entity_distribution/other/events",
+      metric: "other_entity_events",
+      unit: "event_entity_pairs",
+      groupKeys: entitySummaryKeys,
+    },
+    {
+      path: "/result/entity_distribution/other/share",
+      metric: "other_entity_share",
+      unit: "ratio",
+      groupKeys: entitySummaryKeys,
+    },
+  ]
+  const comparisonSpecs: FactSpec[] = [
+    ...["groups/*", "other"].map((part) => ({
+      path: `/result/${part}/contribution_to_delta`,
+      metric: "contribution_to_delta",
+      unit: "percent",
+      groupKeys: part === "other" ? [] : groupKeys,
+    })),
+    ...["positive_delta", "negative_delta", "net_delta"].map((field) => ({
+      path: `/result/comparison/decomposition/${field}`,
+      metric: field,
+      unit,
+      groupKeys: [],
+    })),
+  ]
   return [
     { path: "/result/total", metric, unit, groupKeys: [] },
     {
@@ -354,6 +501,8 @@ export function countEventsFactSpecs(
       unit: "utc_time",
       groupKeys: windowKeys,
     },
+    ...(input.entity === undefined ? [] : entitySpecs),
+    ...(compared && input.contributions === true ? comparisonSpecs : []),
   ]
 }
 
@@ -384,7 +533,11 @@ export function summarizeCountEvents(
       "classification" in row && typeof row.classification === "string"
         ? `, ${row.classification}`
         : ""
-    return `; baseline ${formatFactValue(row.baseline)}${cite(`${prefix}/baseline`)}, delta ${signed(row.delta ?? 0)}${cite(`${prefix}/delta`)}, ${pct}${label}`
+    const contribution =
+      row.contribution_to_delta == null
+        ? ""
+        : `; contribution to net delta ${signed(row.contribution_to_delta)} %${cite(`${prefix}/contribution_to_delta`)}`
+    return `; baseline ${formatFactValue(row.baseline)}${cite(`${prefix}/baseline`)}, delta ${signed(row.delta ?? 0)}${cite(`${prefix}/delta`)}, ${pct}${label}${contribution}`
   }
   const unit = data.unit.replaceAll("_", " ")
   const windows = receipt.scope.windows
@@ -418,6 +571,25 @@ export function summarizeCountEvents(
       : [
           `other: ${formatFactValue(data.other.groups)} groups${cite("/result/other/groups")}, ${formatFactValue(data.other.events)}${cite("/result/other/events")} (${percent(data.other.share)}${cite("/result/other/share")})${change("/result/other", data.other)}`,
         ]),
+    ...(data.comparison?.decomposition == null
+      ? []
+      : [
+          `Delta reconciliation: positive ${formatFactValue(data.comparison.decomposition.positive_delta)}${cite("/result/comparison/decomposition/positive_delta")}, negative ${formatFactValue(data.comparison.decomposition.negative_delta)}${cite("/result/comparison/decomposition/negative_delta")}, net ${formatFactValue(data.comparison.decomposition.net_delta)}${cite("/result/comparison/decomposition/net_delta")}.`,
+        ]),
+    ...(data.entity_distribution === undefined
+      ? []
+      : [
+          `Entity distribution (${data.entity_distribution.type}, exact selection ${JSON.stringify(data.entity_distribution.value ?? null)}): ${formatFactValue(data.entity_distribution.matched_events)} matching events${cite("/result/entity_distribution/matched_events")} / ${formatFactValue(data.entity_distribution.total_events)} scoped events${cite("/result/entity_distribution/total_events")}; ${formatFactValue(data.entity_distribution.occurrences)} event/entity pairs${cite("/result/entity_distribution/occurrences")}, ${formatFactValue(data.entity_distribution.distinct_entities)} distinct entities${cite("/result/entity_distribution/distinct_entities")}; truncated: ${data.entity_distribution.truncated}.`,
+          ...data.entity_distribution.groups.map(
+            (group, index) =>
+              `${JSON.stringify(group.entity)}: ${formatFactValue(group.events)} events${cite(`/result/entity_distribution/groups/${index}/events`)}, share ${percent(group.share)}${cite(`/result/entity_distribution/groups/${index}/share`)}.`
+          ),
+          ...(data.entity_distribution.other === null
+            ? []
+            : [
+                `Other entities: ${formatFactValue(data.entity_distribution.other.entities)}${cite("/result/entity_distribution/other/entities")}, ${formatFactValue(data.entity_distribution.other.events)} event/entity pairs${cite("/result/entity_distribution/other/events")}, summed share ${percent(data.entity_distribution.other.share)}${cite("/result/entity_distribution/other/share")}.`,
+              ]),
+        ]),
     ...notes.map((note) => `Note: ${note}`),
   ]
   return lines.join("\n")
@@ -428,6 +600,7 @@ type ChangeFields = {
   delta?: number | null | undefined
   pct_change?: number | null | undefined
   classification?: string | null | undefined
+  contribution_to_delta?: number | null | undefined
 }
 
 /** Percent with two decimals for the text block only; facts keep the exact share. */

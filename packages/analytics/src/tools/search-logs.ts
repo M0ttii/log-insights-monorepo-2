@@ -16,6 +16,7 @@ import {
   defineTool,
   READ_ONLY_ANNOTATIONS,
   renderDescription,
+  type ToolContext,
 } from "@workspace/domain/tool"
 import {
   FUZZY_DEFAULT_EDITS,
@@ -32,13 +33,16 @@ import {
   type SearchHit,
   type SearchLogsInput,
   type SearchSort,
+  type SearchLogsOutput,
 } from "@workspace/domain/tools/search-logs"
 import { z } from "zod"
 
 import { compileFilter } from "../filters.ts"
+import { QueryFailure } from "../db.ts"
 import { extensionSelect, LOG_EVENTS_IDX, type Relation } from "../relations.ts"
 import { openReference, sourceNotes } from "../remote.ts"
 import { openReplay } from "../replay.ts"
+import { openRetrieval } from "../retrieval.ts"
 import {
   LOADED,
   describeFilters,
@@ -112,12 +116,12 @@ const hitRow = z
 export const searchLogs = defineTool({
   name: "search_logs",
   title: "Search logs",
-  version: "1.2.0",
+  version: "2.0.0",
   description: renderDescription({
     purpose:
-      "Full-text search over log messages with BM25 ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message. For dataset otel (remote OpenTelemetry Parquet, read in place) the search runs on the indexed reference window only.",
+      "Lexical search over log messages with BM25 ranking (terms/phrase/fuzzy), or pinned semantic cosine retrieval and hybrid BM25/cosine RRF ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message. For dataset otel (remote OpenTelemetry Parquet, read in place) the search runs on the indexed reference window only.",
     useWhen:
-      "you need concrete log lines as evidence for an error, a message text or a time window, or event IDs to open with get_log_context. Choose the mode: terms (default) when all words must occur in any order; phrase when the exact word sequence matters, e.g. 'cache parity error'; fuzzy for one term whose spelling is uncertain, e.g. 'parrity'.",
+      "you need concrete log lines as evidence for an error, a message text or a time window, or event IDs to open with get_log_context. Choose the mode: terms (default) when all words must occur in any order; phrase when the exact word sequence matters, e.g. 'cache parity error'; fuzzy for one term whose spelling is uncertain, e.g. 'parrity'. Choose semantic for conceptually related messages, or hybrid for combined lexical and semantic evidence; these require an immutable retrieval_snapshot and an imported query vector or configured embedding provider.",
     doNotUseWhen: [
       {
         situation:
@@ -134,11 +138,11 @@ export const searchLogs = defineTool({
         use: "get_log_context",
       },
     ],
-    inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy, default terms), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion. Without dataset every log_events dataset is searched, never otel. With dataset otel, from/to default to the indexed reference window (describe_corpus) and must stay inside it, else invalid_input; the call fails with source_changed when a remote file no longer matches its load-time pin.`,
+    inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy | semantic | hybrid, default terms), retrieval_snapshot (64-hex immutable representation ID; required for semantic/hybrid), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion. Without dataset every log_events dataset is searched, never otel. With dataset otel, from/to default to the indexed reference window (describe_corpus) and must stay inside it, else invalid_input; the call fails with source_changed when a remote file no longer matches its load-time pin. Semantic/hybrid currently support local log_events datasets only, require sort relevance, filter before each branch's top-k and fail explicitly when a representation or embedding provider is unavailable, with no lexical fallback. Every unknown query is embedded once using the snapshot model and cached immutably for reruns.`,
     filters: SEARCH_FILTER.summary,
     outputs:
-      "total_matches (exact, same condition as the hits), hits[] with event_id, dataset, ts (UTC, microseconds; otel nanoseconds are truncated), component, level, node, alert_label, request_id, the dataset's own fields (otel: trace_id, span_id, severity_number), message (verbatim, untrusted), message_truncated, match_ranges (index-derived, zero-based Unicode code points, start inclusive/end exclusive; no HTML) and score (BM25, comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. Cite total_matches and times by their fact IDs.",
-    truncation: `at most limit hits; truncated is true when total_matches is larger. Messages are cut to ${SEARCH_MESSAGE_MAX_CHARS} characters (message_truncated). Match ranges are clipped to that prefix; matches entirely beyond it have no visible range.`,
+      "total_matches (exact for lexical search; null for semantic/hybrid bounded candidates), hits[] with event_id, dataset, ts (UTC, microseconds; otel nanoseconds are truncated), component, level, node, alert_label, request_id, the dataset's own fields (otel: trace_id, span_id, severity_number), message (verbatim, untrusted), message_truncated, match_ranges (index-derived, zero-based Unicode code points, start inclusive/end exclusive; no HTML) and score (lexical BM25, semantic cosine distance or hybrid RRF; comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. retrieval identifies snapshot/provider/model/model_version/dimensions/normalization/preprocessing, query embedding digest, score metric, snapshot coverage and branch candidate limit. Semantic/hybrid scores are neither frequencies nor causal evidence. Cite available total_matches and times by their fact IDs.",
+    truncation: `at most limit hits; truncated is true when lexical total_matches is larger, or when additional bounded semantic/hybrid candidates were omitted; a false retrieval flag does not establish corpus completeness. Messages are cut to ${SEARCH_MESSAGE_MAX_CHARS} characters (message_truncated). Match ranges are clipped to that prefix; matches entirely beyond it have no visible range.`,
     countingUnit:
       "log events (parsed lines), not incidents; hits are examples, never a frequency.",
   }),
@@ -148,6 +152,12 @@ export const searchLogs = defineTool({
     {
       path: "/result/total_matches",
       metric: "matches",
+      unit: "log_events",
+      groupKeys: [],
+    },
+    {
+      path: "/result/retrieval/indexed_events",
+      metric: "indexed_events",
       unit: "log_events",
       groupKeys: [],
     },
@@ -174,8 +184,11 @@ export const searchLogs = defineTool({
   validate: validateSearch,
   summary: summarizeSearchLogs,
   async run(ctx, input) {
-    const tokens = await tokenize(ctx.db, input.query, ctx.signal)
-    const tokenError = checkTokens(input, tokens)
+    const retrieval = input.match === "semantic" || input.match === "hybrid"
+    const tokens = retrieval
+      ? []
+      : await tokenize(ctx.db, input.query, ctx.signal)
+    const tokenError = retrieval ? null : checkTokens(input, tokens)
     if (tokenError !== null) return { ok: false, error: tokenError }
 
     // log_events datasets read log_events_idx; otel reads the index of its
@@ -221,6 +234,8 @@ export const searchLogs = defineTool({
       source === undefined || window === undefined
         ? input
         : { ...input, from: window.from, to: window.to }
+
+    if (retrieval) return runRetrieval(ctx, input, windows, excluded, bounds)
 
     const params = new SqlParams()
     const maxEdits =
@@ -315,6 +330,31 @@ function validateSearch(input: SearchLogsInput): ToolError | null {
       message: `Only allowed with match "fuzzy"; match is "${input.match}".`,
     })
   }
+  const retrieval = input.match === "semantic" || input.match === "hybrid"
+  if (retrieval && input.retrieval_snapshot === undefined)
+    issues.push({
+      path: "retrieval_snapshot",
+      message: "semantic and hybrid require a pinned retrieval_snapshot.",
+    })
+  if (!retrieval && input.retrieval_snapshot !== undefined)
+    issues.push({
+      path: "retrieval_snapshot",
+      message: "Only allowed with semantic or hybrid.",
+    })
+  if (retrieval && input.sort !== "relevance")
+    issues.push({
+      path: "sort",
+      message: "semantic and hybrid support relevance sorting only.",
+    })
+  if (
+    retrieval &&
+    (input.dataset === "otel" || input.dataset === "otel_replay")
+  )
+    issues.push({
+      path: "dataset",
+      message:
+        "Semantic representations currently support loaded log_events datasets only; use lexical search for OTel.",
+    })
   const filterError = validateFilter(input)
   if (filterError?.code === "invalid_input") issues.push(...filterError.issues)
   else if (filterError !== null) return filterError
@@ -365,6 +405,9 @@ function textCondition(
       return `${column} @@ plainto_tsquery(${params.add(input.query)})`
     case "phrase":
       return `${column} @@ ts_phrase(${params.add(input.query)})`
+    case "semantic":
+    case "hybrid":
+      throw new Error("Retrieval mode reached lexical condition")
     case "fuzzy": {
       const [term] = tokens
       if (term === undefined || maxEdits === null)
@@ -455,4 +498,125 @@ function characterRanges(
     else ranges.push({ start, end })
   }
   return ranges
+}
+
+/** Both candidate branches filter the pinned representation before their top-k. */
+async function runRetrieval(
+  ctx: ToolContext,
+  input: SearchLogsInput,
+  windows: Scope["windows"],
+  excluded: string[],
+  bounds: SearchLogsInput
+) {
+  if (input.retrieval_snapshot === undefined)
+    return {
+      ok: false as const,
+      error: invalidInput([
+        {
+          path: "retrieval_snapshot",
+          message: "A representation snapshot is required.",
+        },
+      ]),
+    }
+  const opened = await openRetrieval(ctx, input.retrieval_snapshot, input.query)
+  if (!opened.ok) return opened
+  const { rel, manifest, embedding, queryDigest } = opened
+  const params = new SqlParams()
+  const compiled = compileFilter(bounds, {
+    accepted: SEARCH_FILTER.fields,
+    params,
+    relation: rel,
+  })
+  if (!compiled.ok) return compiled
+  const where = compiled.filter.where
+  const vectorRef = `${params.add(JSON.stringify(embedding))}::FLOAT[${manifest.dimensions}]`
+  const candidateLimit = 100
+  const id = rel.col("event_id")
+  const distance = `${rel.q}.embedding <=> ${vectorRef}`
+  const semantic = `SELECT ${id} AS event_id, ${distance} AS distance FROM ${rel.from} WHERE ${where} ORDER BY distance, ${id} LIMIT ${candidateLimit}`
+  let ranking: string
+  if (input.match === "semantic") {
+    ranking = `WITH candidates AS MATERIALIZED (${semantic}) SELECT event_id, distance AS score FROM candidates`
+  } else {
+    const queryRef = params.add(input.query)
+    const lexical = `SELECT ${id} AS event_id, BM25(${rel.q}.tableoid) AS lexical_score FROM ${rel.from} WHERE ${where} AND ${rel.col("message")} @@ plainto_tsquery(${queryRef}) ORDER BY lexical_score DESC, ${id} LIMIT ${candidateLimit}`
+    ranking = `WITH semantic AS MATERIALIZED (${semantic}), lexical AS MATERIALIZED (${lexical}), contributions AS (SELECT event_id, 1.0 / (60 + row_number() OVER (ORDER BY distance, event_id)) AS contribution FROM semantic UNION ALL SELECT event_id, 1.0 / (60 + row_number() OVER (ORDER BY lexical_score DESC, event_id)) AS contribution FROM lexical) SELECT event_id, sum(contribution)::DOUBLE AS score FROM contributions GROUP BY event_id`
+  }
+  const direction = input.match === "semantic" ? "ASC" : "DESC"
+  const order = `ranked.score ${direction}, ${id}`
+  const sql = `WITH ranked AS MATERIALIZED (${ranking}) SELECT ${id} AS event_id, ${rel.col("dataset")} AS dataset, ${isoTime(rel.col("ts"))} AS ts, ${rel.col("component")} AS component, ${rel.col("level")} AS level, ${rel.col("node")} AS node, ${rel.col("alert_label")} AS alert_label, ${rel.col("request_id")} AS request_id, ${extensionSelect(rel)}, left(${rel.col("message")}, ${SEARCH_MESSAGE_MAX_CHARS}) AS message, length(${rel.col("message")}) > ${SEARCH_MESSAGE_MAX_CHARS} AS message_truncated, []::INTEGER[] AS match_offsets, ranked.score FROM ${rel.from} JOIN ranked ON ${id} = ranked.event_id ORDER BY ${order} LIMIT ${params.add(input.limit + 1)}`
+  let listed
+  try {
+    listed = await ctx.db.query(sql, params.values, ctx.signal)
+  } catch (error) {
+    if (error instanceof QueryFailure && error.sqlstate === "42P01")
+      return {
+        ok: false as const,
+        error: invalidInput(
+          [
+            {
+              path: "retrieval_snapshot",
+              message:
+                "The pinned representation index is unavailable in this database.",
+            },
+          ],
+          "Build the representation in this database with retrieval:build. No lexical fallback was run."
+        ),
+      }
+    throw error
+  }
+  const hits: SearchHit[] = listed.rows.slice(0, input.limit).map((row) => {
+    const [{ match_offsets: _offsets, ...hit }, attributes] = splitAttributes(
+      hitRow.parse(row)
+    )
+    return {
+      ...hit,
+      ...extensionAttributes(hit.dataset, attributes),
+      message_truncated: hit.message_truncated === true,
+      match_ranges: [],
+    }
+  })
+  const truncated = listed.rows.length > input.limit
+  const data: SearchLogsOutput = {
+    query: input.query,
+    match_mode: input.match,
+    max_edits: null,
+    sort: input.sort,
+    total_matches: null,
+    hits,
+    truncated,
+    row_limit: input.limit,
+    retrieval: {
+      snapshot_id: manifest.snapshot_id,
+      provider: manifest.provider,
+      model: manifest.model,
+      model_version: manifest.model_version,
+      dimensions: manifest.dimensions,
+      normalization: manifest.normalization,
+      preprocessing_version: manifest.preprocessing_version,
+      query_embedding_digest: queryDigest,
+      score_metric: input.match === "semantic" ? "cosine_distance" : "rrf",
+      candidate_limit: candidateLimit,
+      indexed_events: manifest.indexed_events,
+      fusion_k: input.match === "hybrid" ? 60 : null,
+    },
+  }
+  return {
+    ok: true as const,
+    run: {
+      data,
+      scope: { windows, filters: scopeFilters(input, SEARCH_FILTER.fields) },
+      population: null,
+      rows_returned: hits.length,
+      truncated,
+      row_limit: input.limit,
+      notes: [
+        BASE_NOTE,
+        UNTRUSTED_NOTE,
+        "Semantic/hybrid results are bounded candidates from the pinned representation, not an exhaustive match set. total_matches and population count are unknown; use count_events for frequencies. Similarity is neither a frequency nor causal evidence. The representation may cover only part of the corpus. Hybrid uses RRF k=60 over up to 100 filtered candidates from each branch; scores only compare within this result.",
+        ...excluded,
+        ...unknownErrorsNote(input, windows),
+      ],
+    },
+  }
 }

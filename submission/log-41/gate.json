@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-10-18T19:05:42.248Z",
+  "version": "PostgreSQL 18.3 (SereneDB 26.10.1)",
+  "checks": [
+    {
+      "name": "ai_embed exists and explicitly rejects an unavailable provider secret",
+      "expected": "42704, secret 'log41_deliberately_absent' not found",
+      "observed": "{\"code\":\"42704\",\"message\":\"ai_embed: secret 'log41_deliberately_absent' not found\"}",
+      "ok": true
+    },
+    {
+      "name": "ai_summarize_agg exists and explicitly rejects an unavailable provider secret",
+      "expected": "42704, secret 'log41_deliberately_absent' not found",
+      "observed": "{\"code\":\"42704\",\"message\":\"ai_summarize_agg: secret 'log41_deliberately_absent' not found\"}",
+      "ok": true
+    },
+    {
+      "info": "No external model was called. AI function availability does not demonstrate summary usefulness or semantic relevance; provider-backed evaluations remain required."
+    },
+    {
+      "info": "Configured OpenAI-compatible provider secrets: 0 (metadata count only; no secret content read)."
+    },
+    {
+      "name": "default summary explicitly fails without a configured provider",
+      "expected": "22023: ai_summarize_agg: no secret given",
+      "observed": "{\"code\":\"22023\",\"message\":\"ai_summarize_agg: no secret given\"}",
+      "ok": true
+    },
+    {
+      "name": "filtered cosine retrieval uses fixed vectors and unique ties",
+      "expected": "[{\"event_id\":\"1\",\"distance\":0},{\"event_id\":\"2\",\"distance\":1}]",
+      "observed": "[{\"event_id\":\"1\",\"distance\":0},{\"event_id\":\"2\",\"distance\":1}]",
+      "ok": true
+    },
+    {
+      "name": "cosine retrieval reads the vector index",
+      "expected": "IRESEARCH_SCAN with cosine_distance",
+      "observed": "╭─ TOP_N ──────────────────────────────────────────────────╮\n│ Top: 2                                                   │\n│ Order By: #1 ASC, event_id ASC                           │\n│ ~1 row                                                   │\n╰─────────────────────────────┬────────────────────────────╯\n╭─ IRESEARCH_SCAN ────────────┴────────────────────────────╮\n│ Index: events_idx                                        │\n│ Index Filter:                                            │\n│ ╭─ Term ─────────────────╮                               │\n│ │ Field: dataset(string) │                               │\n│ │ Value: bgl             │                               │\n│ ╰────────────────────────╯                               │\n│ Column Filter:                                           │\n│ optional: Dynamic Filter (sdb_inverted_index_score <= ?) │\n│ Score:                                                   │\n│ cosine_distance(embedding, FLOAT[3])                     │\n│ Projections: event_id, sdb_inverted_index_score          │\n│ ~1 row                                                   │\n╰──────────────────────────────────────────────────────────╯",
+      "ok": true
+    },
+    {
+      "name": "RRF fusion sums ranks and breaks equal scores by event ID",
+      "expected": "[\"1\",\"2\"]",
+      "observed": "[\"1\",\"2\"]",
+      "ok": true
+    },
+    {
+      "name": "equal reciprocal rank sums agree",
+      "expected": "two equal positive scores",
+      "observed": "[{\"event_id\":\"1\",\"score\":0.03252247488101534},{\"event_id\":\"2\",\"score\":0.03252247488101534}]",
+      "ok": true
+    }
+  ]
+}

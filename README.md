@@ -463,6 +463,74 @@ is in `docs/technical.md` § 5.3 (local planning docs are gitignored).
 Matching is case-insensitive on whole tokens without stemming; operators,
 quotes and `*` are not evaluated. Hits are examples, never a frequency.
 
+### Extended research (LOG-41)
+
+The existing eight registry tools expose the new modes to MCP and web chat.
+Contracts are versioned as `5.0.0`; lexical terms/phrase/fuzzy keep exact counts.
+
+- `search_logs` adds `match: "semantic" | "hybrid"` with a required
+  `retrieval_snapshot` and relevance sorting. Semantic ranking uses a SereneDB
+  cosine vector index; hybrid fuses its bounded candidates with BM25 using SQL
+  reciprocal rank fusion. Filters apply before either candidate selection.
+  `total_matches` and population are null: these results are candidates from a
+  versioned representation, never a complete frequency or causal finding.
+- `count_events` accepts `entity: {type: "ip" | "path" | "request_id" |
+  "object_id", value?: string}`. Its additional distribution covers all events
+  in the stated scope and preserves exact original entity strings. It counts
+  distinct event/entity pairs; several entities can occur in one event.
+  `contributions: true` with `compare` adds signed group contributions and a reconciled SQL decomposition,
+  including the remainder. Unavailable references stay unknown.
+- `recurring_patterns.analysis` supports `periodicity` with a pattern ID and a
+  minimum occurrence count, or `cooccurrence` with `pattern_a`, `pattern_b`,
+  `window_seconds`, `direction: "either" | "after"` and an optional
+  `control_pattern_id`. These are temporal observations within the filtered
+  dataset. Missing controls and insufficient samples remain explicitly unknown.
+- `latency_stats.outliers` selects a `p95` or `p99` threshold, a minimum baseline
+  and an optional case event ID. SQL returns the baseline, denominator, measured
+  duration threshold, outlier rate and bounded original cases.
+
+Build embeddings in SereneDB with `pnpm retrieval:build --embed <config.json>`
+(provider/model/version/dimensions/normalization/data version and bounded
+`selection`; default 100 events, maximum 50,000), or import provider-generated
+embeddings with `pnpm retrieval:build <import.json>`.
+The strict [import contract](packages/analytics/src/retrieval.ts) requires provider,
+model, immutable model version, dimensions, normalization, preprocessing version,
+loaded data version, message hashes and event vectors. The immutable snapshot
+gets a content hash and its own SereneDB index. Query embeddings are saved inside the immutable snapshot. The offline `--embed`
+builder uses `LOG_INSIGHTS_EMBEDDING_SECRET`, a SereneDB secret identifier, with
+`ai_embed` to generate event and query vectors together. Runtime searches accept
+only an exact saved query vector; an unseen query requires a new snapshot. This
+avoids mixing a mutable provider/model alias with an older representation.
+Re-running uses the saved query vector. The model revision is declared build
+provenance; the snapshot pins the actual vector content. Never put a provider key in this setting or import.
+`LOG_INSIGHTS_RETRIEVAL_DIR` defaults to `.data/retrieval`. The saved
+`<snapshot-id>.import.json` can recreate a lost database index with
+`pnpm retrieval:build <path-to-snapshot-id.import.json>`.
+
+`pnpm research:verify` replays deterministic role-shaped tool/check chains;
+`pnpm research:compare [snapshot-id]` records the predeclared retrieval questions.
+These scripts do not replace genuine model role runs.
+
+Current snapshot building covers local `log_events` datasets and at most 50,000
+selected messages per import. OTel retains the shared lexical search contract;
+semantic/hybrid OTel snapshots remain open. Missing provider configuration or a
+missing snapshot produces an explicit error and never changes the requested mode.
+No semantic quality advantage is claimed without a provider-backed benchmark.
+
+Gate G14 verifies the installed 26.10.1 vector index, filtering and RRF mechanics.
+Both `ai_embed` and `ai_summarize_agg` are present; a deliberately missing provider
+secret returns SQLSTATE `42704`. Summaries are not integrated without evidence of
+usefulness and remain non-authoritative model text if later enabled. Local
+provider-backed retrieval benchmarks and genuine Claude role runs require keys;
+see [LOG-41 verification](submission/log-41/README.md) for actual evidence and
+remaining acceptance limits.
+
+Full-span one-dimension `level`, `component` and `node` counts without a dataset
+selection or other filters use implicit dictionary facets (`TsDict:`). Measured
+BGL-only node and OpenStack-only scopes retain the existing table path, as do
+comparisons, joint distributions and calculated dimensions. NULL groups, SQL
+shares and the remainder are preserved.
+
 ## Known development questions and boundaries
 
 These questions come from the checked-in [development bank](packages/evals/questions/dev.yaml).

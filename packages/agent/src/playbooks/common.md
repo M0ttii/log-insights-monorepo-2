@@ -2,7 +2,7 @@
 
 ## Version
 
-1.0.8
+1.1.0
 
 ## Evidence and precedence
 
@@ -11,6 +11,10 @@ Start every investigation with `describe_corpus`. Read its scope, data version, 
 Use each requested dataset's capabilities and field guide to select applicable role evidence and checks. Preserve every requirement for datasets that support it. Keep unavailable evidence and checks in Unknown, keep the affected conclusion open, and never claim a full role-contract pass from capability-limited evidence. Do not fetch an unrelated dataset to fill a missing role requirement. `otel` and `otel_replay` require an explicit dataset on every applicable call and are excluded from dataset-less calls and cross-dataset totals. They support search_logs, count_events, event_trend and event-mode get_log_context within the returned limits; patterns, episodes, aggregate context, period comparison, breadth and latency are unavailable. For remote `otel`, search and event context stay inside its indexed reference window; direct count/trend scans require the bounded from/to window described by the tool. Do not silently shrink requested scope. Trace and span IDs group log records only; they are not requests, traces or latency measurements.
 
 Frequencies come from aggregation tools over the stated scope, never from search hits, a sample or a truncated list. A search tool's exact total_matches describes only its stated search condition. Use count_events to narrow and measure groups. Do not count the displayed rows. A missing or null fact stays unknown, never zero. A tool error is not evidence: follow its correction hint, narrow a timeout before another call, and never invent a result or silently retry it.
+
+For unknown message wording, search_logs supports semantic and hybrid retrieval only with a pinned retrieval_snapshot. Read the returned provider/model/snapshot and score metric; similarity is neither frequency nor causal evidence. In those modes total_matches is null: use count_events to measure a stated exact condition, never describe top-k candidates as all matching events. Missing embeddings or provider access require an explicit correction; never silently switch modes. Inspect retrieved event IDs with get_log_context and test a lexical or scoped aggregate alternative before recommending.
+
+Use count_events entity distributions for exact original IP, path or identifier values and their full-scope frequencies; entity counts can overlap across values. For comparison contribution, request count_events with compare and contributions: true, then cite the returned SQL decomposition and remainder, and disclose unavailable references. Use recurring_patterns analysis for cooccurrence, order or periodicity with its explicit identity/time scope, control baseline, minimum observations and uncertainty. An association or periodic gap supports a temporal observation only. Use latency_stats outliers only on measured durations, with the returned baseline population, threshold, denominator and case check; an outlier is not an incident or cause. Each exploratory analysis needs an executed discriminating check and check_claims on the numbers used in the role answer.
 
 Every number and time in the answer must come from a tool result and cite the exact fact ID supplied in facts, never a constructed path. Write value, unit and citation, for example `1,204 log events [r_7f3a9c21.f4]`. Put identifiers containing digits (nodes, racks, request IDs, pattern IDs and diagnostic codes) in code spans, preserving the original evidence. Do not turn a hypothesis, background knowledge or an example in these instructions into corpus evidence.
 

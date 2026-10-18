@@ -47,6 +47,7 @@ import { corpusNotLoaded, getDataSpan, spanEnd } from "../corpus.ts"
 import { apiAccessCondition, compileFilter } from "../filters.ts"
 import { describeFilters, scopeFilters } from "../scope.ts"
 import { exactCount, isoTime, SqlParams } from "../sql.ts"
+import { latencyOutliers } from "../latency-outliers.ts"
 
 /**
  * latency_stats (A-12): latency percentiles and 4xx/5xx rates of OpenStack
@@ -165,10 +166,10 @@ const EMPTY_STATS: LatencyStatsRow = {
 export const latencyStats = defineTool({
   name: "latency_stats",
   title: "Latency and HTTP error rates",
-  version: "1.0.0",
+  version: "1.1.0",
   description: renderDescription({
     purpose:
-      "Latency percentiles (p50, p90, p95, p99, max in milliseconds) and HTTP error rates of OpenStack API accesses, overall or grouped by endpoint, method, status, component or UTC hour/day. OpenStack only. Every rate comes with numerator and denominator.",
+      "Latency percentiles (p50, p90, p95, p99, max in milliseconds) and HTTP error rates of OpenStack API accesses, overall or grouped by endpoint, method, status, component or UTC hour/day. OpenStack only. Every rate comes with numerator and denominator. Optional outliers {threshold:p95|p99,min_baseline,case_event_id?} returns a SQL threshold, baseline denominator, strict exceedances and bounded real cases from the same filtered window; small baselines leave decisions unknown.",
     useWhen:
       "the question is about OpenStack API latency, slow endpoints, latency over time, the 5xx (failed access) rate or the 4xx (client error) rate, or how many API accesses and unique requests a scope has.",
     doNotUseWhen: [
@@ -276,6 +277,9 @@ export const latencyStats = defineTool({
     }
 
     const data: LatencyStatsOutput = {
+      ...(input.outliers === undefined
+        ? {}
+        : { outliers: await latencyOutliers(ctx, input, where, params) }),
       dataset: "openstack",
       unit: "api_accesses",
       group_by: groupBy,
@@ -302,9 +306,16 @@ export const latencyStats = defineTool({
           unit: "api_accesses",
         },
         rows_returned: groups.length,
-        truncated: data.truncated,
+        truncated: data.truncated || (data.outliers?.cases_truncated ?? false),
         row_limit: topN ?? (time ? LATENCY_MAX_BUCKETS : null),
-        notes: notesFor(input, data, scope, window, span),
+        notes: [
+          ...notesFor(input, data, scope, window, span),
+          ...(input.outliers === undefined
+            ? []
+            : [
+                "Outliers are accesses strictly above the selected SQL percentile over latency_values in the identical filtered window. Below min_baseline, threshold and decisions are unknown. A missing case ID is outside the filtered latency population, not a normal case. The case list contains at most 20 slowest accesses (cases_truncated names the cap). A statistical outlier is an observation, not evidence of a cause.",
+              ]),
+        ],
       },
     }
   },
