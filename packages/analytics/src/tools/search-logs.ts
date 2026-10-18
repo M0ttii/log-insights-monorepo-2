@@ -119,9 +119,9 @@ export const searchLogs = defineTool({
   version: "2.0.0",
   description: renderDescription({
     purpose:
-      "Lexical search over log messages with BM25 ranking (terms/phrase/fuzzy), or pinned semantic cosine retrieval and hybrid BM25/cosine RRF ranking: returns the exact number of matching log events and up to 50 matching lines with time, component, level, node or request ID and the verbatim message. For dataset otel (remote OpenTelemetry Parquet, read in place) the search runs on the indexed reference window only.",
+      "Lexical search over log messages with BM25 ranking (terms/phrase/fuzzy), or pinned semantic cosine retrieval and hybrid BM25/cosine RRF ranking: returns up to 50 log lines with their event IDs and verbatim messages. Lexical search also returns the exact match count. Lexical otel search uses its indexed reference window; retrieval searches the explicitly built immutable source snapshot.",
     useWhen:
-      "you need concrete log lines as evidence for an error, a message text or a time window, or event IDs to open with get_log_context. Choose the mode: terms (default) when all words must occur in any order; phrase when the exact word sequence matters, e.g. 'cache parity error'; fuzzy for one term whose spelling is uncertain, e.g. 'parrity'. Choose semantic for conceptually related messages, or hybrid for combined lexical and semantic evidence; these require an immutable retrieval_snapshot and an imported query vector or configured embedding provider.",
+      "you need concrete log lines as evidence for an error, a message text or a time window, or event IDs to open with get_log_context. Choose the mode: terms (default) when all words must occur in any order; phrase when the exact word sequence matters, e.g. 'cache parity error'; fuzzy for one term whose spelling is uncertain, e.g. 'parrity'. Choose semantic for conceptually related messages, or hybrid for combined lexical and semantic evidence; these require an immutable retrieval_snapshot containing the exact query vector. Build or import new query vectors offline before searching.",
     doNotUseWhen: [
       {
         situation:
@@ -138,7 +138,7 @@ export const searchLogs = defineTool({
         use: "get_log_context",
       },
     ],
-    inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy | semantic | hybrid, default terms), retrieval_snapshot (64-hex immutable representation ID; required for semantic/hybrid), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion. Without dataset every log_events dataset is searched, never otel. With dataset otel, from/to default to the indexed reference window (describe_corpus) and must stay inside it, else invalid_input; the call fails with source_changed when a remote file no longer matches its load-time pin. Semantic/hybrid currently support local log_events datasets only, require sort relevance, filter before each branch's top-k and fail explicitly when a representation or embedding provider is unavailable, with no lexical fallback. Every unknown query is embedded once using the snapshot model and cached immutably for reruns.`,
+    inputs: `query (1–${SEARCH_MAX_QUERY_LENGTH} characters, at least one word), match (terms | phrase | fuzzy | semantic | hybrid, default terms), retrieval_snapshot (64-hex immutable representation ID; required for semantic/hybrid), max_edits (fuzzy only, 1–${FUZZY_MAX_EDITS}, default ${FUZZY_DEFAULT_EDITS}), sort (relevance | time_asc | time_desc, default relevance), limit (1–${SEARCH_MAX_LIMIT}, default ${SEARCH_DEFAULT_LIMIT}), from/to as ISO-8601 with Z or offset, [from, to). Matching is case-insensitive on whole tokens without stemming; node IDs such as R02-M1-N0 split into r02, m1, n0, while nova.compute.manager or 0x00544eb8 stay one token. terms joins the words with AND; operators (-, OR, quotes) are not evaluated and * is no wildcard. phrase needs the words adjacent and in order. fuzzy takes exactly one term and allows max_edits edits (insert, delete, substitute, swap adjacent characters); SereneDB expands it to at most ${FUZZY_TERM_CAP} index terms per index segment, closest first, and counts and hits use the same expansion. Lexical modes without dataset search every log_events dataset, never otel. Lexical modes with dataset otel use from/to defaulting to the indexed reference window (describe_corpus) and must stay inside it, else invalid_input; the call fails with source_changed when a remote file no longer matches its load-time pin. Semantic/hybrid support loaded log_events datasets and explicitly built otel/otel_replay snapshots, require sort relevance, and filter before each branch's top-k. OTel requires its explicit matching dataset; from/to default to and must stay within the pinned snapshot window. Missing representations or exact query vectors fail explicitly with an offline build/import hint and no lexical fallback. A runtime provider alias cannot establish model revision compatibility.`,
     filters: SEARCH_FILTER.summary,
     outputs:
       "total_matches (exact for lexical search; null for semantic/hybrid bounded candidates), hits[] with event_id, dataset, ts (UTC, microseconds; otel nanoseconds are truncated), component, level, node, alert_label, request_id, the dataset's own fields (otel: trace_id, span_id, severity_number), message (verbatim, untrusted), message_truncated, match_ranges (index-derived, zero-based Unicode code points, start inclusive/end exclusive; no HTML) and score (lexical BM25, semantic cosine distance or hybrid RRF; comparable only within one result), match_mode, max_edits, sort, truncated and row_limit. retrieval identifies snapshot/provider/model/model_version/dimensions/normalization/preprocessing, query embedding digest, score metric, snapshot coverage and branch candidate limit. Semantic/hybrid scores are neither frequencies nor causal evidence. Cite available total_matches and times by their fact IDs.",
@@ -190,6 +190,14 @@ export const searchLogs = defineTool({
       : await tokenize(ctx.db, input.query, ctx.signal)
     const tokenError = retrieval ? null : checkTokens(input, tokens)
     if (tokenError !== null) return { ok: false, error: tokenError }
+
+    // External retrieval uses its pinned representation and coverage, which may
+    // lie outside the mutable lexical reference window.
+    if (
+      retrieval &&
+      (input.dataset === "otel" || input.dataset === "otel_replay")
+    )
+      return runRetrieval(ctx, input, [], [], input)
 
     // log_events datasets read log_events_idx; otel reads the index of its
     // reference window, after the window and source checks (LOG-35).
@@ -345,15 +353,6 @@ function validateSearch(input: SearchLogsInput): ToolError | null {
     issues.push({
       path: "sort",
       message: "semantic and hybrid support relevance sorting only.",
-    })
-  if (
-    retrieval &&
-    (input.dataset === "otel" || input.dataset === "otel_replay")
-  )
-    issues.push({
-      path: "dataset",
-      message:
-        "Semantic representations currently support loaded log_events datasets only; use lexical search for OTel.",
     })
   const filterError = validateFilter(input)
   if (filterError?.code === "invalid_input") issues.push(...filterError.issues)
@@ -518,11 +517,22 @@ async function runRetrieval(
         },
       ]),
     }
-  const opened = await openRetrieval(ctx, input.retrieval_snapshot, input.query)
+  const opened = await openRetrieval(
+    ctx,
+    input.retrieval_snapshot,
+    input.query,
+    input
+  )
   if (!opened.ok) return opened
-  const { rel, manifest, embedding, queryDigest } = opened
+  const { rel, manifest, embedding, queryDigest, source } = opened
+  const effectiveWindows = opened.windows ?? windows
+  const [snapshotWindow] = effectiveWindows
+  const effectiveBounds =
+    source === undefined || snapshotWindow === undefined
+      ? bounds
+      : { ...input, from: snapshotWindow.from, to: snapshotWindow.to }
   const params = new SqlParams()
-  const compiled = compileFilter(bounds, {
+  const compiled = compileFilter(effectiveBounds, {
     accepted: SEARCH_FILTER.fields,
     params,
     relation: rel,
@@ -605,7 +615,10 @@ async function runRetrieval(
     ok: true as const,
     run: {
       data,
-      scope: { windows, filters: scopeFilters(input, SEARCH_FILTER.fields) },
+      scope: {
+        windows: effectiveWindows,
+        filters: scopeFilters(input, SEARCH_FILTER.fields),
+      },
       population: null,
       rows_returned: hits.length,
       truncated,
@@ -615,8 +628,14 @@ async function runRetrieval(
         UNTRUSTED_NOTE,
         "Semantic/hybrid results are bounded candidates from the pinned representation, not an exhaustive match set. total_matches and population count are unknown; use count_events for frequencies. Similarity is neither a frequency nor causal evidence. The representation may cover only part of the corpus. Hybrid uses RRF k=60 over up to 100 filtered candidates from each branch; scores only compare within this result.",
         ...excluded,
-        ...unknownErrorsNote(input, windows),
+        ...unknownErrorsNote(input, effectiveWindows),
+        ...(source === undefined
+          ? []
+          : [
+              "The receipt records the snapshot's source pins and coverage. Retrieval reads immutable copied rows, possibly only a selection of that source; source coverage does not establish retrieval completeness. OTel timestamps display microseconds while filters retain the stored source precision.",
+            ]),
       ],
+      ...(source === undefined ? {} : { source }),
     },
   }
 }

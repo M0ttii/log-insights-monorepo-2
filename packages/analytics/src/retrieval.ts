@@ -10,10 +10,17 @@ import {
 import { join } from "node:path"
 import { setTimeout } from "node:timers/promises"
 
-import { invalidInput } from "@workspace/domain/errors"
-import { validateFilter } from "@workspace/domain/filters"
+import { DATASET_COLUMNS, type Dataset } from "@workspace/domain/datasets"
+import { invalidInput, sourceChanged } from "@workspace/domain/errors"
+import { remoteScanError, validateFilter } from "@workspace/domain/filters"
 import { SEARCH_FILTER } from "@workspace/domain/tools/search-logs"
-import { canonicalJson } from "@workspace/domain/receipt"
+import {
+  canonicalJson,
+  receiptSourceSchema,
+  type ReceiptSource,
+  type Scope,
+} from "@workspace/domain/receipt"
+import { instantSchema, parseInstant } from "@workspace/domain/time"
 import type { QueryRunner, ToolContext } from "@workspace/domain/tool"
 import { z } from "zod"
 
@@ -23,7 +30,15 @@ import { readDataVersion } from "./corpus.ts"
 import { resultDigest } from "./receipts.ts"
 import { compileFilter } from "./filters.ts"
 import { SqlParams, exactCount } from "./sql.ts"
-import { logEventsRelation, type Relation } from "./relations.ts"
+import {
+  logEventsRelation,
+  otelReplayRelation,
+  parquetLiteral,
+  type Relation,
+} from "./relations.ts"
+import { openReference, openScan } from "./remote.ts"
+import { openReplay } from "./replay.ts"
+import { resolveWindows } from "./scope.ts"
 
 const digestSchema = z.string().regex(/^[a-f0-9]{64}$/)
 const vector = z.array(z.number().finite()).min(1).max(4096)
@@ -47,10 +62,37 @@ const queryEmbedding = z.strictObject({
   query: z.string().min(1).max(200),
   embedding: vector,
 })
+const sourceSelectionSchema = z.discriminatedUnion("dataset", [
+  z.strictObject({
+    dataset: z.literal("otel"),
+    path: z.enum(["direct_scan", "indexed_window"]),
+    from: instantSchema.optional(),
+    to: instantSchema.optional(),
+  }),
+  z.strictObject({
+    dataset: z.literal("otel_replay"),
+    from: instantSchema.optional(),
+    to: instantSchema.optional(),
+  }),
+])
+const sourceWindowSchema = z.strictObject({
+  dataset: z.enum(["otel", "otel_replay"]),
+  from: instantSchema,
+  to: instantSchema,
+})
+type SourceSelection = z.infer<typeof sourceSelectionSchema>
+type SourceWindow = z.infer<typeof sourceWindowSchema>
+type BuildSource = {
+  source?: ReceiptSource
+  window?: SourceWindow
+  relation(params: SqlParams): Relation
+}
+
 /** Embeddings are supplied by a named provider/model; there is no fabricated default. */
 export const retrievalImportSchema = z.strictObject({
   version: z.literal(1),
   ...metadata,
+  source: sourceSelectionSchema.optional(),
   events: z
     .array(
       z.strictObject({
@@ -67,6 +109,8 @@ export type RetrievalImport = z.infer<typeof retrievalImportSchema>
 const manifestPayloadSchema = z.strictObject({
   version: z.literal(1),
   ...metadata,
+  source: receiptSourceSchema.optional(),
+  source_window: sourceWindowSchema.optional(),
   events_digest: digestSchema,
   indexed_events: z.number().int().positive(),
   queries: z.array(queryEmbedding).max(10_000),
@@ -110,9 +154,13 @@ export async function buildRetrievalSnapshot(
   const version = await readDataVersion(db, signal)
   if (!version.ok || version.dataVersion !== imported.data_version)
     throw new Error("Import data_version must match the loaded corpus")
-  const { events, ...rest } = imported
+  const { events, source: selection, ...rest } = imported
+  const openedSource = await openBuildSource(db, selection, signal)
   const payload = manifestPayloadSchema.parse({
     ...rest,
+    ...(openedSource.source === undefined
+      ? {}
+      : { source: openedSource.source, source_window: openedSource.window }),
     events_digest: retrievalDigest(events),
     indexed_events: events.length,
   })
@@ -136,11 +184,20 @@ export async function buildRetrievalSnapshot(
     // manifest survived a database volume reset or the index already exists.
     for (let offset = 0; offset < events.length; offset += 100) {
       const batch = events.slice(offset, offset + 100)
-      const originals = await db.query(
-        `SELECT event_id, message FROM log_events WHERE event_id IN (${batch.map((_event, index) => `$${index + 1}::BIGINT`).join(", ")}) ORDER BY event_id`,
-        batch.map((event) => event.event_id),
-        signal
-      )
+      const sourceParams = new SqlParams()
+      const sourceRel = openedSource.relation(sourceParams)
+      const originals =
+        selection === undefined
+          ? await db.query(
+              `SELECT event_id, message FROM log_events WHERE event_id IN (${batch.map((_event, index) => `$${index + 1}::BIGINT`).join(", ")}) ORDER BY event_id`,
+              batch.map((event) => event.event_id),
+              signal
+            )
+          : await db.query(
+              `SELECT ${sourceRel.col("event_id")} AS event_id, ${sourceRel.col("message")} AS message FROM ${sourceRel.from} WHERE ${sourceRel.col("event_id")} IN (${batch.map((event) => `${sourceParams.add(event.event_id)}::BIGINT`).join(", ")}) AND ${sourceWhere(openedSource, sourceRel, sourceParams)} ORDER BY ${sourceRel.col("event_id")}`,
+              sourceParams.values,
+              signal
+            )
       const sourceRows = originals.rows.map((row) =>
         z
           .object({ event_id: exactCount, message: z.string().nullable() })
@@ -182,9 +239,13 @@ export async function buildRetrievalSnapshot(
           throw error
       }
       if (stored === null) {
+        const shapeParams = new SqlParams()
+        const shapeRel = openedSource.relation(shapeParams)
         await db.query(
-          `CREATE TABLE ${table} AS SELECT *, NULL::FLOAT[${imported.dimensions}] AS embedding FROM log_events WHERE FALSE`,
-          [],
+          selection === undefined
+            ? `CREATE TABLE ${table} AS SELECT *, NULL::FLOAT[${imported.dimensions}] AS embedding FROM log_events WHERE FALSE`
+            : `CREATE TABLE ${table} AS SELECT ${normalizedColumns(shapeRel)}, NULL::FLOAT[${imported.dimensions}] AS embedding FROM ${shapeRel.from} WHERE FALSE`,
+          shapeParams.values,
           signal
         )
         createdTable = true
@@ -200,15 +261,31 @@ export async function buildRetrievalSnapshot(
                 `($${index * 2 + 1}::BIGINT, $${index * 2 + 2}::FLOAT[${imported.dimensions}])`
             )
             .join(", ")
-          await db.query(
-            `INSERT INTO ${table} SELECT l.*, v.embedding FROM log_events l JOIN (VALUES ${values}) AS v(event_id, embedding) ON l.event_id = v.event_id`,
-            params,
-            signal
-          )
+          if (selection === undefined) {
+            await db.query(
+              `INSERT INTO ${table} SELECT l.*, v.embedding FROM log_events l JOIN (VALUES ${values}) AS v(event_id, embedding) ON l.event_id = v.event_id`,
+              params,
+              signal
+            )
+          } else {
+            const remoteParams = new SqlParams()
+            const remoteRel = openedSource.relation(remoteParams)
+            const remoteValues = batch
+              .map(
+                (event) =>
+                  `(${remoteParams.add(event.event_id)}::BIGINT, ${remoteParams.add(JSON.stringify(event.embedding))}::FLOAT[${imported.dimensions}])`
+              )
+              .join(", ")
+            await db.query(
+              `INSERT INTO ${table} SELECT ${normalizedColumns(remoteRel)}, v.embedding FROM ${remoteRel.from} JOIN (VALUES ${remoteValues}) AS v(event_id, embedding) ON ${remoteRel.col("event_id")} = v.event_id WHERE ${sourceWhere(openedSource, remoteRel, remoteParams)}`,
+              remoteParams.values,
+              signal
+            )
+          }
         }
       }
       await db.query(
-        `CREATE INDEX ${table}_idx ON ${table} USING inverted (dataset, source_file, component, level, source_type, node, rack, midplane, alert_label, request_id, instance_id, endpoint, host, process_id, client_ip, thread, block_id, pattern_id, message ${table}_text, embedding ivf (metric = 'cosine', quant = 'none'))`,
+        `CREATE INDEX ${table}_idx ON ${table} USING inverted (dataset, source_file, component, level, source_type, node, rack, midplane, alert_label, request_id, instance_id, endpoint, host, process_id, client_ip, thread, block_id, pattern_id, ${selection === undefined ? "" : "trace_id, span_id, severity_number, "}message ${table}_text, embedding ivf (metric = 'cosine', quant = 'none'))`,
         [],
         signal
       )
@@ -316,6 +393,118 @@ async function publishImmutableOrMatch(
   }
 }
 
+const SNAPSHOT_COLUMNS = [
+  "event_id",
+  "dataset",
+  ...DATASET_COLUMNS,
+  "is_alert",
+  "pattern_id",
+  "pattern",
+] as const
+function normalizedColumns(rel: Relation): string {
+  return [
+    "NULL::VARCHAR AS source_file",
+    ...SNAPSHOT_COLUMNS.map((column) => `${rel.col(column)} AS ${column}`),
+  ].join(", ")
+}
+function sourceWhere(
+  opened: BuildSource,
+  rel: Relation,
+  params: SqlParams
+): string {
+  if (opened.window === undefined) return "TRUE"
+  const compiled = compileFilter(opened.window, {
+    accepted: SEARCH_FILTER.fields,
+    params,
+    relation: rel,
+  })
+  if (!compiled.ok) throw new Error("Invalid snapshot source window")
+  return compiled.filter.where
+}
+async function openBuildSource(
+  db: QueryRunner,
+  selection: SourceSelection | undefined,
+  signal: AbortSignal
+): Promise<BuildSource> {
+  if (selection === undefined) return { relation: () => logEventsRelation() }
+  const invalid = validateFilter(selection)
+  if (invalid !== null) throw new Error(invalid.message)
+  if (selection.dataset === "otel_replay") {
+    const replay = await openReplay(db, signal)
+    if (!replay.ok) throw new Error(replay.error.message)
+    const resolved = await resolveWindows(
+      db,
+      ["otel_replay"],
+      selection,
+      signal
+    )
+    if (!resolved.ok) throw new Error(resolved.error.message)
+    const window = sourceWindowSchema.parse(resolved.windows[0]?.window)
+    return {
+      source: replay.opened.source,
+      window,
+      relation: () => replay.opened.rel,
+    }
+  }
+  if (selection.path === "direct_scan") {
+    const invalidScan = remoteScanError(selection)
+    if (invalidScan !== null) throw new Error(invalidScan.message)
+    if (selection.from === undefined || selection.to === undefined)
+      throw new Error("Direct snapshots require from/to")
+    const scan = await openScan(
+      db,
+      { from: selection.from, to: selection.to },
+      signal
+    )
+    if (!scan.ok) throw new Error(scan.error.message)
+    return {
+      source: scan.opened.source,
+      window: scan.opened.window,
+      relation: scan.opened.relation,
+    }
+  }
+  const reference = await openReference(
+    db,
+    selection,
+    "Retrieval snapshot build",
+    signal
+  )
+  if (!reference.ok) throw new Error(reference.error.message)
+  return {
+    source: reference.opened.source,
+    window: reference.opened.window,
+    relation: () => reference.opened.rel,
+  }
+}
+
+async function checkPinnedSource(ctx: ToolContext, source: ReceiptSource) {
+  if (source.kind !== "remote_parquet") return null
+  for (const file of source.files) {
+    try {
+      const checked = await ctx.db.query(
+        `SELECT (size IS NOT DISTINCT FROM $1::BIGINT AND last_modified IS NOT DISTINCT FROM $2::TIMESTAMPTZ) AS unchanged FROM read_blob([${parquetLiteral(file.url)}])`,
+        [file.bytes, file.last_modified],
+        ctx.signal
+      )
+      if (
+        checked.rows.length !== 1 ||
+        z.object({ unchanged: z.boolean().nullable() }).parse(checked.rows[0])
+          .unchanged !== true
+      )
+        return sourceChanged(source.dataset, [file.url])
+    } catch (error) {
+      if (error instanceof QueryFailure && error.sqlstate === "08000")
+        return {
+          code: "db_unavailable" as const,
+          message: "The pinned remote source could not be checked.",
+          hint: "Retry when the pinned source is reachable; no retrieval fallback was run.",
+        }
+      throw error
+    }
+  }
+  return null
+}
+
 function checkVector(
   embedding: readonly number[],
   model: Pick<Manifest, "dimensions" | "normalization">
@@ -347,7 +536,8 @@ function isExists(error: unknown): boolean {
 export async function openRetrieval(
   ctx: ToolContext,
   snapshotId: string,
-  query: string
+  query: string,
+  requested: { dataset?: Dataset; from?: string; to?: string } = {}
 ) {
   const config = loadRetrievalConfig()
   let manifest: Manifest
@@ -373,6 +563,45 @@ export async function openRetrieval(
     if (ctx.signal.aborted) throw error
     return unavailable("Pinned representation is unavailable or invalid.")
   }
+  const external = manifest.source
+  let windows: Scope["windows"] | undefined
+  if (external === undefined) {
+    if (requested.dataset === "otel" || requested.dataset === "otel_replay")
+      return unavailable(
+        "This representation contains log_events datasets, not the requested external dataset."
+      )
+  } else {
+    const pinned = manifest.source_window
+    if (
+      pinned === undefined ||
+      pinned.dataset !== external.dataset ||
+      requested.dataset !== pinned.dataset
+    )
+      return unavailable(
+        "Name the exact external dataset of this representation; datasets cannot be mixed."
+      )
+    const from = requested.from ?? pinned.from
+    const to = requested.to ?? pinned.to
+    const lower = parseInstant(pinned.from)
+    const upper = parseInstant(pinned.to)
+    const start = parseInstant(from)
+    const end = parseInstant(to)
+    if (
+      lower === null ||
+      upper === null ||
+      start === null ||
+      end === null ||
+      start < lower ||
+      end > upper ||
+      start >= end
+    )
+      return unavailable(
+        `Requested window must remain inside the pinned representation [${pinned.from}, ${pinned.to}).`
+      )
+    windows = [{ dataset: pinned.dataset, from, to }]
+    const checked = await checkPinnedSource(ctx, external)
+    if (checked !== null) return { ok: false as const, error: checked }
+  }
   const embedding = manifest.queries.find(
     (item) => item.query === query
   )?.embedding
@@ -386,13 +615,21 @@ export async function openRetrieval(
   } catch {
     return unavailable("Query embedding does not match the pinned model.")
   }
-  const base = logEventsRelation({ indexed: true })
+  const base =
+    external === undefined
+      ? logEventsRelation({ indexed: true })
+      : otelReplayRelation()
   const name = `${tableName(snapshotId)}_idx`
   const rel: Relation = {
     ...base,
     q: name,
     from: name,
-    col: (column) => base.col(column).replaceAll(base.q, name),
+    dataset:
+      external === undefined ? null : (manifest.source_window?.dataset ?? null),
+    col: (column) =>
+      external === undefined
+        ? base.col(column).replaceAll(base.q, name)
+        : `${name}.${column}`,
     countRows: `count(${name}.ts)`,
     bucket: (unit) => base.bucket(unit).replaceAll(base.q, name),
   }
@@ -402,6 +639,8 @@ export async function openRetrieval(
     embedding,
     rel,
     queryDigest: retrievalDigest(embedding),
+    ...(external === undefined ? {} : { source: external }),
+    ...(windows === undefined ? {} : { windows }),
   }
 }
 
@@ -429,6 +668,7 @@ async function publishImmutable(path: string, content: string): Promise<void> {
 const embeddingBuildSchema = z.strictObject({
   version: z.literal(1),
   ...metadata,
+  source: sourceSelectionSchema.optional(),
   selection: z.strictObject({
     ...SEARCH_FILTER.shape,
     event_ids: z
@@ -449,39 +689,80 @@ export async function embedRetrievalImport(
   signal: AbortSignal
 ): Promise<RetrievalImport> {
   const config = embeddingBuildSchema.parse(raw)
-  const { selection, queries, ...meta } = config
-  if (selection.dataset === "otel" || selection.dataset === "otel_replay")
-    throw new Error(
-      "Representation builds support loaded log_events datasets only"
-    )
+  const { selection, queries, source, ...meta } = config
+  const selectedSource: SourceSelection | undefined =
+    source ??
+    (selection.dataset === "otel"
+      ? {
+          dataset: "otel",
+          path: "indexed_window",
+          ...selectionBounds(selection),
+        }
+      : selection.dataset === "otel_replay"
+        ? { dataset: "otel_replay", ...selectionBounds(selection) }
+        : undefined)
+  if (
+    selectedSource !== undefined &&
+    selection.dataset !== undefined &&
+    selection.dataset !== selectedSource.dataset
+  )
+    throw new Error("Embedding selection dataset must match its source")
   if (validateFilter(selection) !== null)
     throw new Error("Invalid retrieval build selection")
   const version = await readDataVersion(db, signal)
   if (!version.ok || version.dataVersion !== meta.data_version)
     throw new Error("Build data_version must match the loaded corpus")
+  const opened = await openBuildSource(db, selectedSource, signal)
   const params = new SqlParams()
-  const compiled = compileFilter(selection, {
+  const rel = opened.relation(params)
+  const effectiveSelection =
+    selectedSource === undefined
+      ? selection
+      : {
+          ...selection,
+          dataset: selectedSource.dataset,
+          from: selection.from ?? opened.window?.from,
+          to: selection.to ?? opened.window?.to,
+        }
+  const compiled = compileFilter(effectiveSelection, {
     accepted: SEARCH_FILTER.fields,
     params,
+    ...(selectedSource === undefined ? {} : { relation: rel }),
   })
   if (!compiled.ok) throw new Error("Invalid retrieval build selection")
   const idsCondition =
     selection.event_ids === undefined
       ? "TRUE"
-      : `event_id IN (${params.list(selection.event_ids)})`
+      : `${selectedSource === undefined ? "event_id" : rel.col("event_id")} IN (${params.list(selection.event_ids)})`
+  const pickedId =
+    selectedSource === undefined ? "event_id" : rel.col("event_id")
+  const pickedFrom = selectedSource === undefined ? "log_events" : rel.from
+  const sourceCondition =
+    selectedSource === undefined
+      ? ""
+      : ` AND ${sourceWhere(opened, rel, params)}`
   const picked = await db.query(
-    `SELECT event_id FROM log_events WHERE ${compiled.filter.where} AND ${idsCondition} ORDER BY event_id LIMIT ${params.add(selection.limit)}`,
+    `SELECT ${pickedId}${selectedSource === undefined ? "" : " AS event_id"} FROM ${pickedFrom} WHERE ${compiled.filter.where} AND ${idsCondition}${sourceCondition} ORDER BY ${pickedId} LIMIT ${params.add(selection.limit)}`,
     params.values,
     signal
   )
   const events: RetrievalImport["events"] = []
   for (const pickedRow of picked.rows) {
     const id = z.object({ event_id: exactCount }).parse(pickedRow).event_id
-    const embedded = await db.query(
-      `SELECT event_id, message, ai_embed(coalesce(message, ''), $1::VARCHAR, $2::VARCHAR)::FLOAT[${meta.dimensions}] AS embedding FROM log_events WHERE event_id = $3::BIGINT ORDER BY event_id`,
-      [meta.model, secret, id],
-      signal
-    )
+    const embedParams = new SqlParams()
+    const embedRel = opened.relation(embedParams)
+    const embedded =
+      selectedSource === undefined
+        ? await db.query(
+            `SELECT event_id, message, ai_embed(coalesce(message, ''), $1::VARCHAR, $2::VARCHAR)::FLOAT[${meta.dimensions}] AS embedding FROM log_events WHERE event_id = $3::BIGINT ORDER BY event_id`,
+            [meta.model, secret, id],
+            signal
+          )
+        : await db.query(
+            `SELECT ${embedRel.col("event_id")} AS event_id, ${embedRel.col("message")} AS message, ai_embed(coalesce(${embedRel.col("message")}, ''), ${embedParams.add(meta.model)}::VARCHAR, ${embedParams.add(secret)}::VARCHAR)::FLOAT[${meta.dimensions}] AS embedding FROM ${embedRel.from} WHERE ${embedRel.col("event_id")} = ${embedParams.add(id)}::BIGINT AND ${sourceWhere(opened, embedRel, embedParams)} ORDER BY ${embedRel.col("event_id")}`,
+            embedParams.values,
+            signal
+          )
     const row = z
       .object({
         event_id: exactCount,
@@ -509,7 +790,15 @@ export async function embedRetrievalImport(
   }
   return retrievalImportSchema.parse({
     ...meta,
+    ...(selectedSource === undefined ? {} : { source: selectedSource }),
     events,
     queries: embeddedQueries,
   })
+}
+
+function selectionBounds(selection: { from?: string; to?: string }) {
+  return {
+    ...(selection.from === undefined ? {} : { from: selection.from }),
+    ...(selection.to === undefined ? {} : { to: selection.to }),
+  }
 }

@@ -26,7 +26,7 @@ All four findings were fixed before merge:
 - Runtime retrieval accepts exact vectors saved in the snapshot. Unseen queries require a new offline build/import, preventing unverifiable provider/model aliases from being mixed with old embeddings.
 - A per-snapshot build lock, immutable saved import and owned-object recovery restore a lost database index without overwriting a healthy concurrent build.
 
-Focused regressions and the parent checks verify the fixes. Provider-backed quality, genuine Claude role runs and OTel semantic snapshots remain ticket acceptance limits, separately documented; they are not hidden code-review findings.
+Focused regressions and the parent checks verify the fixes. Provider-backed quality, genuine Claude role runs remain ticket acceptance limits, separately documented; they are not hidden code-review findings.
 
 ## Additional applicability regression
 
@@ -35,3 +35,14 @@ OTel direct, indexed and replay relations and found polluted bound-parameter
 lists (`08P01`). The count tool now snapshots only relation-owned bindings before
 adding count/filter/ranking parameters. Six real regression cases failed before
 the change and passed afterwards. Source lint and analytics typecheck passed.
+
+## OTel retrieval follow-up review
+
+A separate reviewer checked the added source normalization, pinned source/window
+selection, SQL parameters, original event identities and receipt provenance.
+It found one misleading inherited source note: lexical notes claimed direct
+remote reads and exact counts even though retrieval reads copied snapshot rows
+and returns unknown counts. Retrieval now uses an explicit snapshot-origin note
+with bounded partial coverage. No other actionable finding remained. The
+independent real-engine suite exercises direct/indexed/replay sources, coverage
+and dataset rejection, source pins and repeatability.

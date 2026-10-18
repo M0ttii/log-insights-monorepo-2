@@ -511,9 +511,15 @@ provenance; the snapshot pins the actual vector content. Never put a provider ke
 `pnpm research:compare [snapshot-id]` records the predeclared retrieval questions.
 These scripts do not replace genuine model role runs.
 
-Current snapshot building covers local `log_events` datasets and at most 50,000
-selected messages per import. OTel retains the shared lexical search contract;
-semantic/hybrid OTel snapshots remain open. Missing provider configuration or a
+Snapshot building covers local `log_events` datasets and explicit OTel sources,
+with at most 50,000 selected messages per import. Add a top-level
+`source: {dataset: "otel", path: "direct_scan", from, to}` or
+`source: {dataset: "otel", path: "indexed_window", from?, to?}` to build from
+pinned Parquet files or the reference index; `source: {dataset: "otel_replay"}`
+uses the loaded replay snapshot (optional `from`/`to` narrow its span). The
+manifest retains source pins, coverage and original event identities. Search
+requires the exact external dataset and a window within that snapshot; remote
+file changes produce `source_changed`. Dataset-less searches never include OTel. Missing provider configuration or a
 missing snapshot produces an explicit error and never changes the requested mode.
 No semantic quality advantage is claimed without a provider-backed benchmark.
 

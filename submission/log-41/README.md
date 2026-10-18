@@ -68,3 +68,29 @@ are now copied before compiling counts. Six real OTel direct/indexed/replay
 regressions failed with `08P01` before the fix and all passed afterwards, with
 matching complete-scope count denominators and typed facts. This brings focused
 native/MCP/Golden coverage to 35 cases.
+
+Six independent OTel retrieval applicability cases pass through a scratch
+fixture database: direct Parquet, indexed reference and replay snapshots retain
+their original IDs and source provenance in semantic/hybrid results and receipts.
+They cover filters before top-k (including nanosecond boundaries), immutable
+reruns, mismatched datasets, requests beyond pinned coverage, and direct snapshots
+that remain usable after the mutable indexed reference window is narrowed. A
+private manifest with altered source pins fails with `source_changed` before
+reading any changed snapshot index; actual source files stay untouched. The loaded
+source database is read-only; test-owned objects are removed at teardown.
+
+A Claude Code OAuth login was found as an alternative to the absent API key.
+Automatic approval review rejected the proposed bounded role test because it
+would send log data and tool results to Anthropic without explicit authorization
+for that payload and destination. No model call or workaround was executed;
+explicit approval is pending. This limitation is recorded in `role-attempt.json`.
+
+The OTel follow-up keeps all six existing local retrieval/recovery integrations
+green, alongside six new independent OTel cases. These bring focused native,
+MCP and Golden coverage to 41 cases. The focused source review found and fixed
+one inherited lexical note that incorrectly claimed direct reads/exact counts;
+regressions require the immutable-copy note and exclude that false claim.
+
+After the OTel follow-up, the complete authoritative `pnpm check` passes under
+Node 24.22.0 with 1,046 unit tests. Existing local retrieval/recovery integration
+cases pass again; the independent OTel suite passes all six cases.

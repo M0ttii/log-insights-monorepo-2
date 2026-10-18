@@ -277,6 +277,15 @@ it("requires an imported query vector even with a configured provider or an old 
   expect(exact.ok).toBe(true)
   if (!exact.ok) throw new Error("Expected imported query")
   expect(exact.embedding).toEqual([1, 0, 0])
+  const incompatible = await openRetrieval(
+    ctx,
+    withQuery.snapshot_id,
+    "connection capacity",
+    { dataset: "otel" }
+  )
+  expect(incompatible.ok).toBe(false)
+  if (incompatible.ok) throw new Error("Expected dataset mismatch")
+  expect(incompatible.error.message).toContain("log_events datasets")
   expect(embeddings).toBe(0)
 })
 
@@ -338,4 +347,114 @@ it("restores missing snapshot relations after a database reset without replacing
       )
     )
   ).toEqual(imported)
+})
+
+it("refuses an unbounded or oversized direct OTel build before opening remote files", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "retrieval-direct-bound-"))
+  directories.push(directory)
+  const calls: string[] = []
+  const db = {
+    async query(sql: string) {
+      calls.push(sql)
+      if (sql !== "SELECT data_version FROM load_manifest")
+        throw new Error("Must not open remote files")
+      return { rows: [{ data_version: "dv_fixture" }], durationMs: 1 }
+    },
+  }
+  for (const source of [
+    { dataset: "otel", path: "direct_scan" },
+    {
+      dataset: "otel",
+      path: "direct_scan",
+      from: "2025-09-23T00:00:00Z",
+      to: "2025-09-23T00:01:01Z",
+    },
+  ]) {
+    await expect(
+      buildRetrievalSnapshot(
+        db,
+        { ...imported, source },
+        directory,
+        new AbortController().signal
+      )
+    ).rejects.toThrow(/from|seconds/)
+  }
+  expect(calls).toEqual([
+    "SELECT data_version FROM load_manifest",
+    "SELECT data_version FROM load_manifest",
+  ])
+})
+
+it("embeds an OTel replay selection through its canonical adapter with bound filters and model inputs", async () => {
+  const eventId = 2_000_000_000_001
+  const calls: { sql: string; params: readonly unknown[] }[] = []
+  const db = {
+    async query(sql: string, params: readonly unknown[]) {
+      calls.push({ sql, params })
+      const rows =
+        sql === "SELECT data_version FROM load_manifest"
+          ? [{ data_version: "dv_fixture" }]
+          : sql.includes("FROM corpus_stats")
+            ? [
+                {
+                  first: "2025-09-23T00:00:00.000000Z",
+                  last: "2025-09-23T00:00:01.000000Z",
+                },
+              ]
+            : sql.includes("FROM otel_replay") &&
+                !sql.includes("FROM otel_replay_idx")
+              ? [
+                  {
+                    replay_id: "replay-fixture",
+                    replayed_at: "2026-10-18T00:00:00.000000Z",
+                    records: "1",
+                    fixture_path: "fixture.json",
+                    fixture_sha256: "a".repeat(64),
+                    source_url: "https://example.org/public-fixture",
+                    listener_table: "otel_fixture",
+                    index_name: "otel_replay_idx",
+                    index_built_at: "2026-10-18T00:00:01.000000Z",
+                  },
+                ]
+              : [
+                  {
+                    event_id: String(eventId),
+                    message: "socket exhausted",
+                    embedding: [1, 0, 0],
+                  },
+                ]
+      return { rows, durationMs: 1 }
+    },
+  }
+  const { events: _events, queries: _queries, ...meta } = imported
+  const result = await embedRetrievalImport(
+    db,
+    {
+      ...meta,
+      source: { dataset: "otel_replay" },
+      selection: {
+        dataset: "otel_replay",
+        components: ["cart"],
+        event_ids: [eventId],
+      },
+    },
+    "provider_secret",
+    new AbortController().signal
+  )
+  expect(result.events).toEqual([
+    {
+      event_id: eventId,
+      message_sha256: messageDigest("socket exhausted"),
+      embedding: [1, 0, 0],
+    },
+  ])
+  expect(result.source).toEqual({ dataset: "otel_replay" })
+  const picked = calls.find((call) => call.sql.includes("LIMIT"))
+  expect(picked?.sql).toContain("otel_replay_idx.component IN (")
+  expect(picked?.params).toContain("cart")
+  const embedded = calls.find((call) => call.sql.includes("ai_embed"))
+  expect(embedded?.sql).toContain("FROM otel_replay_idx")
+  expect(embedded?.params).toContain("fixture-model-v1")
+  expect(embedded?.params).toContain("provider_secret")
+  expect(embedded?.sql).not.toContain("provider_secret")
 })
