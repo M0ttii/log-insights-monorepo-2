@@ -273,6 +273,17 @@ describe("offline evaluation", () => {
     ).toBe("pass")
   })
 
+  it("allows content-judged common cases without prescribing a fixed tool sequence", () => {
+    const result = evaluateAttempt({
+      question: { ...question, allowed_tool_sequences: [[]] },
+      record: record(),
+      receipts: receipts(),
+      semanticAssessment: assessment(),
+    })
+    expect(result.tool_choice.status).toBe("pass")
+    expect(result.product_status).toBe("pass")
+  })
+
   it("inspects the entire answer even when no check makes the domain gate short-circuit", () => {
     const input = record(
       `Introduction: 3 events.\n${answer}\n| Metric | Value |\n| count | 4 |\n## Unknown\n5 cases.\nConfirmation requires 6 examples.`

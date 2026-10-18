@@ -160,6 +160,16 @@ export const runLimitsSchema = z.strictObject({
   max_revisions: z.number().int().nonnegative(),
   timeout_ms: z.number().positive(),
   max_retries: z.number().int().nonnegative(),
+  max_output_tokens: z.number().int().positive().optional(),
+  max_input_bytes: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "UTF-8 JSON bytes of normalized provider prompt, tools and provider options; not a token count or HTTP body size."
+    ),
+  max_model_calls: z.number().int().positive().optional(),
 })
 
 export const runRecordSchema = z.strictObject({

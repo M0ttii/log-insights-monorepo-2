@@ -669,6 +669,186 @@ describe("revision", () => {
 })
 
 describe("append-only history and identical prompt prefix", () => {
+  it("passes the declared output bound to every actual provider call", async () => {
+    const outputLimits: (number | undefined)[] = []
+    const model = new MockLanguageModelV4({
+      doStream: async (options) => {
+        outputLimits.push(options.maxOutputTokens)
+        return {
+          stream: simulateReadableStream({
+            chunks: turnToParts({ text: CLEAN_ENGINEER_ANSWER }),
+            initialDelayInMs: 0,
+            chunkDelayInMs: 0,
+          }),
+        }
+      },
+    })
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, {
+        limits: { maxOutputTokens: 4096, maxFollowUps: 0 },
+        expectedDataVersion: "dv_test",
+      }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(outputLimits.length).toBeGreaterThanOrEqual(2)
+    expect(outputLimits.every((limit) => limit === 4096)).toBe(true)
+    expect(record.model_calls).toBe(outputLimits.length)
+    expect(record.limits?.max_output_tokens).toBe(4096)
+  })
+
+  it("rejects oversized normalized input before invoking or counting the provider", async () => {
+    const { model, prompts } = scriptModel([{ text: CLEAN_ENGINEER_ANSWER }])
+    const d = deps(model, { limits: { maxInputBytes: 1 } })
+    const controller = new AbortController()
+    const { stream, done } = runInvestigation(baseInput, d, controller.signal)
+    const chunks = await drain(stream)
+    const record = await done
+    expect(record.status).toBe("error")
+    expect(record.error_kind).toBe("limit_exceeded")
+    expect(record.model_calls).toBe(0)
+    expect(prompts).toHaveLength(0)
+    expect(record.limits?.max_input_bytes).toBe(1)
+    expect(d.runs.records).toEqual([record])
+    expect(JSON.stringify(chunks)).not.toContain("SHARED RULES")
+    expect(getEventListeners(controller.signal, "abort")).toHaveLength(0)
+  })
+
+  it("bounds actual model invocations within the SDK tool loop", async () => {
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "check_claims", input: { claims: [] } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { limits: { maxModelCalls: 1 } }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.status).toBe("error")
+    expect(record.error_kind).toBe("limit_exceeded")
+    expect(record.model_calls).toBe(1)
+    expect(prompts).toHaveLength(1)
+    expect(record.limits?.max_model_calls).toBe(1)
+  })
+
+  it("rechecks input bytes after tool output extends the conversation", async () => {
+    const { model, prompts } = scriptModel([
+      { tools: [{ name: "search_logs", input: { query: "kernel" } }] },
+      { text: CLEAN_ENGINEER_ANSWER },
+    ])
+    const registry = fakeRegistry(async (name) => ({
+      ok: true,
+      result: okResult(
+        "r_00000001",
+        name === "describe_corpus"
+          ? describeData
+          : { message: "untrusted evidence ".repeat(3000) }
+      ),
+    }))
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { registry, limits: { maxInputBytes: 10_000 } }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.error_kind).toBe("limit_exceeded")
+    expect(record.model_calls).toBe(1)
+    expect(prompts).toHaveLength(1)
+  })
+
+  it("validates optional request bounds before starting the run", () => {
+    const { model } = scriptModel([])
+    for (const limits of [
+      { maxInputBytes: 0 },
+      { maxModelCalls: -1 },
+      { maxOutputTokens: 0.5 },
+    ])
+      expect(() =>
+        runInvestigation(
+          baseInput,
+          deps(model, { limits }),
+          new AbortController().signal
+        )
+      ).toThrow(/Too small|Invalid input/)
+  })
+
+  it("keeps total usage unknown after a later unmeasured provider failure", async () => {
+    let calls = 0
+    const model = new MockLanguageModelV4({
+      doStream: async () => {
+        calls += 1
+        if (calls > 1) throw new Error("Synthetic provider failure")
+        return {
+          stream: simulateReadableStream({
+            chunks: turnToParts({
+              tools: [{ name: "check_claims", input: { claims: [] } }],
+            }),
+            initialDelayInMs: 0,
+            chunkDelayInMs: 0,
+          }),
+        }
+      },
+    })
+    const result = runInvestigation(
+      baseInput,
+      deps(model),
+      new AbortController().signal
+    )
+    await drain(result.stream)
+    const record = await result.done
+    expect(record.status).toBe("error")
+    expect(record.model_calls).toBe(2)
+    expect(record.usage).toEqual({
+      input: null,
+      output: null,
+      cache_read: null,
+      cache_write: null,
+    })
+  })
+
+  it("rejects a changed preflight data version before any provider invocation", async () => {
+    const { model, prompts } = scriptModel([{ text: CLEAN_ENGINEER_ANSWER }])
+    const d = deps(model, { expectedDataVersion: "dv_declared" })
+    const { stream, done } = runInvestigation(
+      baseInput,
+      d,
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.status).toBe("error")
+    expect(record.error_kind).toBe("invalid_input")
+    expect(record.data_version).toBe("dv_test")
+    expect(record.model_calls).toBe(0)
+    expect(prompts).toHaveLength(0)
+    expect(d.runs.records).toEqual([record])
+  })
+
+  it("requires a successful preflight when the data version is pinned", async () => {
+    const { model, prompts } = scriptModel([])
+    const registry = fakeRegistry(async () => ({
+      ok: false,
+      error: notFound("receipt", "r_00000000"),
+    }))
+    const { stream, done } = runInvestigation(
+      baseInput,
+      deps(model, { registry, expectedDataVersion: "dv_test" }),
+      new AbortController().signal
+    )
+    await drain(stream)
+    const record = await done
+    expect(record.status).toBe("error")
+    expect(record.error_kind).toBe("invalid_input")
+    expect(record.data_version).toBeNull()
+    expect(record.model_calls).toBe(0)
+    expect(prompts).toHaveLength(0)
+  })
+
   it("ends a failed provider phase without another request or raw error logging", async () => {
     const rawLog = vi
       .spyOn(console, "error")

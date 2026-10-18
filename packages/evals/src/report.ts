@@ -21,6 +21,21 @@ import {
   semanticAssessmentSchema,
   type SemanticAssessment,
 } from "./evaluate.ts"
+import { experimentPlan } from "./experiment.ts"
+
+const RUBRIC_DIMENSIONS = [
+  "scope",
+  "evidence",
+  "action",
+  "decision_check",
+  "causal_separation",
+] as const
+const USAGE_CATEGORIES = [
+  "input",
+  "output",
+  "cache_read",
+  "cache_write",
+] as const
 
 const statisticsSchema = z.strictObject({
   n: z.number().int().nonnegative(),
@@ -34,6 +49,8 @@ const reportEntrySchema = z.strictObject({
   kind: z.string(),
   role: z.string().nullable(),
   variant: z.enum(["baseline", "playbook"]),
+  experiment: z.enum(["roles", "effort"]),
+  effort: z.string(),
   status: z.enum(["completed", "error", "aborted", "missing", "invalid"]),
   error_kind: z.string().nullable(),
   elapsed_ms: z.number().nullable(),
@@ -64,6 +81,8 @@ const reportSchema = z.strictObject({
       role: z.string(),
       variant: z.enum(["baseline", "playbook"]),
       kind: z.string(),
+      experiment: z.enum(["roles", "effort"]),
+      effort: z.string(),
       planned: z.number(),
       completed: z.number(),
       elapsed_ms: statisticsSchema,
@@ -81,6 +100,9 @@ const reportSchema = z.strictObject({
         .nullable(),
       estimated_cost: z.number().nullable(),
       rubric_mean: z.number().nullable(),
+      rubric_dimensions: z.record(z.string(), z.number().nullable()),
+      scope_errors: z.number().int().nonnegative(),
+      usage: z.record(z.string(), z.number().nullable()),
     })
   ),
   repetitions: z.array(
@@ -89,6 +111,10 @@ const reportSchema = z.strictObject({
       variant: z.enum(["baseline", "playbook"]),
       attempt_ids: z.array(z.string()),
       elapsed_ms: statisticsSchema,
+      model_calls: statisticsSchema,
+      tool_calls: statisticsSchema,
+      estimated_cost: statisticsSchema,
+      usage: z.record(z.string(), statisticsSchema),
     })
   ),
   assessment_usage: runUsageSchema.nullable(),
@@ -137,12 +163,8 @@ function estimateCost(
     1_000_000
   )
 }
-/** Rebuilds solely from saved JSON. No model or database is constructed. */
-export async function recomputeReport(
-  dir: string,
-  evaluatorVersion: string,
-  assessments: SemanticAssessment[] = []
-): Promise<EvalReport> {
+/** Validates the immutable round independently of attempt/report availability. */
+export async function loadRoundSnapshot(dir: string) {
   const manifest = manifestSchema.parse(
     await readArtifact(dir, "manifest.json")
   )
@@ -158,10 +180,22 @@ export async function recomputeReport(
     throw new Error("Manifest instruction/catalog hash differs")
   if (
     !manifest.fixture_only &&
-    canonicalJson(makePlan(bank, manifest.repeated_questions)) !==
-      canonicalJson(manifest.attempts)
+    canonicalJson(
+      manifest.experiment === undefined
+        ? makePlan(bank, manifest.repeated_questions)
+        : experimentPlan(bank)
+    ) !== canonicalJson(manifest.attempts)
   )
     throw new Error("Manifest omits required attempts")
+  return { manifest, bank }
+}
+/** Rebuilds solely from saved JSON. No model or database is constructed. */
+export async function recomputeReport(
+  dir: string,
+  evaluatorVersion: string,
+  assessments: SemanticAssessment[] = []
+): Promise<EvalReport> {
+  const { manifest, bank } = await loadRoundSnapshot(dir)
   const parsedAssessments = assessments.map((a) =>
     semanticAssessmentSchema.parse(a)
   )
@@ -180,6 +214,8 @@ export async function recomputeReport(
       kind: question.kind,
       role: question.effective_role,
       variant: plan.variant,
+      experiment: plan.experiment ?? "roles",
+      effort: plan.effort ?? manifest.model.effort,
       status: "missing",
       error_kind: null,
       elapsed_ms: null,
@@ -200,8 +236,11 @@ export async function recomputeReport(
           record.variant !== plan.variant ||
           record.role.requested !== (question.role ?? "auto") ||
           record.model_id !== manifest.model.id ||
-          record.effort !== manifest.model.effort ||
-          record.data_version !== manifest.versions.data_version
+          record.effort !== (plan.effort ?? manifest.model.effort) ||
+          record.data_version !== manifest.versions.data_version ||
+          receipts.some(
+            (receipt) => receipt.data_version !== manifest.versions.data_version
+          )
         )
           throw new Error("Run configuration differs from frozen manifest")
         entry.model_calls = record.model_calls ?? null
@@ -237,7 +276,9 @@ export async function recomputeReport(
         (g) =>
           g.role === role &&
           g.variant === entry.variant &&
-          g.kind === entry.kind
+          g.kind === entry.kind &&
+          g.experiment === entry.experiment &&
+          g.effort === entry.effort
       )
     )
       continue
@@ -245,7 +286,9 @@ export async function recomputeReport(
       (e) =>
         (e.role ?? "routing_control") === role &&
         e.variant === entry.variant &&
-        e.kind === entry.kind
+        e.kind === entry.kind &&
+        e.experiment === entry.experiment &&
+        e.effort === entry.effort
     )
     const completed = matching.filter((e) => e.status === "completed")
     const scores = completed.flatMap((e) =>
@@ -257,6 +300,8 @@ export async function recomputeReport(
       role,
       variant: entry.variant,
       kind: entry.kind,
+      experiment: entry.experiment,
+      effort: entry.effort,
       planned: matching.length,
       completed: completed.length,
       elapsed_ms: statistics(
@@ -301,12 +346,42 @@ export async function recomputeReport(
         scores.length === 0
           ? null
           : scores.reduce<number>((sum, v) => sum + v, 0) / scores.length,
+      rubric_dimensions: Object.fromEntries(
+        RUBRIC_DIMENSIONS.map((dimension) => {
+          const values = completed.flatMap((e) => {
+            const rating = e.evaluation?.rubric?.[dimension]
+            return rating === undefined ? [] : [rating.score]
+          })
+          return [
+            dimension,
+            values.length === 0
+              ? null
+              : values.reduce<number>((sum, v) => sum + v, 0) / values.length,
+          ]
+        })
+      ),
+      scope_errors: matching.filter(
+        (e) => e.evaluation?.semantic.scope.status === "fail"
+      ).length,
+      usage: Object.fromEntries(
+        USAGE_CATEGORIES.map((category) => {
+          const values = matching.map((e) => e.usage?.[category] ?? null)
+          return [
+            category,
+            values.some((v) => v === null)
+              ? null
+              : values.reduce<number>((sum, v) => sum + (v ?? 0), 0),
+          ]
+        })
+      ),
     })
   }
   const complete = entries.every(
     (e) => e.status === "completed" && e.evaluation !== null
   )
-  const playbooks = entries.filter((e) => e.variant === "playbook")
+  const playbooks = entries.filter(
+    (e) => e.variant === "playbook" && e.experiment === "roles"
+  )
   const failed =
     playbooks.some(
       (e) =>
@@ -317,6 +392,7 @@ export async function recomputeReport(
     groups.some(
       (g) =>
         g.variant === "playbook" &&
+        g.experiment === "roles" &&
         g.kind === "role_answer" &&
         g.rubric_mean !== null &&
         g.rubric_mean < 1.5
@@ -349,7 +425,7 @@ export async function recomputeReport(
           ? "failed"
           : "pending_external_acceptance",
     limitations: [
-      "No live-quality or holdout acceptance is established by LOG-52.",
+      "No holdout acceptance is established by a development report.",
       "S-13 client evidence and human spot-check remain external acceptance gates.",
       ...(manifest.fixture_only
         ? ["Fixture metadata tests the evaluator; it is not corpus evidence."]
@@ -363,7 +439,10 @@ export async function recomputeReport(
     repetitions: manifest.repeated_questions.flatMap((question_id) =>
       (["baseline", "playbook"] as const).map((variant) => {
         const matching = entries.filter(
-          (e) => e.question_id === question_id && e.variant === variant
+          (e) =>
+            e.question_id === question_id &&
+            e.variant === variant &&
+            e.experiment === "roles"
         )
         return {
           question_id,
@@ -373,6 +452,32 @@ export async function recomputeReport(
             matching
               .filter((e) => e.status === "completed")
               .flatMap((e) => (e.elapsed_ms === null ? [] : [e.elapsed_ms]))
+          ),
+          model_calls: statistics(
+            matching.flatMap((e) =>
+              e.model_calls === null ? [] : [e.model_calls]
+            )
+          ),
+          tool_calls: statistics(
+            matching.flatMap((e) =>
+              e.tool_calls === null ? [] : [e.tool_calls]
+            )
+          ),
+          estimated_cost: statistics(
+            matching.flatMap((e) =>
+              e.estimated_cost === null ? [] : [e.estimated_cost]
+            )
+          ),
+          usage: Object.fromEntries(
+            USAGE_CATEGORIES.map((category) => [
+              category,
+              statistics(
+                matching.flatMap((e) => {
+                  const value = e.usage?.[category]
+                  return typeof value === "number" ? [value] : []
+                })
+              ),
+            ])
           ),
         }
       })

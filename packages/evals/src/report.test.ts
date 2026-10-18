@@ -28,6 +28,29 @@ afterEach(async () => {
 })
 
 describe("all-required-attempt acceptance", () => {
+  it("rejects mixed data versions even when saved receipt references are valid", async () => {
+    const dir = await directory()
+    const { manifest, assessments } = await savedRound(dir)
+    const plan = manifest.attempts[0]
+    if (plan === undefined) throw new Error("Missing planned control")
+    const loaded = await loadAttempt(dir, plan)
+    const changed = { ...sourceReceipt, data_version: "dv_otherVersion" }
+    await writeFile(
+      join(dir, `receipts/${changed.receipt_id}.json`),
+      JSON.stringify(changed)
+    )
+    await rewriteAttempt(dir, plan.id, {
+      receipts: loaded.attempt.receipts.map((reference) =>
+        reference.file === `receipts/${changed.receipt_id}.json`
+          ? { ...reference, sha256: digest(changed) }
+          : reference
+      ),
+    })
+    await expect(loadAttempt(dir, plan)).resolves.toBeDefined()
+    const report = await recomputeReport(dir, "control", assessments)
+    expect(report.attempts[0]?.status).toBe("invalid")
+    expect(report.acceptance).toBe("not_demonstrated")
+  })
   it("advances a complete nonfixture offline control with definitive ratings", async () => {
     const dir = await directory()
     const { manifest, assessments } = await savedRound(dir)

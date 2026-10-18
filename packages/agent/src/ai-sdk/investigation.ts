@@ -19,6 +19,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   streamText,
+  wrapLanguageModel,
   type LanguageModel,
   type InferUIMessageChunk,
   type ModelMessage,
@@ -168,7 +169,19 @@ export type InvestigationLimits = {
   maxFollowUps: number
   maxRevisions: number
   timeoutMs: number
+  /** Per provider invocation, including tool-loop continuations. */
+  maxOutputTokens?: number
+  /** UTF-8 JSON bytes of normalized prompt, prepared tools and provider options. */
+  maxInputBytes?: number
+  /** Actual provider invocations across all phases, including failed requests. */
+  maxModelCalls?: number
 }
+
+const optionalRequestBoundsSchema = z.object({
+  maxOutputTokens: z.number().int().positive().optional(),
+  maxInputBytes: z.number().int().positive().optional(),
+  maxModelCalls: z.number().int().positive().optional(),
+})
 
 export const DEFAULT_LIMITS: InvestigationLimits = {
   maxSteps: 16,
@@ -184,6 +197,8 @@ export type InvestigationDeps = {
   model: ModelConfig
   callContext: (signal: AbortSignal) => CallContext
   limits?: Partial<InvestigationLimits>
+  /** Eval-only pin: a successful preflight must confirm it before a paid call. */
+  expectedDataVersion?: string
   /** Trusted, server-restored model history, including signed thinking. */
   history?: ModelMessage[]
   /** Injectable clock for the run record timestamps (tests). */
@@ -242,6 +257,14 @@ export function runInvestigation(
 ): InvestigationResult {
   const input = investigationInputSchema.parse(rawInput)
   const limits: InvestigationLimits = { ...DEFAULT_LIMITS, ...deps.limits }
+  optionalRequestBoundsSchema.parse(limits)
+  // A gateway model string is resolved inside streamText, after our boundary.
+  // Explicit request bounds require a concrete provider model to wrap safely.
+  if (
+    typeof deps.model.model === "string" &&
+    (limits.maxInputBytes !== undefined || limits.maxModelCalls !== undefined)
+  )
+    throw new Error("Request bounds require a concrete provider model.")
   const now = deps.now ?? (() => new Date())
   return new PhaseMachine(input, deps, limits, signal, now).run()
 }
@@ -272,6 +295,7 @@ class PhaseMachine {
   /** The byte-stable system prompt and tool set, built once. */
   private readonly system: string
   private readonly tools: ToolSet
+  private readonly model: LanguageModel
 
   /** The append-only conversation. Each phase extends this; never rewritten. */
   private readonly messages: ModelMessage[] = []
@@ -298,6 +322,7 @@ class PhaseMachine {
     cache_read: null,
     cache_write: null,
   }
+  private hasUsage = false
 
   private status: RunStatus = "completed"
   private errorKind: string | null = null
@@ -335,6 +360,39 @@ class PhaseMachine {
       { ...deps.registry, runTool: this.runTool.bind(this) },
       deps.callContext
     )
+    const providerModel = deps.model.model
+    this.model =
+      typeof providerModel === "string"
+        ? providerModel
+        : wrapLanguageModel({
+            model: providerModel,
+            middleware: {
+              wrapStream: async ({ params, doStream }) => {
+                this.throwIfAborted()
+                if (
+                  this.limits.maxModelCalls !== undefined &&
+                  this.modelCalls >= this.limits.maxModelCalls
+                )
+                  this.rejectRequestLimit()
+                if (this.limits.maxInputBytes !== undefined) {
+                  const serialized = JSON.stringify({
+                    prompt: params.prompt,
+                    tools: params.tools,
+                    provider_options: params.providerOptions,
+                  })
+                  if (
+                    Buffer.byteLength(serialized, "utf8") >
+                    this.limits.maxInputBytes
+                  )
+                    this.rejectRequestLimit()
+                }
+                // Middleware guards, unlike SDK telemetry callbacks, propagate
+                // errors before doStream and therefore before a paid request.
+                this.modelCalls += 1
+                return doStream()
+              },
+            },
+          })
   }
 
   run(): InvestigationResult {
@@ -428,6 +486,15 @@ class PhaseMachine {
     } else {
       this.coverageSteps.push({ tool: "describe_corpus", input: {}, ok: false })
       contextLine = `describe_corpus could not run (${outcome.error.code}): ${outcome.error.hint}`
+    }
+
+    if (
+      this.deps.expectedDataVersion !== undefined &&
+      this.dataVersion !== this.deps.expectedDataVersion
+    ) {
+      this.status = "error"
+      this.errorKind = "invalid_input"
+      throw new Error("The investigation data version could not be verified.")
     }
 
     this.messages.push({
@@ -615,15 +682,21 @@ class PhaseMachine {
     this.previousPrompt = prompt
 
     let modelErrored = false
+    const callsBeforePhase = this.modelCalls
     const result = streamText({
-      model: this.deps.model.model as LanguageModel,
+      model: this.model,
       system: this.system,
       messages: this.messages,
       tools: this.tools,
       // A failed provider request is counted once and never silently retried.
       maxRetries: 0,
+      ...(this.limits.maxOutputTokens === undefined
+        ? {}
+        : { maxOutputTokens: this.limits.maxOutputTokens }),
       onLanguageModelCallStart: () => {
-        this.modelCalls += 1
+        // String models have no enforceable middleware boundary. They remain
+        // supported without input/call bounds for existing injected callers.
+        if (typeof this.model === "string") this.modelCalls += 1
         // A tool-loop continuation is another assistant message. Preserve its
         // own first-text boundary rather than joining it to earlier prose.
         version = undefined
@@ -673,11 +746,21 @@ class PhaseMachine {
     )
 
     const outcome = await this.readPhase(result)
+    const callsThisPhase = this.modelCalls - callsBeforePhase
+    if (callsThisPhase > outcome.modelSteps)
+      outcome.usage = {
+        input: null,
+        output: null,
+        cache_read: null,
+        cache_write: null,
+      }
     this.messages.push(...outcome.responseMessages)
-    this.recordOutcome(outcome)
+    this.recordOutcome(outcome, callsThisPhase)
 
     if (outcome.aborted) this.throwIfAborted()
     if (outcome.errored || modelErrored) {
+      if (this.errorKind === "limit_exceeded")
+        throw new Error("The investigation request limit was reached.")
       this.status = "error"
       this.errorKind = "model_error"
       throw new Error("The model call failed.")
@@ -696,9 +779,8 @@ class PhaseMachine {
     result: StreamTextResult<ToolSet, never, never>
   ): Promise<ModelPhaseOutcome> {
     try {
-      const [steps, usage, finishReason, responseMessages] = await Promise.all([
+      const [steps, finishReason, responseMessages] = await Promise.all([
         result.steps,
-        result.usage,
         result.finishReason,
         result.responseMessages,
       ])
@@ -707,7 +789,7 @@ class PhaseMachine {
         responseMessages: responseMessages as ModelMessage[],
         modelSteps: steps.length,
         steps: flattenToolResults(steps),
-        usage: mapUsage(usage),
+        usage: aggregateUsage(steps.map((step) => mapUsage(step.usage))),
         aborted: this.controller.signal.aborted,
         errored: false,
       }
@@ -717,8 +799,15 @@ class PhaseMachine {
     }
   }
 
-  private recordOutcome(outcome: ModelPhaseOutcome): void {
-    addUsage(this.usageTotal, outcome.usage)
+  private recordOutcome(
+    outcome: ModelPhaseOutcome,
+    callsThisPhase: number
+  ): void {
+    if (callsThisPhase > 0) {
+      if (this.hasUsage) addUsage(this.usageTotal, outcome.usage)
+      else Object.assign(this.usageTotal, outcome.usage)
+      this.hasUsage = true
+    }
     this.stepsUsed += Math.max(1, outcome.modelSteps)
     for (const step of outcome.steps) {
       const view = stepView(step.output)
@@ -782,6 +871,15 @@ class PhaseMachine {
         max_revisions: this.limits.maxRevisions,
         timeout_ms: this.limits.timeoutMs,
         max_retries: 0,
+        ...(this.limits.maxOutputTokens === undefined
+          ? {}
+          : { max_output_tokens: this.limits.maxOutputTokens }),
+        ...(this.limits.maxInputBytes === undefined
+          ? {}
+          : { max_input_bytes: this.limits.maxInputBytes }),
+        ...(this.limits.maxModelCalls === undefined
+          ? {}
+          : { max_model_calls: this.limits.maxModelCalls }),
       },
       coverage_requests: this.coverageRequests,
       gate_findings: this.gateFindingsPerDraft.map((findings) =>
@@ -907,6 +1005,12 @@ class PhaseMachine {
     this.status = "error"
     this.errorKind = "limit_exceeded"
     throw new Error("The investigation step limit was reached.")
+  }
+
+  private rejectRequestLimit(): never {
+    this.status = "error"
+    this.errorKind = "limit_exceeded"
+    throw new Error("The investigation request limit was reached.")
   }
 
   private resolvedAnswerRole(): AnswerRole | null {
@@ -1128,9 +1232,22 @@ function addUsage(total: RunUsage, add: RunUsage): void {
 }
 
 function sumNullable(a: number | null, b: number | null): number | null {
-  if (a === null) return b
-  if (b === null) return a
+  if (a === null || b === null) return null
   return a + b
+}
+
+function aggregateUsage(values: RunUsage[]): RunUsage {
+  const total: RunUsage = {
+    input: null,
+    output: null,
+    cache_read: null,
+    cache_write: null,
+  }
+  const first = values[0]
+  if (first === undefined) return total
+  Object.assign(total, first)
+  for (const value of values.slice(1)) addUsage(total, value)
+  return total
 }
 
 function emptyOutcome(aborted: boolean, errored: boolean): ModelPhaseOutcome {
