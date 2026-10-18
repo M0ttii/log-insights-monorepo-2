@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 
+import { compareClaim } from "../claims.ts"
 import { buildFacts } from "../facts.ts"
 import {
   INVESTIGATION_DEFAULT_LIMIT,
@@ -114,6 +115,107 @@ describe("recurring_patterns input", () => {
 })
 
 describe("recurring_patterns facts", () => {
+  it("requires the asserted pattern when verifying periodicity facts", () => {
+    const input = recurringPatternsInputSchema.parse({
+      dataset: "bgl",
+      analysis: { mode: "periodicity", pattern_id: "p_a" },
+    })
+    const facts = buildFacts(
+      "r_00000001",
+      {
+        result: {
+          analysis: {
+            mode: "periodicity",
+            pattern_id: "p_a",
+            occurrences: 4,
+            gaps: 3,
+            minimum_occurrences: 4,
+            median_gap_seconds: 60,
+            min_gap_seconds: 60,
+            max_gap_seconds: 60,
+            coefficient_of_variation: 0,
+          },
+        },
+        scope: {},
+      },
+      recurringPatternsFactSpecs(input)
+    )
+    expect(facts).toHaveLength(7)
+    for (const fact of facts) {
+      expect(fact.group).toEqual({ pattern_id: "p_a" })
+      const claim = { value: fact.value, metric: fact.metric }
+      expect(
+        compareClaim({ ...claim, group: { pattern_id: "p_a" } }, fact)
+      ).toEqual({ status: "verified" })
+      const wrongGroups: Record<string, string>[] = [{ pattern_id: "p_b" }, {}]
+      for (const group of wrongGroups)
+        expect(compareClaim({ ...claim, group }, fact)).toMatchObject({
+          status: "mismatch",
+          mismatch_on: ["group"],
+        })
+    }
+  })
+
+  it("identifies the pair, direction and control of cooccurrence facts", () => {
+    const input = recurringPatternsInputSchema.parse({
+      dataset: "bgl",
+      analysis: {
+        mode: "cooccurrence",
+        pattern_a: "p_a",
+        pattern_b: "p_b",
+        direction: "after",
+        control_pattern_id: "p_control",
+      },
+    })
+    const facts = buildFacts(
+      "r_00000001",
+      {
+        result: {
+          analysis: {
+            ...input.analysis,
+            window_seconds: 60,
+            anchors: 4,
+            matched_anchors: 4,
+            rate: 1,
+            control_anchors: 2,
+            control_matched_anchors: 0,
+            control_rate: 0,
+            rate_difference: 1,
+          },
+        },
+        scope: {},
+      },
+      recurringPatternsFactSpecs(input)
+    )
+    expect(facts).toHaveLength(8)
+    for (const fact of facts) {
+      const group = {
+        pattern_a: "p_a",
+        pattern_b: "p_b",
+        direction: "after",
+        ...(fact.metric.includes("control") ||
+        fact.metric.endsWith("rate_difference")
+          ? { control_pattern_id: "p_control" }
+          : {}),
+      }
+      expect(fact.group).toEqual(group)
+      const claim = { value: fact.value, metric: fact.metric, group }
+      expect(compareClaim(claim, fact)).toEqual({ status: "verified" })
+      expect(
+        compareClaim(
+          { ...claim, group: { ...group, direction: "either" } },
+          fact
+        )
+      ).toMatchObject({ status: "mismatch", mismatch_on: ["group"] })
+      expect(
+        compareClaim(
+          { ...claim, group: { ...group, control_pattern_id: "wrong" } },
+          fact
+        )
+      ).toMatchObject({ status: "mismatch", mismatch_on: ["group"] })
+    }
+  })
+
   it("groups every pattern number by pattern_id and skips nulls", () => {
     const data = recurringPatternsOutputSchema.parse(DATA)
     const facts = buildFacts(

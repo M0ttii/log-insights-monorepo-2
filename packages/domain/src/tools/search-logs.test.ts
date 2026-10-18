@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { z } from "zod"
 
 import type { ToolResult } from "../tool.ts"
+import type { Fact } from "../facts.ts"
 import {
   searchHitSchema,
   searchLogsInputSchema,
@@ -53,8 +54,8 @@ describe("searchLogsInputSchema", () => {
     )
   })
 
-  it("accepts the three modes and bounds max_edits to 1–2", () => {
-    for (const match of ["terms", "phrase", "fuzzy"])
+  it("accepts lexical and retrieval modes and bounds max_edits to 1–2", () => {
+    for (const match of ["terms", "phrase", "fuzzy", "semantic", "hybrid"])
       expect(parse({ query: "parity", match }).success).toBe(true)
     expect(parse({ query: "parity", match: "regex" }).success).toBe(false)
     expect(
@@ -108,14 +109,18 @@ function result(data: SearchLogsOutput): ToolResult<SearchLogsOutput> {
         unit: "utc_time",
         group: { event_id: "3" },
       },
-      {
-        id: `${RECEIPT}.f2`,
-        path: "/result/total_matches",
-        value: data.total_matches,
-        metric: "matches",
-        unit: "log_events",
-        group: {},
-      },
+      ...(data.total_matches === null
+        ? []
+        : [
+            {
+              id: `${RECEIPT}.f2`,
+              path: "/result/total_matches",
+              value: data.total_matches,
+              metric: "matches",
+              unit: "log_events",
+              group: {},
+            } satisfies Fact,
+          ]),
     ],
     receipt: {
       receipt_id: RECEIPT,
@@ -134,7 +139,10 @@ function result(data: SearchLogsOutput): ToolResult<SearchLogsOutput> {
         ],
         filters: {},
       },
-      population: { count: data.total_matches, unit: "log_events" },
+      population:
+        data.total_matches === null
+          ? null
+          : { count: data.total_matches, unit: "log_events" },
       rows_returned: data.hits.length,
       truncated: data.truncated,
       duration_ms: 1,
@@ -199,5 +207,26 @@ describe("summarizeSearchLogs", () => {
     expect(text).toContain(
       "0 matching log events [r_0123abcd.f2]; 0 shown, sorted by time_asc, truncated: false."
     )
+  })
+})
+
+describe("bounded retrieval summary", () => {
+  it("never presents null total_matches as a zero or full-population count", () => {
+    const text = summarizeSearchLogs(
+      result({
+        query: "connection capacity",
+        match_mode: "semantic",
+        max_edits: null,
+        sort: "relevance",
+        total_matches: null,
+        hits: [],
+        truncated: false,
+        row_limit: 20,
+      })
+    )
+    expect(text).toContain("Bounded semantic retrieval")
+    expect(text).toContain("No full-population frequency is defined")
+    expect(text).not.toContain("matching log events")
+    expect(text).not.toContain(`${RECEIPT}.f2`)
   })
 })

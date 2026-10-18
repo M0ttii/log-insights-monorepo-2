@@ -1,10 +1,32 @@
 # Evaluation workflow
 
+## Submission scope: 2026-10-18
+
+The original challenge requires at least one actual agent answer per role, relevant
+retrieval and aggregation on BGL and OpenStack, accessible executed queries and
+results, and a runnable submission. It does not require a paid API benchmark.
+The owner therefore deferred the formal development/baseline experiment, freeze,
+first holdout and optional three-run Web role comparison. These are not submission
+gates; the commands below document an optional future experiment and do not
+authorize its execution. No paid development round, actual freeze/release or
+first-holdout result is claimed. The existing runner and its synthetic controls
+remain available.
+
+Submission evidence belongs in the [worked investigation](../../submission/worked-investigation.md)
+and the actual role demonstrations linked from the [submission guide](../../submission/README.md).
+The investigation's analyst-written role views are not model answers or a formal
+eval. The [saved client probes](results/client-2026-10-18/README.md) retain their
+known failures; tool connectivity and selected successful checks do not establish
+whole-answer correctness or a general quality/pass/improvement claim. Measured
+claims still require query evidence, and hypotheses remain distinct from causes.
+
+## Optional formal experiment
+
 LOG-52 supplies the measurement contracts; LOG-53 adds the predeclared development
 experiment and blinded independent review workflow. Implementation and synthetic
 controls establish no live quality result, baseline advantage, first-holdout result
-or U16 acceptance. The development bank and existing S-15 rounds are known
-regression material. LOG-54 adds the separate protected preparation below;
+or formal U16 experiment acceptance. The development bank and existing S-15
+rounds are known regression material. LOG-54 adds the separate protected preparation below;
 unreleased holdout contents are outside the implementation workspace and context.
 
 Run from the repository root with Node 24 and pnpm 11.25:
@@ -51,7 +73,8 @@ any paid request. Execution verifies source, prompt, catalog, question, model an
 limit hashes; an append-only execution marker prevents repeating a saved round.
 Before provider execution it also saves `runtime.json` and its complete corpus
 receipt, observing the running local Compose image and full base-corpus version.
-An older round without this runtime evidence cannot authorize a holdout freeze.
+For the optional experiment, an older round without this runtime evidence cannot
+authorize a holdout freeze.
 The database call deadline includes connection acquisition and UTC session setup;
 stalled setup clients are discarded. Cancelling a pending physical connection
 returns to the caller immediately, but pool cleanup can still await pg-pool's
@@ -134,9 +157,10 @@ hash: to re-evaluate them with changed code, save a new reviewer version. Report
 separate role comparison and effort controls, numerical/scope errors, rubric
 dimensions, duration, calls, token/cache usage and estimated costs. Repeated trials
 retain individual values and median/min/max with n, without p95, significance or
-an overall quality/cost score. Holdout and visible Web S-13 acceptance remain later
-gates. The committed LOG-52 fixture and evaluator mutation tests are controls,
-never measured corpus evidence.
+an overall quality/cost score. Holdout acceptance remains an optional later
+experiment gate. The deferred visible Web comparison is a separate feature, not
+submission evidence required by this runner. The committed LOG-52 fixture and
+evaluator mutation tests are controls, never measured corpus evidence.
 
 ## Protected holdout preparation
 
@@ -256,14 +280,14 @@ blinded pair orders, calibration and human sample rules as development. The
 first pair per role is selected from the frozen role/ordinal slots before answers.
 Independent reports are stored under `holdout-reports/`, separate from
 `development-reports/`, and carry the split explicitly. The passed development
-S-13 gate precedes release; client and visible Web evidence remain separate
-acceptance gates. A synthetic executor test establishes none of these real
-acceptance outcomes. No actual first-holdout round was run for this integration.
+S-13 gate precedes release; client evidence and the deferred visible Web
+comparison remain separate from this formal experiment. A synthetic executor test
+establishes none of these real acceptance outcomes. No actual first-holdout round was run for this integration.
 
 If any implementing agent sees unreleased questions or expectations, mark that
 set contaminated and replace it through an independent author. Never relabel a
 known development/demo question as holdout. After the first actual holdout round,
 the inspected set becomes regression material; another generalization claim
-requires a fresh independently authored set and freeze. LOG-55 owns the first
-answer round and its acceptance. No real freeze, release or paid holdout run is
-established by synthetic controls or this preparation work.
+requires a fresh independently authored set and freeze. The first answer round
+and its acceptance are deferred; closing preparation work does not establish them.
+No real freeze, release or paid holdout run is established by synthetic controls or this preparation work.

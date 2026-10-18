@@ -217,8 +217,11 @@ versions before using an API, and never infer an installation from a plan.
   oracles, not as the computation. Before writing generic SQL or computing outside
   SereneDB, search the SereneDB docs (`sdb_docs.search`, the docs MCP or Context7
   `/serenedb/serenedb`) for a SereneDB-native function, and record each one used or
-  rejected in technical.md § 5.3 with its gate probe or reason. SereneDB AI
-  functions in SQL (`ai_*`) and vector search on them are not used (concept 3.2).
+  rejected in technical.md § 5.3 with its gate probe or reason. LOG-41 explicitly permits versioned retrieval embeddings (`ai_embed`) and vector/hybrid
+  search plus labelled, non-authoritative reading context (`ai_summarize_agg`) after an
+  installed-engine gate. Persist query embeddings within an immutable snapshot;
+  never silently fall back to lexical search. AI classifications, causal claims and
+  severity judgments remain outside measured facts (concept 3.2).
 - Every row-returning query ends its `ORDER BY` in a unique key, so result digests
   are reproducible. Episodes are computed after the full scope is filtered, never
   from precomputed global gaps.

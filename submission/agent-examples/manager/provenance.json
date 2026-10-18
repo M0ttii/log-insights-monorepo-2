@@ -1,0 +1,392 @@
+{
+  "role": "manager",
+  "question": "What should we investigate first on BGL? At most three priorities.",
+  "client": "Claude Code headless",
+  "model": "claude-opus-5-5",
+  "source_probe": ".data/log39-probes/mgr-01-prompt.json",
+  "source_sha256": "d03ae4916fcf53efbd8ed595d6ee4401828ed2551432080bd567b189eebee92b",
+  "historical_code_commit": null,
+  "guidance_version": "1.0.7",
+  "guidance_provenance": "Contemporaneous LOG-39 record; exact source commit unavailable",
+  "data_version": "dv_229e422f86a9fc6e",
+  "answer_sha256": "a55e29cc18deeca75c7353d0bb72311c4ec0bd57bf1fcabbc1d97b2433022fdf",
+  "model_metadata": {
+    "is_error": false,
+    "num_turns": 10,
+    "model": "claude-opus-5-5",
+    "subtype": "success",
+    "denials": []
+  },
+  "original_tool_trace": [
+    {
+      "tool": "describe_corpus",
+      "input": {},
+      "receipt": "r_d155eb36"
+    },
+    {
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "investigation_order",
+        "limit": 3
+      },
+      "receipt": "r_d1c334b8"
+    },
+    {
+      "tool": "count_events",
+      "input": {
+        "dataset": "bgl",
+        "group_by": ["team"],
+        "only_errors": true,
+        "from": "2005-12-05T16:00:06Z",
+        "to": "2006-01-04T16:00:06Z",
+        "compare": "previous_period",
+        "top_n": 10
+      },
+      "receipt": "r_07799ce0"
+    },
+    {
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "pattern_id": "20306c79d929c187",
+        "from": "2005-12-05T16:00:06Z",
+        "to": "2006-01-04T16:00:06Z",
+        "only_errors": true,
+        "limit": 1
+      },
+      "receipt": "r_5bd227d1"
+    },
+    {
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "pattern_id": "83eb1a593767ea54",
+        "from": "2005-12-05T16:00:06Z",
+        "to": "2006-01-04T16:00:06Z",
+        "only_errors": true,
+        "limit": 1
+      },
+      "receipt": "r_24c7822a"
+    },
+    {
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "pattern_id": "e1726baa21cb58fe",
+        "from": "2005-12-05T16:00:06Z",
+        "to": "2006-01-04T16:00:06Z",
+        "only_errors": true,
+        "limit": 1
+      },
+      "receipt": "r_139b6813"
+    },
+    {
+      "tool": "check_claims",
+      "input": {
+        "claims": [
+          {
+            "fact": "r_d1c334b8.f45",
+            "value": "2005-06-03T22:42:50Z",
+            "metric": "window_start",
+            "group": {
+              "dataset": "bgl",
+              "period": "current"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f46",
+            "value": "2006-01-04T16:00:05Z",
+            "metric": "window_end",
+            "group": {
+              "dataset": "bgl",
+              "period": "current"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f4",
+            "value": 514,
+            "metric": "candidates_checked",
+            "group": {}
+          },
+          {
+            "fact": "r_d1c334b8.f3",
+            "value": "988,783",
+            "metric": "events",
+            "group": {}
+          },
+          {
+            "fact": "r_d1c334b8.f5",
+            "value": 513,
+            "metric": "dominated_candidates",
+            "group": {}
+          },
+          {
+            "fact": "r_d1c334b8.f14",
+            "value": 289,
+            "metric": "episodes",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f15",
+            "value": "47,563",
+            "metric": "events_current",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f19",
+            "value": "22,791",
+            "metric": "nodes",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f20",
+            "value": 64,
+            "metric": "racks",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_5bd227d1.f11",
+            "value": 22,
+            "metric": "events_current",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_5bd227d1.f7",
+            "value": 48,
+            "metric": "events_baseline",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_5bd227d1.f9",
+            "value": -26,
+            "metric": "delta",
+            "group": {
+              "pattern_id": "20306c79d929c187"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f25",
+            "value": 260,
+            "metric": "episodes",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f26",
+            "value": "6,561",
+            "metric": "events_current",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f30",
+            "value": "6,476",
+            "metric": "nodes",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f31",
+            "value": 62,
+            "metric": "racks",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_24c7822a.f11",
+            "value": 31,
+            "metric": "events_current",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_24c7822a.f7",
+            "value": 61,
+            "metric": "events_baseline",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_24c7822a.f9",
+            "value": -30,
+            "metric": "delta",
+            "group": {
+              "pattern_id": "83eb1a593767ea54"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f36",
+            "value": 260,
+            "metric": "episodes",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f37",
+            "value": 297,
+            "metric": "events_current",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f41",
+            "value": 252,
+            "metric": "nodes",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          },
+          {
+            "fact": "r_d1c334b8.f42",
+            "value": 64,
+            "metric": "racks",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          },
+          {
+            "fact": "r_139b6813.f11",
+            "value": 31,
+            "metric": "events_current",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          },
+          {
+            "fact": "r_139b6813.f7",
+            "value": 45,
+            "metric": "events_baseline",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          },
+          {
+            "fact": "r_139b6813.f9",
+            "value": -14,
+            "metric": "delta",
+            "group": {
+              "pattern_id": "e1726baa21cb58fe"
+            }
+          }
+        ]
+      },
+      "receipt": "r_d1c334b8"
+    },
+    {
+      "tool": "check_claims",
+      "input": {
+        "claims": [
+          {
+            "fact": "r_07799ce0.f26",
+            "value": "2005-12-05T16:00:06Z",
+            "metric": "window_start",
+            "group": {
+              "dataset": "bgl",
+              "period": "current"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f27",
+            "value": "2006-01-04T16:00:06Z",
+            "metric": "window_end",
+            "group": {
+              "dataset": "bgl",
+              "period": "current"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f28",
+            "value": "2005-11-05T16:00:06Z",
+            "metric": "window_start",
+            "group": {
+              "dataset": "bgl",
+              "period": "baseline"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f7",
+            "value": "6,266",
+            "metric": "events_current",
+            "group": {
+              "team": "Compute Platform"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f5",
+            "value": "17,967",
+            "metric": "events_baseline",
+            "group": {
+              "team": "Compute Platform"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f6",
+            "value": "-11,701",
+            "metric": "delta",
+            "group": {
+              "team": "Compute Platform"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f17",
+            "value": "32,146",
+            "metric": "events_current",
+            "group": {
+              "team": "Workload Runtime"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f15",
+            "value": "30,930",
+            "metric": "events_baseline",
+            "group": {
+              "team": "Workload Runtime"
+            }
+          },
+          {
+            "fact": "r_07799ce0.f16",
+            "value": "1,216",
+            "metric": "delta",
+            "group": {
+              "team": "Workload Runtime"
+            }
+          }
+        ]
+      },
+      "receipt": "r_07799ce0"
+    }
+  ],
+  "verification_line": "26 claims checked [r_c5b60807.f1] · 0 mismatch [r_c5b60807.f2] · 0 unresolved [r_c5b60807.f3].",
+  "receipt_sha256": {
+    "r_07799ce0": "cc137dd47563d9e772b955c2fb59b0f1a11d6fb8e6259752f8391a0fd730c21c",
+    "r_139b6813": "559e710637a2745cb94ddb8752316176cdd50557bd943ee2f03425f4ea659d36",
+    "r_24c7822a": "989ae8eca70a8ef7cd3b70fe516a61290acf68a5549cbd14facdb6cbb8953b06",
+    "r_5bd227d1": "6b1feb1c656c7ec32c4c92a616db0a1f6068b9cfac7e2512c32b2bc2ca0ba939",
+    "r_c5b60807": "a60c6a07f4babed9d0f461487c8bbd41c656c95305299d562ed05578a08b2e2c",
+    "r_d155eb36": "7324c0eaef08155f43168141edb7255128f887c151fd634b7863d20ee077f60d",
+    "r_d1c334b8": "a1222d07e156d60bfcf8e3438e832b54222bfcc89ad6d60eadb462624ff23193",
+    "r_f365f31a": "985bc1b64c24a6d42e8d8ce70d15fb98b35e8de1e9ba474989a88213cd61c5e7"
+  },
+  "trace_limit": "Historical harness sometimes recorded the checked source receipt as the check_claims result. Actual checker receipts cited in the answer are included separately; original trace retained."
+}

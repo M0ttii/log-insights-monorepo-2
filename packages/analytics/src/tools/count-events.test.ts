@@ -1,4 +1,5 @@
 import type { Receipt } from "@workspace/domain/receipt"
+import { countEventsOutputSchema } from "@workspace/domain/tools/count-events"
 import { comparisonCoverage } from "@workspace/domain/rules/compare"
 import { describe, expect, it } from "vitest"
 
@@ -599,6 +600,49 @@ describe("count_events compare", () => {
     to: C_TO,
     compare: "previous_period",
   }
+
+  it("preserves legacy comparison output unless contributions are requested", async () => {
+    const rows = [
+      { ...COMPARED_SUMMARY, positive_delta: "20", negative_delta: "-2" },
+      ...COMPARED_GROUPS.map((row) => ({
+        ...row,
+        contribution_to_delta:
+          row.g1 === "KERNEL" ? 111.11111111111111 : -11.11111111111111,
+      })),
+    ]
+    const legacy = await setup(rows).count(compareInput)
+    if (!legacy.ok) throw new Error(legacy.error.message)
+    const legacyData = countEventsOutputSchema.parse(legacy.result.data)
+    expect(legacyData.comparison).not.toHaveProperty("decomposition")
+    expect(legacyData.groups[0]).not.toHaveProperty("contribution_to_delta")
+    expect(
+      legacy.result.facts.some(
+        (fact) =>
+          fact.path.includes("contribution") ||
+          fact.path.includes("decomposition")
+      )
+    ).toBe(false)
+    const opted = await setup(rows).count({
+      ...compareInput,
+      contributions: true,
+    })
+    if (!opted.ok) throw new Error(opted.error.message)
+    const optedData = countEventsOutputSchema.parse(opted.result.data)
+    expect(optedData.comparison?.decomposition).toEqual({
+      positive_delta: 20,
+      negative_delta: -2,
+      net_delta: 18,
+    })
+    expect(optedData.groups[0]?.contribution_to_delta).toBe(111.11111111111111)
+    expect(
+      countEvents.validate?.(
+        countEvents.input.parse({ group_by: ["level"], contributions: true })
+      )
+    ).toMatchObject({
+      code: "invalid_input",
+      issues: [{ path: "contributions" }],
+    })
+  })
 
   it("counts both periods with the same filter in one statement", async () => {
     const { calls, stored, count } = setup([

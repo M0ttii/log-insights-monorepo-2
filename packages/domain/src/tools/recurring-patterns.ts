@@ -74,7 +74,28 @@ export const rankSchema = z
 
 export type Rank = z.infer<typeof rankSchema>
 
+export const patternAnalysisInputSchema = z
+  .discriminatedUnion("mode", [
+    z.strictObject({
+      mode: z.literal("periodicity"),
+      pattern_id: z.string().min(1).max(256),
+      min_occurrences: z.number().int().min(4).max(10000).default(4),
+    }),
+    z.strictObject({
+      mode: z.literal("cooccurrence"),
+      pattern_a: z.string().min(1).max(256),
+      pattern_b: z.string().min(1).max(256),
+      window_seconds: z.number().int().min(1).max(3600).default(60),
+      direction: z.enum(["either", "after"]).default("either"),
+      control_pattern_id: z.string().min(1).max(256).optional(),
+    }),
+  ])
+  .describe(
+    "Optional temporal observation over the identical filtered dataset/window. cooccurrence counts anchors with a distinct matching event in the window, either direction or strictly after; the comparison is the control pattern's anchor rate, never causal proof. periodicity analyses consecutive occurrence gaps and requires the stated minimum."
+  )
+
 export const recurringPatternsInputSchema = z.strictObject({
+  analysis: patternAnalysisInputSchema.optional(),
   dataset: z
     .enum(datasetSchema.options, {
       error:
@@ -265,7 +286,47 @@ export const investigationSchema = z
   })
   .describe("Only with rank investigation_order.")
 
+export const patternAnalysisOutputSchema = z.discriminatedUnion("mode", [
+  z.strictObject({
+    mode: z.literal("periodicity"),
+    scope_unit: z.literal("log_events"),
+    pattern_id: z.string(),
+    occurrences: count,
+    gaps: count,
+    minimum_occurrences: count,
+    median_gap_seconds: z.number().nonnegative().nullable(),
+    min_gap_seconds: z.number().nonnegative().nullable(),
+    max_gap_seconds: z.number().nonnegative().nullable(),
+    coefficient_of_variation: z.number().nonnegative().nullable(),
+    determinable: z.boolean(),
+    uncertainty: z.string(),
+  }),
+  z.strictObject({
+    mode: z.literal("cooccurrence"),
+    identity_scope: z
+      .literal("all_events_in_filtered_dataset")
+      .describe(
+        "Pairs may cross nodes, requests or objects within the filter; narrow node/request filters for a same-identity observation."
+      ),
+    scope_unit: z.literal("log_events"),
+    pattern_a: z.string(),
+    pattern_b: z.string(),
+    direction: z.enum(["either", "after"]),
+    window_seconds: count,
+    anchors: count,
+    matched_anchors: count,
+    rate: z.number().min(0).max(1).nullable(),
+    control_pattern_id: z.string().nullable(),
+    control_anchors: count.nullable(),
+    control_matched_anchors: count.nullable(),
+    control_rate: z.number().min(0).max(1).nullable(),
+    rate_difference: z.number().min(-1).max(1).nullable(),
+    uncertainty: z.string(),
+  }),
+])
+
 export const recurringPatternsOutputSchema = z.strictObject({
+  analysis: patternAnalysisOutputSchema.optional(),
   dataset: datasetSchema,
   rank: rankSchema,
   limit: z.number().int().positive().describe("The limit that applied."),
@@ -376,10 +437,46 @@ function leaderSpecs(
  * instances).
  */
 export function recurringPatternsFactSpecs(
-  input: Pick<RecurringPatternsInput, "dataset">
+  input: Pick<RecurringPatternsInput, "dataset" | "analysis">
 ): FactSpec[] {
   const breadthUnit = DATASETS[input.dataset].breadth?.unit ?? "patterns"
   return [
+    ...[
+      "occurrences",
+      "gaps",
+      "minimum_occurrences",
+      "median_gap_seconds",
+      "min_gap_seconds",
+      "max_gap_seconds",
+      "coefficient_of_variation",
+      "window_seconds",
+      "anchors",
+      "matched_anchors",
+      "rate",
+      "control_anchors",
+      "control_matched_anchors",
+      "control_rate",
+      "rate_difference",
+    ].map((field) => ({
+      path: `/result/analysis/${field}`,
+      metric: `pattern_analysis_${field}`,
+      unit: field.endsWith("seconds")
+        ? "seconds"
+        : field.includes("rate") || field === "coefficient_of_variation"
+          ? "ratio"
+          : "log_events",
+      groupKeys:
+        input.analysis?.mode === "periodicity"
+          ? ["pattern_id"]
+          : [
+              "pattern_a",
+              "pattern_b",
+              "direction",
+              ...(field.startsWith("control_") || field === "rate_difference"
+                ? ["control_pattern_id"]
+                : []),
+            ],
+    })),
     {
       path: "/result/rules/episode_gap_minutes",
       metric: "episode_gap",
@@ -523,6 +620,21 @@ export function summarizeRecurringPatterns(
     )
   })
   if (investigation !== null) lines.push(`Limits: ${investigation.limits}`)
+  const analysis = data.analysis
+  if (analysis !== undefined) {
+    const value = (field: string, number: number | null) =>
+      `${field}: ${number === null ? "unknown" : `${formatFactValue(number)}${cite(`/result/analysis/${field}`)}`}`
+    if (analysis.mode === "periodicity")
+      lines.push(
+        `Periodicity ${JSON.stringify(analysis.pattern_id)}: ${value("occurrences", analysis.occurrences)}, ${value("gaps", analysis.gaps)}, minimum ${value("minimum_occurrences", analysis.minimum_occurrences)}; ${value("median_gap_seconds", analysis.median_gap_seconds)}, ${value("min_gap_seconds", analysis.min_gap_seconds)}, ${value("max_gap_seconds", analysis.max_gap_seconds)}, ${value("coefficient_of_variation", analysis.coefficient_of_variation)}; determinable: ${analysis.determinable}.`,
+        analysis.uncertainty
+      )
+    else
+      lines.push(
+        `Temporal ${analysis.direction} ${JSON.stringify(analysis.pattern_a)} → ${JSON.stringify(analysis.pattern_b)}, identity scope ${analysis.identity_scope}: ${value("window_seconds", analysis.window_seconds)}, ${value("anchors", analysis.anchors)}, ${value("matched_anchors", analysis.matched_anchors)}, ${value("rate", analysis.rate)}; control ${JSON.stringify(analysis.control_pattern_id)}: ${value("control_anchors", analysis.control_anchors)}, ${value("control_matched_anchors", analysis.control_matched_anchors)}, ${value("control_rate", analysis.control_rate)}, ${value("rate_difference", analysis.rate_difference)}.`,
+        analysis.uncertainty
+      )
+  }
   lines.push(...notes.map((note) => `Note: ${note}`))
   return lines.join("\n")
 }

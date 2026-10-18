@@ -58,6 +58,7 @@ import { comparisonCoverageSql } from "../comparison.ts"
 import { compileFilter, dimensionExpression } from "../filters.ts"
 import { describeFilters, resolveWindows, scopeFilters } from "../scope.ts"
 import { isoTime, SqlParams } from "../sql.ts"
+import { patternAnalysis } from "../pattern-analysis.ts"
 import {
   conflictRow,
   dimensions,
@@ -216,9 +217,9 @@ type Periods = {
 export const recurringPatterns = defineTool({
   name: "recurring_patterns",
   title: "Recurring patterns",
-  version: "1.1.1",
+  version: "1.2.0",
   description: renderDescription({
-    purpose: `Patterns (normalised messages, R-04) of one dataset with their episodes (R-05: a new episode after at least ${EPISODE_GAP_MINUTES} min without the pattern, computed over the fully filtered scope), active days and weeks, breadth, change against the previous period of the same length and status (new, escalating, reappeared, ongoing, quiet; R-10). With rank investigation_order it ranks the error and alert patterns into a reproducible technical investigation order by episodes and breadth instead of log lines, with the leader per criterion and dominance (R-08, R-09).`,
+    purpose: `Patterns (normalised messages, R-04) of one dataset with their episodes (R-05: a new episode after at least ${EPISODE_GAP_MINUTES} min without the pattern, computed over the fully filtered scope), active days and weeks, breadth, change against the previous period of the same length and status (new, escalating, reappeared, ongoing, quiet; R-10). With rank investigation_order it ranks the error and alert patterns into a reproducible technical investigation order by episodes and breadth instead of log lines, with the leader per criterion and dominance (R-08, R-09). Optional analysis selects periodicity (pattern_id,min_occurrences at least four) or cooccurrence/order (pattern_a,pattern_b,window_seconds,direction either|after,optional control_pattern_id). SQL computes consecutive gaps or distinct matched-anchor rates over the same filtered dataset/window; temporal order is never a causal conclusion.`,
     useWhen:
       "the question is whether a problem recurs or was a one-off spike, which patterns a team or component has, what is new, escalating or reappearing, or which problems to investigate first (priorities for a manager: rank investigation_order).",
     doNotUseWhen: [
@@ -303,6 +304,9 @@ export const recurringPatterns = defineTool({
       })
     )
     const data: RecurringPatternsOutput = {
+      ...(input.analysis === undefined
+        ? {}
+        : { analysis: await patternAnalysis(ctx, input, current) }),
       dataset,
       rank: input.rank,
       limit,
@@ -732,6 +736,12 @@ function validatePatterns(input: RecurringPatternsInput): ToolError | null {
   if (!DATASETS[input.dataset].patterns)
     return invalidInput([patternsUnsupported(input.dataset, "dataset")])
   const issues: InputIssue[] = []
+  if (input.analysis !== undefined && input.rank === "investigation_order")
+    issues.push({
+      path: "analysis",
+      message:
+        "Temporal analysis uses the same ordinary filtered event scope; choose rank events or episodes, not investigation_order.",
+    })
   if (input.rank === "investigation_order") {
     for (const field of INVESTIGATION_EXCLUDED_FILTERS)
       if (input[field] !== undefined)
@@ -757,6 +767,22 @@ function validatePatterns(input: RecurringPatternsInput): ToolError | null {
         message: `Dataset ${input.dataset} has no error definition (no level or error marker in the log, R-02), so there are no determinable candidates; use rank episodes or events instead.`,
       })
   }
+  if (
+    input.analysis?.mode === "cooccurrence" &&
+    input.analysis.pattern_a === input.analysis.pattern_b
+  )
+    issues.push({
+      path: "analysis.pattern_b",
+      message: "Choose two distinct patterns for cooccurrence/order.",
+    })
+  if (
+    input.analysis?.mode === "cooccurrence" &&
+    input.analysis.control_pattern_id === input.analysis.pattern_a
+  )
+    issues.push({
+      path: "analysis.control_pattern_id",
+      message: "The control pattern must differ from the anchor pattern.",
+    })
   const investigationIssues = issues.length
   const filterError = validateFilter(input)
   if (filterError?.code === "invalid_input") issues.push(...filterError.issues)

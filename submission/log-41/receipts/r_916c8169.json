@@ -1,0 +1,342 @@
+{
+  "receipt_id": "r_916c8169",
+  "created_at": "2026-10-18T19:11:39.778Z",
+  "client": "test",
+  "tool": "count_events",
+  "tool_version": "1.4.0",
+  "input": {
+    "group_by": ["component"],
+    "dataset": "bgl",
+    "from": "2005-06-10T00:00:00Z",
+    "to": "2005-06-11T00:00:00Z",
+    "top_n": 1,
+    "compare": "previous_period",
+    "contributions": true
+  },
+  "signature": "5de39b166a1f8c507188e1af29ec236f5bd051c52d472ef69f4d7f8bdcd53135",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH comparison_bounds AS (SELECT $1::TIMESTAMPTZ AS cf, $2::TIMESTAMPTZ AS ct, $3::TIMESTAMPTZ AS bf, $4::TIMESTAMPTZ AS bt, $5::TIMESTAMPTZ AS first_ts, $6::TIMESTAMPTZ + INTERVAL '1 microsecond' AS end_ts), comparison_coverage AS (SELECT CASE WHEN ct <= first_ts OR cf >= end_ts THEN 'none' WHEN cf >= first_ts AND ct <= end_ts THEN 'full' ELSE 'partial' END AS current, CASE WHEN bt <= first_ts OR bf >= end_ts THEN 'none' WHEN bf >= first_ts AND bt <= end_ts THEN 'full' ELSE 'partial' END AS baseline FROM comparison_bounds) SELECT current, baseline, current <> 'none' AND baseline <> 'none' AS determinable FROM comparison_coverage",
+    "WITH grouped AS (SELECT log_events.component AS g1, count(*) FILTER (WHERE log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ) AS events, count(*) FILTER (WHERE log_events.ts >= $4::TIMESTAMPTZ AND log_events.ts < $5::TIMESTAMPTZ) AS baseline FROM log_events WHERE log_events.dataset = $1 AND ((log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ) OR (log_events.ts >= $4::TIMESTAMPTZ AND log_events.ts < $5::TIMESTAMPTZ)) GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY abs(events - baseline) DESC, events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total, sum(baseline) OVER () AS baseline_total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, coalesce(sum(greatest(events-baseline,0)),0) AS positive_delta, coalesce(sum(least(events-baseline,0)),0) AS negative_delta, count(*) AS n, count(*) FILTER (WHERE rank > $6) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $6), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $6) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, coalesce(b, 0)::BIGINT AS baseline, (c - coalesce(b, 0))::BIGINT AS delta, 100 * (c - coalesce(b, 0))::DOUBLE / NULLIF(coalesce(b, 0), 0) AS pct_change, CASE WHEN coalesce(b, 0) IS NULL THEN NULL WHEN coalesce(b, 0) = 0 AND c > 0 THEN 'first observed in this comparison' WHEN coalesce(b, 0) = 0 THEN 'not observed in either period' WHEN c >= $7::BIGINT * coalesce(b, 0) AND c - coalesce(b, 0) >= $8::BIGINT THEN 'significantly increased' END AS classification, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, coalesce(other_b, 0)::BIGINT AS other_baseline, (other_c - coalesce(other_b, 0))::BIGINT AS other_delta, 100 * (other_c - coalesce(other_b, 0))::DOUBLE / NULLIF(coalesce(other_b, 0), 0) AS other_pct_change, CASE WHEN TRUE THEN positive_delta END AS positive_delta, CASE WHEN TRUE THEN negative_delta END AS negative_delta, NULL::DOUBLE AS contribution_to_delta, 100 * (other_c-other_b)::DOUBLE / nullif(c-b,0) AS other_contribution_to_delta FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, CASE WHEN baseline IS NULL THEN NULL WHEN baseline = 0 AND events > 0 THEN 'first observed in this comparison' WHEN baseline = 0 THEN 'not observed in either period' WHEN events >= $7::BIGINT * baseline AND events - baseline >= $8::BIGINT THEN 'significantly increased' END AS classification, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100 * (events-baseline)::DOUBLE / nullif(total-baseline_total,0), NULL FROM ranked WHERE rank <= $6 ORDER BY rank"
+  ],
+  "params": [
+    ["bgl"],
+    [
+      "2005-06-10T00:00:00Z",
+      "2005-06-11T00:00:00Z",
+      "2005-06-09T00:00:00.000000Z",
+      "2005-06-10T00:00:00.000000Z",
+      "2005-06-03T22:42:50.363779Z",
+      "2006-01-04T16:00:05.233639Z"
+    ],
+    [
+      "bgl",
+      "2005-06-10T00:00:00Z",
+      "2005-06-11T00:00:00Z",
+      "2005-06-09T00:00:00.000000Z",
+      "2005-06-10T00:00:00.000000Z",
+      1,
+      2,
+      20
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-10T00:00:00Z",
+        "to": "2005-06-11T00:00:00Z",
+        "period": "current"
+      },
+      {
+        "dataset": "bgl",
+        "from": "2005-06-09T00:00:00.000000Z",
+        "to": "2005-06-10T00:00:00.000000Z",
+        "period": "baseline"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 9013,
+    "unit": "log_events"
+  },
+  "rows_returned": 1,
+  "truncated": true,
+  "row_limit": 1,
+  "duration_ms": 14.05,
+  "result": {
+    "group_by": ["component"],
+    "unit": "log_events",
+    "total": 9013,
+    "group_count": 3,
+    "groups": [
+      {
+        "component": "KERNEL",
+        "events": 9001,
+        "share": 0.9986685898147121,
+        "contribution_to_delta": 98.17791067090263,
+        "baseline": 19508,
+        "delta": -10507,
+        "pct_change": -53.85995489030142,
+        "classification": null
+      }
+    ],
+    "other": {
+      "groups": 2,
+      "events": 12,
+      "share": 0.0013314101852879175,
+      "contribution_to_delta": 1.822089329097365,
+      "baseline": 207,
+      "delta": -195,
+      "pct_change": -94.20289855072464
+    },
+    "comparison": {
+      "reference": "previous_period",
+      "coverage": {
+        "current": "full",
+        "baseline": "full"
+      },
+      "determinable": true,
+      "baseline": 19715,
+      "delta": -10702,
+      "pct_change": -54.28354045143292,
+      "decomposition": {
+        "positive_delta": 0,
+        "negative_delta": -10702,
+        "net_delta": -10702
+      },
+      "classification": null
+    },
+    "truncated": true,
+    "top_n": 1
+  },
+  "result_digest": "4643d7980b75001b019aab2cfeae762c52bf6da5ec3427fed2aa1a22d22086d2",
+  "facts": [
+    {
+      "id": "r_916c8169.f1",
+      "path": "/result/comparison/baseline",
+      "value": 19715,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f2",
+      "path": "/result/comparison/decomposition/negative_delta",
+      "value": -10702,
+      "metric": "negative_delta",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f3",
+      "path": "/result/comparison/decomposition/net_delta",
+      "value": -10702,
+      "metric": "net_delta",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f4",
+      "path": "/result/comparison/decomposition/positive_delta",
+      "value": 0,
+      "metric": "positive_delta",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f5",
+      "path": "/result/comparison/delta",
+      "value": -10702,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f6",
+      "path": "/result/comparison/pct_change",
+      "value": -54.28354045143292,
+      "metric": "pct_change",
+      "unit": "percent",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f7",
+      "path": "/result/group_count",
+      "value": 3,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f8",
+      "path": "/result/groups/0/baseline",
+      "value": 19508,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_916c8169.f9",
+      "path": "/result/groups/0/contribution_to_delta",
+      "value": 98.17791067090263,
+      "metric": "contribution_to_delta",
+      "unit": "percent",
+      "group": {
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_916c8169.f10",
+      "path": "/result/groups/0/delta",
+      "value": -10507,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_916c8169.f11",
+      "path": "/result/groups/0/events",
+      "value": 9001,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_916c8169.f12",
+      "path": "/result/groups/0/pct_change",
+      "value": -53.85995489030142,
+      "metric": "pct_change",
+      "unit": "percent",
+      "group": {
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_916c8169.f13",
+      "path": "/result/groups/0/share",
+      "value": 0.9986685898147121,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_916c8169.f14",
+      "path": "/result/other/baseline",
+      "value": 207,
+      "metric": "other_events_baseline",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f15",
+      "path": "/result/other/contribution_to_delta",
+      "value": 1.822089329097365,
+      "metric": "contribution_to_delta",
+      "unit": "percent",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f16",
+      "path": "/result/other/delta",
+      "value": -195,
+      "metric": "other_delta",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f17",
+      "path": "/result/other/events",
+      "value": 12,
+      "metric": "other_events_current",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f18",
+      "path": "/result/other/groups",
+      "value": 2,
+      "metric": "other_groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f19",
+      "path": "/result/other/pct_change",
+      "value": -94.20289855072464,
+      "metric": "other_pct_change",
+      "unit": "percent",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f20",
+      "path": "/result/other/share",
+      "value": 0.0013314101852879175,
+      "metric": "other_share",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f21",
+      "path": "/result/total",
+      "value": 9013,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_916c8169.f22",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-10T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_916c8169.f23",
+      "path": "/scope/windows/0/to",
+      "value": "2005-06-11T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_916c8169.f24",
+      "path": "/scope/windows/1/from",
+      "value": "2005-06-09T00:00:00.000000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "id": "r_916c8169.f25",
+      "path": "/scope/windows/1/to",
+      "value": "2005-06-10T00:00:00.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    }
+  ]
+}

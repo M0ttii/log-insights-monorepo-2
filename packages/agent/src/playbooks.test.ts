@@ -129,7 +129,7 @@ describe("versioned role playbooks", () => {
         { label: "check_claims", anyOf: [{ tool: "check_claims" }] },
       ],
     })
-    expect(source.version).toBe("1.0.8")
+    expect(source.version).toBe("1.1.0")
     expect(source.common).not.toContain("## Coverage")
     expect(source.sharedRules).not.toContain("## Coverage")
     expect(source.instructions).not.toContain("## Coverage")
@@ -137,6 +137,16 @@ describe("versioned role playbooks", () => {
       expect(source.systemPrompt(role)).toContain("## Coverage")
       expect(source.guidance.roles[role]).not.toContain("## Coverage")
     }
+  })
+
+  it("keeps semantic retrieval and exploratory analytics separate from causal facts", () => {
+    const source = loadPlaybooks()
+    expect(source.common).toContain("retrieval_snapshot")
+    expect(source.common).toContain("total_matches is null")
+    expect(source.common).toContain("cooccurrence")
+    expect(source.common).toContain("outliers")
+    expect(source.common).toContain("contribution")
+    expect(source.common).toContain("entity")
   })
 
   it("assembles prompts from the original common and role files", () => {

@@ -69,7 +69,7 @@ export const populationSchema = z
   })
   .nullable()
   .describe(
-    "Population in scope with its counting unit; null for tools without a corpus population (check_claims)."
+    "Population in scope with its counting unit; null for tools without an exact corpus population (check_claims and bounded semantic/hybrid retrieval)."
   )
 
 export type Population = z.infer<typeof populationSchema>

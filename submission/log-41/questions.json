@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "declared_before_comparison": "2026-10-18T19:02:00Z",
+  "purpose": "Small fixed diagnostic set. This is not a relevance benchmark and supports no semantic quality advantage without independently judged references and provider-backed embeddings.",
+  "dataset": "bgl",
+  "questions": [
+    {
+      "id": "exact",
+      "query": "cache parity error",
+      "intent": "Known lexical wording; regression control."
+    },
+    {
+      "id": "paraphrase",
+      "query": "memory integrity fault",
+      "intent": "Unknown wording; record results without assuming relevance."
+    },
+    {
+      "id": "related",
+      "query": "hardware consistency failure",
+      "intent": "Similar description; record raw IDs for independent review."
+    },
+    {
+      "id": "empty",
+      "query": "log41_absent_qxzv_protocol",
+      "intent": "Explicit lexical empty case; a semantic nearest neighbor is not evidence of presence."
+    }
+  ],
+  "modes": ["terms", "semantic", "hybrid"],
+  "limit": 5
+}

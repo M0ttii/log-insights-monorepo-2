@@ -1,0 +1,172 @@
+{
+  "receipt_id": "r_ac4225ae",
+  "created_at": "2026-10-18T19:11:39.907Z",
+  "client": "test",
+  "tool": "check_claims",
+  "tool_version": "1.0.0",
+  "input": {
+    "claims": [
+      {
+        "fact": "r_6fbc01b6.f1",
+        "value": 3.006207654391667,
+        "metric": "pattern_analysis_coefficient_of_variation",
+        "group": {
+          "pattern_id": "bc048d75f905460b"
+        }
+      },
+      {
+        "fact": "r_6fbc01b6.f1",
+        "value": 4.006207654391667,
+        "metric": "pattern_analysis_coefficient_of_variation",
+        "group": {
+          "pattern_id": "bc048d75f905460b"
+        }
+      }
+    ]
+  },
+  "signature": "c9efea615517c3016b365a311c913082b142719f3980b58728ed7e5c6aff3ab0",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [],
+  "params": [],
+  "scope": {
+    "windows": [],
+    "filters": {}
+  },
+  "population": null,
+  "rows_returned": 2,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 0,
+  "result": {
+    "claims": [
+      {
+        "claim": {
+          "fact": "r_6fbc01b6.f1",
+          "value": 3.006207654391667,
+          "metric": "pattern_analysis_coefficient_of_variation",
+          "group": {
+            "pattern_id": "bc048d75f905460b"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 3.006207654391667,
+          "metric": "pattern_analysis_coefficient_of_variation",
+          "unit": "ratio",
+          "group": {
+            "pattern_id": "bc048d75f905460b"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_6fbc01b6",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-10T00:00:00Z",
+                "to": "2005-06-11T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-06-09T00:00:00.000000Z",
+                "to": "2005-06-10T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_6fbc01b6.f1",
+          "value": 4.006207654391667,
+          "metric": "pattern_analysis_coefficient_of_variation",
+          "group": {
+            "pattern_id": "bc048d75f905460b"
+          }
+        },
+        "status": "mismatch",
+        "mismatch_on": ["value"],
+        "reason": "value: 4.006207654391667 differs from the fact 3.006207654391667 rounded to 15 decimal places (3.006207654391667)",
+        "fact": {
+          "value": 3.006207654391667,
+          "metric": "pattern_analysis_coefficient_of_variation",
+          "unit": "ratio",
+          "group": {
+            "pattern_id": "bc048d75f905460b"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_6fbc01b6",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-10T00:00:00Z",
+                "to": "2005-06-11T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-06-09T00:00:00.000000Z",
+                "to": "2005-06-10T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      }
+    ],
+    "summary": {
+      "checked": 2,
+      "verified": 1,
+      "mismatch": 1,
+      "unresolved": 0,
+      "text": "2 claims checked · 1 mismatch · 0 unresolved"
+    }
+  },
+  "result_digest": "c2c7d208485015ac7bee2f5469fb1c0d86672ebaa9b1ff276bb3481d0da50d7a",
+  "facts": [
+    {
+      "id": "r_ac4225ae.f1",
+      "path": "/result/summary/checked",
+      "value": 2,
+      "metric": "claims_checked",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_ac4225ae.f2",
+      "path": "/result/summary/mismatch",
+      "value": 1,
+      "metric": "claims_mismatch",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_ac4225ae.f3",
+      "path": "/result/summary/unresolved",
+      "value": 0,
+      "metric": "claims_unresolved",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_ac4225ae.f4",
+      "path": "/result/summary/verified",
+      "value": 1,
+      "metric": "claims_verified",
+      "unit": "claims",
+      "group": {}
+    }
+  ]
+}

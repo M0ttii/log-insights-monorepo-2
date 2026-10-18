@@ -1,0 +1,5833 @@
+{
+  "receipt_id": "r_fb51ec23",
+  "created_at": "2026-10-18T19:18:43.620Z",
+  "client": "mcp",
+  "tool": "describe_corpus",
+  "tool_version": "3.0.0",
+  "input": {},
+  "signature": "b74a982cf1265d25d8f2534ede590f776976f44189e3a417b15fbb90130f04f2",
+  "data_version": "dv_5663ee75e955ec1d",
+  "sql": [
+    "SELECT sum(events) OVER () AS population_count, dataset, lines_read, events, rejected, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_event, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_event, error_events, patterns, single_event_patterns, time_basis, label_source, levels, components, labels, api_accesses, api_accesses_without_request_id, requests FROM corpus_stats ORDER BY dataset",
+    "SELECT dataset, component, team, note FROM ownership ORDER BY team, dataset, component",
+    "SELECT dataset, field, events_with_value, distinct_values, examples FROM corpus_field_stats ORDER BY dataset, field",
+    "SELECT data_version, source, loader_version, parser_version, pattern_rules_version, ownership_version, rules_version FROM load_manifest",
+    "SELECT index_name, source_glob, strftime(window_from, '%Y-%m-%dT%H:%M:%S.%fZ') AS window_from, strftime(window_to, '%Y-%m-%dT%H:%M:%S.%fZ') AS window_to, strftime(built_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS built_at, build_ms, events, duplicates_removed, mapping_version FROM otel_reference",
+    "SELECT s.file_index, s.url, s.size AS bytes, s.etag, strftime(s.last_modified, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_modified, strftime(s.assigned_from, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_from, strftime(s.assigned_to, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_to, strftime(greatest(s.assigned_from, $1::TIMESTAMPTZ_NS), '%Y-%m-%dT%H:%M:%S.%nZ') AS read_from, strftime(CASE WHEN s.assigned_to IS NULL THEN $2::TIMESTAMPTZ_NS ELSE least(s.assigned_to, $2::TIMESTAMPTZ_NS) END, '%Y-%m-%dT%H:%M:%S.%nZ') AS read_to FROM otel_sources s WHERE s.assigned_from < $2::TIMESTAMPTZ_NS AND (s.assigned_to IS NULL OR s.assigned_to > $1::TIMESTAMPTZ_NS) ORDER BY s.file_index",
+    "SELECT file_index, url, size AS bytes, etag, strftime(last_modified, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_modified, footer_rows, sum(footer_rows) OVER () AS total_footer_rows, row_groups, strftime(ts_min, '%Y-%m-%dT%H:%M:%S.%nZ') AS ts_min, strftime(ts_max, '%Y-%m-%dT%H:%M:%S.%nZ') AS ts_max, strftime(assigned_from, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_from, strftime(assigned_to, '%Y-%m-%dT%H:%M:%S.%nZ') AS assigned_to FROM otel_sources ORDER BY file_index",
+    "SELECT replay_id, strftime(replayed_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS replayed_at, records, fixture_path, fixture_sha256, source_url, listener_table, index_name, strftime(index_built_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS index_built_at FROM otel_replay"
+  ],
+  "params": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "2025-09-23T00:29:14.000000Z",
+      "2025-09-23T00:29:34.000000Z"
+    ],
+    [],
+    []
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-03T22:42:50.363779Z",
+        "to": "2006-01-04T16:00:05.233640Z"
+      },
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      },
+      {
+        "dataset": "otel",
+        "from": "2025-09-23T00:00:00.000000Z",
+        "to": "2025-09-23T23:57:23.980054Z"
+      },
+      {
+        "dataset": "otel_replay",
+        "from": "2025-09-23T00:20:00.000000Z",
+        "to": "2025-09-23T00:20:00.000998Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 4956130,
+    "unit": "log_events"
+  },
+  "rows_returned": 50,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 24.99,
+  "result": {
+    "datasets": [
+      {
+        "dataset": "bgl",
+        "title": "BGL",
+        "origin": "BlueGene/L supercomputer at Lawrence Livermore National Labs, 2005–2006.",
+        "citation": [
+          "Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu: Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics. ISSRE 2023.",
+          "Adam Oliner, Jon Stearley: What Supercomputers Say: A Study of Five System Logs. DSN 2007."
+        ],
+        "storage": "log_events",
+        "counts_cover": "dataset",
+        "events": 4747945,
+        "lines_read": 4747963,
+        "rejected": 18,
+        "first_event": "2005-06-03T22:42:50.363779Z",
+        "last_event": "2006-01-04T16:00:05.233639Z",
+        "error_events": 988783,
+        "patterns": 684,
+        "single_event_patterns": 43,
+        "time_basis": "Unix seconds (UTC) + microseconds of the text timestamp",
+        "label_source": "alert category in the first column (dataset label)",
+        "fields": [
+          {
+            "field": "event_id",
+            "meaning": "Stable event ID: the line number.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04).",
+            "filter": "pattern_id",
+            "dimension": "pattern",
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "ts",
+            "meaning": "Event time, UTC with microseconds.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "level",
+            "meaning": "Severity as logged: INFO, WARNING, SEVERE, ERROR, FATAL, FAILURE.",
+            "filter": "levels",
+            "dimension": "level",
+            "events_with_value": 4747945,
+            "distinct_values": 6,
+            "examples": [
+              {
+                "value": "INFO",
+                "events": 3735805
+              },
+              {
+                "value": "FATAL",
+                "events": 855501
+              },
+              {
+                "value": "ERROR",
+                "events": 112355
+              }
+            ]
+          },
+          {
+            "field": "component",
+            "meaning": "BGL component (KERNEL, APP, …).",
+            "filter": "components",
+            "dimension": "component",
+            "events_with_value": 4747945,
+            "distinct_values": 10,
+            "examples": [
+              {
+                "value": "KERNEL",
+                "events": 4324949
+              },
+              {
+                "value": "APP",
+                "events": 228536
+              },
+              {
+                "value": "DISCOVERY",
+                "events": 97172
+              }
+            ]
+          },
+          {
+            "field": "source_type",
+            "meaning": "BGL message type (RAS, …).",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 4643730,
+            "distinct_values": 1,
+            "examples": [
+              {
+                "value": "RAS",
+                "events": 4643730
+              }
+            ]
+          },
+          {
+            "field": "message",
+            "meaning": "Original log message after the header fields, untrusted text.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "is_error",
+            "meaning": "Error level after R-02.",
+            "filter": "only_errors",
+            "dimension": null,
+            "events_with_value": 4747945,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "false",
+                "events": 3759162
+              },
+              {
+                "value": "true",
+                "events": 988783
+              }
+            ]
+          },
+          {
+            "field": "node",
+            "meaning": "Node ID, e.g. R02-M1-N0-C:J12-U11.",
+            "filter": "node",
+            "dimension": "node",
+            "events_with_value": 4658343,
+            "distinct_values": 69250,
+            "examples": [
+              {
+                "value": "R30-M0-N9-C:J16-U01",
+                "events": 152329
+              },
+              {
+                "value": "R02-M1-N0-C:J12-U11",
+                "events": 64651
+              },
+              {
+                "value": "R37-M1-NC-C:J02-U11",
+                "events": 35288
+              }
+            ]
+          },
+          {
+            "field": "midplane",
+            "meaning": "Midplane derived from the node, e.g. R02-M1.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 4631286,
+            "distinct_values": 128,
+            "examples": [
+              {
+                "value": "R30-M0",
+                "events": 208025
+              },
+              {
+                "value": "R62-M0",
+                "events": 176696
+              },
+              {
+                "value": "R63-M0",
+                "events": 127015
+              }
+            ]
+          },
+          {
+            "field": "rack",
+            "meaning": "Rack derived from the node, e.g. R02.",
+            "filter": "rack",
+            "dimension": "rack",
+            "events_with_value": 4631304,
+            "distinct_values": 64,
+            "examples": [
+              {
+                "value": "R30",
+                "events": 259341
+              },
+              {
+                "value": "R62",
+                "events": 194975
+              },
+              {
+                "value": "R26",
+                "events": 175531
+              }
+            ]
+          },
+          {
+            "field": "alert_label",
+            "meaning": "Dataset alert category; null for non-alert lines.",
+            "filter": "alert_label",
+            "dimension": "alert_label",
+            "events_with_value": 348460,
+            "distinct_values": 41,
+            "examples": [
+              {
+                "value": "KERNDTLB",
+                "events": 152734
+              },
+              {
+                "value": "KERNSTOR",
+                "events": 63491
+              },
+              {
+                "value": "APPSEV",
+                "events": 49651
+              }
+            ]
+          }
+        ],
+        "capabilities": {
+          "error_definition": "levels ERROR, SEVERE, FATAL, FAILURE",
+          "only_errors": true,
+          "investigation_order": true,
+          "breadth_unit": "nodes",
+          "context_scopes": [
+            "same_node",
+            "same_component",
+            "dataset"
+          ],
+          "api_accesses": false,
+          "labels": "line",
+          "patterns": true,
+          "full_text": "all",
+          "direct_scan": null
+        },
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 3735805
+          },
+          {
+            "level": "FATAL",
+            "events": 855501
+          },
+          {
+            "level": "ERROR",
+            "events": 112355
+          },
+          {
+            "level": "WARNING",
+            "events": 23357
+          },
+          {
+            "level": "SEVERE",
+            "events": 19213
+          },
+          {
+            "level": "FAILURE",
+            "events": 1714
+          }
+        ],
+        "components": [
+          {
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "events": 4324949
+          },
+          {
+            "component": "APP",
+            "team": "Workload Runtime",
+            "events": 228536
+          },
+          {
+            "component": "DISCOVERY",
+            "team": "Hardware Operations",
+            "events": 97172
+          },
+          {
+            "component": "MMCS",
+            "team": "Control Plane",
+            "events": 88930
+          },
+          {
+            "component": "HARDWARE",
+            "team": "Hardware Operations",
+            "events": 5148
+          },
+          {
+            "component": "MONITOR",
+            "team": "Hardware Operations",
+            "events": 1681
+          },
+          {
+            "component": "LINKCARD",
+            "team": "Hardware Operations",
+            "events": 1170
+          },
+          {
+            "component": "CMCS",
+            "team": "Control Plane",
+            "events": 211
+          },
+          {
+            "component": "BGLMASTER",
+            "team": "Control Plane",
+            "events": 145
+          },
+          {
+            "component": "SERV_NET",
+            "team": "unowned",
+            "events": 3
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 4399485
+          },
+          {
+            "label": "KERNDTLB",
+            "events": 152734
+          },
+          {
+            "label": "KERNSTOR",
+            "events": 63491
+          },
+          {
+            "label": "APPSEV",
+            "events": 49651
+          },
+          {
+            "label": "KERNMNTF",
+            "events": 31531
+          },
+          {
+            "label": "KERNTERM",
+            "events": 23338
+          },
+          {
+            "label": "KERNREC",
+            "events": 6145
+          },
+          {
+            "label": "APPREAD",
+            "events": 5983
+          },
+          {
+            "label": "KERNRTSP",
+            "events": 3983
+          },
+          {
+            "label": "APPRES",
+            "events": 2370
+          },
+          {
+            "label": "APPUNAV",
+            "events": 2048
+          },
+          {
+            "label": "APPTO",
+            "events": 1991
+          },
+          {
+            "label": "KERNMICRO",
+            "events": 1503
+          },
+          {
+            "label": "APPOUT",
+            "events": 816
+          },
+          {
+            "label": "KERNMNT",
+            "events": 720
+          },
+          {
+            "label": "APPBUSY",
+            "events": 512
+          },
+          {
+            "label": "KERNMC",
+            "events": 342
+          },
+          {
+            "label": "APPCHILD",
+            "events": 320
+          },
+          {
+            "label": "KERNSOCK",
+            "events": 209
+          },
+          {
+            "label": "KERNPOW",
+            "events": 192
+          },
+          {
+            "label": "LINKIAP",
+            "events": 166
+          },
+          {
+            "label": "APPALLOC",
+            "events": 144
+          },
+          {
+            "label": "KERNSERV",
+            "events": 94
+          },
+          {
+            "label": "MASABNORM",
+            "events": 37
+          },
+          {
+            "label": "LINKDISC",
+            "events": 24
+          },
+          {
+            "label": "KERNPAN",
+            "events": 18
+          },
+          {
+            "label": "KERNCON",
+            "events": 16
+          },
+          {
+            "label": "KERNNOETH",
+            "events": 14
+          },
+          {
+            "label": "LINKPAP",
+            "events": 14
+          },
+          {
+            "label": "MONPOW",
+            "events": 12
+          },
+          {
+            "label": "APPTORUS",
+            "events": 10
+          },
+          {
+            "label": "MASNORM",
+            "events": 10
+          },
+          {
+            "label": "KERNPROG",
+            "events": 5
+          },
+          {
+            "label": "KERNFLOAT",
+            "events": 3
+          },
+          {
+            "label": "KERNRTSA",
+            "events": 3
+          },
+          {
+            "label": "MMCS",
+            "events": 3
+          },
+          {
+            "label": "LINKBLL",
+            "events": 2
+          },
+          {
+            "label": "MONNULL",
+            "events": 2
+          },
+          {
+            "label": "KERNBIT",
+            "events": 1
+          },
+          {
+            "label": "KERNEXT",
+            "events": 1
+          },
+          {
+            "label": "KERNTLBE",
+            "events": 1
+          },
+          {
+            "label": "MONILL",
+            "events": 1
+          }
+        ],
+        "api_accesses": null,
+        "api_accesses_without_request_id": null,
+        "requests": null,
+        "remote": null,
+        "replay": null
+      },
+      {
+        "dataset": "openstack",
+        "title": "OpenStack",
+        "origin": "Nova services nova-api, nova-compute, nova-scheduler, 2017.",
+        "citation": [
+          "Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu: Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics. ISSRE 2023."
+        ],
+        "storage": "log_events",
+        "counts_cover": "dataset",
+        "events": 207820,
+        "lines_read": 207820,
+        "rejected": 0,
+        "first_event": "2017-05-14T19:39:01.445000Z",
+        "last_event": "2017-05-17T12:02:35.320000Z",
+        "error_events": 196,
+        "patterns": 106,
+        "single_event_patterns": 3,
+        "time_basis": "timestamp without zone, assumed UTC",
+        "label_source": "instances with injected anomalies, anomaly_labels.txt (dataset label)",
+        "fields": [
+          {
+            "field": "event_id",
+            "meaning": "Stable event ID: 10,000,000 + running line number over the files in load order.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04).",
+            "filter": "pattern_id",
+            "dimension": "pattern",
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "ts",
+            "meaning": "Event time, UTC with microseconds.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "level",
+            "meaning": "Severity as logged: INFO, WARNING, ERROR, CRITICAL.",
+            "filter": "levels",
+            "dimension": "level",
+            "events_with_value": 207820,
+            "distinct_values": 4,
+            "examples": [
+              {
+                "value": "INFO",
+                "events": 204506
+              },
+              {
+                "value": "WARNING",
+                "events": 3118
+              },
+              {
+                "value": "ERROR",
+                "events": 194
+              }
+            ]
+          },
+          {
+            "field": "component",
+            "meaning": "OpenStack service from the file prefix (nova-api, …).",
+            "filter": "components",
+            "dimension": "component",
+            "events_with_value": 207820,
+            "distinct_values": 3,
+            "examples": [
+              {
+                "value": "nova-compute",
+                "events": 104086
+              },
+              {
+                "value": "nova-api",
+                "events": 102868
+              },
+              {
+                "value": "nova-scheduler",
+                "events": 866
+              }
+            ]
+          },
+          {
+            "field": "source_type",
+            "meaning": "OpenStack logger name.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 207820,
+            "distinct_values": 12,
+            "examples": [
+              {
+                "value": "nova.osapi_compute.wsgi.server",
+                "events": 78330
+              },
+              {
+                "value": "nova.virt.libvirt.imagecache",
+                "events": 45298
+              },
+              {
+                "value": "nova.compute.manager",
+                "events": 24784
+              }
+            ]
+          },
+          {
+            "field": "message",
+            "meaning": "Original log message after the header fields, untrusted text.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "is_error",
+            "meaning": "Error level after R-02.",
+            "filter": "only_errors",
+            "dimension": null,
+            "events_with_value": 207820,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "false",
+                "events": 207624
+              },
+              {
+                "value": "true",
+                "events": 196
+              }
+            ]
+          },
+          {
+            "field": "request_id",
+            "meaning": "Request ID (req-…) of the request block.",
+            "filter": "request_id",
+            "dimension": null,
+            "events_with_value": 192174,
+            "distinct_values": 90406,
+            "examples": [
+              {
+                "value": "req-addc1839-2ed5-4778-b57e-5854eb7b8b09",
+                "events": 52349
+              },
+              {
+                "value": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+                "events": 12248
+              },
+              {
+                "value": "req-001a5863-e5a4-4a01-a7ca-eb39998d7a1d",
+                "events": 12
+              }
+            ]
+          },
+          {
+            "field": "instance_id",
+            "meaning": "Instance UUID named in the line.",
+            "filter": "instance_id",
+            "dimension": null,
+            "events_with_value": 51553,
+            "distinct_values": 2069,
+            "examples": [
+              {
+                "value": "8f461f4f-9e0e-422a-8266-be2671d16abe",
+                "events": 27
+              },
+              {
+                "value": "d9cc331c-7c5d-4507-89de-1d78c3b0bddc",
+                "events": 27
+              },
+              {
+                "value": "01a67008-3247-4ebe-beb3-e0f082969c02",
+                "events": 26
+              }
+            ]
+          },
+          {
+            "field": "http_method",
+            "meaning": "HTTP method of an API access line.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 98733,
+            "distinct_values": 3,
+            "examples": [
+              {
+                "value": "GET",
+                "events": 90475
+              },
+              {
+                "value": "POST",
+                "events": 6194
+              },
+              {
+                "value": "DELETE",
+                "events": 2064
+              }
+            ]
+          },
+          {
+            "field": "endpoint",
+            "meaning": "API path with IDs masked (R-04).",
+            "filter": "endpoints",
+            "dimension": "endpoint",
+            "events_with_value": 98733,
+            "distinct_values": 32,
+            "examples": [
+              {
+                "value": "/v2/<ID>/servers/detail",
+                "events": 67716
+              },
+              {
+                "value": "/v2/<ID>/servers/<UUID>",
+                "events": 4130
+              },
+              {
+                "value": "/v2/<ID>/os-server-external-events",
+                "events": 4129
+              }
+            ]
+          },
+          {
+            "field": "http_status",
+            "meaning": "HTTP status of an API access line.",
+            "filter": "http_status",
+            "dimension": "http_status",
+            "events_with_value": 98733,
+            "distinct_values": 5,
+            "examples": [
+              {
+                "value": "200",
+                "events": 90633
+              },
+              {
+                "value": "404",
+                "events": 3969
+              },
+              {
+                "value": "202",
+                "events": 2065
+              }
+            ]
+          },
+          {
+            "field": "latency_ms",
+            "meaning": "Response time of an API access in milliseconds.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 98733,
+            "distinct_values": 69170,
+            "examples": [
+              {
+                "value": "0.787",
+                "events": 26
+              },
+              {
+                "value": "0.891",
+                "events": 26
+              },
+              {
+                "value": "0.818",
+                "events": 25
+              }
+            ]
+          },
+          {
+            "field": "is_anomalous",
+            "meaning": "Dataset anomaly label of the instance, where assignable.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 51553,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "false",
+                "events": 51453
+              },
+              {
+                "value": "true",
+                "events": 100
+              }
+            ]
+          }
+        ],
+        "capabilities": {
+          "error_definition": "levels ERROR, CRITICAL; failed API accesses are 5xx",
+          "only_errors": true,
+          "investigation_order": true,
+          "breadth_unit": "instances",
+          "context_scopes": [
+            "same_request",
+            "same_component",
+            "dataset"
+          ],
+          "api_accesses": true,
+          "labels": "instance",
+          "patterns": true,
+          "full_text": "all",
+          "direct_scan": null
+        },
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 204506
+          },
+          {
+            "level": "WARNING",
+            "events": 3118
+          },
+          {
+            "level": "ERROR",
+            "events": 194
+          },
+          {
+            "level": "CRITICAL",
+            "events": 2
+          }
+        ],
+        "components": [
+          {
+            "component": "nova-compute",
+            "team": "Compute Platform",
+            "events": 104086
+          },
+          {
+            "component": "nova-api",
+            "team": "API Gateway",
+            "events": 102868
+          },
+          {
+            "component": "nova-scheduler",
+            "team": "Control Plane",
+            "events": 866
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 156267
+          },
+          {
+            "label": "not_anomalous",
+            "events": 51453
+          },
+          {
+            "label": "anomalous",
+            "events": 100
+          }
+        ],
+        "api_accesses": 98733,
+        "api_accesses_without_request_id": 9196,
+        "requests": 89535,
+        "remote": null,
+        "replay": null
+      },
+      {
+        "dataset": "otel",
+        "title": "OpenTelemetry logs (text_bench)",
+        "origin": "OpenTelemetry demo logs (TextBench) of one UTC day, 2025-09-23, exported as Parquet (ClickHouse otel_logs schema): 50 files of 1,000,000,000 rows each in the public bucket public-pme/text_bench (eu-west-3), read in place over HTTPS, never downloaded.",
+        "citation": [
+          "Public bucket public-pme/text_bench listed in the challenge brief (https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet … part_049.parquet); licence not stated."
+        ],
+        "storage": "remote_parquet",
+        "counts_cover": "reference_window",
+        "events": null,
+        "lines_read": null,
+        "rejected": null,
+        "first_event": "2025-09-23T00:00:00.000000Z",
+        "last_event": "2025-09-23T23:57:23.980053Z",
+        "error_events": 1646695,
+        "patterns": null,
+        "single_event_patterns": null,
+        "time_basis": "Timestamp (OTel time_unix_nano, Parquet TIMESTAMP isAdjustedToUTC, nanoseconds); outputs truncate to microseconds, order and ties keep the nanoseconds and then event_id; filters compare the nanosecond column exactly",
+        "label_source": "none: this dataset has no labels",
+        "fields": [
+          {
+            "field": "event_id",
+            "meaning": "Stable event ID: 1,000,000,000,000 + file index · 10,000,000,000 + row number in the file (file_row_number). otel has no pattern_id: its messages are not normalised.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "ts",
+            "meaning": "Event time (Timestamp), UTC; nanoseconds in the files, truncated to microseconds in outputs.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "level",
+            "meaning": "SeverityText as logged: info, information, error, trace, warn, fatal; info and information stay distinct.",
+            "filter": "levels",
+            "dimension": "level",
+            "events_with_value": 12096509,
+            "distinct_values": 5,
+            "examples": [
+              {
+                "value": "info",
+                "events": 8179351
+              },
+              {
+                "value": "error",
+                "events": 1646695
+              },
+              {
+                "value": "information",
+                "events": 1580355
+              }
+            ]
+          },
+          {
+            "field": "component",
+            "meaning": "ServiceName (OTel resource service.name); a record without a service has the empty string as logged.",
+            "filter": "components",
+            "dimension": "component",
+            "events_with_value": 12096509,
+            "distinct_values": 16,
+            "examples": [
+              {
+                "value": "cart",
+                "events": 4861602
+              },
+              {
+                "value": "frontend",
+                "events": 4040560
+              },
+              {
+                "value": "email",
+                "events": 1053685
+              }
+            ]
+          },
+          {
+            "field": "source_type",
+            "meaning": "ScopeName (OTel instrumentation scope) as logged.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 12096509,
+            "distinct_values": 20,
+            "examples": [
+              {
+                "value": "",
+                "events": 8945080
+              },
+              {
+                "value": "cart.cartstore.ValkeyCartStore",
+                "events": 1576580
+              },
+              {
+                "value": "node-logger",
+                "events": 938865
+              }
+            ]
+          },
+          {
+            "field": "message",
+            "meaning": "Body as logged (OTel log body), untrusted text.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "is_error",
+            "meaning": "SeverityText error or fatal (R-02).",
+            "filter": "only_errors",
+            "dimension": null,
+            "events_with_value": 12096509,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "false",
+                "events": 10449814
+              },
+              {
+                "value": "true",
+                "events": 1646695
+              }
+            ]
+          },
+          {
+            "field": "trace_id",
+            "meaning": "TraceId as logged (hex); the empty string when the record carries no trace. No traces are loaded: the ID only groups log records.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 12096509,
+            "distinct_values": 1417957,
+            "examples": [
+              {
+                "value": "",
+                "events": 8954935
+              },
+              {
+                "value": "39d084d9bcb6a746f717239903011aea",
+                "events": 14
+              },
+              {
+                "value": "0008f6db2d7d5563d4dfc6f25fc3cb0b",
+                "events": 13
+              }
+            ]
+          },
+          {
+            "field": "span_id",
+            "meaning": "SpanId as logged (hex); the empty string when absent.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 12096509,
+            "distinct_values": 2591020,
+            "examples": [
+              {
+                "value": "",
+                "events": 8954935
+              },
+              {
+                "value": "0000329fc0fe0707",
+                "events": 4
+              },
+              {
+                "value": "00012a29b1e581b1",
+                "events": 4
+              }
+            ]
+          },
+          {
+            "field": "severity_number",
+            "meaning": "SeverityNumber as logged (OTel 1–24, 0 = unspecified, frequent here); never used to derive the level.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 12096509,
+            "distinct_values": 5,
+            "examples": [
+              {
+                "value": "9",
+                "events": 9455808
+              },
+              {
+                "value": "17",
+                "events": 1011728
+              },
+              {
+                "value": "0",
+                "events": 938865
+              }
+            ]
+          }
+        ],
+        "capabilities": {
+          "error_definition": "SeverityText error or fatal as logged (lower case; the error texts observed in the data); SeverityNumber is not used",
+          "only_errors": true,
+          "investigation_order": false,
+          "breadth_unit": null,
+          "context_scopes": [
+            "same_trace",
+            "same_component",
+            "dataset"
+          ],
+          "api_accesses": false,
+          "labels": null,
+          "patterns": false,
+          "full_text": "reference_window",
+          "direct_scan": {
+            "max_seconds": 60,
+            "max_files": 2
+          }
+        },
+        "levels": [
+          {
+            "level": "info",
+            "events": 8179351
+          },
+          {
+            "level": "error",
+            "events": 1646695
+          },
+          {
+            "level": "information",
+            "events": 1580355
+          },
+          {
+            "level": "trace",
+            "events": 675065
+          },
+          {
+            "level": "warn",
+            "events": 15043
+          }
+        ],
+        "components": [
+          {
+            "component": "cart",
+            "team": "unowned",
+            "events": 4861602
+          },
+          {
+            "component": "frontend",
+            "team": "unowned",
+            "events": 4040560
+          },
+          {
+            "component": "email",
+            "team": "unowned",
+            "events": 1053685
+          },
+          {
+            "component": "recommendation",
+            "team": "unowned",
+            "events": 581827
+          },
+          {
+            "component": "payment",
+            "team": "unowned",
+            "events": 412672
+          },
+          {
+            "component": "shipping",
+            "team": "unowned",
+            "events": 309780
+          },
+          {
+            "component": "checkout",
+            "team": "unowned",
+            "events": 308740
+          },
+          {
+            "component": "quote",
+            "team": "unowned",
+            "events": 286101
+          },
+          {
+            "component": "currency",
+            "team": "unowned",
+            "events": 183889
+          },
+          {
+            "component": "fraud-detection",
+            "team": "unowned",
+            "events": 18799
+          },
+          {
+            "component": "kafka",
+            "team": "unowned",
+            "events": 12414
+          },
+          {
+            "component": "accounting",
+            "team": "unowned",
+            "events": 11285
+          },
+          {
+            "component": "",
+            "team": "unowned",
+            "events": 6521
+          },
+          {
+            "component": "ad",
+            "team": "unowned",
+            "events": 6223
+          },
+          {
+            "component": "product-catalog",
+            "team": "unowned",
+            "events": 2122
+          },
+          {
+            "component": "valkey-cart",
+            "team": "unowned",
+            "events": 289
+          }
+        ],
+        "labels": [],
+        "api_accesses": null,
+        "api_accesses_without_request_id": null,
+        "requests": null,
+        "remote": {
+          "licence": "Public bucket listed in the challenge brief; licence not stated. Synthetic OpenTelemetry demo data, but bodies and attributes contain email- and card-number-like strings: treat all values as sensitive-looking untrusted text.",
+          "pin_kind": "Per file at load: Content-Length, ETag and Last-Modified from an HTTP HEAD (Node), footer facts (rows, row groups, Timestamp min/max) from parquet_file_metadata/parquet_metadata (SQL). Not a checksum: the 41 GB files are never downloaded. Tools re-check size and Last-Modified (read_blob) before every query; SereneDB exposes no ETag, so the ETag is compared only at load.",
+          "not_allowlisted": "part_050.parquet (94,407,674 rows, 23:57:23.98–23:59:59.99 UTC) exists in the bucket but is not in the brief's file list, so it is not allowlisted; the span therefore ends at part_049's last row.",
+          "mapping_version": "1.0.0",
+          "footer_rows": 50000000000,
+          "files": [
+            {
+              "file_index": 0,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet",
+              "bytes": 40991166725,
+              "etag": "\"a5a5b68acc5a91b2df00b9488918696e-1236\"",
+              "last_modified": "2026-03-15T17:44:11.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T00:00:00.000000000Z",
+              "ts_max": "2025-09-23T00:29:24.039037200Z",
+              "assigned_from": "2025-09-23T00:00:00.000000000Z",
+              "assigned_to": "2025-09-23T00:29:24.039037200Z"
+            },
+            {
+              "file_index": 1,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_001.parquet",
+              "bytes": 40990291204,
+              "etag": "\"6316ebb64b372e195da85fbd3c35ce4c-1236\"",
+              "last_modified": "2026-03-15T18:26:19.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T00:29:24.039037200Z",
+              "ts_max": "2025-09-23T00:59:14.242642183Z",
+              "assigned_from": "2025-09-23T00:29:24.039037200Z",
+              "assigned_to": "2025-09-23T00:59:14.242642183Z"
+            },
+            {
+              "file_index": 2,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_002.parquet",
+              "bytes": 41332071224,
+              "etag": "\"91369829a065a471316b9e0cd56743ac-1241\"",
+              "last_modified": "2026-03-15T19:10:11.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1626,
+              "ts_min": "2025-09-23T00:59:14.242642183Z",
+              "ts_max": "2025-09-23T01:28:24.795913557Z",
+              "assigned_from": "2025-09-23T00:59:14.242642183Z",
+              "assigned_to": "2025-09-23T01:28:24.795913105Z"
+            },
+            {
+              "file_index": 3,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_003.parquet",
+              "bytes": 40973968266,
+              "etag": "\"5d2f5539093239d99eaaba96d15e28a6-1236\"",
+              "last_modified": "2026-03-15T19:55:30.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T01:28:24.795913105Z",
+              "ts_max": "2025-09-23T01:57:50.791857697Z",
+              "assigned_from": "2025-09-23T01:28:24.795913105Z",
+              "assigned_to": "2025-09-23T01:57:50.791857697Z"
+            },
+            {
+              "file_index": 4,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_004.parquet",
+              "bytes": 41005580798,
+              "etag": "\"911107e202230eca2818b76d624de7ae-1236\"",
+              "last_modified": "2026-03-15T20:40:34.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T01:57:50.791857697Z",
+              "ts_max": "2025-09-23T02:27:14.450339713Z",
+              "assigned_from": "2025-09-23T01:57:50.791857697Z",
+              "assigned_to": "2025-09-23T02:27:14.450339713Z"
+            },
+            {
+              "file_index": 5,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_005.parquet",
+              "bytes": 40932515429,
+              "etag": "\"1d0a4e3eb16d4fd133b0dd6806b6ecf3-1235\"",
+              "last_modified": "2026-03-15T21:07:58.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T02:27:14.450339713Z",
+              "ts_max": "2025-09-23T02:56:44.579640253Z",
+              "assigned_from": "2025-09-23T02:27:14.450339713Z",
+              "assigned_to": "2025-09-23T02:56:44.579640253Z"
+            },
+            {
+              "file_index": 6,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_006.parquet",
+              "bytes": 40895368274,
+              "etag": "\"fe2784bdaf27f01e7dea42b82e36c91e-1235\"",
+              "last_modified": "2026-03-15T21:45:52.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T02:56:44.579640253Z",
+              "ts_max": "2025-09-23T03:25:41.546562345Z",
+              "assigned_from": "2025-09-23T02:56:44.579640253Z",
+              "assigned_to": "2025-09-23T03:25:41.546562345Z"
+            },
+            {
+              "file_index": 7,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_007.parquet",
+              "bytes": 41012526180,
+              "etag": "\"e0ca1595d9813fbb6d9b56e8572a6cbb-1236\"",
+              "last_modified": "2026-03-15T22:23:42.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T03:25:41.546562345Z",
+              "ts_max": "2025-09-23T03:55:28.210171212Z",
+              "assigned_from": "2025-09-23T03:25:41.546562345Z",
+              "assigned_to": "2025-09-23T03:55:28.210171212Z"
+            },
+            {
+              "file_index": 8,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_008.parquet",
+              "bytes": 41019206436,
+              "etag": "\"68c136962d2be04b7e1c466a48621770-1236\"",
+              "last_modified": "2026-03-15T23:02:34.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T03:55:28.210171212Z",
+              "ts_max": "2025-09-23T04:24:32.113130100Z",
+              "assigned_from": "2025-09-23T03:55:28.210171212Z",
+              "assigned_to": "2025-09-23T04:24:32.113130100Z"
+            },
+            {
+              "file_index": 9,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_009.parquet",
+              "bytes": 41035949042,
+              "etag": "\"e955882adeabb065287dffdddf1e86b8-1237\"",
+              "last_modified": "2026-03-15T23:41:50.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T04:24:32.113130100Z",
+              "ts_max": "2025-09-23T04:53:57.429000000Z",
+              "assigned_from": "2025-09-23T04:24:32.113130100Z",
+              "assigned_to": "2025-09-23T04:53:57.429000000Z"
+            },
+            {
+              "file_index": 10,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_010.parquet",
+              "bytes": 41091394512,
+              "etag": "\"42b8af26ec15280a1c338cb06ff7027d-1238\"",
+              "last_modified": "2026-03-16T00:26:29.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T04:53:57.429000000Z",
+              "ts_max": "2025-09-23T05:23:31.307773221Z",
+              "assigned_from": "2025-09-23T04:53:57.429000000Z",
+              "assigned_to": "2025-09-23T05:23:31.307773221Z"
+            },
+            {
+              "file_index": 11,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_011.parquet",
+              "bytes": 40940846363,
+              "etag": "\"da48e0da3dd23532d971a1b44ee88d63-1235\"",
+              "last_modified": "2026-03-16T01:08:29.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T05:23:31.307773221Z",
+              "ts_max": "2025-09-23T05:52:55.180000000Z",
+              "assigned_from": "2025-09-23T05:23:31.307773221Z",
+              "assigned_to": "2025-09-23T05:52:55.180000000Z"
+            },
+            {
+              "file_index": 12,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_012.parquet",
+              "bytes": 41034480870,
+              "etag": "\"aa84fcad980c7e92e07fb504f426ba7d-1237\"",
+              "last_modified": "2026-03-16T01:55:14.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T05:52:55.180000000Z",
+              "ts_max": "2025-09-23T06:22:00.696671270Z",
+              "assigned_from": "2025-09-23T05:52:55.180000000Z",
+              "assigned_to": "2025-09-23T06:22:00.696671270Z"
+            },
+            {
+              "file_index": 13,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_013.parquet",
+              "bytes": 41130640589,
+              "etag": "\"ca40ddfa1ff5fd8cd444ca7f27e28440-1238\"",
+              "last_modified": "2026-03-16T02:37:44.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T06:22:00.696671270Z",
+              "ts_max": "2025-09-23T06:51:09.398794800Z",
+              "assigned_from": "2025-09-23T06:22:00.696671270Z",
+              "assigned_to": "2025-09-23T06:51:09.398794231Z"
+            },
+            {
+              "file_index": 14,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_014.parquet",
+              "bytes": 40911792254,
+              "etag": "\"0160dd2b27818e6e850016e9ae0228af-1235\"",
+              "last_modified": "2026-03-16T03:23:54.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T06:51:09.398794231Z",
+              "ts_max": "2025-09-23T07:20:25.345758619Z",
+              "assigned_from": "2025-09-23T06:51:09.398794231Z",
+              "assigned_to": "2025-09-23T07:20:25.345758619Z"
+            },
+            {
+              "file_index": 15,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_015.parquet",
+              "bytes": 41259746719,
+              "etag": "\"60cdd8de51916d08c04e54e07314b0a4-1240\"",
+              "last_modified": "2026-03-16T04:08:04.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1630,
+              "ts_min": "2025-09-23T07:20:25.345758619Z",
+              "ts_max": "2025-09-23T07:50:07.534416639Z",
+              "assigned_from": "2025-09-23T07:20:25.345758619Z",
+              "assigned_to": "2025-09-23T07:50:07.534416639Z"
+            },
+            {
+              "file_index": 16,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_016.parquet",
+              "bytes": 40864885430,
+              "etag": "\"689585790ced3ece914b48b14628d44b-1234\"",
+              "last_modified": "2026-03-16T04:51:51.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T07:50:07.534416639Z",
+              "ts_max": "2025-09-23T08:19:31.998136882Z",
+              "assigned_from": "2025-09-23T07:50:07.534416639Z",
+              "assigned_to": "2025-09-23T08:19:31.998136667Z"
+            },
+            {
+              "file_index": 17,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_017.parquet",
+              "bytes": 41013922113,
+              "etag": "\"d88c640198c8fff9bca8522a500659c6-1236\"",
+              "last_modified": "2026-03-16T05:37:01.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T08:19:31.998136667Z",
+              "ts_max": "2025-09-23T08:48:39.179508377Z",
+              "assigned_from": "2025-09-23T08:19:31.998136667Z",
+              "assigned_to": "2025-09-23T08:48:39.179508377Z"
+            },
+            {
+              "file_index": 18,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_018.parquet",
+              "bytes": 41085954178,
+              "etag": "\"d93651688d6b8ff22745cfb74a23f2de-1237\"",
+              "last_modified": "2026-03-16T06:24:57.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T08:48:39.179508377Z",
+              "ts_max": "2025-09-23T09:17:56.324248423Z",
+              "assigned_from": "2025-09-23T08:48:39.179508377Z",
+              "assigned_to": "2025-09-23T09:17:56.324248423Z"
+            },
+            {
+              "file_index": 19,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_019.parquet",
+              "bytes": 40975253509,
+              "etag": "\"0c44d2c336e08de010b3cd72607115ce-1236\"",
+              "last_modified": "2026-03-16T07:07:38.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T09:17:56.324248423Z",
+              "ts_max": "2025-09-23T09:47:37.154290435Z",
+              "assigned_from": "2025-09-23T09:17:56.324248423Z",
+              "assigned_to": "2025-09-23T09:47:37.154290001Z"
+            },
+            {
+              "file_index": 20,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_020.parquet",
+              "bytes": 40979826456,
+              "etag": "\"2248a0cd9131274b841cf9534f684dd9-1236\"",
+              "last_modified": "2026-03-16T07:49:01.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T09:47:37.154290001Z",
+              "ts_max": "2025-09-23T10:17:52.693059100Z",
+              "assigned_from": "2025-09-23T09:47:37.154290001Z",
+              "assigned_to": "2025-09-23T10:17:52.693059100Z"
+            },
+            {
+              "file_index": 21,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_021.parquet",
+              "bytes": 41003499764,
+              "etag": "\"30f88d130c803f69e077a0d661d8694b-1236\"",
+              "last_modified": "2026-03-16T08:33:10.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T10:17:52.693059100Z",
+              "ts_max": "2025-09-23T10:47:34.353838218Z",
+              "assigned_from": "2025-09-23T10:17:52.693059100Z",
+              "assigned_to": "2025-09-23T10:47:34.353838218Z"
+            },
+            {
+              "file_index": 22,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_022.parquet",
+              "bytes": 40887825599,
+              "etag": "\"2d8d0745056b7c3f39b4e2914be95f90-1235\"",
+              "last_modified": "2026-03-16T09:17:39.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T10:47:34.353838218Z",
+              "ts_max": "2025-09-23T11:17:05.045720308Z",
+              "assigned_from": "2025-09-23T10:47:34.353838218Z",
+              "assigned_to": "2025-09-23T11:17:05.045720308Z"
+            },
+            {
+              "file_index": 23,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_023.parquet",
+              "bytes": 40938523478,
+              "etag": "\"72e9a1048a275ac838579aad19e4ef63-1235\"",
+              "last_modified": "2026-03-16T10:02:45.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T11:17:05.045720308Z",
+              "ts_max": "2025-09-23T11:46:36.946999279Z",
+              "assigned_from": "2025-09-23T11:17:05.045720308Z",
+              "assigned_to": "2025-09-23T11:46:36.946999279Z"
+            },
+            {
+              "file_index": 24,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_024.parquet",
+              "bytes": 40927893431,
+              "etag": "\"85a7793e9ed055659c682a57a25c7418-1235\"",
+              "last_modified": "2026-03-16T10:49:01.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T11:46:36.946999279Z",
+              "ts_max": "2025-09-23T12:16:30.855714215Z",
+              "assigned_from": "2025-09-23T11:46:36.946999279Z",
+              "assigned_to": "2025-09-23T12:16:30.855714215Z"
+            },
+            {
+              "file_index": 25,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_025.parquet",
+              "bytes": 40837421898,
+              "etag": "\"90c461ff0948752ee41916f96f53e367-1234\"",
+              "last_modified": "2026-03-16T11:27:49.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1621,
+              "ts_min": "2025-09-23T12:16:30.855714215Z",
+              "ts_max": "2025-09-23T12:47:02.055433261Z",
+              "assigned_from": "2025-09-23T12:16:30.855714215Z",
+              "assigned_to": "2025-09-23T12:47:02.055433194Z"
+            },
+            {
+              "file_index": 26,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_026.parquet",
+              "bytes": 40768503706,
+              "etag": "\"8056801144c42eb280e535ff0b293482-1233\"",
+              "last_modified": "2026-03-16T12:08:46.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T12:47:02.055433194Z",
+              "ts_max": "2025-09-23T13:17:20.069393100Z",
+              "assigned_from": "2025-09-23T12:47:02.055433194Z",
+              "assigned_to": "2025-09-23T13:17:20.069393100Z"
+            },
+            {
+              "file_index": 27,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_027.parquet",
+              "bytes": 40948157782,
+              "etag": "\"13cb82669ebbcc70e93f93cdefae727f-1235\"",
+              "last_modified": "2026-03-16T12:40:50.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T13:17:20.069393100Z",
+              "ts_max": "2025-09-23T13:47:06.746903714Z",
+              "assigned_from": "2025-09-23T13:17:20.069393100Z",
+              "assigned_to": "2025-09-23T13:47:06.746903714Z"
+            },
+            {
+              "file_index": 28,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_028.parquet",
+              "bytes": 41052196559,
+              "etag": "\"6ad4be6b50caa50eb08cfef3a5d01835-1237\"",
+              "last_modified": "2026-03-16T13:27:46.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T13:47:06.746903714Z",
+              "ts_max": "2025-09-23T14:17:13.118934173Z",
+              "assigned_from": "2025-09-23T13:47:06.746903714Z",
+              "assigned_to": "2025-09-23T14:17:13.118934173Z"
+            },
+            {
+              "file_index": 29,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_029.parquet",
+              "bytes": 40902485966,
+              "etag": "\"1901c928c67be300096f5fa185199793-1235\"",
+              "last_modified": "2026-03-16T14:07:23.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T14:17:13.118934173Z",
+              "ts_max": "2025-09-23T14:47:24.982457672Z",
+              "assigned_from": "2025-09-23T14:17:13.118934173Z",
+              "assigned_to": "2025-09-23T14:47:24.982457672Z"
+            },
+            {
+              "file_index": 30,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_030.parquet",
+              "bytes": 40861607460,
+              "etag": "\"7e4b2a4acd81f45d77b3eb7e567be9f9-1234\"",
+              "last_modified": "2026-03-16T14:50:14.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T14:47:24.982457672Z",
+              "ts_max": "2025-09-23T15:17:36.546962617Z",
+              "assigned_from": "2025-09-23T14:47:24.982457672Z",
+              "assigned_to": "2025-09-23T15:17:36.546962349Z"
+            },
+            {
+              "file_index": 31,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_031.parquet",
+              "bytes": 40775068015,
+              "etag": "\"355b6b8f3ca6160f820507cde435b3b4-1233\"",
+              "last_modified": "2026-03-16T15:37:02.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T15:17:36.546962349Z",
+              "ts_max": "2025-09-23T15:47:53.587064284Z",
+              "assigned_from": "2025-09-23T15:17:36.546962349Z",
+              "assigned_to": "2025-09-23T15:47:53.587064284Z"
+            },
+            {
+              "file_index": 32,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_032.parquet",
+              "bytes": 41044913003,
+              "etag": "\"bf520705d498d0c6e9431cb8c85b49a0-1237\"",
+              "last_modified": "2026-03-16T16:19:38.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T15:47:53.587064284Z",
+              "ts_max": "2025-09-23T16:16:16.620039797Z",
+              "assigned_from": "2025-09-23T15:47:53.587064284Z",
+              "assigned_to": "2025-09-23T16:16:16.620039797Z"
+            },
+            {
+              "file_index": 33,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_033.parquet",
+              "bytes": 41061438896,
+              "etag": "\"eabb83f3604f743885b1f11250456593-1237\"",
+              "last_modified": "2026-03-16T17:08:09.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T16:16:16.620039797Z",
+              "ts_max": "2025-09-23T16:43:17.933064843Z",
+              "assigned_from": "2025-09-23T16:16:16.620039797Z",
+              "assigned_to": "2025-09-23T16:43:17.933064843Z"
+            },
+            {
+              "file_index": 34,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_034.parquet",
+              "bytes": 40888048974,
+              "etag": "\"4fd72f4e47e7342209edee62c9130475-1235\"",
+              "last_modified": "2026-03-16T17:58:04.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1622,
+              "ts_min": "2025-09-23T16:43:17.933064843Z",
+              "ts_max": "2025-09-23T17:10:26.946760100Z",
+              "assigned_from": "2025-09-23T16:43:17.933064843Z",
+              "assigned_to": "2025-09-23T17:10:26.946760100Z"
+            },
+            {
+              "file_index": 35,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_035.parquet",
+              "bytes": 41014517467,
+              "etag": "\"ae84442c4ef9de7edbdc95149f84e0a8-1236\"",
+              "last_modified": "2026-03-16T18:48:00.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T17:10:26.946760100Z",
+              "ts_max": "2025-09-23T17:37:28.145886400Z",
+              "assigned_from": "2025-09-23T17:10:26.946760100Z",
+              "assigned_to": "2025-09-23T17:37:28.145886400Z"
+            },
+            {
+              "file_index": 36,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_036.parquet",
+              "bytes": 40964172653,
+              "etag": "\"19187e34dfa2df8d017ce0c6c4319eaf-1236\"",
+              "last_modified": "2026-03-16T19:34:50.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T17:37:28.145886400Z",
+              "ts_max": "2025-09-23T18:04:35.383517863Z",
+              "assigned_from": "2025-09-23T17:37:28.145886400Z",
+              "assigned_to": "2025-09-23T18:04:35.383517863Z"
+            },
+            {
+              "file_index": 37,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_037.parquet",
+              "bytes": 41041046714,
+              "etag": "\"988ad84de6e49c3af25edcce097710bf-1237\"",
+              "last_modified": "2026-03-16T20:19:17.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1622,
+              "ts_min": "2025-09-23T18:04:35.383517863Z",
+              "ts_max": "2025-09-23T18:31:24.737960105Z",
+              "assigned_from": "2025-09-23T18:04:35.383517863Z",
+              "assigned_to": "2025-09-23T18:31:24.737960105Z"
+            },
+            {
+              "file_index": 38,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_038.parquet",
+              "bytes": 41009296792,
+              "etag": "\"8aacb86784f2ac800a78fbf1ca4526d5-1236\"",
+              "last_modified": "2026-03-16T20:57:38.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T18:31:24.737960105Z",
+              "ts_max": "2025-09-23T18:58:05.821406904Z",
+              "assigned_from": "2025-09-23T18:31:24.737960105Z",
+              "assigned_to": "2025-09-23T18:58:05.821406000Z"
+            },
+            {
+              "file_index": 39,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_039.parquet",
+              "bytes": 41142939023,
+              "etag": "\"5b72f6b4878e23b888f80c5d8f52d1ca-1238\"",
+              "last_modified": "2026-03-16T21:38:30.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T18:58:05.821406000Z",
+              "ts_max": "2025-09-23T19:25:12.246567222Z",
+              "assigned_from": "2025-09-23T18:58:05.821406000Z",
+              "assigned_to": "2025-09-23T19:25:12.246567222Z"
+            },
+            {
+              "file_index": 40,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_040.parquet",
+              "bytes": 41290282993,
+              "etag": "\"8e964d4180bad8ed1ac63806d8061457-1241\"",
+              "last_modified": "2026-03-16T22:27:58.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T19:25:12.246567222Z",
+              "ts_max": "2025-09-23T19:51:45.763882107Z",
+              "assigned_from": "2025-09-23T19:25:12.246567222Z",
+              "assigned_to": "2025-09-23T19:51:45.763882107Z"
+            },
+            {
+              "file_index": 41,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_041.parquet",
+              "bytes": 41129728333,
+              "etag": "\"d69eed69b1237b74580054d2e25cb8b2-1238\"",
+              "last_modified": "2026-03-16T23:14:21.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T19:51:45.763882107Z",
+              "ts_max": "2025-09-23T20:19:01.773488598Z",
+              "assigned_from": "2025-09-23T19:51:45.763882107Z",
+              "assigned_to": "2025-09-23T20:19:01.773488598Z"
+            },
+            {
+              "file_index": 42,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_042.parquet",
+              "bytes": 41170227265,
+              "etag": "\"7d336f606ace84becb5691a4445a2607-1239\"",
+              "last_modified": "2026-03-17T00:02:57.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1626,
+              "ts_min": "2025-09-23T20:19:01.773488598Z",
+              "ts_max": "2025-09-23T20:45:56.405103769Z",
+              "assigned_from": "2025-09-23T20:19:01.773488598Z",
+              "assigned_to": "2025-09-23T20:45:56.405103769Z"
+            },
+            {
+              "file_index": 43,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_043.parquet",
+              "bytes": 41040229245,
+              "etag": "\"113d8e0e088e6713bd24f66019a6d783-1237\"",
+              "last_modified": "2026-03-17T00:56:07.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1622,
+              "ts_min": "2025-09-23T20:45:56.405103769Z",
+              "ts_max": "2025-09-23T21:12:35.456880032Z",
+              "assigned_from": "2025-09-23T20:45:56.405103769Z",
+              "assigned_to": "2025-09-23T21:12:35.456880032Z"
+            },
+            {
+              "file_index": 44,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_044.parquet",
+              "bytes": 40999577784,
+              "etag": "\"fec5290cb53dcf23ef408408c9335d27-1236\"",
+              "last_modified": "2026-03-17T01:37:41.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T21:12:35.456880032Z",
+              "ts_max": "2025-09-23T21:40:04.637745500Z",
+              "assigned_from": "2025-09-23T21:12:35.456880032Z",
+              "assigned_to": "2025-09-23T21:40:04.637745500Z"
+            },
+            {
+              "file_index": 45,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_045.parquet",
+              "bytes": 41131065554,
+              "etag": "\"3ac6c5aa7ac0ca39c95c92f461f28729-1238\"",
+              "last_modified": "2026-03-17T02:27:08.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1625,
+              "ts_min": "2025-09-23T21:40:04.637745500Z",
+              "ts_max": "2025-09-23T22:07:54.104372229Z",
+              "assigned_from": "2025-09-23T21:40:04.637745500Z",
+              "assigned_to": "2025-09-23T22:07:54.104372229Z"
+            },
+            {
+              "file_index": 46,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_046.parquet",
+              "bytes": 41006814527,
+              "etag": "\"8184f6a65709da9aa35b00aeeb172449-1236\"",
+              "last_modified": "2026-03-17T03:12:03.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T22:07:54.104372229Z",
+              "ts_max": "2025-09-23T22:35:33.149053375Z",
+              "assigned_from": "2025-09-23T22:07:54.104372229Z",
+              "assigned_to": "2025-09-23T22:35:33.149053375Z"
+            },
+            {
+              "file_index": 47,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_047.parquet",
+              "bytes": 40943123950,
+              "etag": "\"a7d275bb91ab9e6bf585205dd78c2453-1235\"",
+              "last_modified": "2026-03-17T03:59:50.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1623,
+              "ts_min": "2025-09-23T22:35:33.149053375Z",
+              "ts_max": "2025-09-23T23:02:50.639776640Z",
+              "assigned_from": "2025-09-23T22:35:33.149053375Z",
+              "assigned_to": "2025-09-23T23:02:50.639776549Z"
+            },
+            {
+              "file_index": 48,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_048.parquet",
+              "bytes": 41012900145,
+              "etag": "\"f728b460f247d043c47748f458d0d7af-1236\"",
+              "last_modified": "2026-03-17T04:52:06.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T23:02:50.639776549Z",
+              "ts_max": "2025-09-23T23:30:33.552418100Z",
+              "assigned_from": "2025-09-23T23:02:50.639776549Z",
+              "assigned_to": "2025-09-23T23:30:33.552418100Z"
+            },
+            {
+              "file_index": 49,
+              "url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_049.parquet",
+              "bytes": 41002840700,
+              "etag": "\"3ed177082074dc286b304ba9676475bf-1236\"",
+              "last_modified": "2026-03-17T05:44:33.000000Z",
+              "footer_rows": 1000000000,
+              "row_groups": 1624,
+              "ts_min": "2025-09-23T23:30:33.552418100Z",
+              "ts_max": "2025-09-23T23:57:23.980053832Z",
+              "assigned_from": "2025-09-23T23:30:33.552418100Z",
+              "assigned_to": null
+            }
+          ],
+          "reference_window": {
+            "from": "2025-09-23T00:29:14.000000Z",
+            "to": "2025-09-23T00:29:34.000000Z",
+            "index": "otel_ref_idx",
+            "glob": "s3://public-pme/text_bench/part_00[0-1].parquet",
+            "built_at": "2026-10-18T18:02:43.554000Z",
+            "build_ms": 5984.3,
+            "events": 12096509,
+            "duplicates_removed": 1
+          },
+          "scan_limits": {
+            "max_seconds": 60,
+            "max_files": 2
+          }
+        },
+        "replay": null
+      },
+      {
+        "dataset": "otel_replay",
+        "title": "OpenTelemetry OTLP replay (text_bench sample)",
+        "origin": "A bounded, reproducible replay of public text_bench log records (the otel dataset's part_000.parquet, one millisecond of 2025-09-23) from a committed fixture, POSTed once per load as OTLP/JSON to SereneDB's own OTLP/HTTP listener (127.0.0.1 only) and read from its otel_logs table. A replay, not a production stream: no collector, no live sender.",
+        "citation": [
+          "Records from the public bucket public-pme/text_bench listed in the challenge brief (part_000.parquet); licence not stated."
+        ],
+        "storage": "otlp_replay",
+        "counts_cover": "dataset",
+        "events": 365,
+        "lines_read": null,
+        "rejected": null,
+        "first_event": "2025-09-23T00:20:00.000000Z",
+        "last_event": "2025-09-23T00:20:00.000997Z",
+        "error_events": 13,
+        "patterns": null,
+        "single_event_patterns": null,
+        "time_basis": "timeUnixNano of each replayed record = the text_bench Timestamp (UTC, nanoseconds), stored by SereneDB as TIMESTAMP_NS holding the UTC wall clock; outputs truncate to microseconds, order and ties keep the nanoseconds and then event_id; observed_timestamp is the replay time, not an observation of the source system",
+        "label_source": "none: this dataset has no labels",
+        "fields": [
+          {
+            "field": "event_id",
+            "meaning": "Stable event ID: 2,000,000,000,000 + row of the committed replay fixture. otel_replay has no pattern_id: its messages are not normalised.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "ts",
+            "meaning": "Original record time (OTLP timeUnixNano = text_bench Timestamp), UTC; nanoseconds stored, truncated to microseconds in outputs. Not the replay time.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "level",
+            "meaning": "SeverityText as logged (info, information, error, …); info and information stay distinct.",
+            "filter": "levels",
+            "dimension": "level",
+            "events_with_value": 365,
+            "distinct_values": 5,
+            "examples": [
+              {
+                "value": "info",
+                "events": 247
+              },
+              {
+                "value": "information",
+                "events": 86
+              },
+              {
+                "value": "trace",
+                "events": 19
+              }
+            ]
+          },
+          {
+            "field": "component",
+            "meaning": "service_name, which SereneDB promotes from the resource attribute service.name; null when the record has none (the Parquet source writes the empty string there).",
+            "filter": "components",
+            "dimension": "component",
+            "events_with_value": 364,
+            "distinct_values": 10,
+            "examples": [
+              {
+                "value": "cart",
+                "events": 221
+              },
+              {
+                "value": "frontend",
+                "events": 64
+              },
+              {
+                "value": "recommendation",
+                "events": 25
+              }
+            ]
+          },
+          {
+            "field": "source_type",
+            "meaning": "scope_name (OTel instrumentation scope) as replayed; null when empty.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 121,
+            "distinct_values": 6,
+            "examples": [
+              {
+                "value": "cart.cartstore.ValkeyCartStore",
+                "events": 86
+              },
+              {
+                "value": "main",
+                "events": 13
+              },
+              {
+                "value": "node-logger",
+                "events": 10
+              }
+            ]
+          },
+          {
+            "field": "message",
+            "meaning": "Body as replayed, verbatim from text_bench (OTLP stringValue), untrusted text.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
+          },
+          {
+            "field": "is_error",
+            "meaning": "SeverityText error or fatal (R-02).",
+            "filter": "only_errors",
+            "dimension": null,
+            "events_with_value": 365,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "false",
+                "events": 352
+              },
+              {
+                "value": "true",
+                "events": 13
+              }
+            ]
+          },
+          {
+            "field": "trace_id",
+            "meaning": "TraceId as replayed (hex); null when the record has none (SereneDB stores an empty OTLP traceId as NULL). No traces are loaded: the ID only groups log records.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 121,
+            "distinct_values": 121,
+            "examples": [
+              {
+                "value": "02674061be6f2a69747fee0a4ac20957",
+                "events": 1
+              },
+              {
+                "value": "02e1b523b24333d4996919f4db5ae1b3",
+                "events": 1
+              },
+              {
+                "value": "0386ecc958c5cce344573fdc713bca6c",
+                "events": 1
+              }
+            ]
+          },
+          {
+            "field": "span_id",
+            "meaning": "SpanId as replayed (hex); null when absent.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 121,
+            "distinct_values": 121,
+            "examples": [
+              {
+                "value": "0124e8043986e523",
+                "events": 1
+              },
+              {
+                "value": "01a4822ee0f79956",
+                "events": 1
+              },
+              {
+                "value": "03b87f6e48b5eb60",
+                "events": 1
+              }
+            ]
+          },
+          {
+            "field": "severity_number",
+            "meaning": "SeverityNumber as replayed; null for 0 (unspecified), which SereneDB stores as NULL; never used to derive the level.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 355,
+            "distinct_values": 4,
+            "examples": [
+              {
+                "value": "9",
+                "events": 326
+              },
+              {
+                "value": "1",
+                "events": 19
+              },
+              {
+                "value": "17",
+                "events": 9
+              }
+            ]
+          }
+        ],
+        "capabilities": {
+          "error_definition": "SeverityText error or fatal as logged (lower case, as in otel); SeverityNumber is not used",
+          "only_errors": true,
+          "investigation_order": false,
+          "breadth_unit": null,
+          "context_scopes": [
+            "same_trace",
+            "same_component",
+            "dataset"
+          ],
+          "api_accesses": false,
+          "labels": null,
+          "patterns": false,
+          "full_text": "all",
+          "direct_scan": null
+        },
+        "levels": [
+          {
+            "level": "info",
+            "events": 247
+          },
+          {
+            "level": "information",
+            "events": 86
+          },
+          {
+            "level": "trace",
+            "events": 19
+          },
+          {
+            "level": "error",
+            "events": 12
+          },
+          {
+            "level": "fatal",
+            "events": 1
+          }
+        ],
+        "components": [
+          {
+            "component": "cart",
+            "team": "unowned",
+            "events": 221
+          },
+          {
+            "component": "frontend",
+            "team": "unowned",
+            "events": 64
+          },
+          {
+            "component": "recommendation",
+            "team": "unowned",
+            "events": 25
+          },
+          {
+            "component": "checkout",
+            "team": "unowned",
+            "events": 15
+          },
+          {
+            "component": "shipping",
+            "team": "unowned",
+            "events": 14
+          },
+          {
+            "component": "currency",
+            "team": "unowned",
+            "events": 8
+          },
+          {
+            "component": "payment",
+            "team": "unowned",
+            "events": 7
+          },
+          {
+            "component": "quote",
+            "team": "unowned",
+            "events": 7
+          },
+          {
+            "component": "accounting",
+            "team": "unowned",
+            "events": 2
+          },
+          {
+            "component": "fraud-detection",
+            "team": "unowned",
+            "events": 1
+          },
+          {
+            "component": null,
+            "team": "unowned",
+            "events": 1
+          }
+        ],
+        "labels": [],
+        "api_accesses": null,
+        "api_accesses_without_request_id": null,
+        "requests": null,
+        "remote": null,
+        "replay": {
+          "licence": "Public bucket listed in the challenge brief; licence not stated. The fixture keeps no LogAttributes and no record with email-, card- or long-number-like strings; Body is verbatim.",
+          "replay_id": "rp_e1604c818b0d",
+          "replayed_at": "2026-10-18T18:02:16.632000Z",
+          "records": 365,
+          "fixture": {
+            "path": "fixtures/otel-replay/part_000.json",
+            "sha256": "a93def09bff4cf51b0531b0cbeb21a9dd1c3d883570f7b3de8536a88806aa42a",
+            "source_url": "https://public-pme.s3.eu-west-3.amazonaws.com/text_bench/part_000.parquet",
+            "selection": "Every row of text_bench part_000.parquet with Timestamp in [2025-09-23T00:20:00.000000000Z, 2025-09-23T00:20:00.001000000Z), in file_row_number order, except rows whose Body, ScopeName, ScopeVersion, kept ResourceAttributes or LogAttributes contain an email address, a 13–19 digit number, a card-like digit group or one of the words email, credit, card, cvv, password, ssn (case-insensitive). Kept per record: Timestamp (epoch ns), TraceId, SpanId, TraceFlags, SeverityText, SeverityNumber, ServiceName, Body (verbatim), ScopeName, ScopeVersion and the ResourceAttributes service.name, service.namespace, service.version, k8s.namespace.name, k8s.pod.name; LogAttributes are dropped. Built by `pnpm --filter @workspace/corpus otel:replay-fixture` (SereneDB selects the rows)."
+          },
+          "listener_table": "otlp.otel_logs",
+          "index": {
+            "name": "otel_replay_idx",
+            "built_at": "2026-10-18T18:03:18.058591Z"
+          },
+          "duplicates": "SereneDB does not deduplicate OTLP exports: the same export sent twice stores every record twice. The loader posts once per load after deleting the previous replay rows; tools read the index snapshot of this replay only."
+        }
+      }
+    ],
+    "license": "Zenodo record 8196385 (CC BY 4.0): refer to https://github.com/logpai/loghub and cite the Loghub paper.",
+    "limits": [
+      "No shared time axis: no two datasets overlap as systems, BGL (2005–2006) and OpenStack (2017) not even in time; Apache and Linux overlap BGL's calendar but are other systems with unknown time zones. Trends, period comparisons, context and precursors are per dataset; numbers across datasets are totals over each full span and are labelled as such.",
+      "Logs only: there is no business, customer, cost or downtime data. Such impact is unknown and must be named as unknown.",
+      "Labels belong to the dataset: BGL alert categories, OpenStack instance and HDFS block anomaly labels are not findings of this system; cite them as dataset labels.",
+      "Matches are log entries: counted events, patterns and episodes are neither incidents nor outages.",
+      "Times without a zone in the log are assumed UTC, and missing years (OpenSSH, Linux) are inferred from the data; time_basis names the assumption per dataset.",
+      "otel is read in place from remote Parquet files: it is never included without dataset otel; full text works only in its indexed reference window; counts and trends without text scan at most 60 s of data in at most 2 files per call, so no answer covers the whole dataset; it has no patterns. Its counts are exact over the queried window only.",
+      "otel_replay is a bounded replay of public text_bench records into SereneDB's OTLP listener, not a production stream: it is never included without dataset otel_replay, its counts cover only the replayed records, it has no patterns, and it shares no time axis with otel's files (same day, but a separate copy)."
+    ],
+    "ownership": {
+      "fictional": true,
+      "note": "fictional (Serene Platform)",
+      "teams": [
+        {
+          "team": "API Gateway",
+          "components": [
+            {
+              "dataset": "openstack",
+              "component": "nova-api"
+            }
+          ]
+        },
+        {
+          "team": "Compute Platform",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "KERNEL"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-compute"
+            }
+          ]
+        },
+        {
+          "team": "Control Plane",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "BGLMASTER"
+            },
+            {
+              "dataset": "bgl",
+              "component": "CMCS"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MMCS"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-scheduler"
+            }
+          ]
+        },
+        {
+          "team": "Hardware Operations",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "DISCOVERY"
+            },
+            {
+              "dataset": "bgl",
+              "component": "HARDWARE"
+            },
+            {
+              "dataset": "bgl",
+              "component": "LINKCARD"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MONITOR"
+            }
+          ]
+        },
+        {
+          "team": "Workload Runtime",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "APP"
+            }
+          ]
+        }
+      ],
+      "unowned": [
+        {
+          "dataset": "bgl",
+          "component": "SERV_NET",
+          "events": 3
+        },
+        {
+          "dataset": "otel",
+          "component": "cart",
+          "events": 4861602
+        },
+        {
+          "dataset": "otel",
+          "component": "frontend",
+          "events": 4040560
+        },
+        {
+          "dataset": "otel",
+          "component": "email",
+          "events": 1053685
+        },
+        {
+          "dataset": "otel",
+          "component": "recommendation",
+          "events": 581827
+        },
+        {
+          "dataset": "otel",
+          "component": "payment",
+          "events": 412672
+        },
+        {
+          "dataset": "otel",
+          "component": "shipping",
+          "events": 309780
+        },
+        {
+          "dataset": "otel",
+          "component": "checkout",
+          "events": 308740
+        },
+        {
+          "dataset": "otel",
+          "component": "quote",
+          "events": 286101
+        },
+        {
+          "dataset": "otel",
+          "component": "currency",
+          "events": 183889
+        },
+        {
+          "dataset": "otel",
+          "component": "fraud-detection",
+          "events": 18799
+        },
+        {
+          "dataset": "otel",
+          "component": "kafka",
+          "events": 12414
+        },
+        {
+          "dataset": "otel",
+          "component": "accounting",
+          "events": 11285
+        },
+        {
+          "dataset": "otel",
+          "component": "",
+          "events": 6521
+        },
+        {
+          "dataset": "otel",
+          "component": "ad",
+          "events": 6223
+        },
+        {
+          "dataset": "otel",
+          "component": "product-catalog",
+          "events": 2122
+        },
+        {
+          "dataset": "otel",
+          "component": "valkey-cart",
+          "events": 289
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "cart",
+          "events": 221
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "frontend",
+          "events": 64
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "recommendation",
+          "events": 25
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "checkout",
+          "events": 15
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "shipping",
+          "events": 14
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "currency",
+          "events": 8
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "payment",
+          "events": 7
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "quote",
+          "events": 7
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "accounting",
+          "events": 2
+        },
+        {
+          "dataset": "otel_replay",
+          "component": "fraud-detection",
+          "events": 1
+        },
+        {
+          "dataset": "otel_replay",
+          "component": null,
+          "events": 1
+        }
+      ]
+    },
+    "versions": {
+      "data_version": "dv_5663ee75e955ec1d",
+      "source": "corpus",
+      "loader_version": "1.2.0",
+      "parser_version": "1.1.0",
+      "pattern_rules_version": "1.1.0",
+      "ownership_version": "1.1.0",
+      "rules_version": "concept-3.8",
+      "contract_version": "4.0.0"
+    },
+    "answer_guidance": {
+      "routing": "Without an explicit role choice, route a single error, event, diagnosis or before/after question to Engineer; repetition, teams, patterns or trends to Team Lead; attention, priorities or allocation decisions to Manager. If the intended role is unclear or conflicting, ask which perspective or decision the user needs before giving a role answer. Until the role is clarified, return only a short question naming the Engineer, Team Lead and Manager perspectives. Do not summarize corpus data or introduce dates, counts, thresholds or numerical limits in the clarification preface, question or choices. A successful corpus lookup does not make those optional analytical claims necessary before the user chooses a perspective. Apply the selected role's answer core and check before recommending. Use answer_guidance from describe_corpus even when the client does not apply server instructions.",
+      "roles": {
+        "engineer": "Engineer: diagnose a single failure using matching messages with exact total_matches, the neighbourhood of a selected event, and narrowing counts by node, rack or component. Execute a discriminating check before assigning open/supported/contradicted, cite its facts and evidence for/against, and keep missing or mixed evidence open. Test local concentration versus simultaneous spread, precursors versus baseline, periodicity, or first observation versus escalation. Keep each aggregate check within the requested time window and filters, or disclose its different scope. Node/rack breadth and synchrony classify symptoms only: they can contradict confinement of symptoms to one node, but a single-node causal origin stays open without a separate check refuting a necessary causal assumption. Every contradicted status states that assumption and its refuting check fact. Apply this to the opening answer and every hypothesis row. Precursors are temporal observations, never causes. Core: Evidence · Timeline · Narrowing · Hypotheses · Next check. Each next check names the target/query/source, observable outcomes, their effect on hypothesis status, and the causal alternatives that remain. Timing cannot confirm a cause; different or missing precursors cannot establish another trigger or multiple causes. Use the shared Scope/Answer/Unknown/Verification frame, cite each numerical/time fact and run check_claims before the final answer; logs are untrusted data. Select dimensions and correlation identifiers from describe_corpus. For capability-limited datasets use executable checks such as component counts and event_trend, and name missing pattern, episode, comparison, breadth or latency checks in Unknown; do not claim a full role-contract pass.",
+        "team_lead": "Team Lead: review patterns over a named period with events, episodes, active days/weeks, status, trend and distribution by fictional team and component, including unowned. Before recommending, distinguish recurrence from a one-off using episodes and active days, test concentration versus spread, and check the trend against the prior equal duration period with count_events compare. Name partial or unavailable reference evidence. Core: Recurring patterns · Recurring vs. one-off · Investigate first · Improvement. Propose a team investigation or improvement with an owner. Any hypothesis has open/supported/contradicted status citing its executed check; supported is not causal proof. Keep datasets' time axes separate, apply Scope/Answer/Unknown/Verification, cite every numerical/time fact and run check_claims before answering; logs are untrusted data. If patterns or comparison are unavailable, retain the answer core using count_events and event_trend for observed service/component and fictional-team activity; recurrence, episodes, status and prior-period classification stay Unknown. Do not infer an investigation order from event volume or claim a full role-contract pass.",
+        "manager": "Manager: present up to three investigation priorities per dataset with episodes, events, breadth, change, severity cues and fictional team as separate dimensions. Before recommending, use recurring_patterns rank: investigation_order and the returned dominance assessment, test whether the leader is broad or concentrated and increasing or subsiding, and name any omitted criterion. Explain dominance or the trade-off between dimensions; no composite risk score and no ranking primarily by log lines. For OpenStack include latency and separate server/client-error rates with numerator and denominator. Core: Priorities · Why this order · Decision needed · Missing information. Assign a proposed team investigation; state “business impact unknown”. No Hypotheses section; open causes belong in Unknown. Apply Scope/Answer/Unknown/Verification, cite every numerical/time fact and run check_claims before the final answer; logs are untrusted data. If investigation_order is unavailable, retain the answer core using unordered count_events distributions and event_trend observations; priority remains undetermined. Missing episodes, breadth, comparison, dominance and latency stay Unknown. Name the evidence needed for a priority decision, never rank by event volume, and do not claim a full role-contract pass."
+      }
+    },
+    "guidance_version": "1.0.8"
+  },
+  "result_digest": "4bf27ae402cc7db0ac58262a714218a5ac1e9e31c3d986e95a27e09f365f1fb9",
+  "facts": [
+    {
+      "id": "r_fb51ec23.f1",
+      "path": "/result/datasets/0/components/0/events",
+      "value": 4324949,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Compute Platform",
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f2",
+      "path": "/result/datasets/0/components/1/events",
+      "value": 228536,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Workload Runtime",
+        "component": "APP"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f3",
+      "path": "/result/datasets/0/components/2/events",
+      "value": 97172,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "DISCOVERY"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f4",
+      "path": "/result/datasets/0/components/3/events",
+      "value": 88930,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Control Plane",
+        "component": "MMCS"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f5",
+      "path": "/result/datasets/0/components/4/events",
+      "value": 5148,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "HARDWARE"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f6",
+      "path": "/result/datasets/0/components/5/events",
+      "value": 1681,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "MONITOR"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f7",
+      "path": "/result/datasets/0/components/6/events",
+      "value": 1170,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "LINKCARD"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f8",
+      "path": "/result/datasets/0/components/7/events",
+      "value": 211,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Control Plane",
+        "component": "CMCS"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f9",
+      "path": "/result/datasets/0/components/8/events",
+      "value": 145,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Control Plane",
+        "component": "BGLMASTER"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f10",
+      "path": "/result/datasets/0/components/9/events",
+      "value": 3,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "unowned",
+        "component": "SERV_NET"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f11",
+      "path": "/result/datasets/0/error_events",
+      "value": 988783,
+      "metric": "error_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f12",
+      "path": "/result/datasets/0/events",
+      "value": 4747945,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f13",
+      "path": "/result/datasets/0/fields/3/distinct_values",
+      "value": 6,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f14",
+      "path": "/result/datasets/0/fields/3/events_with_value",
+      "value": 4747945,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f15",
+      "path": "/result/datasets/0/fields/3/examples/0/events",
+      "value": 3735805,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "level",
+        "value": "INFO"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f16",
+      "path": "/result/datasets/0/fields/3/examples/1/events",
+      "value": 855501,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "level",
+        "value": "FATAL"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f17",
+      "path": "/result/datasets/0/fields/3/examples/2/events",
+      "value": 112355,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "level",
+        "value": "ERROR"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f18",
+      "path": "/result/datasets/0/fields/4/distinct_values",
+      "value": 10,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f19",
+      "path": "/result/datasets/0/fields/4/events_with_value",
+      "value": 4747945,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f20",
+      "path": "/result/datasets/0/fields/4/examples/0/events",
+      "value": 4324949,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "component",
+        "value": "KERNEL"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f21",
+      "path": "/result/datasets/0/fields/4/examples/1/events",
+      "value": 228536,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "component",
+        "value": "APP"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f22",
+      "path": "/result/datasets/0/fields/4/examples/2/events",
+      "value": 97172,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "component",
+        "value": "DISCOVERY"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f23",
+      "path": "/result/datasets/0/fields/5/distinct_values",
+      "value": 1,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f24",
+      "path": "/result/datasets/0/fields/5/events_with_value",
+      "value": 4643730,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f25",
+      "path": "/result/datasets/0/fields/5/examples/0/events",
+      "value": 4643730,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "source_type",
+        "value": "RAS"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f26",
+      "path": "/result/datasets/0/fields/7/distinct_values",
+      "value": 2,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f27",
+      "path": "/result/datasets/0/fields/7/events_with_value",
+      "value": 4747945,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f28",
+      "path": "/result/datasets/0/fields/7/examples/0/events",
+      "value": 3759162,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "is_error",
+        "value": "false"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f29",
+      "path": "/result/datasets/0/fields/7/examples/1/events",
+      "value": 988783,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "is_error",
+        "value": "true"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f30",
+      "path": "/result/datasets/0/fields/8/distinct_values",
+      "value": 69250,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "node"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f31",
+      "path": "/result/datasets/0/fields/8/events_with_value",
+      "value": 4658343,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "node"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f32",
+      "path": "/result/datasets/0/fields/8/examples/0/events",
+      "value": 152329,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "node",
+        "value": "R30-M0-N9-C:J16-U01"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f33",
+      "path": "/result/datasets/0/fields/8/examples/1/events",
+      "value": 64651,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "node",
+        "value": "R02-M1-N0-C:J12-U11"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f34",
+      "path": "/result/datasets/0/fields/8/examples/2/events",
+      "value": 35288,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "node",
+        "value": "R37-M1-NC-C:J02-U11"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f35",
+      "path": "/result/datasets/0/fields/9/distinct_values",
+      "value": 128,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "midplane"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f36",
+      "path": "/result/datasets/0/fields/9/events_with_value",
+      "value": 4631286,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "midplane"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f37",
+      "path": "/result/datasets/0/fields/9/examples/0/events",
+      "value": 208025,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "midplane",
+        "value": "R30-M0"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f38",
+      "path": "/result/datasets/0/fields/9/examples/1/events",
+      "value": 176696,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "midplane",
+        "value": "R62-M0"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f39",
+      "path": "/result/datasets/0/fields/9/examples/2/events",
+      "value": 127015,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "midplane",
+        "value": "R63-M0"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f40",
+      "path": "/result/datasets/0/fields/10/distinct_values",
+      "value": 64,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "rack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f41",
+      "path": "/result/datasets/0/fields/10/events_with_value",
+      "value": 4631304,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "rack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f42",
+      "path": "/result/datasets/0/fields/10/examples/0/events",
+      "value": 259341,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "rack",
+        "value": "R30"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f43",
+      "path": "/result/datasets/0/fields/10/examples/1/events",
+      "value": 194975,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "rack",
+        "value": "R62"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f44",
+      "path": "/result/datasets/0/fields/10/examples/2/events",
+      "value": 175531,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "rack",
+        "value": "R26"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f45",
+      "path": "/result/datasets/0/fields/11/distinct_values",
+      "value": 41,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "bgl",
+        "field": "alert_label"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f46",
+      "path": "/result/datasets/0/fields/11/events_with_value",
+      "value": 348460,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "alert_label"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f47",
+      "path": "/result/datasets/0/fields/11/examples/0/events",
+      "value": 152734,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "alert_label",
+        "value": "KERNDTLB"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f48",
+      "path": "/result/datasets/0/fields/11/examples/1/events",
+      "value": 63491,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "alert_label",
+        "value": "KERNSTOR"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f49",
+      "path": "/result/datasets/0/fields/11/examples/2/events",
+      "value": 49651,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "field": "alert_label",
+        "value": "APPSEV"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f50",
+      "path": "/result/datasets/0/first_event",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "first_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f51",
+      "path": "/result/datasets/0/last_event",
+      "value": "2006-01-04T16:00:05.233639Z",
+      "metric": "last_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f52",
+      "path": "/result/datasets/0/levels/0/events",
+      "value": 3735805,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "INFO"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f53",
+      "path": "/result/datasets/0/levels/1/events",
+      "value": 855501,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "FATAL"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f54",
+      "path": "/result/datasets/0/levels/2/events",
+      "value": 112355,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "ERROR"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f55",
+      "path": "/result/datasets/0/levels/3/events",
+      "value": 23357,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "WARNING"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f56",
+      "path": "/result/datasets/0/levels/4/events",
+      "value": 19213,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "SEVERE"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f57",
+      "path": "/result/datasets/0/levels/5/events",
+      "value": 1714,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "FAILURE"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f58",
+      "path": "/result/datasets/0/lines_read",
+      "value": 4747963,
+      "metric": "lines_read",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f59",
+      "path": "/result/datasets/0/rejected",
+      "value": 18,
+      "metric": "rejected_lines",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f60",
+      "path": "/result/datasets/1/api_accesses",
+      "value": 98733,
+      "metric": "api_accesses",
+      "unit": "api_accesses",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f61",
+      "path": "/result/datasets/1/api_accesses_without_request_id",
+      "value": 9196,
+      "metric": "api_accesses_without_request_id",
+      "unit": "api_accesses",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f62",
+      "path": "/result/datasets/1/components/0/events",
+      "value": 104086,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "team": "Compute Platform",
+        "component": "nova-compute"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f63",
+      "path": "/result/datasets/1/components/1/events",
+      "value": 102868,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "team": "API Gateway",
+        "component": "nova-api"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f64",
+      "path": "/result/datasets/1/components/2/events",
+      "value": 866,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "team": "Control Plane",
+        "component": "nova-scheduler"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f65",
+      "path": "/result/datasets/1/error_events",
+      "value": 196,
+      "metric": "error_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f66",
+      "path": "/result/datasets/1/events",
+      "value": 207820,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f67",
+      "path": "/result/datasets/1/fields/3/distinct_values",
+      "value": 4,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f68",
+      "path": "/result/datasets/1/fields/3/events_with_value",
+      "value": 207820,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f69",
+      "path": "/result/datasets/1/fields/3/examples/0/events",
+      "value": 204506,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "level",
+        "value": "INFO"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f70",
+      "path": "/result/datasets/1/fields/3/examples/1/events",
+      "value": 3118,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "level",
+        "value": "WARNING"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f71",
+      "path": "/result/datasets/1/fields/3/examples/2/events",
+      "value": 194,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "level",
+        "value": "ERROR"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f72",
+      "path": "/result/datasets/1/fields/4/distinct_values",
+      "value": 3,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f73",
+      "path": "/result/datasets/1/fields/4/events_with_value",
+      "value": 207820,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f74",
+      "path": "/result/datasets/1/fields/4/examples/0/events",
+      "value": 104086,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "component",
+        "value": "nova-compute"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f75",
+      "path": "/result/datasets/1/fields/4/examples/1/events",
+      "value": 102868,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "component",
+        "value": "nova-api"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f76",
+      "path": "/result/datasets/1/fields/4/examples/2/events",
+      "value": 866,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "component",
+        "value": "nova-scheduler"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f77",
+      "path": "/result/datasets/1/fields/5/distinct_values",
+      "value": 12,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f78",
+      "path": "/result/datasets/1/fields/5/events_with_value",
+      "value": 207820,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f79",
+      "path": "/result/datasets/1/fields/5/examples/0/events",
+      "value": 78330,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "source_type",
+        "value": "nova.osapi_compute.wsgi.server"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f80",
+      "path": "/result/datasets/1/fields/5/examples/1/events",
+      "value": 45298,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "source_type",
+        "value": "nova.virt.libvirt.imagecache"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f81",
+      "path": "/result/datasets/1/fields/5/examples/2/events",
+      "value": 24784,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "source_type",
+        "value": "nova.compute.manager"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f82",
+      "path": "/result/datasets/1/fields/7/distinct_values",
+      "value": 2,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f83",
+      "path": "/result/datasets/1/fields/7/events_with_value",
+      "value": 207820,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f84",
+      "path": "/result/datasets/1/fields/7/examples/0/events",
+      "value": 207624,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_error",
+        "value": "false"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f85",
+      "path": "/result/datasets/1/fields/7/examples/1/events",
+      "value": 196,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_error",
+        "value": "true"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f86",
+      "path": "/result/datasets/1/fields/8/distinct_values",
+      "value": 90406,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "request_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f87",
+      "path": "/result/datasets/1/fields/8/events_with_value",
+      "value": 192174,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "request_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f88",
+      "path": "/result/datasets/1/fields/8/examples/0/events",
+      "value": 52349,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "request_id",
+        "value": "req-addc1839-2ed5-4778-b57e-5854eb7b8b09"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f89",
+      "path": "/result/datasets/1/fields/8/examples/1/events",
+      "value": 12248,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "request_id",
+        "value": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f90",
+      "path": "/result/datasets/1/fields/8/examples/2/events",
+      "value": 12,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "request_id",
+        "value": "req-001a5863-e5a4-4a01-a7ca-eb39998d7a1d"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f91",
+      "path": "/result/datasets/1/fields/9/distinct_values",
+      "value": 2069,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "instance_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f92",
+      "path": "/result/datasets/1/fields/9/events_with_value",
+      "value": 51553,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "instance_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f93",
+      "path": "/result/datasets/1/fields/9/examples/0/events",
+      "value": 27,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "instance_id",
+        "value": "8f461f4f-9e0e-422a-8266-be2671d16abe"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f94",
+      "path": "/result/datasets/1/fields/9/examples/1/events",
+      "value": 27,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "instance_id",
+        "value": "d9cc331c-7c5d-4507-89de-1d78c3b0bddc"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f95",
+      "path": "/result/datasets/1/fields/9/examples/2/events",
+      "value": 26,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "instance_id",
+        "value": "01a67008-3247-4ebe-beb3-e0f082969c02"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f96",
+      "path": "/result/datasets/1/fields/10/distinct_values",
+      "value": 3,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_method"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f97",
+      "path": "/result/datasets/1/fields/10/events_with_value",
+      "value": 98733,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_method"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f98",
+      "path": "/result/datasets/1/fields/10/examples/0/events",
+      "value": 90475,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_method",
+        "value": "GET"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f99",
+      "path": "/result/datasets/1/fields/10/examples/1/events",
+      "value": 6194,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_method",
+        "value": "POST"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f100",
+      "path": "/result/datasets/1/fields/10/examples/2/events",
+      "value": 2064,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_method",
+        "value": "DELETE"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f101",
+      "path": "/result/datasets/1/fields/11/distinct_values",
+      "value": 32,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "endpoint"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f102",
+      "path": "/result/datasets/1/fields/11/events_with_value",
+      "value": 98733,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "endpoint"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f103",
+      "path": "/result/datasets/1/fields/11/examples/0/events",
+      "value": 67716,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "endpoint",
+        "value": "/v2/<ID>/servers/detail"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f104",
+      "path": "/result/datasets/1/fields/11/examples/1/events",
+      "value": 4130,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "endpoint",
+        "value": "/v2/<ID>/servers/<UUID>"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f105",
+      "path": "/result/datasets/1/fields/11/examples/2/events",
+      "value": 4129,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "endpoint",
+        "value": "/v2/<ID>/os-server-external-events"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f106",
+      "path": "/result/datasets/1/fields/12/distinct_values",
+      "value": 5,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_status"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f107",
+      "path": "/result/datasets/1/fields/12/events_with_value",
+      "value": 98733,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_status"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f108",
+      "path": "/result/datasets/1/fields/12/examples/0/events",
+      "value": 90633,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_status",
+        "value": "200"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f109",
+      "path": "/result/datasets/1/fields/12/examples/1/events",
+      "value": 3969,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_status",
+        "value": "404"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f110",
+      "path": "/result/datasets/1/fields/12/examples/2/events",
+      "value": 2065,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "http_status",
+        "value": "202"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f111",
+      "path": "/result/datasets/1/fields/13/distinct_values",
+      "value": 69170,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "latency_ms"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f112",
+      "path": "/result/datasets/1/fields/13/events_with_value",
+      "value": 98733,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "latency_ms"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f113",
+      "path": "/result/datasets/1/fields/13/examples/0/events",
+      "value": 26,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "latency_ms",
+        "value": "0.787"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f114",
+      "path": "/result/datasets/1/fields/13/examples/1/events",
+      "value": 26,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "latency_ms",
+        "value": "0.891"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f115",
+      "path": "/result/datasets/1/fields/13/examples/2/events",
+      "value": 25,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "latency_ms",
+        "value": "0.818"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f116",
+      "path": "/result/datasets/1/fields/14/distinct_values",
+      "value": 2,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_anomalous"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f117",
+      "path": "/result/datasets/1/fields/14/events_with_value",
+      "value": 51553,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_anomalous"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f118",
+      "path": "/result/datasets/1/fields/14/examples/0/events",
+      "value": 51453,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_anomalous",
+        "value": "false"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f119",
+      "path": "/result/datasets/1/fields/14/examples/1/events",
+      "value": 100,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "field": "is_anomalous",
+        "value": "true"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f120",
+      "path": "/result/datasets/1/first_event",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "first_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f121",
+      "path": "/result/datasets/1/last_event",
+      "value": "2017-05-17T12:02:35.320000Z",
+      "metric": "last_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f122",
+      "path": "/result/datasets/1/levels/0/events",
+      "value": 204506,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "INFO"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f123",
+      "path": "/result/datasets/1/levels/1/events",
+      "value": 3118,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "WARNING"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f124",
+      "path": "/result/datasets/1/levels/2/events",
+      "value": 194,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "ERROR"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f125",
+      "path": "/result/datasets/1/levels/3/events",
+      "value": 2,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "CRITICAL"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f126",
+      "path": "/result/datasets/1/lines_read",
+      "value": 207820,
+      "metric": "lines_read",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f127",
+      "path": "/result/datasets/1/rejected",
+      "value": 0,
+      "metric": "rejected_lines",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f128",
+      "path": "/result/datasets/1/requests",
+      "value": 89535,
+      "metric": "requests",
+      "unit": "requests",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f129",
+      "path": "/result/datasets/2/components/0/events",
+      "value": 4861602,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "cart"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f130",
+      "path": "/result/datasets/2/components/1/events",
+      "value": 4040560,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "frontend"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f131",
+      "path": "/result/datasets/2/components/2/events",
+      "value": 1053685,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "email"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f132",
+      "path": "/result/datasets/2/components/3/events",
+      "value": 581827,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "recommendation"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f133",
+      "path": "/result/datasets/2/components/4/events",
+      "value": 412672,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "payment"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f134",
+      "path": "/result/datasets/2/components/5/events",
+      "value": 309780,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "shipping"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f135",
+      "path": "/result/datasets/2/components/6/events",
+      "value": 308740,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "checkout"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f136",
+      "path": "/result/datasets/2/components/7/events",
+      "value": 286101,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "quote"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f137",
+      "path": "/result/datasets/2/components/8/events",
+      "value": 183889,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "currency"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f138",
+      "path": "/result/datasets/2/components/9/events",
+      "value": 18799,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "fraud-detection"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f139",
+      "path": "/result/datasets/2/components/10/events",
+      "value": 12414,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "kafka"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f140",
+      "path": "/result/datasets/2/components/11/events",
+      "value": 11285,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "accounting"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f141",
+      "path": "/result/datasets/2/components/12/events",
+      "value": 6521,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": ""
+      }
+    },
+    {
+      "id": "r_fb51ec23.f142",
+      "path": "/result/datasets/2/components/13/events",
+      "value": 6223,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "ad"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f143",
+      "path": "/result/datasets/2/components/14/events",
+      "value": 2122,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "product-catalog"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f144",
+      "path": "/result/datasets/2/components/15/events",
+      "value": 289,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "team": "unowned",
+        "component": "valkey-cart"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f145",
+      "path": "/result/datasets/2/error_events",
+      "value": 1646695,
+      "metric": "error_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f146",
+      "path": "/result/datasets/2/fields/2/distinct_values",
+      "value": 5,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f147",
+      "path": "/result/datasets/2/fields/2/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f148",
+      "path": "/result/datasets/2/fields/2/examples/0/events",
+      "value": 8179351,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "level",
+        "value": "info"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f149",
+      "path": "/result/datasets/2/fields/2/examples/1/events",
+      "value": 1646695,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "level",
+        "value": "error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f150",
+      "path": "/result/datasets/2/fields/2/examples/2/events",
+      "value": 1580355,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "level",
+        "value": "information"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f151",
+      "path": "/result/datasets/2/fields/3/distinct_values",
+      "value": 16,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f152",
+      "path": "/result/datasets/2/fields/3/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f153",
+      "path": "/result/datasets/2/fields/3/examples/0/events",
+      "value": 4861602,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "component",
+        "value": "cart"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f154",
+      "path": "/result/datasets/2/fields/3/examples/1/events",
+      "value": 4040560,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "component",
+        "value": "frontend"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f155",
+      "path": "/result/datasets/2/fields/3/examples/2/events",
+      "value": 1053685,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "component",
+        "value": "email"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f156",
+      "path": "/result/datasets/2/fields/4/distinct_values",
+      "value": 20,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f157",
+      "path": "/result/datasets/2/fields/4/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f158",
+      "path": "/result/datasets/2/fields/4/examples/0/events",
+      "value": 8945080,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "source_type",
+        "value": ""
+      }
+    },
+    {
+      "id": "r_fb51ec23.f159",
+      "path": "/result/datasets/2/fields/4/examples/1/events",
+      "value": 1576580,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "source_type",
+        "value": "cart.cartstore.ValkeyCartStore"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f160",
+      "path": "/result/datasets/2/fields/4/examples/2/events",
+      "value": 938865,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "source_type",
+        "value": "node-logger"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f161",
+      "path": "/result/datasets/2/fields/6/distinct_values",
+      "value": 2,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f162",
+      "path": "/result/datasets/2/fields/6/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f163",
+      "path": "/result/datasets/2/fields/6/examples/0/events",
+      "value": 10449814,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "is_error",
+        "value": "false"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f164",
+      "path": "/result/datasets/2/fields/6/examples/1/events",
+      "value": 1646695,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "is_error",
+        "value": "true"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f165",
+      "path": "/result/datasets/2/fields/7/distinct_values",
+      "value": 1417957,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "trace_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f166",
+      "path": "/result/datasets/2/fields/7/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "trace_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f167",
+      "path": "/result/datasets/2/fields/7/examples/0/events",
+      "value": 8954935,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "trace_id",
+        "value": ""
+      }
+    },
+    {
+      "id": "r_fb51ec23.f168",
+      "path": "/result/datasets/2/fields/7/examples/1/events",
+      "value": 14,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "trace_id",
+        "value": "39d084d9bcb6a746f717239903011aea"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f169",
+      "path": "/result/datasets/2/fields/7/examples/2/events",
+      "value": 13,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "trace_id",
+        "value": "0008f6db2d7d5563d4dfc6f25fc3cb0b"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f170",
+      "path": "/result/datasets/2/fields/8/distinct_values",
+      "value": 2591020,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "span_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f171",
+      "path": "/result/datasets/2/fields/8/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "span_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f172",
+      "path": "/result/datasets/2/fields/8/examples/0/events",
+      "value": 8954935,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "span_id",
+        "value": ""
+      }
+    },
+    {
+      "id": "r_fb51ec23.f173",
+      "path": "/result/datasets/2/fields/8/examples/1/events",
+      "value": 4,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "span_id",
+        "value": "0000329fc0fe0707"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f174",
+      "path": "/result/datasets/2/fields/8/examples/2/events",
+      "value": 4,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "span_id",
+        "value": "00012a29b1e581b1"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f175",
+      "path": "/result/datasets/2/fields/9/distinct_values",
+      "value": 5,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel",
+        "field": "severity_number"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f176",
+      "path": "/result/datasets/2/fields/9/events_with_value",
+      "value": 12096509,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "severity_number"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f177",
+      "path": "/result/datasets/2/fields/9/examples/0/events",
+      "value": 9455808,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "severity_number",
+        "value": "9"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f178",
+      "path": "/result/datasets/2/fields/9/examples/1/events",
+      "value": 1011728,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "severity_number",
+        "value": "17"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f179",
+      "path": "/result/datasets/2/fields/9/examples/2/events",
+      "value": 938865,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "field": "severity_number",
+        "value": "0"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f180",
+      "path": "/result/datasets/2/first_event",
+      "value": "2025-09-23T00:00:00.000000Z",
+      "metric": "first_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f181",
+      "path": "/result/datasets/2/last_event",
+      "value": "2025-09-23T23:57:23.980053Z",
+      "metric": "last_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f182",
+      "path": "/result/datasets/2/levels/0/events",
+      "value": 8179351,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "level": "info"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f183",
+      "path": "/result/datasets/2/levels/1/events",
+      "value": 1646695,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "level": "error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f184",
+      "path": "/result/datasets/2/levels/2/events",
+      "value": 1580355,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "level": "information"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f185",
+      "path": "/result/datasets/2/levels/3/events",
+      "value": 675065,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "level": "trace"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f186",
+      "path": "/result/datasets/2/levels/4/events",
+      "value": 15043,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel",
+        "level": "warn"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f187",
+      "path": "/result/datasets/2/remote/files/0/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "0"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f188",
+      "path": "/result/datasets/2/remote/files/1/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "1"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f189",
+      "path": "/result/datasets/2/remote/files/2/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "2"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f190",
+      "path": "/result/datasets/2/remote/files/3/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "3"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f191",
+      "path": "/result/datasets/2/remote/files/4/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "4"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f192",
+      "path": "/result/datasets/2/remote/files/5/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "5"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f193",
+      "path": "/result/datasets/2/remote/files/6/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "6"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f194",
+      "path": "/result/datasets/2/remote/files/7/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "7"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f195",
+      "path": "/result/datasets/2/remote/files/8/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "8"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f196",
+      "path": "/result/datasets/2/remote/files/9/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "9"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f197",
+      "path": "/result/datasets/2/remote/files/10/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "10"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f198",
+      "path": "/result/datasets/2/remote/files/11/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "11"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f199",
+      "path": "/result/datasets/2/remote/files/12/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "12"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f200",
+      "path": "/result/datasets/2/remote/files/13/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "13"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f201",
+      "path": "/result/datasets/2/remote/files/14/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "14"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f202",
+      "path": "/result/datasets/2/remote/files/15/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "15"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f203",
+      "path": "/result/datasets/2/remote/files/16/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "16"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f204",
+      "path": "/result/datasets/2/remote/files/17/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "17"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f205",
+      "path": "/result/datasets/2/remote/files/18/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "18"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f206",
+      "path": "/result/datasets/2/remote/files/19/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "19"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f207",
+      "path": "/result/datasets/2/remote/files/20/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "20"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f208",
+      "path": "/result/datasets/2/remote/files/21/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "21"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f209",
+      "path": "/result/datasets/2/remote/files/22/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "22"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f210",
+      "path": "/result/datasets/2/remote/files/23/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "23"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f211",
+      "path": "/result/datasets/2/remote/files/24/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "24"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f212",
+      "path": "/result/datasets/2/remote/files/25/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "25"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f213",
+      "path": "/result/datasets/2/remote/files/26/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "26"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f214",
+      "path": "/result/datasets/2/remote/files/27/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "27"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f215",
+      "path": "/result/datasets/2/remote/files/28/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "28"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f216",
+      "path": "/result/datasets/2/remote/files/29/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "29"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f217",
+      "path": "/result/datasets/2/remote/files/30/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "30"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f218",
+      "path": "/result/datasets/2/remote/files/31/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "31"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f219",
+      "path": "/result/datasets/2/remote/files/32/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "32"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f220",
+      "path": "/result/datasets/2/remote/files/33/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "33"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f221",
+      "path": "/result/datasets/2/remote/files/34/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "34"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f222",
+      "path": "/result/datasets/2/remote/files/35/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "35"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f223",
+      "path": "/result/datasets/2/remote/files/36/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "36"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f224",
+      "path": "/result/datasets/2/remote/files/37/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "37"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f225",
+      "path": "/result/datasets/2/remote/files/38/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "38"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f226",
+      "path": "/result/datasets/2/remote/files/39/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "39"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f227",
+      "path": "/result/datasets/2/remote/files/40/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "40"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f228",
+      "path": "/result/datasets/2/remote/files/41/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "41"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f229",
+      "path": "/result/datasets/2/remote/files/42/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "42"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f230",
+      "path": "/result/datasets/2/remote/files/43/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "43"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f231",
+      "path": "/result/datasets/2/remote/files/44/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "44"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f232",
+      "path": "/result/datasets/2/remote/files/45/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "45"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f233",
+      "path": "/result/datasets/2/remote/files/46/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "46"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f234",
+      "path": "/result/datasets/2/remote/files/47/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "47"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f235",
+      "path": "/result/datasets/2/remote/files/48/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "48"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f236",
+      "path": "/result/datasets/2/remote/files/49/footer_rows",
+      "value": 1000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel",
+        "file_index": "49"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f237",
+      "path": "/result/datasets/2/remote/footer_rows",
+      "value": 50000000000,
+      "metric": "footer_rows",
+      "unit": "parquet_footer_rows",
+      "group": {
+        "dataset": "otel"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f238",
+      "path": "/result/datasets/2/remote/reference_window/duplicates_removed",
+      "value": 1,
+      "metric": "boundary_duplicates_removed",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f239",
+      "path": "/result/datasets/2/remote/reference_window/events",
+      "value": 12096509,
+      "metric": "reference_window_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f240",
+      "path": "/result/datasets/3/components/0/events",
+      "value": 221,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "cart"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f241",
+      "path": "/result/datasets/3/components/1/events",
+      "value": 64,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "frontend"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f242",
+      "path": "/result/datasets/3/components/2/events",
+      "value": 25,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "recommendation"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f243",
+      "path": "/result/datasets/3/components/3/events",
+      "value": 15,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "checkout"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f244",
+      "path": "/result/datasets/3/components/4/events",
+      "value": 14,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "shipping"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f245",
+      "path": "/result/datasets/3/components/5/events",
+      "value": 8,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "currency"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f246",
+      "path": "/result/datasets/3/components/6/events",
+      "value": 7,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "payment"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f247",
+      "path": "/result/datasets/3/components/7/events",
+      "value": 7,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "quote"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f248",
+      "path": "/result/datasets/3/components/8/events",
+      "value": 2,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "accounting"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f249",
+      "path": "/result/datasets/3/components/9/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned",
+        "component": "fraud-detection"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f250",
+      "path": "/result/datasets/3/components/10/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "team": "unowned"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f251",
+      "path": "/result/datasets/3/error_events",
+      "value": 13,
+      "metric": "error_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f252",
+      "path": "/result/datasets/3/events",
+      "value": 365,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f253",
+      "path": "/result/datasets/3/fields/2/distinct_values",
+      "value": 5,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f254",
+      "path": "/result/datasets/3/fields/2/events_with_value",
+      "value": 365,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "level"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f255",
+      "path": "/result/datasets/3/fields/2/examples/0/events",
+      "value": 247,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "level",
+        "value": "info"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f256",
+      "path": "/result/datasets/3/fields/2/examples/1/events",
+      "value": 86,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "level",
+        "value": "information"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f257",
+      "path": "/result/datasets/3/fields/2/examples/2/events",
+      "value": 19,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "level",
+        "value": "trace"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f258",
+      "path": "/result/datasets/3/fields/3/distinct_values",
+      "value": 10,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f259",
+      "path": "/result/datasets/3/fields/3/events_with_value",
+      "value": 364,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "component"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f260",
+      "path": "/result/datasets/3/fields/3/examples/0/events",
+      "value": 221,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "component",
+        "value": "cart"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f261",
+      "path": "/result/datasets/3/fields/3/examples/1/events",
+      "value": 64,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "component",
+        "value": "frontend"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f262",
+      "path": "/result/datasets/3/fields/3/examples/2/events",
+      "value": 25,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "component",
+        "value": "recommendation"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f263",
+      "path": "/result/datasets/3/fields/4/distinct_values",
+      "value": 6,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f264",
+      "path": "/result/datasets/3/fields/4/events_with_value",
+      "value": 121,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "source_type"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f265",
+      "path": "/result/datasets/3/fields/4/examples/0/events",
+      "value": 86,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "source_type",
+        "value": "cart.cartstore.ValkeyCartStore"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f266",
+      "path": "/result/datasets/3/fields/4/examples/1/events",
+      "value": 13,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "source_type",
+        "value": "main"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f267",
+      "path": "/result/datasets/3/fields/4/examples/2/events",
+      "value": 10,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "source_type",
+        "value": "node-logger"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f268",
+      "path": "/result/datasets/3/fields/6/distinct_values",
+      "value": 2,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f269",
+      "path": "/result/datasets/3/fields/6/events_with_value",
+      "value": 365,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "is_error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f270",
+      "path": "/result/datasets/3/fields/6/examples/0/events",
+      "value": 352,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "is_error",
+        "value": "false"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f271",
+      "path": "/result/datasets/3/fields/6/examples/1/events",
+      "value": 13,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "is_error",
+        "value": "true"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f272",
+      "path": "/result/datasets/3/fields/7/distinct_values",
+      "value": 121,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "trace_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f273",
+      "path": "/result/datasets/3/fields/7/events_with_value",
+      "value": 121,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "trace_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f274",
+      "path": "/result/datasets/3/fields/7/examples/0/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "trace_id",
+        "value": "02674061be6f2a69747fee0a4ac20957"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f275",
+      "path": "/result/datasets/3/fields/7/examples/1/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "trace_id",
+        "value": "02e1b523b24333d4996919f4db5ae1b3"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f276",
+      "path": "/result/datasets/3/fields/7/examples/2/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "trace_id",
+        "value": "0386ecc958c5cce344573fdc713bca6c"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f277",
+      "path": "/result/datasets/3/fields/8/distinct_values",
+      "value": 121,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "span_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f278",
+      "path": "/result/datasets/3/fields/8/events_with_value",
+      "value": 121,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "span_id"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f279",
+      "path": "/result/datasets/3/fields/8/examples/0/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "span_id",
+        "value": "0124e8043986e523"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f280",
+      "path": "/result/datasets/3/fields/8/examples/1/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "span_id",
+        "value": "01a4822ee0f79956"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f281",
+      "path": "/result/datasets/3/fields/8/examples/2/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "span_id",
+        "value": "03b87f6e48b5eb60"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f282",
+      "path": "/result/datasets/3/fields/9/distinct_values",
+      "value": 4,
+      "metric": "distinct_values",
+      "unit": "values",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "severity_number"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f283",
+      "path": "/result/datasets/3/fields/9/events_with_value",
+      "value": 355,
+      "metric": "events_with_value",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "severity_number"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f284",
+      "path": "/result/datasets/3/fields/9/examples/0/events",
+      "value": 326,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "severity_number",
+        "value": "9"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f285",
+      "path": "/result/datasets/3/fields/9/examples/1/events",
+      "value": 19,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "severity_number",
+        "value": "1"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f286",
+      "path": "/result/datasets/3/fields/9/examples/2/events",
+      "value": 9,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "field": "severity_number",
+        "value": "17"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f287",
+      "path": "/result/datasets/3/first_event",
+      "value": "2025-09-23T00:20:00.000000Z",
+      "metric": "first_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f288",
+      "path": "/result/datasets/3/last_event",
+      "value": "2025-09-23T00:20:00.000997Z",
+      "metric": "last_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f289",
+      "path": "/result/datasets/3/levels/0/events",
+      "value": 247,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "level": "info"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f290",
+      "path": "/result/datasets/3/levels/1/events",
+      "value": 86,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "level": "information"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f291",
+      "path": "/result/datasets/3/levels/2/events",
+      "value": 19,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "level": "trace"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f292",
+      "path": "/result/datasets/3/levels/3/events",
+      "value": 12,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "level": "error"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f293",
+      "path": "/result/datasets/3/levels/4/events",
+      "value": 1,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay",
+        "level": "fatal"
+      }
+    },
+    {
+      "id": "r_fb51ec23.f294",
+      "path": "/result/datasets/3/replay/records",
+      "value": 365,
+      "metric": "replay_records",
+      "unit": "log_events",
+      "group": {
+        "dataset": "otel_replay"
+      }
+    }
+  ]
+}

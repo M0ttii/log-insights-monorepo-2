@@ -50,9 +50,9 @@ export const SEARCH_FILTER = pickFilter([
 ])
 
 export const matchModeSchema = z
-  .enum(["terms", "phrase", "fuzzy"])
+  .enum(["terms", "phrase", "fuzzy", "semantic", "hybrid"])
   .describe(
-    "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'."
+    "terms (default): every word must occur in the message, in any order. phrase: the words must occur adjacent and in this order, e.g. 'cache parity error'. fuzzy: one term that may contain up to max_edits typos, e.g. 'parrity' finds 'parity'. semantic: cosine vector retrieval from a pinned representation. hybrid: BM25 plus cosine candidates fused with reciprocal rank fusion. Semantic and hybrid require retrieval_snapshot and return bounded candidates, never a frequency."
   )
 
 export type MatchMode = z.infer<typeof matchModeSchema>
@@ -60,7 +60,7 @@ export type MatchMode = z.infer<typeof matchModeSchema>
 export const searchSortSchema = z
   .enum(["relevance", "time_asc", "time_desc"])
   .describe(
-    "relevance (default): BM25 score, highest first; time_asc / time_desc: by event time. Ties are broken by event_id."
+    "relevance (default): lexical BM25 or hybrid RRF highest first, semantic cosine distance lowest first. time_asc / time_desc: event time for lexical modes only. Ties are broken by event_id."
   )
 
 export type SearchSort = z.infer<typeof searchSortSchema>
@@ -72,9 +72,16 @@ export const searchLogsInputSchema = z
       .min(1)
       .max(SEARCH_MAX_QUERY_LENGTH)
       .describe(
-        `Search text (1–${SEARCH_MAX_QUERY_LENGTH} characters), matched case-insensitively against whole message tokens without stemming. Operators, quotes and * are not evaluated; they are only split into words. Must contain at least one searchable word.`
+        `Search text (1–${SEARCH_MAX_QUERY_LENGTH} characters). Lexical modes match case-insensitive whole tokens without stemming; operators, quotes and * are tokenized, not evaluated, and need a searchable word. Semantic/hybrid use the exact text with the pinned embedding model; hybrid additionally tokenizes the text for BM25.`
       ),
     match: matchModeSchema.default("terms"),
+    retrieval_snapshot: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional()
+      .describe(
+        "Immutable representation snapshot ID, required for semantic and hybrid; use a snapshot built with retrieval:build. Pins provider, model, preprocessing and embeddings for reproducible reruns."
+      ),
     max_edits: z
       .number()
       .int()
@@ -166,7 +173,7 @@ export const searchHitSchema = z.strictObject({
   score: z
     .number()
     .describe(
-      "BM25 relevance score; only comparable within one result, not a count."
+      "Ranking value, comparable only within one result, never a count: lexical BM25 (higher first); semantic cosine distance (lower first); hybrid RRF score (higher first). retrieval.score_metric identifies non-lexical values."
     ),
 })
 
@@ -181,9 +188,30 @@ export const searchLogsOutputSchema = z.strictObject({
     .nullable()
     .describe("Edit distance used by match fuzzy; null for terms and phrase."),
   sort: searchSortSchema,
-  total_matches: count.describe(
-    "Exact number of matching log events in scope, from the same condition as the hits."
-  ),
+  total_matches: count
+    .nullable()
+    .describe(
+      "Exact matching log-event count for terms/phrase/fuzzy; null for semantic/hybrid bounded retrieval, which does not define a full-population frequency."
+    ),
+  retrieval: z
+    .strictObject({
+      snapshot_id: z.string().regex(/^[a-f0-9]{64}$/),
+      provider: z.string().min(1),
+      model: z.string().min(1),
+      model_version: z.string().min(1),
+      dimensions: z.number().int().positive(),
+      normalization: z.enum(["none", "l2"]),
+      preprocessing_version: z.literal("message-v1"),
+      query_embedding_digest: z.string().regex(/^[a-f0-9]{64}$/),
+      score_metric: z.enum(["cosine_distance", "rrf"]),
+      candidate_limit: z.number().int().positive(),
+      indexed_events: count,
+      fusion_k: z.number().int().positive().nullable(),
+    })
+    .optional()
+    .describe(
+      "Pinned representation and query-vector provenance. Indexed events describe snapshot coverage; candidate_limit bounds each retrieval branch. Similarity and RRF scores are neither frequencies nor causal evidence."
+    ),
   hits: z
     .array(searchHitSchema)
     .max(SEARCH_MAX_LIMIT)
@@ -217,7 +245,9 @@ export function summarizeSearchLogs(
       : `${data.match_mode}, max_edits ${data.max_edits}`
   const lines = [
     `search_logs ${JSON.stringify(data.query)} (${mode}) · receipt ${receipt.receipt_id}`,
-    `${formatFactValue(data.total_matches)} matching log events${cite("/result/total_matches")}; ${data.hits.length} shown, sorted by ${data.sort}, truncated: ${data.truncated}.`,
+    data.total_matches === null
+      ? `Bounded ${data.match_mode} retrieval; ${data.hits.length} candidates shown, sorted by ${data.sort}, truncated: ${data.truncated}. No full-population frequency is defined.`
+      : `${formatFactValue(data.total_matches)} matching log events${cite("/result/total_matches")}; ${data.hits.length} shown, sorted by ${data.sort}, truncated: ${data.truncated}.`,
     ...data.hits.map((hit, index) => {
       const where = [hit.dataset, hit.component, hit.level, hit.node]
         .filter((part): part is string => part !== null)

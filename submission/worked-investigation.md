@@ -307,9 +307,12 @@ Independent full-corpus Golden SQL remains under
 actual passing base-corpus suites and the initial environment-related failures
 separately. No
 holdout content was read and no client/Web or A-21 role acceptance is claimed.
-The final freeze, independent evaluation, release S-01, live rehearsal and video
-remain open. Repository visibility and signed-out public access are not changed
-or established by this document.
+The formal baseline, independent evaluation and holdout freeze are deferred
+additional research under the owner’s 2026-10-18 scope decision; no result is
+claimed for them. Actual Claude examples are archived separately in
+[agent-examples](agent-examples/README.md). Presentation and public access are
+tracked in the [minimum submission record](minimum-scope.md); they are not
+established by the existence of this document.
 
 Original log excerpts are from Loghub BGL and OpenStack, under the dataset
 attribution and CC BY 4.0 terms in the [README](../README.md#data). The selected

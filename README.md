@@ -27,13 +27,16 @@ receipt.
 The tracked [submission evidence and remaining gates](submission/README.md) identify
 what is ready and what still needs final release verification. The
 [SereneDB function reference](submission/serenedb-functions.md) links implemented
-SQL paths to complete, unchanged receipts from real corpus runs. Live API evals
-and the human review sample are postponed; no passing U16 result is claimed.
+SQL paths to complete, unchanged receipts from real corpus runs. The formal baseline, independent ratings, freeze and holdout experiment are
+deferred by the owner’s scope decision on 2026-10-18. They are additional research,
+not original-brief submission gates; no passing U16 result is claimed. See the
+[minimum submission record](submission/minimum-scope.md).
 
-The [editable Typst presentation template](presentation/README.md) includes a
-[PDF preview](presentation/log-insights-template.pdf). It covers the three roles,
-architecture and query evidence; findings remain explicit placeholders until
-verified runs are available.
+The [worked-investigation slides](presentation/worked-investigation.pdf) show real
+queries, original receipts and explicitly analyst-written role views. The
+[actual Claude examples](submission/agent-examples/README.md) retain separate model
+answers and their provenance. Editable Typst source and the optional blank template
+are described in [the presentation guide](presentation/README.md).
 
 ## Jury quick start (Docker)
 
@@ -436,7 +439,8 @@ playbooks and `get_log_context` source were unchanged by that integration.
 The [eval measurement foundation](packages/evals/README.md) adds `pnpm eval` on
 the shared production agent, immutable attempt/receipt exports and offline report
 replay. Its committed fixture tests metadata only. It establishes no live quality result, advantage over the baseline or holdout
-result; those remain separate U16 gates.
+result. Those optional research gates are deferred and do not block the
+original-brief workflow.
 
 ## Tools
 
@@ -539,12 +543,88 @@ is in `docs/technical.md` § 5.3 (local planning docs are gitignored).
 Matching is case-insensitive on whole tokens without stemming; operators,
 quotes and `*` are not evaluated. Hits are examples, never a frequency.
 
+### Extended research (LOG-41)
+
+The existing eight registry tools expose the new modes to MCP and web chat.
+Contracts are versioned as `5.0.0`; lexical terms/phrase/fuzzy keep exact counts.
+
+- `search_logs` adds `match: "semantic" | "hybrid"` with a required
+  `retrieval_snapshot` and relevance sorting. Semantic ranking uses a SereneDB
+  cosine vector index; hybrid fuses its bounded candidates with BM25 using SQL
+  reciprocal rank fusion. Filters apply before either candidate selection.
+  `total_matches` and population are null: these results are candidates from a
+  versioned representation, never a complete frequency or causal finding.
+- `count_events` accepts `entity: {type: "ip" | "path" | "request_id" |
+  "object_id", value?: string}`. Its additional distribution covers all events
+  in the stated scope and preserves exact original entity strings. It counts
+  distinct event/entity pairs; several entities can occur in one event.
+  `contributions: true` with `compare` adds signed group contributions and a reconciled SQL decomposition,
+  including the remainder. Unavailable references stay unknown.
+- `recurring_patterns.analysis` supports `periodicity` with a pattern ID and a
+  minimum occurrence count, or `cooccurrence` with `pattern_a`, `pattern_b`,
+  `window_seconds`, `direction: "either" | "after"` and an optional
+  `control_pattern_id`. These are temporal observations within the filtered
+  dataset. Missing controls and insufficient samples remain explicitly unknown.
+- `latency_stats.outliers` selects a `p95` or `p99` threshold, a minimum baseline
+  and an optional case event ID. SQL returns the baseline, denominator, measured
+  duration threshold, outlier rate and bounded original cases.
+
+Build embeddings in SereneDB with `pnpm retrieval:build --embed <config.json>`
+(provider/model/version/dimensions/normalization/data version and bounded
+`selection`; default 100 events, maximum 50,000), or import provider-generated
+embeddings with `pnpm retrieval:build <import.json>`.
+The strict [import contract](packages/analytics/src/retrieval.ts) requires provider,
+model, immutable model version, dimensions, normalization, preprocessing version,
+loaded data version, message hashes and event vectors. The immutable snapshot
+gets a content hash and its own SereneDB index. Query embeddings are saved inside the immutable snapshot. The offline `--embed`
+builder uses `LOG_INSIGHTS_EMBEDDING_SECRET`, a SereneDB secret identifier, with
+`ai_embed` to generate event and query vectors together. Runtime searches accept
+only an exact saved query vector; an unseen query requires a new snapshot. This
+avoids mixing a mutable provider/model alias with an older representation.
+Re-running uses the saved query vector. The model revision is declared build
+provenance; the snapshot pins the actual vector content. Never put a provider key in this setting or import.
+`LOG_INSIGHTS_RETRIEVAL_DIR` defaults to `.data/retrieval`. The saved
+`<snapshot-id>.import.json` can recreate a lost database index with
+`pnpm retrieval:build <path-to-snapshot-id.import.json>`.
+
+`pnpm research:verify` replays deterministic role-shaped tool/check chains;
+`pnpm research:compare [snapshot-id]` records the predeclared retrieval questions.
+These scripts do not replace genuine model role runs.
+
+Snapshot building covers local `log_events` datasets and explicit OTel sources,
+with at most 50,000 selected messages per import. Add a top-level
+`source: {dataset: "otel", path: "direct_scan", from, to}` or
+`source: {dataset: "otel", path: "indexed_window", from?, to?}` to build from
+pinned Parquet files or the reference index; `source: {dataset: "otel_replay"}`
+uses the loaded replay snapshot (optional `from`/`to` narrow its span). The
+manifest retains source pins, coverage and original event identities. Search
+requires the exact external dataset and a window within that snapshot; remote
+file changes produce `source_changed`. Dataset-less searches never include OTel. Missing provider configuration or a
+missing snapshot produces an explicit error and never changes the requested mode.
+No semantic quality advantage is claimed without a provider-backed benchmark.
+
+Gate G14 verifies the installed 26.10.1 vector index, filtering and RRF mechanics.
+Both `ai_embed` and `ai_summarize_agg` are present; a deliberately missing provider
+secret returns SQLSTATE `42704`. Summaries are not integrated without evidence of
+usefulness and remain non-authoritative model text if later enabled. Local
+provider-backed retrieval benchmarks and genuine Claude role runs require keys;
+see [LOG-41 verification](submission/log-41/README.md) for actual evidence and
+remaining acceptance limits.
+
+When exactly the base BGL/OpenStack corpus is loaded, full-span one-dimension
+`level`, `component` and `node` counts without a dataset
+selection or other filters use implicit dictionary facets (`TsDict:`). Measured
+BGL-only node and OpenStack-only scopes retain the existing table path, as do
+comparisons, joint distributions and calculated dimensions. NULL groups, SQL
+shares and the remainder are preserved.
+
 ## Known development questions and boundaries
 
 These questions come from the checked-in [development bank](packages/evals/questions/dev.yaml).
-They are useful tool-level examples, not frozen-release verified model answers
-and not holdout questions. The final submission must link each to its actual
-answer, executed check and complete receipts after evaluation.
+They are known development/demo questions, not holdouts. See the
+[worked investigation](submission/worked-investigation.md) for the common case
+and the [actual Claude examples](submission/agent-examples/README.md) for archived
+model answers with their own scopes, original receipts and limitations.
 
 | Role | Known question | Evidence the answer must obtain |
 |---|---|---|

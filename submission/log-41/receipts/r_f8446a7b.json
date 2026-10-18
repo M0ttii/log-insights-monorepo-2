@@ -1,0 +1,816 @@
+{
+  "receipt_id": "r_f8446a7b",
+  "created_at": "2026-10-18T19:11:40.099Z",
+  "client": "test",
+  "tool": "latency_stats",
+  "tool_version": "1.1.0",
+  "input": {
+    "outliers": {
+      "threshold": "p95",
+      "min_baseline": 20
+    }
+  },
+  "signature": "8c77d250981cc9ed99bf33bd7e9888bd217ef0d87ffbdf0659dd272d6bdfbc49",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH base AS (SELECT NULL AS g, log_events.request_id, log_events.latency_ms, log_events.http_status FROM log_events WHERE log_events.ts >= $1::TIMESTAMPTZ AND log_events.ts < $2::TIMESTAMPTZ AND log_events.dataset = 'openstack' AND log_events.http_status IS NOT NULL), agg AS (SELECT 0::BIGINT AS slot, NULL::VARCHAR AS g, 0::BIGINT AS groups, count(*) AS api_access_events, count(*) FILTER (WHERE request_id IS NULL) AS without_request_id, count(DISTINCT request_id) AS unique_requests, count(latency_ms) AS latency_values, quantile_cont(latency_ms, [0.5, 0.9, 0.95, 0.99]) AS q, max(latency_ms) AS max_ms, count(*) FILTER (WHERE http_status BETWEEN 500 AND 599) AS errors_5xx, count(*) FILTER (WHERE http_status BETWEEN 400 AND 499) AS errors_4xx FROM base) SELECT slot, g AS g, groups, api_access_events, without_request_id, unique_requests, latency_values, q[1] AS p50_ms, q[2] AS p90_ms, q[3] AS p95_ms, q[4] AS p99_ms, max_ms, errors_5xx, errors_5xx::DOUBLE / NULLIF(api_access_events, 0) AS rate_5xx, errors_4xx, errors_4xx::DOUBLE / NULLIF(api_access_events, 0) AS rate_4xx FROM agg",
+    "WITH base AS (SELECT event_id,latency_ms,request_id FROM log_events WHERE log_events.ts >= $1::TIMESTAMPTZ AND log_events.ts < $2::TIMESTAMPTZ AND log_events.dataset = 'openstack' AND log_events.http_status IS NOT NULL AND latency_ms IS NOT NULL), aggregate AS (SELECT count(*) AS baseline_values,quantile_cont(latency_ms,0.95) AS threshold FROM base), baseline AS (SELECT baseline_values, baseline_values >= $3::BIGINT AS determinable, CASE WHEN baseline_values >= $3::BIGINT THEN threshold END AS threshold_ms FROM aggregate), summary AS (SELECT baseline.*, CASE WHEN baseline.determinable THEN (SELECT count(*) FROM base WHERE latency_ms > baseline.threshold_ms) END AS outlier_events FROM baseline), selected AS (SELECT event_id,latency_ms,request_id FROM base WHERE TRUE ORDER BY latency_ms DESC,event_id ASC LIMIT 20) SELECT summary.*, CASE WHEN determinable THEN outlier_events::DOUBLE/nullif(baseline_values,0) END AS rate, selected.*,CASE WHEN determinable THEN latency_ms > threshold_ms END AS exceeds_threshold,NULL::BOOLEAN AS case_found, baseline_values > 20 AS cases_truncated FROM summary LEFT JOIN selected ON TRUE ORDER BY latency_ms DESC NULLS LAST,event_id ASC"
+  ],
+  "params": [
+    ["openstack"],
+    ["2017-05-14T19:39:01.445000Z", "2017-05-17T12:02:35.320001Z"],
+    ["2017-05-14T19:39:01.445000Z", "2017-05-17T12:02:35.320001Z", 20]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 98733,
+    "unit": "api_accesses"
+  },
+  "rows_returned": 0,
+  "truncated": true,
+  "row_limit": null,
+  "duration_ms": 25.01,
+  "result": {
+    "outliers": {
+      "baseline_values": 98733,
+      "minimum_baseline": 20,
+      "threshold_ms": 381.81753999999995,
+      "threshold": "p95",
+      "determinable": true,
+      "outlier_events": 4937,
+      "rate": 0.05000354491406116,
+      "cases": [
+        {
+          "event_id": 10194089,
+          "latency_ms": 4164.4719,
+          "request_id": "req-619608b8-2fea-43bb-beb0-20c535932f6c",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10194084,
+          "latency_ms": 2244.442,
+          "request_id": "req-f2548f03-1bfd-4f18-8e35-65a790b5e3e3",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10194092,
+          "latency_ms": 2238.7099,
+          "request_id": "req-ca6a1cf4-8741-4262-8479-4d93bbab93a4",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10194070,
+          "latency_ms": 2144.558,
+          "request_id": "req-33a38e9d-fbb3-4ea0-a776-56021cf6ee66",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10170573,
+          "latency_ms": 1869.8769,
+          "request_id": "req-75fbc6ed-e11e-475f-9dd5-ede218e96ce4",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10161100,
+          "latency_ms": 1792.6989,
+          "request_id": "req-e59d2fa4-4773-4cd4-9a47-16163c890c3b",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10164009,
+          "latency_ms": 1744.225,
+          "request_id": "req-e95e3fba-d276-4f91-82eb-84b0fb0629f0",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10079971,
+          "latency_ms": 1295.1999,
+          "request_id": "req-e7cd8fbf-2cd4-491f-bdd2-ecddf15703fc",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10170570,
+          "latency_ms": 1250.7939,
+          "request_id": "req-fe978395-081f-4e0d-8e2d-be05190ac8dd",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10192331,
+          "latency_ms": 1211.1809,
+          "request_id": "req-c5520bf4-1341-4b3f-959b-e7127d2faa0d",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10150847,
+          "latency_ms": 1204.9539,
+          "request_id": "req-19544790-aeb1-404c-9e91-3415272fa38d",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10150106,
+          "latency_ms": 1174.4969,
+          "request_id": "req-f0b3e577-9346-49f8-b01c-38b9677e2160",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10170577,
+          "latency_ms": 1098.2502,
+          "request_id": "req-26cd90ed-58c7-472e-8427-d7f7cd161847",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10171289,
+          "latency_ms": 1087.115,
+          "request_id": "req-60b7156a-d612-4aab-adb0-4990ea094226",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10189429,
+          "latency_ms": 1079.772,
+          "request_id": "req-d8b971dd-0a02-4eff-a45e-d55cc8cf69e2",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10193772,
+          "latency_ms": 1063.9958,
+          "request_id": "req-9f32c03e-5c0e-405c-bc34-7c2db4066a2d",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10082156,
+          "latency_ms": 1036.9651,
+          "request_id": "req-8a34800b-ad33-42fc-9fcc-71441ae32aef",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10150845,
+          "latency_ms": 1013.5,
+          "request_id": "req-b3be44a0-4665-43b0-87e5-f740270efb0f",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10207509,
+          "latency_ms": 1010.565,
+          "request_id": "req-bf61e32a-7827-442f-85e3-708bfb56fc7d",
+          "exceeds_threshold": true
+        },
+        {
+          "event_id": 10150840,
+          "latency_ms": 1001.4062,
+          "request_id": "req-780cfa3e-4fa7-4680-912d-ba5abbcc9df5",
+          "exceeds_threshold": true
+        }
+      ],
+      "case_found": null,
+      "cases_truncated": true
+    },
+    "dataset": "openstack",
+    "unit": "api_accesses",
+    "group_by": null,
+    "data_span": {
+      "first": "2017-05-14T19:39:01.445000Z",
+      "last": "2017-05-17T12:02:35.320000Z"
+    },
+    "effective_range": {
+      "from": "2017-05-14T19:39:01.445000Z",
+      "to": "2017-05-17T12:02:35.320001Z"
+    },
+    "total": {
+      "api_access_events": 98733,
+      "without_request_id": 9196,
+      "unique_requests": 89535,
+      "latency_values": 98733,
+      "p50_ms": 259.578,
+      "p90_ms": 289.05772,
+      "p95_ms": 381.81753999999995,
+      "p99_ms": 514.3884039999999,
+      "max_ms": 4164.4719,
+      "errors_5xx": 2,
+      "rate_5xx": 0.00002025665177802761,
+      "errors_4xx": 3969,
+      "rate_4xx": 0.04019932545349579
+    },
+    "group_count": 0,
+    "groups": [],
+    "other": null,
+    "truncated": false,
+    "top_n": null
+  },
+  "result_digest": "f5a006b1e8b78bb29124b338c7b4998efd1dd73b2a441c7e9a108234e014d40f",
+  "facts": [
+    {
+      "id": "r_f8446a7b.f1",
+      "path": "/result/data_span/first",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "data_span_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f2",
+      "path": "/result/data_span/last",
+      "value": "2017-05-17T12:02:35.320000Z",
+      "metric": "data_span_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f3",
+      "path": "/result/effective_range/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "range_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f4",
+      "path": "/result/effective_range/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "range_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f5",
+      "path": "/result/group_count",
+      "value": 0,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f6",
+      "path": "/result/outliers/baseline_values",
+      "value": 98733,
+      "metric": "outlier_baseline_values",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f7",
+      "path": "/result/outliers/cases/0/event_id",
+      "value": 10194089,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10194089"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f8",
+      "path": "/result/outliers/cases/0/latency_ms",
+      "value": 4164.4719,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10194089"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f9",
+      "path": "/result/outliers/cases/1/event_id",
+      "value": 10194084,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10194084"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f10",
+      "path": "/result/outliers/cases/1/latency_ms",
+      "value": 2244.442,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10194084"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f11",
+      "path": "/result/outliers/cases/2/event_id",
+      "value": 10194092,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10194092"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f12",
+      "path": "/result/outliers/cases/2/latency_ms",
+      "value": 2238.7099,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10194092"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f13",
+      "path": "/result/outliers/cases/3/event_id",
+      "value": 10194070,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10194070"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f14",
+      "path": "/result/outliers/cases/3/latency_ms",
+      "value": 2144.558,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10194070"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f15",
+      "path": "/result/outliers/cases/4/event_id",
+      "value": 10170573,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10170573"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f16",
+      "path": "/result/outliers/cases/4/latency_ms",
+      "value": 1869.8769,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10170573"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f17",
+      "path": "/result/outliers/cases/5/event_id",
+      "value": 10161100,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10161100"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f18",
+      "path": "/result/outliers/cases/5/latency_ms",
+      "value": 1792.6989,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10161100"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f19",
+      "path": "/result/outliers/cases/6/event_id",
+      "value": 10164009,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10164009"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f20",
+      "path": "/result/outliers/cases/6/latency_ms",
+      "value": 1744.225,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10164009"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f21",
+      "path": "/result/outliers/cases/7/event_id",
+      "value": 10079971,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10079971"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f22",
+      "path": "/result/outliers/cases/7/latency_ms",
+      "value": 1295.1999,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10079971"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f23",
+      "path": "/result/outliers/cases/8/event_id",
+      "value": 10170570,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10170570"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f24",
+      "path": "/result/outliers/cases/8/latency_ms",
+      "value": 1250.7939,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10170570"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f25",
+      "path": "/result/outliers/cases/9/event_id",
+      "value": 10192331,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10192331"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f26",
+      "path": "/result/outliers/cases/9/latency_ms",
+      "value": 1211.1809,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10192331"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f27",
+      "path": "/result/outliers/cases/10/event_id",
+      "value": 10150847,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10150847"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f28",
+      "path": "/result/outliers/cases/10/latency_ms",
+      "value": 1204.9539,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10150847"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f29",
+      "path": "/result/outliers/cases/11/event_id",
+      "value": 10150106,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10150106"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f30",
+      "path": "/result/outliers/cases/11/latency_ms",
+      "value": 1174.4969,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10150106"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f31",
+      "path": "/result/outliers/cases/12/event_id",
+      "value": 10170577,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10170577"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f32",
+      "path": "/result/outliers/cases/12/latency_ms",
+      "value": 1098.2502,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10170577"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f33",
+      "path": "/result/outliers/cases/13/event_id",
+      "value": 10171289,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10171289"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f34",
+      "path": "/result/outliers/cases/13/latency_ms",
+      "value": 1087.115,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10171289"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f35",
+      "path": "/result/outliers/cases/14/event_id",
+      "value": 10189429,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10189429"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f36",
+      "path": "/result/outliers/cases/14/latency_ms",
+      "value": 1079.772,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10189429"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f37",
+      "path": "/result/outliers/cases/15/event_id",
+      "value": 10193772,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10193772"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f38",
+      "path": "/result/outliers/cases/15/latency_ms",
+      "value": 1063.9958,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10193772"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f39",
+      "path": "/result/outliers/cases/16/event_id",
+      "value": 10082156,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10082156"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f40",
+      "path": "/result/outliers/cases/16/latency_ms",
+      "value": 1036.9651,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10082156"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f41",
+      "path": "/result/outliers/cases/17/event_id",
+      "value": 10150845,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10150845"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f42",
+      "path": "/result/outliers/cases/17/latency_ms",
+      "value": 1013.5,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10150845"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f43",
+      "path": "/result/outliers/cases/18/event_id",
+      "value": 10207509,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10207509"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f44",
+      "path": "/result/outliers/cases/18/latency_ms",
+      "value": 1010.565,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10207509"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f45",
+      "path": "/result/outliers/cases/19/event_id",
+      "value": 10150840,
+      "metric": "outlier_event_id",
+      "unit": "event_id",
+      "group": {
+        "event_id": "10150840"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f46",
+      "path": "/result/outliers/cases/19/latency_ms",
+      "value": 1001.4062,
+      "metric": "outlier_case_latency",
+      "unit": "ms",
+      "group": {
+        "event_id": "10150840"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f47",
+      "path": "/result/outliers/minimum_baseline",
+      "value": 20,
+      "metric": "outlier_minimum_baseline",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f48",
+      "path": "/result/outliers/outlier_events",
+      "value": 4937,
+      "metric": "outlier_outlier_events",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f49",
+      "path": "/result/outliers/rate",
+      "value": 0.05000354491406116,
+      "metric": "outlier_rate",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f50",
+      "path": "/result/outliers/threshold_ms",
+      "value": 381.81753999999995,
+      "metric": "outlier_threshold_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f51",
+      "path": "/result/total/api_access_events",
+      "value": 98733,
+      "metric": "api_access_events",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f52",
+      "path": "/result/total/errors_4xx",
+      "value": 3969,
+      "metric": "errors_4xx",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f53",
+      "path": "/result/total/errors_5xx",
+      "value": 2,
+      "metric": "errors_5xx",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f54",
+      "path": "/result/total/latency_values",
+      "value": 98733,
+      "metric": "latency_values",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f55",
+      "path": "/result/total/max_ms",
+      "value": 4164.4719,
+      "metric": "max_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f56",
+      "path": "/result/total/p50_ms",
+      "value": 259.578,
+      "metric": "p50_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f57",
+      "path": "/result/total/p90_ms",
+      "value": 289.05772,
+      "metric": "p90_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f58",
+      "path": "/result/total/p95_ms",
+      "value": 381.81753999999995,
+      "metric": "p95_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f59",
+      "path": "/result/total/p99_ms",
+      "value": 514.3884039999999,
+      "metric": "p99_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f60",
+      "path": "/result/total/rate_4xx",
+      "value": 0.04019932545349579,
+      "metric": "rate_4xx",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f61",
+      "path": "/result/total/rate_5xx",
+      "value": 0.00002025665177802761,
+      "metric": "rate_5xx",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f62",
+      "path": "/result/total/unique_requests",
+      "value": 89535,
+      "metric": "unique_requests",
+      "unit": "requests",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f63",
+      "path": "/result/total/without_request_id",
+      "value": 9196,
+      "metric": "without_request_id",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_f8446a7b.f64",
+      "path": "/scope/windows/0/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_f8446a7b.f65",
+      "path": "/scope/windows/0/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    }
+  ]
+}

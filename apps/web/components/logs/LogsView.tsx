@@ -324,8 +324,9 @@ export function LogsView({
               <span>
                 Showing{" "}
                 {outcome.result.receipt.rows_returned.toLocaleString("en-US")}{" "}
-                of {data.total_matches.toLocaleString("en-US")} matching log
-                events
+                {data.total_matches === null
+                  ? "retrieved log events; full frequency is unknown"
+                  : `of ${data.total_matches.toLocaleString("en-US")} matching log events`}
               </span>
               <ReceiptLink
                 id={outcome.result.receipt.receipt_id}
@@ -349,7 +350,7 @@ export function LogsView({
               ))}
               {data.truncated && <Badge variant="outline">Truncated</Badge>}
             </div>
-            {data.total_matches === 0 ? (
+            {data.hits.length === 0 ? (
               <Empty className="min-h-60 border">
                 <EmptyHeader>
                   <EmptyTitle>No matching log events</EmptyTitle>

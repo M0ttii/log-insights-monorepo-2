@@ -1,35 +1,37 @@
-# Submission evidence and remaining gates
+# Submission evidence
 
-This tracked directory is the delivery destination for reviewable English
-material. Local German planning documents under `docs/` remain outside the
-submission. Repository access is unchanged; these files are not a claim that the
-private repository or its links are publicly accessible.
+The delivery scope follows the original challenge brief. The owner confirmed on
+2026-10-18 that the additional formal evaluation is deferred. This does not change
+query correctness, numerical grounding or the distinction between observations,
+hypotheses and causes. See the [minimum submission record](minimum-scope.md).
 
-| Material | Current evidence | Remaining verification |
-|---|---|---|
-| Setup, architecture, tools, rules, data attribution and client configuration | [Main README](../README.md), actual shared registry and canonical schemas | Final fresh-clone S-01 against the frozen release, including real model answer, reachable receipts and web export/re-run |
-| Engine capabilities | [SereneDB function reference](serenedb-functions.md) and nine complete original JSON receipts under [evidence](evidence/) | Recheck demonstrated paths and versions against the final release; these historical examples are not role acceptance |
-| Database timings | [Actual historical SQL report](performance/historical-2026-10-18/report.md), with SQL and source hashes in [JSON](performance/historical-2026-10-18/report.json) | Selected development receipts, mostly one sample per group; no controlled performance or tail-latency claim |
-| Independent setup check | [Fresh-clone verification](fresh-clone-check.md), including sample setup, MCP smoke and integration results | Exact final delivery commit, full corpus, actual Claude client and live web S-01 |
-| Development evaluation | [LOG-53 implementation and run protocol](../packages/evals/README.md), calibration and offline report replay | Actual predeclared model attempts, independent blinded ratings, human sample and passing development gate; paid model calls are postponed |
-| Regression evidence | [S-15 focused rounds](../packages/evals/results/s15-2026-10-18-r5/report.json), including links to earlier failures | Full answer contract and all S-01–S-16 acceptance cases; a focused regression does not establish these |
-| Baseline, first holdout and final verification report | Measurement/export/report implementation exists | LOG-54 freeze and LOG-55 first-holdout/client evidence, with all attempts, failures, unknowns and separate quality/runtime/cost metrics; no holdout result is claimed |
-| Protected holdout preparation | [Metadata-only registration and gated release protocol](../packages/evals/README.md#protected-holdout-preparation), strict public question projection and offline leak controls | Passed development gate, actual freeze, later release and complete first answer round; private questions and expectations remain withheld |
-| Worked investigation | [English APPREAD investigation](worked-investigation.md), all three analyst-written role views, original receipts, checked claims, historical first hypothesis and matching registry re-runs | Final release recheck and actual client acceptance; the known case is not a new model answer or holdout |
-| Presentation | [Worked-case source and PDF](../presentation/README.md#worked-case-deck), with facts read from the checked ledger; [demo/video script](demo-script.md) | Actual timed live rehearsal, recorded video, final evaluation and signed-out public access; the deck is a draft |
-| Unknown jury questions | The shared tool registry supports free tool selection | Demonstrate on the frozen client configuration; known development/demo questions are not a holdout |
+| Required material | Evidence |
+|---|---|
+| Runnable prototype, setup, architecture and tool contracts | [Main README](../README.md), shared registry, [independent fresh-clone check](fresh-clone-check.md) and required CI with real SereneDB loader/MCP integration |
+| Actual agent answers for Engineer, Team Lead and Manager | [Claude examples and provenance](agent-examples/README.md); historical failures remain visible and are not converted into passes |
+| BGL and OpenStack retrieval/aggregation, full-corpus populations, evidence and recommendations | [Worked investigation](worked-investigation.md), [manifest](worked-investigation/manifest.json), [checked claims](worked-investigation/claims.json) and complete [original receipts](evidence/) |
+| Where SereneDB computes | [Function reference](serenedb-functions.md) with executed SQL paths and original receipts |
+| English slides and short walkthrough | [Worked-case deck and source](../presentation/README.md), [154-second edited English walkthrough](../presentation/log-insights-walkthrough.mp4) and [script/provenance](demo-script.md); delivery status in the minimum submission record |
+| Known limits and verification | [Minimum submission record](minimum-scope.md), actual client probes, failed attempts, [worked-case verification](worked-investigation/verification.json) and [historical database timing report](performance/historical-2026-10-18/report.md) |
 
-The live evaluation uses exactly `claude-opus-5-5`. Its saved plan records the
-question/tool/instruction/code/data versions, alternating variants, repetitions,
-effort controls, context/output/call/time limits and price provenance before paid
-execution. The [forecast and execution boundary](../packages/evals/README.md)
-distinguish a conservative estimate from a spending cap. No API evaluation is
-needed to inspect these documents or replay existing offline reports. Providing
-an API key later does not itself establish acceptance.
+The worked investigation is explicitly analyst-written from real tool calls.
+Actual Claude answers have separate source and data-version metadata. Neither is
+a blinded quality benchmark. Historical database timings are selected receipt
+measurements, not end-to-end model latency or a controlled performance claim.
 
-LOG-56 remains open until the final verification report, worked investigation,
-media, client and fresh-clone evidence are complete and all required checks pass.
-OTel and optional index/search bonuses do not block the base BGL/OpenStack
-submission. If an extension is shipped, its own capabilities and limits need
-evidence. No downtime, financial loss, customer effect or proven cause can be
-inferred from a log count, an episode, a ranking or a precursor ratio.
+## Deferred additional research
+
+The [eval harness](../packages/evals/README.md) remains available with its existing
+safeguards. The formal baseline/dev experiment, independent ratings and human
+sample, freeze/release, first holdout, effort comparison, full client/prompt matrix
+and parallel web-role comparison are outside this submission's minimum scope.
+They have not been performed or passed. No paid API run is needed to inspect or
+replay the saved evidence. Do not infer a quality improvement, holdout score or
+production reliability from the harness, CI or selected examples.
+
+The core demonstration uses the existing MCP agent client. Web chat and dataset
+extensions are additional capabilities, with their own documented limits; their
+complete live model acceptance is not claimed. The original BGL/OpenStack log
+excerpts retain Loghub attribution and their original wording. Business impact,
+downtime, financial loss and proven initiating causes remain unknown where the
+data cannot establish them.

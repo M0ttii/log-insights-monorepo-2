@@ -1,0 +1,23 @@
+[
+  {
+    "role": "Engineer / OpenStack",
+    "client": "Claude Desktop / Opus 5.5 / guidance 1.0.8",
+    "evidence": "2 matching log events [r_0bb58204.f3]",
+    "text": "The identity endpoint returned an error page instead of token data. Status: open. This rests on log wording only.",
+    "next": "Then check the identity service (Keystone) logs and health at both timestamps."
+  },
+  {
+    "role": "Team Lead / BGL",
+    "client": "Claude Code / Opus 5.5 / guidance 1.0.7",
+    "evidence": "22 episodes [r_07df2980.f8]",
+    "text": "Workload Runtime should do a root-cause analysis of the program-image load failures in `ciod`:",
+    "next": "Check whether the episodes line up with particular job submissions or paths. Treat any such link as an association, not a confirmed cause."
+  },
+  {
+    "role": "Manager / BGL",
+    "client": "Claude Code / Opus 5.5 / guidance 1.0.7",
+    "evidence": "289 episodes [r_d1c334b8.f14]",
+    "text": "Assign Compute Platform (fictional owner of KERNEL) to investigate the leading pattern, since it has the most episodes and is widespread.",
+    "next": "Business impact unknown"
+  }
+]
