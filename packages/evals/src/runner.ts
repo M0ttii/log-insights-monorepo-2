@@ -250,7 +250,11 @@ export async function executeRound(
   const bank = questionBankSchema.parse(
     await readArtifact(dir, "questions.json")
   )
-  if (manifest.fixture_only || manifest.experiment === undefined)
+  if (
+    manifest.fixture_only ||
+    manifest.split !== "development" ||
+    manifest.experiment === undefined
+  )
     throw new Error("A prepared LOG-53 development round is required")
   const current = await createManifest({
     round_id: manifest.round_id,
@@ -274,11 +278,35 @@ export async function executeRound(
     throw new Error(
       "Prepared configuration changed; prepare a new versioned round"
     )
+  await executePreparedRound(dir, manifest, bank, signal)
+}
+
+/** Shared execution engine; callers must validate their split and immutable plan. */
+export async function executePreparedRound(
+  dir: string,
+  manifest: EvalManifest,
+  bank: QuestionBank,
+  signal: AbortSignal,
+  hooks: {
+    validateRuntime?: (
+      runtime: Awaited<ReturnType<typeof observeEvalRuntime>>
+    ) => Promise<void>
+    beforeAttempt?: () => Promise<void>
+    onFinish?: (completion: {
+      attempts_written: number
+      planned: number
+      aborted: boolean
+      all_attempts_recorded: boolean
+    }) => Promise<void>
+  } = {}
+): Promise<void> {
+  const root = findWorkspaceRoot()
   const config = loadConfig(),
     playbooks = loadPlaybooks()
   const runtime = await observeEvalRuntime(join(dir, "runtime-receipts"))
   if (runtime.data_version !== manifest.versions.data_version)
     throw new Error("Observed corpus differs from the prepared data version")
+  await hooks.validateRuntime?.(runtime)
   await writeArtifact(dir, "runtime.json", runtime)
   // Append-only execution marker prevents rerunning/cherry-picking attempts.
   await writeArtifact(dir, "execution.json", {
@@ -288,9 +316,11 @@ export async function executeRound(
   })
   const db = createDatabase(config.connection),
     receipts = new FileReceiptStore(join(dir, "receipts"))
+  let attemptsWritten = 0
   try {
     for (const plan of manifest.attempts) {
       if (signal.aborted) break // Remaining planned attempts stay visibly missing.
+      await hooks.beforeAttempt?.()
       const question = bank.questions.find((q) => q.id === plan.question_id)
       if (question === undefined) throw new Error("Missing planned question")
       const started_at = new Date().toISOString(),
@@ -356,11 +386,18 @@ export async function executeRound(
         ...(errorKind === undefined ? {} : { error_kind: errorKind }),
         aborted: signal.aborted,
       })
+      attemptsWritten += 1
     }
   } finally {
     await db.dispose()
+    await hooks.onFinish?.({
+      attempts_written: attemptsWritten,
+      planned: manifest.attempts.length,
+      aborted: signal.aborted,
+      all_attempts_recorded: attemptsWritten === manifest.attempts.length,
+    })
+    await saveReport(dir, EVAL_VERSION)
   }
-  await saveReport(dir, EVAL_VERSION)
 }
 /** Clearly labeled artifact-only fixture. It establishes no corpus quality. */
 export async function runFixtureRound(dir: string): Promise<void> {

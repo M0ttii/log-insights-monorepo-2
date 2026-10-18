@@ -28,7 +28,11 @@ import {
   prepareJudgingPacket,
   type PreparedJudgingPacket,
 } from "./judging.ts"
-import { loadRoundSnapshot, recomputeReport } from "./report.ts"
+import {
+  loadRoundSnapshot,
+  recomputeReport,
+  requireFinishedHoldout,
+} from "./report.ts"
 import {
   auditCalibration,
   calibrationPacket,
@@ -110,7 +114,11 @@ export async function prepareReview(
 ): Promise<ReviewPreparation> {
   const version = safeVersion.parse(versionInput)
   const { manifest, bank: questions } = await loadRoundSnapshot(dir)
-  const maxBytes = manifest.experiment?.judge_max_bytes ?? 1_048_576
+  await requireFinishedHoldout(dir, manifest)
+  const maxBytes =
+    manifest.holdout?.judge_max_bytes ??
+    manifest.experiment?.judge_max_bytes ??
+    1_048_576
   const calibration = calibrationPacket(
     await readFile(new URL("./evaluate.test.ts", import.meta.url), "utf8")
   )
@@ -230,7 +238,9 @@ export async function prepareReview(
     }
   }
   const humanQuestions =
-    manifest.experiment?.human_question_ids ?? manifest.repeated_questions
+    manifest.holdout?.human_question_ids ??
+    manifest.experiment?.human_question_ids ??
+    manifest.repeated_questions
   const humanPairs = humanQuestions.map((questionId) => {
     const pair = pairs.find(
       (candidate) =>
@@ -403,7 +413,9 @@ export async function recomputeDevelopmentReport(
       const reconstructed = prepareJudgingPacket(
         question,
         await loadAttempt(dir, plan),
-        manifest.experiment?.judge_max_bytes ?? 1_048_576
+        manifest.holdout?.judge_max_bytes ??
+          manifest.experiment?.judge_max_bytes ??
+          1_048_576
       )
       if (
         digest(reconstructed.assignment) !== digest(assignment) ||
@@ -505,12 +517,13 @@ export async function recomputeDevelopmentReport(
     comparison.totals.invalid_pairs === 0 &&
     comparison.totals.unknown_pairs === 0
   const commonPassed =
-    manifest.experiment !== undefined &&
-    commonCases.some(
-      (common) =>
-        common.case_id === manifest.experiment?.common_case &&
-        common.status === "pass"
-    )
+    manifest.split === "holdout_first" ||
+    (manifest.experiment !== undefined &&
+      commonCases.some(
+        (common) =>
+          common.case_id === manifest.experiment?.common_case &&
+          common.status === "pass"
+      ))
   const failed =
     core.acceptance === "failed" ||
     commonCases.some((common) => common.status === "fail")
@@ -526,6 +539,7 @@ export async function recomputeDevelopmentReport(
   return {
     version,
     round_id: manifest.round_id,
+    split: manifest.split,
     manifest_sha256: digest(manifest),
     preparation_sha256: digest(preparation),
     review_input_sha256: digest(input),
@@ -551,7 +565,9 @@ export async function recomputeDevelopmentReport(
     limitations: [
       "Blinding hides variant labels and author rationale; answer style can still reveal the guidance.",
       "Only saved check_claims results verify numerical claims. Rubric, pair and human judgments remain independent content assessments.",
-      "This report covers development only; web-client evidence and holdout acceptance are separate.",
+      manifest.split === "holdout_first"
+        ? "This report covers the separately frozen first-holdout split. S-13 development content is a pre-release gate; visible web/client acceptance remains separate."
+        : "This report covers development only; web-client evidence and holdout acceptance are separate.",
     ],
   }
 }
@@ -567,6 +583,10 @@ export async function saveDevelopmentReport(
     `review-input/${safeVersion.parse(version)}.json`,
     input
   )
-  await writeArtifact(dir, `development-reports/${version}.json`, report)
+  await writeArtifact(
+    dir,
+    `${report.split === "holdout_first" ? "holdout-reports" : "development-reports"}/${version}.json`,
+    report
+  )
   return report
 }

@@ -68,7 +68,8 @@ vi.mock("@workspace/analytics/db", () => ({
 }))
 // Only the new read-only external provenance boundary is replaced. The full
 // round still runs and asserts cancellation, export and exactly one disposal.
-vi.mock("./holdout-runtime.ts", () => ({
+vi.mock("./holdout-runtime.ts", async (original) => ({
+  ...(await original<typeof import("./holdout-runtime.ts")>()),
   observeEvalRuntime: async (receiptsDirectory: string) => {
     state.observedDirectory = receiptsDirectory
     // The real observer stores its receipt before returning the observation.
