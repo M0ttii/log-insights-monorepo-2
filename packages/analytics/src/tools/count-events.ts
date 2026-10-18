@@ -332,6 +332,11 @@ export const countEvents = defineTool({
       ]
     }
 
+    // Remote FROM expressions own the parameters allocated so far. The entity
+    // statement must not inherit later count/filter/ranking-only bindings.
+    const relationParams = new SqlParams()
+    for (const value of params.values) relationParams.add(value)
+
     // With compare the window becomes two period conditions below.
     const filter =
       remote?.filter ??
@@ -459,7 +464,11 @@ export const countEvents = defineTool({
               input,
               remote === null
                 ? undefined
-                : { relation: remote.rel, filter: remote.filter, params }
+                : {
+                    relation: remote.rel,
+                    filter: remote.filter,
+                    params: relationParams,
+                  }
             ),
           }),
       group_by: input.group_by,

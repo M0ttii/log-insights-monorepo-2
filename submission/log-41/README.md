@@ -61,3 +61,10 @@ After integrating the latest `main` (LOG-55), `pnpm check` passed again with
 1,039 unit tests. Dictionary facets additionally require exactly the measured
 BGL/OpenStack loaded scope; single-dataset or extension-loaded scopes keep the
 existing path. Focused facet/count regressions and analytics typecheck pass.
+
+A final read-only applicability check found and fixed an OTel entity bind bug:
+the entity statement inherited count-only parameters. The relation parameters
+are now copied before compiling counts. Six real OTel direct/indexed/replay
+regressions failed with `08P01` before the fix and all passed afterwards, with
+matching complete-scope count denominators and typed facts. This brings focused
+native/MCP/Golden coverage to 35 cases.

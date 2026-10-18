@@ -27,3 +27,11 @@ All four findings were fixed before merge:
 - A per-snapshot build lock, immutable saved import and owned-object recovery restore a lost database index without overwriting a healthy concurrent build.
 
 Focused regressions and the parent checks verify the fixes. Provider-backed quality, genuine Claude role runs and OTel semantic snapshots remain ticket acceptance limits, separately documented; they are not hidden code-review findings.
+
+## Additional applicability regression
+
+The independent verifier exercised IP/path distributions through the existing
+OTel direct, indexed and replay relations and found polluted bound-parameter
+lists (`08P01`). The count tool now snapshots only relation-owned bindings before
+adding count/filter/ranking parameters. Six real regression cases failed before
+the change and passed afterwards. Source lint and analytics typecheck passed.
