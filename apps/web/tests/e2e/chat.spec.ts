@@ -222,6 +222,32 @@ test("recorded SDK revision, fact chips, independent checks and accessible compo
     .fill("Investigate the synthetic recording")
   await page.getByRole("button", { name: "Send question" }).click()
   await expect(page.getByRole("button", { name: "Export run" })).toBeVisible()
+  const tools = page.getByRole("button", { name: /2 tool calls.*Complete/ })
+  await expect(tools).toHaveAttribute("aria-expanded", "false")
+  await expect(
+    page.getByRole("button", { name: /describe_corpus.*Complete/ })
+  ).toHaveCount(0)
+  await expect(
+    page.getByText("1 claims checked · 1 mismatch · 0 unresolved")
+  ).toHaveCount(1)
+  await expect(
+    page.getByText("1 claims checked · 0 mismatch · 0 unresolved")
+  ).toHaveCount(1)
+  await page.screenshot({
+    path: testInfo.outputPath("chat-tools-collapsed.png"),
+    fullPage: true,
+  })
+  await tools.focus()
+  await page.keyboard.press("Enter")
+  await expect(tools).toHaveAttribute("aria-expanded", "true")
+  await expect(
+    page.getByRole("button", { name: /describe_corpus.*Complete/ })
+  ).toBeVisible()
+  await expect(tools).toBeInViewport()
+  await page.screenshot({
+    path: testInfo.outputPath("chat-tools-expanded.png"),
+    fullPage: true,
+  })
   await expect(
     page.getByText(
       "Required evidence requested: event_trend; 1 claim(s) mismatch their cited fact"
@@ -273,7 +299,14 @@ test("recorded SDK revision, fact chips, independent checks and accessible compo
   ).toHaveCount(2)
   await expect(
     page.getByText("1 claims checked · 0 mismatch · 0 unresolved")
-  ).toHaveCount(2)
+  ).toHaveCount(1)
+  await tools.focus()
+  await page.keyboard.press("Space")
+  await expect(tools).toHaveAttribute("aria-expanded", "false")
+  await expect(tools).toBeInViewport()
+  await expect(
+    page.getByRole("button", { name: /describe_corpus.*Complete/ })
+  ).toHaveCount(0)
   await expect(
     page.getByRole("button", {
       name: "Uncited number 44: No fact ID next to this number",

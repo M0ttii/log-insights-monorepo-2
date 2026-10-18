@@ -31,8 +31,7 @@ const adapterErrorSchema = z.object({
     }),
   }),
 })
-export const outcomeSchema = z.union([
-  successSchema,
+export const toolFailureSchema = z.union([
   z.object({ ok: z.literal(false), error: toolErrorSchema }),
   adapterErrorSchema.transform((value) => ({
     ok: value.ok,
@@ -43,6 +42,7 @@ export const outcomeSchema = z.union([
     },
   })),
 ])
+export const outcomeSchema = z.union([successSchema, toolFailureSchema])
 
 const phaseSchema = z.object({
   kind: z.enum(["preflight", "investigate", "answer", "revise"]),

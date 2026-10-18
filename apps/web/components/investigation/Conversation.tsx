@@ -1,5 +1,5 @@
 import { memo, useState } from "react"
-import { isToolUIPart, type ChatStatus, type UIMessage } from "ai"
+import type { ChatStatus, UIMessage } from "ai"
 import { Check, Copy, LoaderCircle } from "lucide-react"
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -22,16 +22,11 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@workspace/ui/components/message-scroller"
-import { ToolCall } from "./ToolCall"
+import { ToolCalls } from "./ToolCalls"
 import { Answer } from "./Answer"
 import { Verification } from "./Verification"
 import { ExportRun } from "./ExportRun"
-import {
-  findingText,
-  projectMessage,
-  requestedEvidence,
-  textOf,
-} from "./mapper"
+import { findingText, projectMessage, textOf } from "./mapper"
 import type { Interruption, RunContext } from "./types"
 import { scopeSummary } from "./scope"
 
@@ -90,6 +85,7 @@ const ConversationMessage = memo(function ConversationMessage({
   busy: boolean
   context?: RunContext
 }) {
+  const [toolsOpen, setToolsOpen] = useState({ draft: false, final: false })
   const user = message.role === "user"
   const view = projectMessage(message)
   const role = context?.role ?? null
@@ -103,15 +99,17 @@ const ConversationMessage = memo(function ConversationMessage({
     // The whole version is marked once so citations across streamed text parts
     // use the same canonical sentence and code-span boundaries.
     const answer = textOf(parts)
+    const version = draft || !view.revised ? "draft" : "final"
     return (
       <>
-        {parts.filter(isToolUIPart).map((part) => (
-          <ToolCall
-            key={part.toolCallId}
-            part={part}
-            interruption={toolInterruption}
-          />
-        ))}
+        <ToolCalls
+          parts={parts}
+          interruption={toolInterruption}
+          open={toolsOpen[version]}
+          onOpenChange={(open) =>
+            setToolsOpen((previous) => ({ ...previous, [version]: open }))
+          }
+        />
         {answer && (
           <Answer
             text={answer}
@@ -150,26 +148,7 @@ const ConversationMessage = memo(function ConversationMessage({
             </Bubble>
           ) : (
             <>
-              {view.tools.map((part, index) => {
-                if (isToolUIPart(part))
-                  return (
-                    <ToolCall
-                      key={part.toolCallId}
-                      part={part}
-                      interruption={toolInterruption}
-                    />
-                  )
-                const requirement = requestedEvidence(part)
-                return (
-                  <p
-                    key={index}
-                    className="text-xs wrap-anywhere text-muted-foreground"
-                  >
-                    Required evidence requested
-                    {requirement ? `: ${requirement}` : ""}
-                  </p>
-                )
-              })}
+              <ToolCalls parts={view.tools} interruption={toolInterruption} />
               {view.revised && (
                 <>
                   <Collapsible className="min-w-0">
