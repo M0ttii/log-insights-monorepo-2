@@ -141,3 +141,89 @@ explicit base repeat-load check and the base integration idempotence test passed
 - Eval quality, baseline comparison, holdout, human review, worked investigation,
   timed demo and video acceptance are separate gates and are not claimed here.
 
+## Exact delivery revision follow-up
+
+On 18 October 2026, the same independent clone fetched and checked out
+`b447d547eff8717f83747aea70b15999ec83372e` in detached HEAD state. This is the
+delivery implementation tested in this follow-up. The initial base check above
+is preserved separately; the follow-up is not a second empty-cache clone or a
+final frozen-release S-01 acceptance run.
+
+The clone retained only its own earlier installed dependencies, build/task
+caches and directly downloaded pinned sample files. No `.env`, corpus,
+receipts, dependency directory or build output was copied from the implementation
+checkout. The lockfile and workspace dependencies were unchanged. The design
+submodule remained at `b64024f87ee544e2ca727ddeecd2213c3d8c8d84`.
+
+Node `v24.22.0` and pnpm `11.25.0` were selected explicitly with the same minimal
+environment. `.env` was absent during installation, help, checks and build. The
+localhost test ran with the previously required network permission, without
+changing any check.
+
+| Command | Result at `b447d547` | Wall time |
+|---|---|---:|
+| `pnpm install --frozen-lockfile` | Passed; already up to date; no lockfile changes or disabled scripts | 0.41 s |
+| `pnpm report:perf --help` | Passed without `.env`; printed the documented limits, fixed mount and configuration-free help | 0.84 s |
+| `pnpm check` | Passed all static checks and 69 unit test files / 849 tests | 12.73 s |
+| `pnpm build` | Passed; production webpack build without database/model configuration | 15.24 s |
+| `pnpm data:setup --samples` | Passed on a newly recreated isolated volume; retained files validated; base balance/data version unchanged | 2.51 s |
+| `pnpm data:setup --samples --with all` | Passed; retained files validated; extended balance/data version unchanged | 1.42 s |
+| `pnpm test:integration` | Passed: 24 files / 411 tests; one existing conditional extension idempotence skip, as explained above | 24.24 s |
+| `pnpm test:mcp` | Passed: two files / 13 real stdio transport tests | 6.01 s |
+
+The same isolated project name and independently probed free loopback port were
+used, with a new random database password and an empty model key. The previous
+container, network and volume had been removed, so the server state was freshly
+created. The loader checked the exact same required ARM64 image ID. The two
+sample data versions remained `dv_f9c4be888db8f242` and
+`dv_cfb03d5a5fdbb689`. No full-corpus download or model call was performed.
+
+### Public performance CLI and new database coverage
+
+The four new tests in
+[`performance.test.ts`](../packages/analytics/tests/integration/performance.test.ts)
+passed against real SereneDB in the full integration run. Their independent,
+explicitly synthetic receipt fixtures checked native median/continuous p95 and
+separate data/tool/version/client groups; inclusive/exclusive microsecond time
+bounds; an empty selected window with no invented percentiles; and rejection
+when the selected host receipt's duration differs from its mounted source.
+
+For a separate public CLI check, the registry executed `count_events` with
+`{"dataset":"bgl","group_by":["dataset"]}` against the new base samples,
+client `test`. It created receipt `r_69344e0e` in this clone's mounted receipt
+directory. A host selection directory contained only an unchanged copy of that
+new receipt; no implementation-checkout receipt was used. The following public
+root command then passed in 0.80 s:
+
+```bash
+pnpm report:perf --receipts-dir .data/log56-delivery-source \
+  --output .data/log56-delivery-performance-sample --json
+```
+
+The result was `measured`, with one SQL-counted receipt, one group and one saved
+query using `read_json`. JSON stdout parsed directly and matched the saved
+`report.json`; `report.md` included the source SHA-256
+`98805c37cfc575b5fff18b76adb716249e03670b4729b867966b5f5c830142a7`.
+Reusing the output directory returned exit code 1 with a safe correction hint;
+both existing report files retained their exact hashes. These temporary sample
+artifacts verify the CLI path, not a corpus performance result or latency claim.
+
+Audit-only receipt preparation initially used incorrect module/environment
+paths, then omitted the required `group_by` input. These probes produced no
+receipt. The corrected probe ran directly from `packages/analytics` with the
+canonical input above. The public CLI had correctly reported `not_measured`
+for the initial absent selection; no product code or configuration was changed
+to obtain the successful measured result.
+
+After this follow-up, `docker compose -p log56-fresh-qm8qdt down --volumes`
+again removed only the temporary project's container, network and volume; the
+newly generated `.env` was removed. Docker queries showed no remaining container
+or volume with that project label. The clone remained detached at the exact
+delivery commit with a clean tracked working tree. Temporary receipts and CLI
+outputs stayed inside this clone's ignored `.data` directory.
+
+The full-corpus, image archive restoration, actual Claude client answer, live
+web/export/Re-run, final release freeze, eval and media gates listed above remain
+open. This follow-up verifies the committed delivery preparation without
+claiming those acceptance results.
+
