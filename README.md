@@ -185,6 +185,7 @@ these calculations happen.
 | `pnpm test:e2e` | Browser and accessibility checks against a production build |
 | `pnpm report:perf [options]` | Read saved receipts with SereneDB `read_json`; report observed database round-trip n/median/p95/min/max by data/tool version and client; no model calls |
 | `pnpm eval <command> …` | Prepare development plans and reviewer packets offline, or explicitly execute paid runs later; see [eval workflow and cost boundary](packages/evals/README.md) |
+| `pnpm eval holdout-register …` | Register only independently authored holdout metadata; freeze/release remain separate gated operations with no model calls |
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
 | `pnpm data:setup [--samples] [--with <ids>\|all]` | Load BGL and OpenStack into SereneDB (idempotent); `--with hdfs,openssh,apache,linux,zookeeper` (or `all`) adds the extension datasets; `--samples` loads the Loghub 2k samples into `log_insights_samples` instead (with `--with` into `log_insights_samples_ext`) |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |

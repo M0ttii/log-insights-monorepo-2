@@ -18,6 +18,7 @@ import {
   runFixtureRound,
   runLiveRound,
 } from "./runner.ts"
+import { registerHoldout, freezeHoldout, releaseHoldout } from "./holdout.ts"
 
 export async function main(argv: string[]): Promise<void> {
   const [command, path, ...rest] = argv
@@ -33,12 +34,61 @@ export async function main(argv: string[]): Promise<void> {
       "prepare-review",
       "review",
       "development-report",
+      "holdout-register",
+      "holdout-freeze",
+      "holdout-release",
     ].includes(command ?? "")
   )
     throw new Error(
-      "Usage: eval plan <new-directory> --data-version <version> | execute <prepared-directory> | fixture <new-directory> | run <new-directory> --data-version <version> | report <directory> [reviewer-version] | assess <directory> <new-reviewer-version> <assessments.json> | prepare-review <directory> <version> | review <directory> <version> <review-input.json> | development-report <directory> <version>"
+      "Usage: eval plan <new-directory> --data-version <version> | execute <prepared-directory> | fixture <new-directory> | run <new-directory> --data-version <version> | report <directory> [reviewer-version] | assess <directory> <new-reviewer-version> <assessments.json> | prepare-review <directory> <version> | review <directory> <version> <review-input.json> | development-report <directory> <version> | holdout-register <new-preparation-directory> <metadata.json> | holdout-freeze <new-freeze-directory> <preparation-directory> <development-directory> <reviewer-version> | holdout-release <preparation-directory> <freeze-directory> <private-vault-directory>"
     )
   const dir = resolve(findWorkspaceRoot(), path)
+  if (command === "holdout-register") {
+    const [metadata] = rest
+    if (metadata === undefined || rest.length !== 1)
+      throw new Error("holdout-register requires one public metadata file")
+    const result = await registerHoldout(
+      resolve(findWorkspaceRoot(), metadata),
+      dir
+    )
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return
+  }
+  if (command === "holdout-freeze") {
+    const [preparation, development, reviewer] = rest
+    if (
+      preparation === undefined ||
+      development === undefined ||
+      reviewer === undefined ||
+      rest.length !== 3
+    )
+      throw new Error(
+        "holdout-freeze requires preparation, development round and reviewer version"
+      )
+    const result = await freezeHoldout(
+      resolve(findWorkspaceRoot(), preparation),
+      resolve(findWorkspaceRoot(), development),
+      reviewer,
+      dir
+    )
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return
+  }
+  if (command === "holdout-release") {
+    const [freeze, vault] = rest
+    if (freeze === undefined || vault === undefined || rest.length !== 2)
+      throw new Error(
+        "holdout-release requires freeze and private vault directories"
+      )
+    const result = await releaseHoldout(
+      dir,
+      resolve(findWorkspaceRoot(), freeze),
+      resolve(findWorkspaceRoot(), vault),
+      resolve(findWorkspaceRoot(), "packages/evals/questions")
+    )
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+    return
+  }
   if (
     ["prepare-review", "review", "development-report"].includes(command ?? "")
   ) {

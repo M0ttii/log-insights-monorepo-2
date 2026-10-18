@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "registered_at": "2026-10-18T17:08:10.409Z",
+  "metadata_sha256": "966d7c82c93a20d430cde12620fb87c0079559dd3ab244d9ec02971c4b370761",
+  "metadata": {
+    "schema_version": 1,
+    "set_id": "hs_547e0142c0a64d0b88246c763258b38a",
+    "created_at": "2026-10-18T17:06:58.766Z",
+    "author_id": "log54-sealed-author",
+    "author_not_playbook_author": true,
+    "sealed": true,
+    "contaminated": false,
+    "role_counts": {
+      "engineer": 2,
+      "team_lead": 2,
+      "manager": 2
+    },
+    "datasets": ["bgl", "openstack"],
+    "data_version": "dv_229e422f86a9fc6e",
+    "files": {
+      "questions_sha256": "b89a52a8d4ffb83e46fb35ffad703434ec23d22e17c74f3de288226b20ac6abc",
+      "expectations_sha256": "773abd2c6301ea5b1aee4f7e4d3c2dd9e1a8eda8d638ce5b010fda5428cce1d2",
+      "evidence_sha256": "1eb5ec6a974dbb676703465954a30c67ff6e52ab2ef86cf774fe5ffb8d418415"
+    }
+  }
+}
