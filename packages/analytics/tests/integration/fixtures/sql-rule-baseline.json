@@ -320,5 +320,18 @@
       "result_digest": "3e21e414f15576fe56e2719b5c3101edc671c81f06e75dc57ed241e46131cbcd",
       "normalized_facts_sha256": "4770d90d52f853a23212fc369fda0a9b6cc6a08521984a9e61784174a04458b5"
     }
-  ]
+  ],
+  "loads": [
+    {
+      "image": "local/serenedb:26.10.1-arm64",
+      "data_version": "dv_379bf006bbb73434",
+      "describe_result_digest": "3e21e414f15576fe56e2719b5c3101edc671c81f06e75dc57ed241e46131cbcd"
+    },
+    {
+      "image": "serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9",
+      "data_version": "dv_3bafbdde56239465",
+      "describe_result_digest": "8e878dc7c1d27761687cb16a1543a5360f424107c99d23d6286b2cfffcbadc78"
+    }
+  ],
+  "load_reference_note": "data_version hashes image identity. describe digests derive from the original pre-migration captured data with only versions.data_version set to the exact approved load manifest; all other data and every normalized fact remain unchanged. The official-image digest exactly matched the first CI result."
 }

@@ -30,9 +30,16 @@ import { loadEnv, samplesConnection, temporaryDir } from "./helpers.ts"
 
 loadEnv()
 
+const loadReferenceSchema = z.object({
+  image: z.string(),
+  data_version: z.string(),
+  describe_result_digest: z.string(),
+})
+
 const baselineSchema = z.object({
   source: z.string(),
   data_version: z.string(),
+  loads: z.array(loadReferenceSchema),
   cases: z.array(
     z.object({
       name: z.string(),
@@ -55,9 +62,24 @@ const baseline = baselineSchema.parse(JSON.parse(baselineText))
 let db: Database
 let registry: Registry
 let receiptsDir: string
+let expectedLoad: z.infer<typeof loadReferenceSchema>
 
 beforeAll(async () => {
   db = createDatabase(samplesConnection())
+  const loaded = await db.query(
+    "SELECT image, data_version FROM load_manifest",
+    [],
+    call().signal
+  )
+  const manifest = z
+    .object({ image: z.string(), data_version: z.string() })
+    .parse(loaded.rows[0])
+  // Image identity is part of data_version. Pin both approved 26.10.1
+  // builds rather than treating their distinct load manifests as identical.
+  expectedLoad = loadReferenceSchema.parse(
+    baseline.loads.find((reference) => reference.image === manifest.image)
+  )
+  z.literal(expectedLoad.data_version).parse(manifest.data_version)
   receiptsDir = await temporaryDir("analytics-sql-rule-parity-")
   registry = createRegistry({
     db,
@@ -107,6 +129,10 @@ function checkChange(
 describe("pre-migration result, fact and digest parity", () => {
   it.each(baseline.cases)("$name", async (fixture) => {
     const result = await run(fixture.tool, fixture.input)
+    const expectedDigest =
+      fixture.tool === "describe_corpus"
+        ? expectedLoad.describe_result_digest
+        : fixture.result_digest
     const normalizedFacts = result.facts.map((fact) => ({
       ...fact,
       id: fact.id.replace(/^r_[0-9a-f]+\./, ""),
@@ -114,9 +140,9 @@ describe("pre-migration result, fact and digest parity", () => {
     expect(
       createHash("sha256").update(canonicalJson(normalizedFacts)).digest("hex")
     ).toBe(fixture.normalized_facts_sha256)
-    expect(resultDigest(result.data)).toBe(fixture.result_digest)
-    expect(result.receipt.result_digest).toBe(fixture.result_digest)
-    expect(result.receipt.data_version).toBe(baseline.data_version)
+    expect(resultDigest(result.data)).toBe(expectedDigest)
+    expect(result.receipt.result_digest).toBe(expectedDigest)
+    expect(result.receipt.data_version).toBe(expectedLoad.data_version)
 
     if (fixture.tool === "count_events") {
       const data = countEventsOutputSchema.parse(result.data)
