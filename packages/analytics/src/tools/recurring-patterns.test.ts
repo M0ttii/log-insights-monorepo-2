@@ -20,6 +20,7 @@ type Row = Record<string, unknown>
 type Call = { sql: string; params: readonly unknown[] }
 
 const PATTERN: Row = {
+  record_kind: "pattern",
   pattern_id: "p1",
   pattern: "pattern <NUM>",
   dataset: "bgl",
@@ -27,6 +28,9 @@ const PATTERN: Row = {
   team: "Compute Platform",
   events: "3",
   episodes: "2",
+  recurring: true,
+  status: "new",
+  first_seen_before_window: null,
   active_days: "1",
   active_weeks: "1",
   b1: "2",
@@ -43,6 +47,22 @@ const PATTERN: Row = {
   quiet: "0",
 }
 
+const SUMMARY: Row = {
+  record_kind: "summary",
+  total: "3",
+  active: "1",
+  quiet: "0",
+  truncated: false,
+  qualifying: "1",
+  candidates_checked: "1",
+  missing_breadth: "0",
+  drop_breadth: false,
+  drop_increase: false,
+  not_dominated_by_first: "0",
+  first_pattern_id: "p1",
+  compared_with: "0",
+}
+
 function setup(rows: Row[] = [PATTERN]) {
   const calls: Call[] = []
   const stored: Receipt[] = []
@@ -54,12 +74,19 @@ function setup(rows: Row[] = [PATTERN]) {
         if (sql === "SELECT data_version FROM load_manifest")
           return [{ data_version: "dv_test" }]
         if (sql.includes("FROM corpus_stats")) return [SPAN]
+        if (sql.startsWith("WITH comparison_bounds"))
+          return [
+            {
+              current: "full",
+              baseline: String(params[2]) < SPAN.first ? "none" : "full",
+              determinable: String(params[2]) >= SPAN.first,
+            },
+          ]
         if (sql.includes("rules_version FROM load_manifest"))
           return [
             { rules_version: "concept-3.5", pattern_rules_version: "1.0.0" },
           ]
-        if (sql.startsWith("WITH cur")) return rows
-        if (sql.includes("AS first_seen FROM")) return []
+        if (sql.startsWith("WITH cur")) return [...rows, SUMMARY]
         if (sql.includes("'level' AS kind"))
           return [
             { pattern_id: "p1", kind: "level", value: "FATAL", events: "3" },
@@ -101,9 +128,10 @@ describe("recurring_patterns SQL", () => {
       components: ["KERNEL"],
     })
     expect(outcome.ok).toBe(true)
-    const [span, manifest, main, history] = toolCalls(calls)
+    const [span, coverage, manifest, main] = toolCalls(calls)
     expect(span?.params).toEqual(["bgl"])
     expect(manifest?.sql).toContain("rules_version")
+    expect(coverage?.sql).toContain("comparison_coverage")
     expect(main?.sql).toContain(
       "lag(e.ts) OVER (PARTITION BY e.pattern_id ORDER BY e.ts, e.event_id) AS prev_ts FROM log_events e WHERE e.dataset = $1 AND e.component IN ($2) AND e.ts >= $4::TIMESTAMPTZ AND e.ts < $5::TIMESTAMPTZ)"
     )
@@ -125,27 +153,33 @@ describe("recurring_patterns SQL", () => {
       "2005-09-01T00:00:00Z",
       "2005-07-01T00:00:00.000000Z",
       "2005-08-01T00:00:00.000000Z",
+      2,
+      2,
+      20,
+      "2005-08-01T00:00:00Z",
+      SPAN.first,
       10,
     ])
-    // History: same filter except time, before from, listed patterns only.
-    expect(history?.sql).toContain(
-      "WHERE e.dataset = $1 AND e.component IN ($2) AND e.ts < $3::TIMESTAMPTZ AND e.pattern_id IN ($4)"
+    // History and R-10 share the aggregate statement and its exact filters.
+    expect(main?.sql).toContain(
+      "WHERE e.dataset = $1 AND e.component IN ($2) AND e.ts < $11::TIMESTAMPTZ AND $12::TIMESTAMPTZ < $11::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM joined)"
     )
-    expect(history?.params).toEqual([
-      "bgl",
-      "KERNEL",
-      "2005-08-01T00:00:00Z",
-      "p1",
-    ])
+    expect(main?.sql).toContain("episodes >= $8::BIGINT AS recurring")
+    expect(main?.sql).toContain(
+      "events >= $9::BIGINT * baseline AND events - baseline >= $10::BIGINT"
+    )
   })
 
   it("skips B and the history when the window starts with the data", async () => {
-    const { calls, run } = setup([{ ...PATTERN, baseline: null, delta: null }])
+    const { calls, run } = setup([
+      { ...PATTERN, baseline: null, delta: null, status: "ongoing" },
+    ])
     const outcome = await run({ dataset: "bgl" })
     expect(outcome.ok).toBe(true)
     const sqls = toolCalls(calls).map((call) => call.sql)
-    expect(sqls).toHaveLength(3)
-    expect(sqls[2]).not.toContain("FULL OUTER JOIN")
+    expect(sqls).toHaveLength(4)
+    expect(sqls[3]).not.toContain("FULL OUTER JOIN")
+    expect(sqls[3]).toContain("AND $9::TIMESTAMPTZ < $8::TIMESTAMPTZ")
     expect(outcome.ok && outcome.result.data).toMatchObject({
       comparison: { determinable: false },
       quiet_count: null,
@@ -153,7 +187,7 @@ describe("recurring_patterns SQL", () => {
     })
   })
 
-  it("reads only candidates for investigation_order and returns all of them", async () => {
+  it("checks every candidate in SQL and caps listed patterns, leaders and outside conflicts there", async () => {
     const { calls, run } = setup()
     const outcome = await run({
       dataset: "openstack",
@@ -169,8 +203,14 @@ describe("recurring_patterns SQL", () => {
       "(e.is_error OR (e.http_status >= 500 AND e.http_status <= 599))"
     )
     expect(main?.sql).toContain("e.instance_id AS u1, e.request_id AS u2")
-    expect(main?.sql).toContain("WHERE events > 0 ORDER BY rank")
-    expect(main?.params).not.toContain(3)
+    expect(main?.sql).toContain(
+      "candidates AS (SELECT * FROM ruled WHERE events > 0)"
+    )
+    expect(main?.sql).toContain("WHERE rank <=")
+    expect(main?.sql).toContain("WHERE leader_rank <=")
+    expect(main?.sql).toContain("WHERE o.conflict_rank <=")
+    expect(main?.params).toContain(3)
+    expect(main?.params).toContain(5)
     const details = toolCalls(calls).at(-1)
     expect(details?.sql).toContain("'level' AS kind")
     expect(details?.sql).not.toContain("'label' AS kind")
@@ -236,6 +276,6 @@ describe("recurring_patterns validation", () => {
       error: { code: "invalid_input", issues: [{ path: "rank" }] },
     })
     // Only the data span was read.
-    expect(toolCalls(calls)).toHaveLength(1)
+    expect(toolCalls(calls)).toHaveLength(2)
   })
 })

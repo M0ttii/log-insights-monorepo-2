@@ -8,8 +8,11 @@
  */
 import { rm } from "node:fs/promises"
 
+import { isRecurring, patternStatus } from "@workspace/domain/rules/status"
+import { parseInstant } from "@workspace/domain/time"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
+import { getDataSpan } from "../../src/corpus.ts"
 import { createDatabase, type Database } from "../../src/db.ts"
 import { FileReceiptStore } from "../../src/receipts.ts"
 import { createRegistry, type Registry } from "../../src/registry.ts"
@@ -55,9 +58,40 @@ const call = () => ({
 async function patterns(input: Record<string, unknown>) {
   const outcome = await registry.runTool("recurring_patterns", input, call())
   if (!outcome.ok) throw new Error(outcome.error.message)
+  const data = recurringPatterns.output.parse(outcome.result.data)
+  const span = await getDataSpan(db, data.dataset, call().signal)
+  const current = outcome.result.receipt.scope.windows.find(
+    (window) => window.period === "current"
+  )
+  if (span === null || current === undefined)
+    throw new Error("missing fixture time scope")
+  const dataStart = parseInstant(span.first)
+  const windowStart = parseInstant(current.from)
+  if (dataStart === null || windowStart === null)
+    throw new Error("invalid fixture time scope")
+  // Independent R-05/R-10 oracles use exactly the SQL counts and history
+  // returned for each fixture, including filtered episodes and all statuses.
+  expect(
+    data.patterns.map((row) => ({
+      recurring: row.recurring,
+      status: row.status,
+    }))
+  ).toEqual(
+    data.patterns.map((row) => ({
+      recurring: isRecurring(row.episodes),
+      status: patternStatus({
+        current: row.events,
+        baseline: row.baseline,
+        firstEventInWindow:
+          row.events > 0 && row.first_seen_before_window === null,
+        windowStartsAfterDataStart: dataStart < windowStart,
+        hasEventsBeforeWindow: row.first_seen_before_window !== null,
+      }),
+    }))
+  )
   return {
     ...outcome.result,
-    data: recurringPatterns.output.parse(outcome.result.data),
+    data,
   }
 }
 
@@ -413,12 +447,12 @@ describe("contract", () => {
       recurring_min_episodes: 2,
       breadth_unit: "nodes",
     })
-    // Span, manifest, main aggregate with B, history, levels and labels.
+    // Span, SQL coverage, manifest, aggregate with history/rules, details.
     expect(first.receipt.sql).toHaveLength(5)
-    expect(first.receipt.sql[2]).toMatch(
+    expect(first.receipt.sql[3]).toMatch(
       /lag\(e\.ts\) OVER \(PARTITION BY e\.pattern_id ORDER BY e\.ts, e\.event_id\)/
     )
-    expect(first.receipt.params[2]).toContain("30 minutes")
+    expect(first.receipt.params[3]).toContain("30 minutes")
     expect(first.receipt.input).toMatchObject({ rank: "investigation_order" })
     expect(first.receipt.scope.windows).toEqual([
       { dataset: "bgl", ...dot(AUGUST, false), period: "current" },

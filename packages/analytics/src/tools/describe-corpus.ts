@@ -301,7 +301,7 @@ const manifestRow = z.object({
   rules_version: z.string(),
 })
 
-const STATS_SQL = `SELECT dataset, lines_read, events, rejected, ${isoTime("first_ts")} AS first_event, ${isoTime("last_ts")} AS last_event, error_events, patterns, single_event_patterns, time_basis, label_source, levels, components, labels, api_accesses, api_accesses_without_request_id, requests FROM corpus_stats ORDER BY dataset`
+const STATS_SQL = `SELECT sum(events) OVER () AS population_count, dataset, lines_read, events, rejected, ${isoTime("first_ts")} AS first_event, ${isoTime("last_ts")} AS last_event, error_events, patterns, single_event_patterns, time_basis, label_source, levels, components, labels, api_accesses, api_accesses_without_request_id, requests FROM corpus_stats ORDER BY dataset`
 
 const OWNERSHIP_SQL =
   "SELECT dataset, component, team, note FROM ownership ORDER BY team, dataset, component"
@@ -315,7 +315,7 @@ const NO_GUIDANCE_NOTE =
 export const describeCorpus = defineTool({
   name: "describe_corpus",
   title: "Describe corpus",
-  version: "1.0.0",
+  version: "1.1.0",
   description: renderDescription({
     purpose:
       "Describes the loaded log corpus: per dataset the events, time span, fields, levels, components with their fictional owning team, dataset labels and known limits, plus ownership, rule and data versions and the answer guidance per role.",
@@ -475,7 +475,7 @@ export const describeCorpus = defineTool({
           filters: {},
         },
         population: {
-          count: datasets.reduce((sum, row) => sum + row.events, 0),
+          count: exactCount.parse(stats.rows[0]?.population_count),
           unit: "log_events",
         },
         rows_returned:

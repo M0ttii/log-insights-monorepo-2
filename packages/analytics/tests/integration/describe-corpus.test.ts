@@ -162,7 +162,9 @@ describe("describe_corpus", () => {
     expect(stored.result).toEqual(result.data)
     expect(stored.facts).toEqual(result.facts)
     expect(receipt.sql).toHaveLength(3)
-    expect(receipt.sql[0]).toMatch(/^SELECT dataset, lines_read, events/)
+    expect(receipt.sql[0]).toMatch(
+      /^SELECT sum\(events\) OVER \(\) AS population_count, dataset/
+    )
     expect(receipt.params).toEqual([[], [], []])
     expect(receipt.data_version).toMatch(/^dv_[0-9a-f]{16}$/)
     expect(result.data.versions.data_version).toBe(receipt.data_version)

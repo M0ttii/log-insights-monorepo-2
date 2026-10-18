@@ -9,13 +9,10 @@ import type { FactSpec } from "@workspace/domain/facts"
 import { validateFilter, type Filter } from "@workspace/domain/filters"
 import {
   bucketCount,
-  bucketGrid,
   bucketUnitSchema,
   effectiveRange,
-  fillBuckets,
   instantSchema,
   parseInstant,
-  type BucketSlot,
   type BucketUnit,
   type DataSpan,
   type TimeRange,
@@ -58,8 +55,8 @@ import { isoTime, SqlParams } from "../sql.ts"
  * series, both from the same CTE). SereneDB truncates with `date_trunc` in
  * the session time zone, which the pool fixes to UTC (gate G5); weeks start
  * on Monday. Totals, series ranks and `other` come from SereneDB; the
- * TypeScript side only completes the grid with zeros for buckets inside the
- * span without a row (`fillBuckets`).
+ * grid, missing bucket/series zeros, partial edges and capture gaps are
+ * computed by native range() and LEFT JOINs in SQL.
  */
 
 /** Slot of `other` in the series query: one past the last named series. */
@@ -80,7 +77,13 @@ const exactCount = z
   .transform((value) => toSafeInteger(value))
   .pipe(z.number().int().nonnegative())
 
-const spanRowTimes = z.object({ bucket: instantSchema })
+const gridRow = z.object({
+  bucket: instantSchema,
+  bucket_end: instantSchema,
+  partial: z.boolean(),
+  capture_gap: z.boolean(),
+})
+type GridRow = z.infer<typeof gridRow>
 const bucketRow = z.object({
   bucket: instantSchema,
   events: exactCount,
@@ -95,7 +98,7 @@ const seriesRow = z.object({
 })
 const cellRow = z.object({
   bucket: instantSchema,
-  slot: exactCount,
+  slot: exactCount.nullable(),
   events: exactCount,
   bucket_events: exactCount,
 })
@@ -103,7 +106,7 @@ const cellRow = z.object({
 export const eventTrend = defineTool({
   name: "event_trend",
   title: "Event trend",
-  version: "1.0.0",
+  version: "1.1.0",
   description: renderDescription({
     purpose: `Time series of log events for one dataset in hour, day or week buckets (UTC), optionally split by one dimension into at most ${TREND_MAX_SERIES} series plus other. Shows how a pattern, component, team or error class develops over time.`,
     useWhen:
@@ -194,9 +197,7 @@ export const eventTrend = defineTool({
         ok: false,
         error: tooManyBuckets(effective, input.bucket, needed),
       }
-    const grid = bucketGrid(effective, input.bucket)
-
-    const covered = await capturedBuckets(ctx, input, effective)
+    const grid = await bucketGridSql(ctx, input, effective)
     const params = new SqlParams()
     const compiled = compileFilter(
       { ...filterOf(input), from: effective.from, to: effective.to },
@@ -208,7 +209,16 @@ export const eventTrend = defineTool({
 
     const counted =
       splitBy === null
-        ? await countBuckets(ctx, truncate, relation, where, params, grid)
+        ? await countBuckets(
+            ctx,
+            truncate,
+            relation,
+            where,
+            params,
+            grid,
+            effective,
+            input.bucket
+          )
         : await countSeries(
             ctx,
             splitBy,
@@ -216,13 +226,12 @@ export const eventTrend = defineTool({
             relation,
             where,
             params,
-            grid
+            grid,
+            effective,
+            input.bucket
           )
 
-    const buckets = counted.buckets.map((bucket) => ({
-      ...bucket,
-      capture_gap: !covered.has(instantKey(bucket.bucket_start)),
-    }))
+    const { buckets } = counted
     const data: EventTrendOutput = {
       dataset: input.dataset,
       bucket: input.bucket,
@@ -255,7 +264,7 @@ type Counted = {
   total: number
   series: TrendSeries[]
   other: EventTrendOutput["other"]
-  buckets: Omit<TrendBucket, "capture_gap">[]
+  buckets: TrendBucket[]
 }
 
 type Ctx = Pick<ToolContext, "db" | "signal">
@@ -267,32 +276,34 @@ async function countBuckets(
   relation: string,
   where: string,
   params: SqlParams,
-  grid: readonly BucketSlot[]
+  grid: readonly GridRow[],
+  effective: TimeRange,
+  unit: BucketUnit
 ): Promise<Counted> {
   const { rows } = await ctx.db.query(
-    `SELECT ${isoTime("c.bucket")} AS bucket, c.events, sum(c.events) OVER () AS total FROM (SELECT ${truncate} AS bucket, count(*) AS events FROM ${relation} WHERE ${where} GROUP BY 1) c ORDER BY c.bucket`,
+    `WITH ${gridCte(params, effective, unit)}, counted AS (SELECT ${truncate} AS bucket, count(*) AS events FROM ${relation} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, coalesce(c.events, 0)::BIGINT AS events, sum(coalesce(c.events, 0)) OVER ()::BIGINT AS total FROM grid g LEFT JOIN counted c ON g.bucket = c.bucket ORDER BY g.bucket`,
     params.values,
     ctx.signal
   )
   const observed = rows.map((row) => bucketRow.parse(row))
   const total = observed[0]?.total ?? 0
-  const filled = fillBuckets(
-    observed,
-    grid.map((slot) => slot.start),
-    (bucket) => ({ bucket, events: 0, total })
-  )
   return {
     total,
     series: [],
     other: null,
-    buckets: grid.map((slot, index) => ({
-      bucket_start: slot.start,
-      bucket_end: slot.end,
-      partial: slot.partial,
-      events: filled[index]?.events ?? 0,
-      series: [],
-      other_events: null,
-    })),
+    buckets: grid.map((slot, index) => {
+      const row = observed[index]
+      if (row === undefined) throw new Error("SQL omitted a bucket in the grid")
+      return {
+        bucket_start: slot.bucket,
+        bucket_end: slot.bucket_end,
+        partial: slot.partial,
+        capture_gap: slot.capture_gap,
+        events: row.events,
+        series: [],
+        other_events: null,
+      }
+    }),
   }
 }
 
@@ -310,17 +321,19 @@ async function countSeries(
   relation: string,
   where: string,
   params: SqlParams,
-  grid: readonly BucketSlot[]
+  grid: readonly GridRow[],
+  effective: TimeRange,
+  unit: BucketUnit
 ): Promise<Counted> {
   const value = dimensionExpression(dimension, relation)
-  const cte = `WITH cells AS (SELECT ${truncate} AS bucket, ${value} AS value, count(*) AS events FROM ${relation} WHERE ${where} GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, ${OTHER_SLOT}) AS slot, CASE WHEN series_rank <= ${TREND_MAX_SERIES} THEN value END AS value, series_rank, events FROM ranked)`
+  const cte = `WITH ${gridCte(params, effective, unit)}, cells AS (SELECT ${truncate} AS bucket, ${value} AS value, count(*) AS events FROM ${relation} WHERE ${where} GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, ${OTHER_SLOT}) AS slot, CASE WHEN series_rank <= ${TREND_MAX_SERIES} THEN value END AS value, series_rank, events FROM ranked)`
   const seriesResult = await ctx.db.query(
     `${cte} SELECT slot, value, sum(events) AS events, count(DISTINCT series_rank) AS merged_values, sum(sum(events)) OVER () AS total FROM slots GROUP BY slot, value ORDER BY slot`,
     params.values,
     ctx.signal
   )
   const cellResult = await ctx.db.query(
-    `${cte} SELECT ${isoTime("bucket")} AS bucket, slot, sum(events) AS events, sum(sum(events)) OVER (PARTITION BY bucket) AS bucket_events FROM slots GROUP BY bucket, slot ORDER BY bucket, slot`,
+    `${cte}, slot_totals AS (SELECT bucket, slot, sum(events) AS events FROM slots GROUP BY bucket, slot), named_slots AS (SELECT DISTINCT slot FROM slots), completed AS (SELECT g.bucket, n.slot, coalesce(c.events, 0)::BIGINT AS events FROM grid g LEFT JOIN named_slots n ON TRUE LEFT JOIN slot_totals c ON c.bucket = g.bucket AND c.slot = n.slot) SELECT ${isoTime("bucket")} AS bucket, slot, events, sum(events) OVER (PARTITION BY bucket)::BIGINT AS bucket_events FROM completed ORDER BY bucket, slot`,
     params.values,
     ctx.signal
   )
@@ -338,23 +351,17 @@ async function countSeries(
   // Group the cells by bucket; every bucket row repeats its total.
   const byBucket = new Map<
     bigint,
-    { bucket: string; events: number; slots: Map<number, number> }
+    { events: number; slots: Map<number, number> }
   >()
   for (const row of cellResult.rows.map((cell) => cellRow.parse(cell))) {
     const key = instantKey(row.bucket)
     const entry = byBucket.get(key) ?? {
-      bucket: row.bucket,
       events: row.bucket_events,
       slots: new Map<number, number>(),
     }
-    entry.slots.set(row.slot, row.events)
+    if (row.slot !== null) entry.slots.set(row.slot, row.events)
     byBucket.set(key, entry)
   }
-  const filled = fillBuckets(
-    [...byBucket.values()],
-    grid.map((slot) => slot.start),
-    (bucket) => ({ bucket, events: 0, slots: new Map<number, number>() })
-  )
 
   return {
     total,
@@ -363,18 +370,24 @@ async function countSeries(
       otherRow === undefined
         ? null
         : { events: otherRow.events, merged_values: otherRow.merged_values },
-    buckets: grid.map((slot, index) => {
-      const cells = filled[index]
+    buckets: grid.map((slot) => {
+      const cells = byBucket.get(instantKey(slot.bucket))
+      if (cells === undefined)
+        throw new Error("SQL omitted a bucket in the grid")
+      const cellEvents = (key: number) => {
+        const events = cells.slots.get(key)
+        if (events === undefined)
+          throw new Error("SQL omitted a series cell in the grid")
+        return events
+      }
       return {
-        bucket_start: slot.start,
-        bucket_end: slot.end,
+        bucket_start: slot.bucket,
+        bucket_end: slot.bucket_end,
         partial: slot.partial,
-        events: cells?.events ?? 0,
-        series: named.map((row) =>
-          seriesOf(cells?.slots.get(row.slot) ?? 0, row)
-        ),
-        other_events:
-          otherRow === undefined ? null : (cells?.slots.get(OTHER_SLOT) ?? 0),
+        capture_gap: slot.capture_gap,
+        events: cells.events,
+        series: named.map((row) => seriesOf(cellEvents(row.slot), row)),
+        other_events: otherRow === undefined ? null : cellEvents(OTHER_SLOT),
       }
     }),
   }
@@ -385,11 +398,11 @@ async function countSeries(
  * filters. A bucket without one is a capture gap: the logs have no data
  * there at all (concept 5.2), so its zero is not observed calm.
  */
-async function capturedBuckets(
+async function bucketGridSql(
   ctx: Ctx,
   input: EventTrendInput,
   effective: TimeRange
-): Promise<Set<bigint>> {
+): Promise<GridRow[]> {
   const params = new SqlParams()
   const compiled = compileFilter(
     { dataset: input.dataset, from: effective.from, to: effective.to },
@@ -398,11 +411,25 @@ async function capturedBuckets(
   if (!compiled.ok) throw new Error("capture coverage filter rejected")
   const { relation, where } = compiled.filter
   const { rows } = await ctx.db.query(
-    `SELECT ${isoTime("c.bucket")} AS bucket FROM (SELECT date_trunc('${bucketUnitSchema.parse(input.bucket)}', ${relation}.ts) AS bucket FROM ${relation} WHERE ${where} GROUP BY 1) c ORDER BY c.bucket`,
+    `WITH ${gridCte(params, effective, input.bucket)}, captured AS (SELECT date_trunc('${bucketUnitSchema.parse(input.bucket)}', ${relation}.ts) AS bucket FROM ${relation} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, ${isoTime(`g.bucket + ${params.add(`1 ${input.bucket}`)}::INTERVAL`)} AS bucket_end, g.bucket < ${params.add(effective.from)}::TIMESTAMPTZ OR g.bucket + ${params.add(`1 ${input.bucket}`)}::INTERVAL > ${params.add(effective.to)}::TIMESTAMPTZ AS partial, c.bucket IS NULL AS capture_gap FROM grid g LEFT JOIN captured c ON g.bucket = c.bucket ORDER BY g.bucket`,
     params.values,
     ctx.signal
   )
-  return new Set(rows.map((row) => instantKey(spanRowTimes.parse(row).bucket)))
+  return rows.map((row) => gridRow.parse(row))
+}
+
+/** Half-open native timestamp range: only buckets overlapping the effective span. */
+function gridCte(
+  params: SqlParams,
+  effective: TimeRange,
+  unit: BucketUnit
+): string {
+  const from = params.add(effective.from)
+  const to = params.add(effective.to)
+  const step = params.add(`1 ${unit}`)
+  // A parameterized range() table function is described as unknown on
+  // 26.10.1; scalar range() + unnest() preserves the TIMESTAMPTZ metadata.
+  return `grid AS (SELECT unnest(range(date_trunc('${bucketUnitSchema.parse(unit)}', ${from}::TIMESTAMPTZ), ${to}::TIMESTAMPTZ, ${step}::INTERVAL)) AS bucket)`
 }
 
 /** Cross-field rules: the shared filter rules plus BGL-only split dimensions. */
