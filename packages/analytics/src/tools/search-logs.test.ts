@@ -31,6 +31,7 @@ const HIT = {
   request_id: null,
   message: "instruction cache parity error corrected",
   message_truncated: false,
+  match_offsets: [18, 24],
   score: 2.5,
 }
 
@@ -327,6 +328,18 @@ describe("search_logs result", () => {
     )
   })
 
+  it.each([[1], [9, 8], [8, 13, 7, 10], [1, 4]])(
+    "rejects malformed index byte offsets %j instead of publishing wrong ranges",
+    async (...offsets) => {
+      const { search } = setup({
+        hits: [{ ...HIT, message: "😀 ä cache", match_offsets: offsets }],
+      })
+      await expect(search({ query: "cache" })).rejects.toThrow(
+        "failed unexpectedly"
+      )
+    }
+  )
+
   it("names the scope when nothing matches (S-07)", async () => {
     const { search } = setup({ total: "0", hits: [] })
     const outcome = await search({
@@ -352,7 +365,7 @@ describe("search_logs result", () => {
     })
     const outcome = await search({ query: "parity" })
     expect(outcome.ok && outcome.result.data).toMatchObject({
-      hits: [{ message: null, message_truncated: false }],
+      hits: [{ message: null, message_truncated: false, match_ranges: [] }],
     })
   })
 })

@@ -417,3 +417,65 @@ describe("match fuzzy", () => {
     })
   })
 })
+
+describe("index ranges preserve filtered sample results", () => {
+  it.each([
+    ["terms", "cache parity", "plainto_tsquery($1::VARCHAR)", ["cache parity"]],
+    [
+      "phrase",
+      "cache parity error",
+      "ts_phrase($1::VARCHAR)",
+      ["cache parity error"],
+    ],
+    [
+      "fuzzy",
+      "parrity",
+      "ts_levenshtein($1::VARCHAR, $2::INTEGER)",
+      ["parrity", 1],
+    ],
+  ])(
+    "preserves %s counts, hit order and BM25 scores",
+    async (match, query, expression, parameters) => {
+      for (const [sort, order] of [
+        ["relevance", "score DESC, event_id"],
+        ["time_asc", "ts, event_id"],
+        ["time_desc", "ts DESC, event_id DESC"],
+      ]) {
+        const baseline = await db.query(
+          `SELECT event_id, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE message @@ ${expression} AND dataset = 'bgl' AND level = 'INFO' ORDER BY ${order} LIMIT 50`,
+          parameters,
+          new AbortController().signal
+        )
+        const { data } = await search({
+          query,
+          match,
+          dataset: "bgl",
+          levels: ["INFO"],
+          sort,
+          limit: 50,
+        })
+        expect(data.total_matches).toBe(baseline.rows.length)
+        expect(
+          data.hits.map((hit) => ({
+            event_id: String(hit.event_id),
+            score: hit.score,
+          }))
+        ).toEqual(baseline.rows)
+        expect(data.hits.every((hit) => hit.match_ranges.length > 0)).toBe(true)
+        const firstMatch =
+          match === "fuzzy"
+            ? "parity"
+            : match === "phrase"
+              ? "cache parity error"
+              : "cache"
+        expect(
+          data.hits.map((hit) =>
+            Array.from(hit.message ?? "")
+              .slice(hit.match_ranges[0]?.start, hit.match_ranges[0]?.end)
+              .join("")
+          )
+        ).toEqual(Array(baseline.rows.length).fill(firstMatch))
+      }
+    }
+  )
+})
