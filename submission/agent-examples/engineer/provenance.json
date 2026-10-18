@@ -1,0 +1,185 @@
+{
+  "role": "engineer",
+  "question": "In OpenStack, what do the logs show around a token-validation failure, and what should an engineer check next? Find an original token-validation message, inspect request context, aggregate full-span frequency and report separate full loaded BGL/OpenStack populations.",
+  "client": "Claude Desktop, actual MCP tools",
+  "model_ui": "Opus 5.5, medium",
+  "api_key_used": false,
+  "provider_usage_tokens": null,
+  "paid_api_cost": null,
+  "cost_note": "Existing claude.ai Pro session; no Anthropic API execution. Subscription token usage and monetary allocation were not exported.",
+  "source_code_commit": "9caecf9157499f3ac791cdf4e274488f104d5c3a",
+  "working_changes": "Documentation/artifacts only; runtime tool and playbook sources unchanged",
+  "guidance_version": "1.0.8",
+  "data_version": "dv_5663ee75e955ec1d",
+  "data_scope_note": "Loaded snapshot also contains public OTel/replay datasets. Answer uses only BGL/OpenStack facts; describe_corpus retains complete loaded catalog.",
+  "capture": "Original Claude Copy action, pasted into TextEdit plain UTF-8 and saved, including original introductory text; byte-identical copy. Private chat URLs and account identifiers are intentionally omitted.",
+  "answer_sha256": "ebd6bb05e2326e9330e24a395eff528e7ff93475b2a82d5971ce8d884f188366",
+  "receipts": [
+    {
+      "receipt": "r_0bb58204",
+      "tool": "search_logs",
+      "input": {
+        "query": "Bad response code while validating token",
+        "match": "phrase",
+        "dataset": "openstack",
+        "sort": "time_asc",
+        "limit": 5
+      },
+      "created_at": "2026-10-18T19:19:14.262Z",
+      "truncated": false
+    },
+    {
+      "receipt": "r_2d710a97",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["component", "level"],
+        "dataset": "openstack",
+        "text": "Bad response code while validating token",
+        "top_n": 20
+      },
+      "created_at": "2026-10-18T19:19:54.339Z",
+      "truncated": false
+    },
+    {
+      "receipt": "r_9d6a96aa",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "event",
+        "window_minutes": 10,
+        "event_id": "10070743",
+        "before": 10,
+        "after": 10,
+        "scope": "same_request"
+      },
+      "created_at": "2026-10-18T19:19:50.726Z",
+      "truncated": false
+    },
+    {
+      "receipt": "r_9f7d14cf",
+      "tool": "check_claims",
+      "input": {
+        "claims": [
+          {
+            "fact": "r_fb51ec23.f12",
+            "value": "4,747,945",
+            "metric": "events",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_fb51ec23.f66",
+            "value": "207,820",
+            "metric": "events",
+            "group": {
+              "dataset": "openstack"
+            }
+          },
+          {
+            "fact": "r_2d710a97.f5",
+            "value": "2017-05-14T19:39:01.445",
+            "metric": "window_start",
+            "group": {
+              "dataset": "openstack"
+            }
+          },
+          {
+            "fact": "r_2d710a97.f6",
+            "value": "2017-05-17T12:02:35.320001",
+            "metric": "window_end",
+            "group": {
+              "dataset": "openstack"
+            }
+          },
+          {
+            "fact": "r_0bb58204.f3",
+            "value": 2,
+            "metric": "matches",
+            "group": {}
+          },
+          {
+            "fact": "r_2d710a97.f4",
+            "value": 2,
+            "metric": "events",
+            "group": {}
+          },
+          {
+            "fact": "r_2d710a97.f2",
+            "value": 2,
+            "metric": "events",
+            "group": {
+              "component": "nova-api",
+              "level": "ERROR"
+            }
+          },
+          {
+            "fact": "r_9d6a96aa.f1",
+            "value": "2017-05-16T06:25:02.867",
+            "metric": "event_time",
+            "group": {
+              "event_id": "10070743"
+            }
+          },
+          {
+            "fact": "r_0bb58204.f2",
+            "value": "2017-05-17T06:25:03.044",
+            "metric": "event_time",
+            "group": {
+              "event_id": "10194062"
+            }
+          },
+          {
+            "fact": "r_9d6a96aa.f8",
+            "value": -1010,
+            "metric": "offset",
+            "group": {
+              "event_id": "10070742"
+            }
+          },
+          {
+            "fact": "r_9d6a96aa.f2",
+            "value": 1,
+            "metric": "offset",
+            "group": {
+              "event_id": "10070744"
+            }
+          },
+          {
+            "fact": "r_9d6a96aa.f4",
+            "value": 2,
+            "metric": "offset",
+            "group": {
+              "event_id": "10070745"
+            }
+          },
+          {
+            "fact": "r_9d6a96aa.f6",
+            "value": 3,
+            "metric": "offset",
+            "group": {
+              "event_id": "10070746"
+            }
+          }
+        ]
+      },
+      "created_at": "2026-10-18T19:20:25.402Z",
+      "truncated": false
+    },
+    {
+      "receipt": "r_fb51ec23",
+      "tool": "describe_corpus",
+      "input": {},
+      "created_at": "2026-10-18T19:18:43.620Z",
+      "truncated": false
+    }
+  ],
+  "receipt_sha256": {
+    "r_0bb58204": "d7b2f1b8849f9faa9b6f3524be708c7e4c375ca507b5c9bd3277791610ed4a1a",
+    "r_2d710a97": "79024d76b751c2fd9f50cef40f7099d187730e39e5788aa4db89b4d9e191ce66",
+    "r_9d6a96aa": "a230a2824278c41356edc4dbc8f3aa3478e0d5129d62bc0d53ed4de799cb24e8",
+    "r_9f7d14cf": "788f19401f02abe82db5c0b8b11d12b9a51b58c2c3081da963a813bf766bf2c4",
+    "r_fb51ec23": "60a818a92f8bcae54993fd504cfd9f8bd506e2b9625bada6f504ca91ecc46e3f"
+  },
+  "manual_review": "All cited facts resolve. Phrase total and separate text-filter aggregation agree in this corpus. Complete context for examined request/window; offsets and original status/log strings match. Identity-endpoint explanation stays open; second request context not inspected. Rare is qualitative, not a computed rate or health claim. No cause, downtime or business impact established.",
+  "verification": "13 submitted claims verified, 0 mismatch, 0 unresolved; numerical verification only."
+}

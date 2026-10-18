@@ -4,8 +4,8 @@
 #let deck = (
   title: "Log Insights - worked investigation",
   team: "Log Insights",
-  draft: true,
-  status: "WORKED CASE / EVALUATION PENDING",
+  draft: false,
+  status: "KNOWN CASE / QUERY EVIDENCE",
 )
 #show: setup.with(deck)
 #let claims = json("../submission/worked-investigation/claims.json").claims
@@ -58,7 +58,8 @@
       #f("r_bcd0408f.f3") events\
       #f("r_bcd0408f.f8") episodes
       #v(13pt)
-      #text(size: 15pt)[#raw("ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399")]
+      #text(size: 15pt, "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399")
+      #v(6pt)
       #note[Original event 14738 / search is truncated.]
     ],
     [
@@ -66,7 +67,8 @@
       #v(8pt)
       #f("r_872d82bd.f8") 5xx accesses\ out of #f("r_872d82bd.f6") API accesses
       #v(13pt)
-      #text(size: 15pt)[#raw("Bad response code while validating token: 503")]
+      #text(size: 15pt, "Bad response code while validating token: 503")
+      #v(6pt)
       #note[Original event 10070743 / complete same-request context.]
     ],
   )
@@ -135,7 +137,7 @@
       #v(16pt)
       No downtime, cost or customer effect is established. Episodes are not incidents.
       #v(16pt)
-      The baseline comparison and first holdout have not run. Final release and live-demo acceptance remain open.
+      Formal baseline and holdout evaluation are deferred. This known case makes no model-quality comparison.
     ],
     [
       #label[Reviewable artifacts] #v(12pt)
@@ -195,7 +197,7 @@
   #evidence-strip[SereneDB computes analytical values. TypeScript validates contracts, assigns fact IDs, stores receipts and checks claims. The core tools do not change the corpus.]
 ]
 
-#slide(deck, appendix: true, section: "Verification and evaluation", title: [Verified facts, open quality gates])[
+#slide(deck, appendix: true, section: "Verification and limits", title: [Verified facts, bounded conclusions])[
   #grid(columns: (1fr, 1fr), gutter: 42pt,
     [
       #label[Observed in this capture] #v(13pt)
@@ -206,13 +208,13 @@
       The manifest retains successful registry re-run comparisons.
     ],
     [
-      #label[Not yet established] #v(13pt)
-      Baseline versus playbooks, first holdout and independent quality ratings remain open.
+      #label[Deferred optional evaluation] #v(13pt)
+      Baseline versus playbooks, a first holdout and independent quality ratings have not run. No improvement in model quality is claimed.
       #v(16pt)
       End-to-end model latency, tokens and API costs were not measured here.
       #v(16pt)
       Historical database timings are separate receipt measurements, not a controlled model benchmark.
     ],
   )
-  #evidence-strip[See submission/worked-investigation.md and submission/performance/. No result is substituted for a missing evaluation or live client test.]
+  #evidence-strip[See submission/worked-investigation.md and submission/performance/. Archived query evidence does not establish autonomous answer quality or complete client compliance.]
 ]

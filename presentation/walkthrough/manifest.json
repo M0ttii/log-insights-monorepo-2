@@ -1,0 +1,72 @@
+{
+  "kind": "Edited walkthrough of archived real queries, analyst-written case views and actual Claude-answer excerpts; not a live model run",
+  "narration": "English synthetic narration, macOS Samantha, 140 words/minute. No cloned or recorded human voice.",
+  "duration_seconds": 154.424172,
+  "video_sha256": "716c7f18699a9bb237dbb84fe706aeaf563fe36f25e1a430bd96c5b04b3dcf64",
+  "worked_case_pdf_sha256": "9ddce096a70d5aa0084bc72b02782272de1b78717de524e8c8a32df0f08b7612",
+  "segments": [
+    {
+      "page": 1,
+      "text": "Log Insights turns log questions into evidence and a next step for engineers, team leads and managers. This is an edited walkthrough of a known BGL job-start investigation.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 11.00839,
+      "segment_seconds": 12.00839
+    },
+    {
+      "page": 2,
+      "text": "The clients share one tool registry. SereneDB searches and computes; Claude explains in the product. Each tool stores its validated input, exact SQL, parameters, scope and result. This walkthrough uses archived real queries and analyst-written role views. The separate Claude examples show actual client behavior.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 21.742494,
+      "segment_seconds": 22.742494
+    },
+    {
+      "page": 3,
+      "text": "The population queries cover each complete loaded dataset. BGL and OpenStack belong to separate systems and time spans. The BGL phrase search returns original control-stream messages with bounded, truncated hits. A separate aggregation measures the population. The OpenStack example distinguishes API accesses from request identifiers and preserves the original token-validation error.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 25.875646,
+      "segment_seconds": 26.875646
+    },
+    {
+      "page": 4,
+      "text": "The engineer asks what could distinguish the initiating cause from widespread symptoms. Emitting-node breadth alone cannot locate the origin. The team lead investigates recurring program-image errors and assigns a startup-validation check to a fictional owner. The manager prioritizes investigation by episodes and breadth, with the ranking's trade-offs visible. A large line count alone does not establish priority or business impact.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 26.664444,
+      "segment_seconds": 27.664444
+    },
+    {
+      "page": "agent-examples",
+      "text": "These excerpts are actual Claude answers, separate from the analyst walkthrough. The engineer examines an OpenStack request. The team lead investigates recurring program image failures. The manager assigns a technical investigation priority. Original answers, scopes, query receipts and known limits are preserved in the repository.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 22.008435,
+      "segment_seconds": 23.008435
+    },
+    {
+      "page": 5,
+      "text": "The initial assessment suspected a systemic job or network event. The executed precursor check found earlier missing-directory evidence, changing the next step toward startup inputs and filesystem availability. That is a temporal association. It does not establish a shared job, a network defect or a proven cause.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 20.545986,
+      "segment_seconds": 21.545986
+    },
+    {
+      "page": 6,
+      "text": "The initiating cause, downtime and customer effect remain unknown. The shared checker verifies submitted numerical claims, not explanations. Original receipts and the investigation remain reviewable. Formal baseline and holdout evaluation are deferred; this case claims no model-quality improvement.",
+      "voice": "Samantha",
+      "rate": 140,
+      "narration_seconds": 19.533787,
+      "segment_seconds": 20.533787
+    }
+  ],
+  "query_evidence_frame": "Slide 7 appears during the latter half of the shared-tools narration. All query/results remain accessible in submission/evidence/.",
+  "original_answer_sha256": {
+    "engineer": "ebd6bb05e2326e9330e24a395eff528e7ff93475b2a82d5971ce8d884f188366",
+    "team-lead": "d573014d1b433e4f5f71a14fb90d3d7c6182d80216a41ac814713f96b2127b3b",
+    "manager": "a55e29cc18deeca75c7353d0bb72311c4ec0bd57bf1fcabbc1d97b2433022fdf"
+  },
+  "validation": "Encoded duration verified by ffprobe; six slide frames and answer-excerpt card inspected; no live-runtime or formal-quality claim."
+}

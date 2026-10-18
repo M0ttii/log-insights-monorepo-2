@@ -1,0 +1,1086 @@
+{
+  "receipt_id": "r_07df2980",
+  "created_at": "2026-10-18T17:20:18.643Z",
+  "client": "mcp",
+  "tool": "recurring_patterns",
+  "tool_version": "1.1.0",
+  "input": {
+    "dataset": "bgl",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z",
+    "teams": [
+      "Workload Runtime"
+    ],
+    "rank": "episodes",
+    "limit": 10
+  },
+  "signature": "b29f32f7f92f563fea1267a40e201c5a2948b4a6014be1c2b01cadf4215c0899",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH comparison_bounds AS (SELECT $1::TIMESTAMPTZ AS cf, $2::TIMESTAMPTZ AS ct, $3::TIMESTAMPTZ AS bf, $4::TIMESTAMPTZ AS bt, $5::TIMESTAMPTZ AS first_ts, $6::TIMESTAMPTZ + INTERVAL '1 microsecond' AS end_ts), comparison_coverage AS (SELECT CASE WHEN ct <= first_ts OR cf >= end_ts THEN 'none' WHEN cf >= first_ts AND ct <= end_ts THEN 'full' ELSE 'partial' END AS current, CASE WHEN bt <= first_ts OR bf >= end_ts THEN 'none' WHEN bf >= first_ts AND bt <= end_ts THEN 'full' ELSE 'partial' END AS baseline FROM comparison_bounds) SELECT current, baseline, current <> 'none' AND baseline <> 'none' AS determinable FROM comparison_coverage",
+    "SELECT rules_version, pattern_rules_version FROM load_manifest",
+    "WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.node AS u1, e.rack AS u2 FROM log_events e WHERE e.dataset = $1 AND coalesce((SELECT o.team FROM ownership o WHERE o.dataset = e.dataset AND o.component = e.component), 'unowned') IN ($2) AND e.ts >= $4::TIMESTAMPTZ AND e.ts < $5::TIMESTAMPTZ), episodic AS (SELECT * FROM cur MATCH_RECOGNIZE (PARTITION BY pattern_id ORDER BY ts, event_id MEASURES pattern AS pattern, dataset AS dataset, component AS component, u1 AS u1, u2 AS u2, CLASSIFIER() AS phase, MATCH_NUMBER() AS episode ALL ROWS PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $3::INTERVAL)), c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE phase = 's') AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE phase = 's' AND episode = 1) AS example_event_id FROM episodic GROUP BY pattern_id), joined AS (SELECT *, NULL::BIGINT AS baseline, NULL::BIGINT AS delta FROM c), history AS (SELECT e.pattern_id, min(e.ts) AS first_before FROM log_events e WHERE e.dataset = $1 AND coalesce((SELECT o.team FROM ownership o WHERE o.dataset = e.dataset AND o.component = e.component), 'unowned') IN ($2) AND e.ts < $9::TIMESTAMPTZ AND $10::TIMESTAMPTZ < $9::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM joined) GROUP BY e.pattern_id), ruled AS (SELECT joined.*, history.first_before, episodes >= $6::BIGINT AS recurring, CASE WHEN events > 0 AND history.first_before IS NULL AND $10::TIMESTAMPTZ < $9::TIMESTAMPTZ THEN 'new' WHEN baseline > 0 AND events >= $7::BIGINT * baseline AND events - baseline >= $8::BIGINT THEN 'escalating' WHEN baseline = 0 AND events > 0 AND history.first_before IS NOT NULL THEN 'reappeared' WHEN events > 0 THEN 'ongoing' WHEN baseline > 0 THEN 'quiet' ELSE NULL::VARCHAR END AS status FROM joined LEFT JOIN history ON joined.pattern_id = history.pattern_id), totals AS (SELECT coalesce(sum(events), 0)::BIGINT AS total, coalesce(count_if(events > 0), 0) AS active, coalesce(count_if(events = 0), 0) AS quiet FROM joined) , ranked AS (SELECT *, row_number() OVER (ORDER BY episodes DESC, events DESC, pattern_id ASC) AS rank FROM ruled) SELECT * FROM (SELECT 'pattern' AS record_kind, pattern_id AS pattern_id, pattern AS pattern, dataset AS dataset, component AS component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = ranked.dataset AND o.component = ranked.component), 'unowned') AS team, events AS events, episodes AS episodes, active_days AS active_days, active_weeks AS active_weeks, b1 AS b1, b2 AS b2, components AS components, example_event_id AS example_event_id, baseline AS baseline, delta AS delta, recurring AS recurring, status AS status, strftime(first_before, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen_before_window, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_seen, events::DOUBLE / NULLIF((SELECT total FROM totals), 0) AS share, (SELECT total FROM totals) AS total, (SELECT active FROM totals) AS active, (SELECT quiet FROM totals) AS quiet, NULL::BIGINT AS candidates_checked, NULL::BIGINT AS missing_breadth, NULL::BOOLEAN AS drop_breadth, NULL::BOOLEAN AS drop_increase, NULL::BIGINT AS not_dominated_by_first, NULL::VARCHAR AS first_pattern_id, NULL::BIGINT AS compared_with, NULL::BOOLEAN AS truncated, NULL::BIGINT AS qualifying, NULL::VARCHAR AS criterion, NULL::BIGINT AS value, NULL::BIGINT AS tied, NULL::VARCHAR AS a, NULL::VARCHAR AS b, NULL::BOOLEAN AS a_episodes, NULL::BOOLEAN AS a_breadth, NULL::BOOLEAN AS a_change, NULL::BOOLEAN AS b_episodes, NULL::BOOLEAN AS b_breadth, NULL::BOOLEAN AS b_change, NULL::BOOLEAN AS b_listed, NULL::BIGINT AS sort_section, rank AS sort_a, NULL::BIGINT AS sort_b FROM ranked WHERE rank <= $11::BIGINT UNION ALL SELECT 'summary' AS record_kind, NULL::VARCHAR AS pattern_id, NULL::VARCHAR AS pattern, NULL::VARCHAR AS dataset, NULL::VARCHAR AS component, NULL::VARCHAR AS team, NULL::BIGINT AS events, NULL::BIGINT AS episodes, NULL::BIGINT AS active_days, NULL::BIGINT AS active_weeks, NULL::BIGINT AS b1, NULL::BIGINT AS b2, NULL::BIGINT AS components, NULL::BIGINT AS example_event_id, NULL::BIGINT AS baseline, NULL::BIGINT AS delta, NULL::BOOLEAN AS recurring, NULL::VARCHAR AS status, NULL::VARCHAR AS first_seen_before_window, NULL::VARCHAR AS first_seen, NULL::VARCHAR AS last_seen, NULL::DOUBLE AS share, total AS total, active AS active, quiet AS quiet, NULL::BIGINT AS candidates_checked, NULL::BIGINT AS missing_breadth, NULL::BOOLEAN AS drop_breadth, NULL::BOOLEAN AS drop_increase, NULL::BIGINT AS not_dominated_by_first, NULL::VARCHAR AS first_pattern_id, NULL::BIGINT AS compared_with, active + quiet > $11::BIGINT AS truncated, active + quiet AS qualifying, NULL::VARCHAR AS criterion, NULL::BIGINT AS value, NULL::BIGINT AS tied, NULL::VARCHAR AS a, NULL::VARCHAR AS b, NULL::BOOLEAN AS a_episodes, NULL::BOOLEAN AS a_breadth, NULL::BOOLEAN AS a_change, NULL::BOOLEAN AS b_episodes, NULL::BOOLEAN AS b_breadth, NULL::BOOLEAN AS b_change, NULL::BOOLEAN AS b_listed, NULL::BIGINT AS sort_section, NULL::BIGINT AS sort_a, NULL::BIGINT AS sort_b FROM totals) records ORDER BY record_kind, sort_section, sort_a, sort_b, criterion, pattern_id, a, b"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      "2005-05-02T00:00:00.000000Z",
+      "2005-06-01T00:00:00.000000Z",
+      "2005-06-03T22:42:50.363779Z",
+      "2006-01-04T16:00:05.233639Z"
+    ],
+    [],
+    [
+      "bgl",
+      "Workload Runtime",
+      "30 minutes",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      2,
+      2,
+      20,
+      "2005-06-01T00:00:00Z",
+      "2005-06-03T22:42:50.363779Z",
+      10
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "period": "current"
+      },
+      {
+        "dataset": "bgl",
+        "from": "2005-05-02T00:00:00.000000Z",
+        "to": "2005-06-01T00:00:00.000000Z",
+        "period": "baseline"
+      }
+    ],
+    "filters": {
+      "teams": [
+        "Workload Runtime"
+      ]
+    }
+  },
+  "population": {
+    "count": 13409,
+    "unit": "log_events"
+  },
+  "rows_returned": 8,
+  "truncated": false,
+  "row_limit": 10,
+  "duration_ms": 263.82,
+  "result": {
+    "dataset": "bgl",
+    "rank": "episodes",
+    "limit": 10,
+    "rules": {
+      "rules_version": "concept-3.8",
+      "pattern_rules_version": "1.1.0",
+      "episode_gap_minutes": 30,
+      "recurring_min_episodes": 2,
+      "breadth_unit": "nodes"
+    },
+    "comparison": {
+      "baseline": {
+        "from": "2005-05-02T00:00:00.000000Z",
+        "to": "2005-06-01T00:00:00.000000Z"
+      },
+      "coverage": {
+        "current": "partial",
+        "baseline": "none"
+      },
+      "determinable": false
+    },
+    "events": 13409,
+    "pattern_count": 8,
+    "quiet_count": null,
+    "patterns": [
+      {
+        "pattern_id": "61c1ec3180ed1d40",
+        "pattern": "ciod: Error loading <PATH>: invalid or missing program image, No such file or directory",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 3384,
+        "first_seen": "2005-06-03T23:17:40.190183Z",
+        "last_seen": "2005-06-30T16:39:52.574054Z",
+        "episodes": 22,
+        "recurring": true,
+        "active_days": 15,
+        "active_weeks": 5,
+        "nodes": 512,
+        "racks": 32,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 4988
+      },
+      {
+        "pattern_id": "bdec89f666f62cf9",
+        "pattern": "ciod: LOGIN chdir(<PATH>) failed: No such file or directory",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 2178,
+        "first_seen": "2005-06-04T07:24:31.560279Z",
+        "last_seen": "2005-06-28T15:23:40.917943Z",
+        "episodes": 14,
+        "recurring": true,
+        "active_days": 11,
+        "active_weeks": 5,
+        "nodes": 480,
+        "racks": 30,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 14736
+      },
+      {
+        "pattern_id": "287312f13c189c4d",
+        "pattern": "ciod: failed to read message prefix on control stream (CioStream socket to <IP>",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 5983,
+        "first_seen": "2005-06-04T07:24:32.398284Z",
+        "last_seen": "2005-06-20T08:42:45.024863Z",
+        "episodes": 7,
+        "recurring": true,
+        "active_days": 5,
+        "active_weeks": 4,
+        "nodes": 512,
+        "racks": 32,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 14738
+      },
+      {
+        "pattern_id": "7d9d5b2130280b56",
+        "pattern": "ciod: LOGIN chdir(<PATH>) failed: Permission denied",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 432,
+        "first_seen": "2005-06-08T03:23:22.585765Z",
+        "last_seen": "2005-06-23T07:15:46.923143Z",
+        "episodes": 5,
+        "recurring": true,
+        "active_days": 3,
+        "active_weeks": 2,
+        "nodes": 112,
+        "racks": 8,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 184955
+      },
+      {
+        "pattern_id": "9c8b44ad8e548027",
+        "pattern": "ciod: Error creating node map from file <PATH>: Cannot allocate memory",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 144,
+        "first_seen": "2005-06-22T16:25:25.679018Z",
+        "last_seen": "2005-06-24T00:03:50.607350Z",
+        "episodes": 2,
+        "recurring": true,
+        "active_days": 2,
+        "active_weeks": 1,
+        "nodes": 144,
+        "racks": 10,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 886655
+      },
+      {
+        "pattern_id": "ac11bb6eff3a3ef3",
+        "pattern": "ciod: Error creating node map from file <PATH>: Bad file descriptor",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 1024,
+        "first_seen": "2005-06-30T23:22:36.166402Z",
+        "last_seen": "2005-06-30T23:24:48.627891Z",
+        "episodes": 1,
+        "recurring": false,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 512,
+        "racks": 32,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 1235364
+      },
+      {
+        "pattern_id": "538740bd70ac164d",
+        "pattern": "ciod: Error creating node map from file <PATH>: No child processes",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 256,
+        "first_seen": "2005-06-21T02:04:10.019279Z",
+        "last_seen": "2005-06-21T02:04:15.463366Z",
+        "episodes": 1,
+        "recurring": false,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 256,
+        "racks": 16,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 870959
+      },
+      {
+        "pattern_id": "b799bdde6c1a2cd2",
+        "pattern": "ciod: Error loading <PATH>: program image too big, <NUM> > <NUM>",
+        "component": "APP",
+        "team": "Workload Runtime",
+        "events": 8,
+        "first_seen": "2005-06-21T23:06:53.057709Z",
+        "last_seen": "2005-06-21T23:06:53.226791Z",
+        "episodes": 1,
+        "recurring": false,
+        "active_days": 1,
+        "active_weeks": 1,
+        "nodes": 8,
+        "racks": 1,
+        "components": 1,
+        "baseline": null,
+        "delta": null,
+        "status": "ongoing",
+        "first_seen_before_window": null,
+        "example_event_id": 884112
+      }
+    ],
+    "truncated": false,
+    "investigation": null
+  },
+  "result_digest": "7c241cd0a7362babf5fdd65b76f31fe70de31aaaa44f266230150b850062f194",
+  "facts": [
+    {
+      "id": "r_07df2980.f1",
+      "path": "/result/comparison/baseline/from",
+      "value": "2005-05-02T00:00:00.000000Z",
+      "metric": "baseline_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_07df2980.f2",
+      "path": "/result/comparison/baseline/to",
+      "value": "2005-06-01T00:00:00.000000Z",
+      "metric": "baseline_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_07df2980.f3",
+      "path": "/result/events",
+      "value": 13409,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_07df2980.f4",
+      "path": "/result/pattern_count",
+      "value": 8,
+      "metric": "patterns",
+      "unit": "patterns",
+      "group": {}
+    },
+    {
+      "id": "r_07df2980.f5",
+      "path": "/result/patterns/0/active_days",
+      "value": 15,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f6",
+      "path": "/result/patterns/0/active_weeks",
+      "value": 5,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f7",
+      "path": "/result/patterns/0/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f8",
+      "path": "/result/patterns/0/episodes",
+      "value": 22,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f9",
+      "path": "/result/patterns/0/events",
+      "value": 3384,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f10",
+      "path": "/result/patterns/0/first_seen",
+      "value": "2005-06-03T23:17:40.190183Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f11",
+      "path": "/result/patterns/0/last_seen",
+      "value": "2005-06-30T16:39:52.574054Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f12",
+      "path": "/result/patterns/0/nodes",
+      "value": 512,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f13",
+      "path": "/result/patterns/0/racks",
+      "value": 32,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_07df2980.f14",
+      "path": "/result/patterns/1/active_days",
+      "value": 11,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f15",
+      "path": "/result/patterns/1/active_weeks",
+      "value": 5,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f16",
+      "path": "/result/patterns/1/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f17",
+      "path": "/result/patterns/1/episodes",
+      "value": 14,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f18",
+      "path": "/result/patterns/1/events",
+      "value": 2178,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f19",
+      "path": "/result/patterns/1/first_seen",
+      "value": "2005-06-04T07:24:31.560279Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f20",
+      "path": "/result/patterns/1/last_seen",
+      "value": "2005-06-28T15:23:40.917943Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f21",
+      "path": "/result/patterns/1/nodes",
+      "value": 480,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f22",
+      "path": "/result/patterns/1/racks",
+      "value": 30,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_07df2980.f23",
+      "path": "/result/patterns/2/active_days",
+      "value": 5,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f24",
+      "path": "/result/patterns/2/active_weeks",
+      "value": 4,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f25",
+      "path": "/result/patterns/2/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f26",
+      "path": "/result/patterns/2/episodes",
+      "value": 7,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f27",
+      "path": "/result/patterns/2/events",
+      "value": 5983,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f28",
+      "path": "/result/patterns/2/first_seen",
+      "value": "2005-06-04T07:24:32.398284Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f29",
+      "path": "/result/patterns/2/last_seen",
+      "value": "2005-06-20T08:42:45.024863Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f30",
+      "path": "/result/patterns/2/nodes",
+      "value": 512,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f31",
+      "path": "/result/patterns/2/racks",
+      "value": 32,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_07df2980.f32",
+      "path": "/result/patterns/3/active_days",
+      "value": 3,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f33",
+      "path": "/result/patterns/3/active_weeks",
+      "value": 2,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f34",
+      "path": "/result/patterns/3/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f35",
+      "path": "/result/patterns/3/episodes",
+      "value": 5,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f36",
+      "path": "/result/patterns/3/events",
+      "value": 432,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f37",
+      "path": "/result/patterns/3/first_seen",
+      "value": "2005-06-08T03:23:22.585765Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f38",
+      "path": "/result/patterns/3/last_seen",
+      "value": "2005-06-23T07:15:46.923143Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f39",
+      "path": "/result/patterns/3/nodes",
+      "value": 112,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f40",
+      "path": "/result/patterns/3/racks",
+      "value": 8,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_07df2980.f41",
+      "path": "/result/patterns/4/active_days",
+      "value": 2,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f42",
+      "path": "/result/patterns/4/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f43",
+      "path": "/result/patterns/4/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f44",
+      "path": "/result/patterns/4/episodes",
+      "value": 2,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f45",
+      "path": "/result/patterns/4/events",
+      "value": 144,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f46",
+      "path": "/result/patterns/4/first_seen",
+      "value": "2005-06-22T16:25:25.679018Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f47",
+      "path": "/result/patterns/4/last_seen",
+      "value": "2005-06-24T00:03:50.607350Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f48",
+      "path": "/result/patterns/4/nodes",
+      "value": 144,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f49",
+      "path": "/result/patterns/4/racks",
+      "value": 10,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "9c8b44ad8e548027"
+      }
+    },
+    {
+      "id": "r_07df2980.f50",
+      "path": "/result/patterns/5/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f51",
+      "path": "/result/patterns/5/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f52",
+      "path": "/result/patterns/5/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f53",
+      "path": "/result/patterns/5/episodes",
+      "value": 1,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f54",
+      "path": "/result/patterns/5/events",
+      "value": 1024,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f55",
+      "path": "/result/patterns/5/first_seen",
+      "value": "2005-06-30T23:22:36.166402Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f56",
+      "path": "/result/patterns/5/last_seen",
+      "value": "2005-06-30T23:24:48.627891Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f57",
+      "path": "/result/patterns/5/nodes",
+      "value": 512,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f58",
+      "path": "/result/patterns/5/racks",
+      "value": 32,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_07df2980.f59",
+      "path": "/result/patterns/6/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f60",
+      "path": "/result/patterns/6/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f61",
+      "path": "/result/patterns/6/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f62",
+      "path": "/result/patterns/6/episodes",
+      "value": 1,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f63",
+      "path": "/result/patterns/6/events",
+      "value": 256,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f64",
+      "path": "/result/patterns/6/first_seen",
+      "value": "2005-06-21T02:04:10.019279Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f65",
+      "path": "/result/patterns/6/last_seen",
+      "value": "2005-06-21T02:04:15.463366Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f66",
+      "path": "/result/patterns/6/nodes",
+      "value": 256,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f67",
+      "path": "/result/patterns/6/racks",
+      "value": 16,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "538740bd70ac164d"
+      }
+    },
+    {
+      "id": "r_07df2980.f68",
+      "path": "/result/patterns/7/active_days",
+      "value": 1,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f69",
+      "path": "/result/patterns/7/active_weeks",
+      "value": 1,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f70",
+      "path": "/result/patterns/7/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f71",
+      "path": "/result/patterns/7/episodes",
+      "value": 1,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f72",
+      "path": "/result/patterns/7/events",
+      "value": 8,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f73",
+      "path": "/result/patterns/7/first_seen",
+      "value": "2005-06-21T23:06:53.057709Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f74",
+      "path": "/result/patterns/7/last_seen",
+      "value": "2005-06-21T23:06:53.226791Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f75",
+      "path": "/result/patterns/7/nodes",
+      "value": 8,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f76",
+      "path": "/result/patterns/7/racks",
+      "value": 1,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "b799bdde6c1a2cd2"
+      }
+    },
+    {
+      "id": "r_07df2980.f77",
+      "path": "/result/rules/episode_gap_minutes",
+      "value": 30,
+      "metric": "episode_gap",
+      "unit": "minutes",
+      "group": {}
+    },
+    {
+      "id": "r_07df2980.f78",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-01T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_07df2980.f79",
+      "path": "/scope/windows/0/to",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_07df2980.f80",
+      "path": "/scope/windows/1/from",
+      "value": "2005-05-02T00:00:00.000000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "id": "r_07df2980.f81",
+      "path": "/scope/windows/1/to",
+      "value": "2005-06-01T00:00:00.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    }
+  ]
+}

@@ -1,0 +1,556 @@
+{
+  "receipt_id": "r_f365f31a",
+  "created_at": "2026-10-18T17:27:09.056Z",
+  "client": "mcp",
+  "tool": "check_claims",
+  "tool_version": "1.0.0",
+  "input": {
+    "claims": [
+      {
+        "fact": "r_07799ce0.f26",
+        "value": "2005-12-05T16:00:06Z",
+        "metric": "window_start",
+        "group": {
+          "dataset": "bgl",
+          "period": "current"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f27",
+        "value": "2006-01-04T16:00:06Z",
+        "metric": "window_end",
+        "group": {
+          "dataset": "bgl",
+          "period": "current"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f28",
+        "value": "2005-11-05T16:00:06Z",
+        "metric": "window_start",
+        "group": {
+          "dataset": "bgl",
+          "period": "baseline"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f7",
+        "value": "6,266",
+        "metric": "events_current",
+        "group": {
+          "team": "Compute Platform"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f5",
+        "value": "17,967",
+        "metric": "events_baseline",
+        "group": {
+          "team": "Compute Platform"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f6",
+        "value": "-11,701",
+        "metric": "delta",
+        "group": {
+          "team": "Compute Platform"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f17",
+        "value": "32,146",
+        "metric": "events_current",
+        "group": {
+          "team": "Workload Runtime"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f15",
+        "value": "30,930",
+        "metric": "events_baseline",
+        "group": {
+          "team": "Workload Runtime"
+        }
+      },
+      {
+        "fact": "r_07799ce0.f16",
+        "value": "1,216",
+        "metric": "delta",
+        "group": {
+          "team": "Workload Runtime"
+        }
+      }
+    ]
+  },
+  "signature": "a9fc7f3ce580f68c88cdf2b25aab2232412f84f618e4a919d7d839e36e28824b",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [],
+  "params": [],
+  "scope": {
+    "windows": [],
+    "filters": {}
+  },
+  "population": null,
+  "rows_returned": 9,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 0,
+  "result": {
+    "claims": [
+      {
+        "claim": {
+          "fact": "r_07799ce0.f26",
+          "value": "2005-12-05T16:00:06Z",
+          "metric": "window_start",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-12-05T16:00:06Z",
+          "metric": "window_start",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f27",
+          "value": "2006-01-04T16:00:06Z",
+          "metric": "window_end",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2006-01-04T16:00:06Z",
+          "metric": "window_end",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f28",
+          "value": "2005-11-05T16:00:06Z",
+          "metric": "window_start",
+          "group": {
+            "dataset": "bgl",
+            "period": "baseline"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-11-05T16:00:06.000000Z",
+          "metric": "window_start",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl",
+            "period": "baseline"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f7",
+          "value": "6,266",
+          "metric": "events_current",
+          "group": {
+            "team": "Compute Platform"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 6266,
+          "metric": "events_current",
+          "unit": "log_events",
+          "group": {
+            "team": "Compute Platform"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f5",
+          "value": "17,967",
+          "metric": "events_baseline",
+          "group": {
+            "team": "Compute Platform"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 17967,
+          "metric": "events_baseline",
+          "unit": "log_events",
+          "group": {
+            "team": "Compute Platform"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f6",
+          "value": "-11,701",
+          "metric": "delta",
+          "group": {
+            "team": "Compute Platform"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": -11701,
+          "metric": "delta",
+          "unit": "log_events",
+          "group": {
+            "team": "Compute Platform"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f17",
+          "value": "32,146",
+          "metric": "events_current",
+          "group": {
+            "team": "Workload Runtime"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 32146,
+          "metric": "events_current",
+          "unit": "log_events",
+          "group": {
+            "team": "Workload Runtime"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f15",
+          "value": "30,930",
+          "metric": "events_baseline",
+          "group": {
+            "team": "Workload Runtime"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 30930,
+          "metric": "events_baseline",
+          "unit": "log_events",
+          "group": {
+            "team": "Workload Runtime"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_07799ce0.f16",
+          "value": "1,216",
+          "metric": "delta",
+          "group": {
+            "team": "Workload Runtime"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 1216,
+          "metric": "delta",
+          "unit": "log_events",
+          "group": {
+            "team": "Workload Runtime"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_07799ce0",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-12-05T16:00:06Z",
+                "to": "2006-01-04T16:00:06Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-11-05T16:00:06.000000Z",
+                "to": "2005-12-05T16:00:06.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "only_errors": true
+            }
+          }
+        }
+      }
+    ],
+    "summary": {
+      "checked": 9,
+      "verified": 9,
+      "mismatch": 0,
+      "unresolved": 0,
+      "text": "9 claims checked · 0 mismatch · 0 unresolved"
+    }
+  },
+  "result_digest": "cca22faae7f7c7309f7e0881e69a0916dc297b6c746c281f107d974cbd061a60",
+  "facts": [
+    {
+      "id": "r_f365f31a.f1",
+      "path": "/result/summary/checked",
+      "value": 9,
+      "metric": "claims_checked",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_f365f31a.f2",
+      "path": "/result/summary/mismatch",
+      "value": 0,
+      "metric": "claims_mismatch",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_f365f31a.f3",
+      "path": "/result/summary/unresolved",
+      "value": 0,
+      "metric": "claims_unresolved",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_f365f31a.f4",
+      "path": "/result/summary/verified",
+      "value": 9,
+      "metric": "claims_verified",
+      "unit": "claims",
+      "group": {}
+    }
+  ]
+}

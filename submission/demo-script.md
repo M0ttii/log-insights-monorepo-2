@@ -1,60 +1,69 @@
-# Worked-case presentation and recording script
+# Worked-case recording script
 
-This is a proposed English narration and action sequence for the
+This English script accompanies the
 [worked-case deck](../presentation/worked-investigation.pdf) and
-[investigation](worked-investigation.md). It has not been timed with real model
-waits and is not a recording. Known development/demo material is not a holdout.
-All case figures and quotations come from the linked receipts; use the displayed
-fact IDs instead of adding numerical claims from memory.
+[investigation](worked-investigation.md). Record it as an **Edited walkthrough:
+archived queries and analyst-written role views**. It is not a live Claude answer.
+Actual Claude examples are indexed separately in [the archived agent examples](agent-examples/README.md).
 
-## Slide narration, proposed three-minute budget
+The planned narration lasts about 150 seconds at a deliberate speaking pace.
+The [edited English recording](../presentation/log-insights-walkthrough.mp4) is
+154.424 seconds including actual Claude-answer excerpts. Synthetic narration is
+provided by macOS Samantha; this is not a recording of a human voice or a live
+model run. [Recording provenance](../presentation/walkthrough/manifest.json)
+retains the exact narration, segment timing and source hashes. A separate live
+rehearsal has not been timed. All displayed figures
+and original quotations come from the linked receipts. Keep their fact IDs
+visible; do not add numerical claims from memory.
 
-| Planned elapsed time | Slide | Narration / action |
+## English narration and edit sequence
+
+| Planned elapsed time | Slide / action | Narration |
 |---|---|---|
-| 0:00–0:10 | Case | “The same log evidence supports a diagnostic check, a team investigation and an allocation decision. This is a known BGL job-start case.” |
-| 0:10–0:40 | Shared tools | “Clients use the same registry. SereneDB searches and computes; the model explains. Receipts retain scope, SQL, parameters and facts. This walkthrough called the tools directly.” |
-| 0:40–1:20 | Query evidence | Read the full-span population figures from the slide. Open the phrase search and show an original APPREAD message, then distinguish its bounded hits from the separate population aggregation. Keep the OpenStack access denominator on its own time axis. |
-| 1:20–2:10 | Role decisions | Engineer: distinguish emitting-node breadth from the initiating origin. Team Lead: name recurring program-image/chdir errors and missing prior-period coverage. Manager: explain the team ranking by episodes and breadth, and why the largest line count alone does not set priority. |
-| 2:10–2:40 | Executed check | Show the original hypothesis provenance, the earlier chdir message on another node and the scoped precursor result. “The next check moves toward job-start inputs. The cause remains open.” |
-| 2:40–3:00 | Limits | “Job identity, initiating cause, downtime and business impact are unknown. The independent evaluation, final release checks and public access still need completion.” Open the investigation/manifest links. |
+| 0:00-0:10 | Case | “Log Insights turns log questions into evidence and a next step for engineers, team leads and managers. This is an edited walkthrough of a known BGL job-start investigation.” |
+| 0:10-0:35 | Shared tools; briefly show an archived receipt | “The clients share one tool registry. SereneDB searches and computes; Claude explains in the product. Each tool stores its validated input, exact SQL, parameters, scope and result. This walkthrough uses archived real queries and analyst-written role views. The separate Claude examples show actual client behavior.” |
+| 0:35-1:10 | Query evidence; show phrase search and population receipt | “The population queries cover each complete loaded dataset. BGL and OpenStack belong to separate systems and time spans. The BGL phrase search returns original control-stream messages with bounded, truncated hits. A separate aggregation measures the population. The OpenStack example distinguishes API accesses from request identifiers and preserves the original token-validation error.” |
+| 1:10-1:50 | Role decisions | “The engineer asks what could distinguish the initiating cause from widespread symptoms. Emitting-node breadth alone cannot locate the origin. The team lead investigates recurring program-image errors and assigns a startup-validation check to a fictional owner. The manager prioritizes investigation by episodes and breadth, with the ranking's trade-offs visible. A large line count alone does not establish priority or business impact.” |
+| 1:50-2:15 | Executed check; show precursor receipt | “The initial assessment suspected a systemic job or network event. The executed precursor check found earlier missing-directory evidence, changing the next step toward startup inputs and filesystem availability. That is a temporal association. It does not establish a shared job, a network defect or a proven cause.” |
+| 2:15-2:30 | Limits and evidence links | “The initiating cause, downtime and customer effect remain unknown. The shared checker verifies submitted numerical claims, not explanations. Original receipts and the investigation remain reviewable. Formal baseline and holdout evaluation are deferred; this case claims no model-quality improvement.” |
 
-The separate video must fit the project's three-minute limit. The combined
-presentation and live demo must fit five minutes. These are budgets, not measured
-completion times. Reserve a shorter slide selection when model waits do not fit.
+The challenge presentation/demo must fit five minutes. The separate submitted
+video must fit three minutes under the
+[general rules, section 5](https://schubki.com/legal/national-ai-hackathon-2026/rules).
+Time the exported recording and shorten pauses if necessary. The table is a
+planning budget, not a statement of observed model runtime.
 
-## Direct-tool rehearsal without a Claude key
+## Archived-query edit checklist
 
-Use the manifest step names, validated inputs and original receipts below. Calls
-must go through the existing registry; do not execute the archived SQL as a replay.
+The complete registry sequence is preserved in the investigation manifest.
+For a short recording, show only the selected receipts above; an edited selection
+must retain its label. No new model call or formal evaluation is required to
+record this walkthrough.
 
-1. `corpus`, `bgl-population`, `openstack-population`: identify the full base-corpus
-   snapshot, load balance and counting unit. Samples produce different results.
-2. `appread-search`: show the original message and truncation flag.
-3. `appread-context`, `appread-nodes`, `appread-racks`: show signed offsets and
-   emitting-node breadth; avoid inferring job identity or per-episode synchrony.
-4. `appread-precursors`: show the anchor population, background grid and missing-
-   directory association. State that it changes the next check, not the proven cause.
-5. `team-patterns`, `team-trend`, `team-compare`: distinguish recurrence from an
-   unavailable prior-period trend; preserve partial bucket flags and rest groups.
-6. `manager-team-order`, then `manager-order`: show the team recommendation and
-   the separate whole-BGL portfolio, including dropped ranking dimensions.
-7. `openstack-latency`, `openstack-search`, `openstack-context`: keep API accesses,
-   request IDs and original token-validation evidence distinct from BGL.
-8. Open the original JSON receipt and a saved matching re-run from the manifest.
-   Show the archived claim-check batches and explain their numerical-only scope.
+1. `corpus`, `bgl-population`, `openstack-population`: identify the full
+   base-corpus snapshot and separate log-event populations. Samples have different
+   results and must not be substituted.
+2. `appread-search`, then `appread-context`: show the original message,
+   truncation flag and signed offsets. Do not infer job identity or per-episode
+   synchrony from emitting-node breadth.
+3. `appread-precursors`: show the episode-start anchor population, background
+   scope and missing-directory association. The result changes the next check,
+   not the proven cause.
+4. `team-patterns`, `team-trend`, `team-compare`: preserve recurrence,
+   unavailable prior-period coverage, partial bucket flags and rest groups.
+5. `manager-team-order`, then `manager-order`: distinguish the team
+   recommendation from the whole-BGL portfolio and preserve ranking trade-offs.
+6. `openstack-latency`, `openstack-search`, `openstack-context`: keep API
+   accesses, request IDs and original evidence distinct from BGL.
+7. Show the original receipt, a saved matching registry re-run and the archived
+   claim-check results. Explain their numerical-only scope. Any new re-run must
+   invoke the registered tool with stored validated input, never stored SQL.
 
-This sequence is deterministic analyst operation. It does not test autonomous
-tool selection, model answer quality, the web chat or Claude client compliance.
+A deterministic analyst operation does not demonstrate autonomous tool selection,
+model answer quality, web-chat acceptance or complete Claude client compliance.
+A saved real client run must be labelled **Recorded run**, with failures and
+limits preserved. Database receipt duration is not model waiting time.
 
-## Later live demo and video capture
-
-After the relevant model budget and client gates are cleared, rehearse the known
-questions from the investigation using the actual client. Include one receipt
-re-run, the displayed verification and visible limits. Record actual end-to-end
-time and failures; database receipt duration is not model waiting time.
-
-Label a saved run or edited recording **Recorded run**. Label the present material
-**Analyst-written tool walkthrough**. Do not describe a scripted direct-tool
-sequence or these slides as a live Claude answer. Verify repository, PDF, original
-receipts and investigation links while signed out before submission. No upload or
-repository-visibility change has been performed.
+Before submission, verify repository, PDF, original receipt and investigation
+links while signed out. Recording and public access remain separate delivery
+checks; this script does not perform an upload or visibility change.
