@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 // Synthetic messages are confined to this component test; the app has no demo agent.
-import { createElement } from "react"
+import { createElement, type ReactElement } from "react"
 import {
   act,
   cleanup,
   fireEvent,
-  render,
+  render as renderComponent,
   screen,
   waitFor,
 } from "@testing-library/react"
@@ -14,6 +14,17 @@ import type { ChatTransport, UIMessage, UIMessageChunk } from "ai"
 import type { ToolResult } from "@workspace/domain/tool"
 import { InvestigationView } from "./InvestigationView"
 import { Conversation } from "./Conversation"
+import { LoadedDatasetsProvider } from "@/components/providers/LoadedDatasets"
+
+function render(element: ReactElement) {
+  return renderComponent(
+    createElement(
+      LoadedDatasetsProvider,
+      { datasets: ["bgl", "openstack", "otel", "otel_replay"] },
+      element
+    )
+  )
+}
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/investigations/new",
@@ -107,9 +118,7 @@ describe("prepared chat", () => {
       await screen.findByRole("menuitemradio", { name: /Manager/ })
     )
     fireEvent.click(screen.getByRole("button", { name: /^Choose dataset/ }))
-    fireEvent.click(
-      await screen.findByRole("menuitemradio", { name: "BGL · 2005–2006" })
-    )
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "BGL" }))
     fireEvent.change(screen.getByRole("textbox"), {
       target: { value: "Test question" },
     })

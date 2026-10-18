@@ -40,6 +40,8 @@ import {
 import { Badge } from "@workspace/ui/components/badge"
 import { EvidenceDrawer } from "@/components/evidence/EvidenceDrawer"
 import { ReceiptLink } from "@/components/evidence/ReceiptLink"
+import { loadedDatasetIds } from "@/components/datasets/catalog"
+import { LoadedDatasetsProvider } from "@/components/providers/LoadedDatasets"
 
 const links = [
   { title: "Ask", href: "/investigations/new", icon: MessageSquare },
@@ -263,25 +265,27 @@ export function AppShell({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
-      <a
-        href="#workspace-content"
-        className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
-      >
-        Skip to content
-      </a>
-      <AppSidebar />
-      <SidebarInset className="min-w-0">
-        <ContextBar corpus={corpus} />
-        <main
-          id="workspace-content"
-          tabIndex={-1}
-          className="min-h-0 flex-1 overflow-y-auto outline-none"
+    <LoadedDatasetsProvider datasets={loadedDatasetIds(corpus)}>
+      <SidebarProvider className="h-svh min-h-0 overflow-hidden">
+        <a
+          href="#workspace-content"
+          className="sr-only z-50 rounded-md bg-background p-3 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
         >
-          {children}
-        </main>
-      </SidebarInset>
-      <EvidenceDrawer />
-    </SidebarProvider>
+          Skip to content
+        </a>
+        <AppSidebar />
+        <SidebarInset className="min-w-0">
+          <ContextBar corpus={corpus} />
+          <main
+            id="workspace-content"
+            tabIndex={-1}
+            className="min-h-0 flex-1 overflow-y-auto outline-none"
+          >
+            {children}
+          </main>
+        </SidebarInset>
+        <EvidenceDrawer />
+      </SidebarProvider>
+    </LoadedDatasetsProvider>
   )
 }

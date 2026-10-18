@@ -8,8 +8,9 @@ import {
   type GateFinding,
   type SubmittedCheck,
 } from "@workspace/domain/answer"
-import { DATASET_IDS } from "@workspace/domain/datasets"
+import { DATASET_IDS, type Dataset } from "@workspace/domain/datasets"
 import { datasetSchema, filterSchema } from "@workspace/domain/filters"
+import { scopeSchema } from "@workspace/domain/receipt"
 import {
   checkClaimsOutputSchema,
   type CheckClaimsOutput,
@@ -34,9 +35,13 @@ import { z } from "zod"
 
 import { baselineRoleInstruction } from "./baseline.ts"
 import {
+  applicableCoverage,
   claimsHint,
+  coverageCorpusSchema,
   coverageHint,
   missingCoverage,
+  unavailableCoverageHint,
+  type CoverageContext,
   type CoverageStep,
   type RoleCoverage,
 } from "./coverage.ts"
@@ -307,6 +312,8 @@ class PhaseMachine {
   private readonly checks: SubmittedCheck[] = []
   private readonly coverageSteps: CoverageStep[] = []
   private readonly coverageRequests: string[] = []
+  private coverageCorpus: z.infer<typeof coverageCorpusSchema> | null = null
+  private readonly notifiedUnavailableCoverage = new Set<string>()
   private readonly instructionMessages: string[] = []
   private readonly gateFindingsPerDraft: GateFinding[][] = []
   private readonly answerVersions: AnswerVersion[] = []
@@ -474,6 +481,8 @@ class PhaseMachine {
     let contextLine: string
     if (outcome.ok) {
       const { receipt } = outcome.result
+      const corpus = coverageCorpusSchema.safeParse(outcome.result.data)
+      if (corpus.success) this.coverageCorpus = corpus.data
       this.coverageSteps.push({ tool: "describe_corpus", input: {}, ok: true })
       // The run's data version is the preflight describe_corpus receipt's.
       this.recordDataVersion(receipt.data_version)
@@ -557,15 +566,30 @@ class PhaseMachine {
       return null
     }
     const coverage = this.roleCoverage()
+    const context = this.coverageContext()
     const missing =
-      coverage === null ? [] : missingCoverage(coverage, this.coverageSteps)
+      coverage === null
+        ? []
+        : missingCoverage(coverage, this.coverageSteps, context)
+    const unavailable =
+      coverage === null
+        ? []
+        : applicableCoverage(coverage, context).unavailable.filter(
+            (label) => !this.notifiedUnavailableCoverage.has(label)
+          )
     const check = lastCheck(this.checks)
-    const parts = [coverageHint(missing), claimsHint(check)]
+    const parts = [
+      coverageHint(missing),
+      unavailableCoverageHint(unavailable),
+      claimsHint(check),
+    ]
     const present = parts.filter((part): part is string => part !== null)
     if (present.length === 0) return null
+    for (const label of unavailable) this.notifiedUnavailableCoverage.add(label)
     // The model never supplies this line: only code-owned coverage labels and
     // validated check counts are public. Keep the full corrective hint private.
     const labels = missing.map((item) => item.label)
+    labels.push(...unavailable.map((item) => `Unavailable: ${item}`))
     if (check !== null) {
       if (check.summary.mismatch > 0)
         labels.push(
@@ -587,6 +611,37 @@ class PhaseMachine {
     const role = this.resolvedAnswerRole()
     if (role === null) return null
     return this.deps.playbooks.coverage?.[role] ?? null
+  }
+
+  private coverageContext(): CoverageContext | undefined {
+    if (this.coverageCorpus === null) return undefined
+    const requested = this.input.scope?.dataset
+    const observed = this.coverageSteps.flatMap((step) => {
+      if (
+        !step.ok ||
+        step.tool === "describe_corpus" ||
+        step.tool === "check_claims"
+      )
+        return []
+      if (step.datasets !== undefined && step.datasets.length > 0)
+        return step.datasets
+      const parsed = filterSchema
+        .pick({ dataset: true })
+        .strip()
+        .safeParse(step.input)
+      return parsed.success && parsed.data.dataset !== undefined
+        ? [parsed.data.dataset]
+        : []
+    })
+    const selected =
+      requested === undefined
+        ? observed.length > 0
+          ? [...new Set(observed)]
+          : undefined
+        : typeof requested === "string"
+          ? [requested]
+          : requested
+    return { ...this.coverageCorpus, selected }
   }
 
   // --- answer -------------------------------------------------------------
@@ -815,6 +870,7 @@ class PhaseMachine {
         tool: step.toolName,
         input: step.input,
         ok: view.errorKind === null,
+        datasets: view.datasets,
       })
       // Fallback data version: the first successful tool receipt of the run,
       // used only when the preflight describe_corpus did not set it.
@@ -1129,6 +1185,7 @@ type StepView = {
   dataVersion: string | null
   errorKind: string | null
   checkOutput: CheckClaimsOutput | null
+  datasets: Dataset[]
 }
 
 /**
@@ -1153,17 +1210,22 @@ function stepView(output: unknown): StepView {
         (record.error as Record<string, unknown>)?.error
       ),
       checkOutput: null,
+      datasets: [],
     }
   if (record.ok === true) {
     const result = record.result as {
-      receipt?: { receipt_id?: string; data_version?: string }
+      receipt?: { receipt_id?: string; data_version?: string; scope?: unknown }
       data?: unknown
     }
+    const scope = scopeSchema.safeParse(result.receipt?.scope)
     return {
       receiptId: result.receipt?.receipt_id ?? null,
       dataVersion: result.receipt?.data_version ?? null,
       errorKind: null,
       checkOutput: parseCheck(result.data),
+      datasets: scope.success
+        ? scope.data.windows.map((window) => window.dataset)
+        : [],
     }
   }
   if ("error" in record)
@@ -1172,6 +1234,7 @@ function stepView(output: unknown): StepView {
       dataVersion: null,
       errorKind: readErrorKind(record.error),
       checkOutput: null,
+      datasets: [],
     }
 
   return {
@@ -1179,6 +1242,7 @@ function stepView(output: unknown): StepView {
     dataVersion: null,
     errorKind: null,
     checkOutput: parseCheck(record.data),
+    datasets: [],
   }
 }
 
@@ -1188,6 +1252,7 @@ function empty(): StepView {
     dataVersion: null,
     errorKind: null,
     checkOutput: null,
+    datasets: [],
   }
 }
 

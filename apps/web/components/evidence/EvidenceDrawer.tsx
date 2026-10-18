@@ -1,6 +1,7 @@
 "use client"
 import { z } from "zod"
 import { toolResultSchema } from "@workspace/domain/tool"
+import { toolErrorSchema, type ToolError } from "@workspace/domain/errors"
 import { ReceiptLink } from "./ReceiptLink"
 import { useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -29,6 +30,7 @@ import {
   CodeBlockCopyButton,
 } from "@workspace/ui/components/code-block"
 import { ResultView } from "@/components/results/ResultView"
+import { ToolErrorNotice } from "@/components/workspace/ToolErrorNotice"
 import { receiptFeatures } from "./features"
 
 function Code({ title, value }: { title: string; value: string }) {
@@ -48,6 +50,7 @@ function ReceiptPanel({ id, fact }: { id: string; fact: string | null }) {
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [error, setError] = useState("")
   const [rerun, setRerun] = useState("")
+  const [rerunError, setRerunError] = useState<ToolError | null>(null)
   const [running, setRunning] = useState(false)
   const [newReceipt, setNewReceipt] = useState<string | null>(null)
   useEffect(() => {
@@ -72,12 +75,21 @@ function ReceiptPanel({ id, fact }: { id: string; fact: string | null }) {
   async function rerunReceipt() {
     setRunning(true)
     setRerun("")
+    setRerunError(null)
     setNewReceipt(null)
     try {
       const response = await fetch(
         `/api/receipts/${encodeURIComponent(id)}/rerun`,
         { method: "POST" }
       )
+      const body: unknown = await response.json()
+      const failure = z
+        .object({ ok: z.literal(false), error: toolErrorSchema })
+        .safeParse(body)
+      if (failure.success) {
+        setRerunError(failure.data.error)
+        return
+      }
       const value = z
         .object({
           result: toolResultSchema(z.unknown()),
@@ -87,7 +99,7 @@ function ReceiptPanel({ id, fact }: { id: string; fact: string | null }) {
             result_digest: z.boolean(),
           }),
         })
-        .safeParse(await response.json())
+        .safeParse(body)
       if (!response.ok || !value.success) throw new Error("Rerun failed")
       setNewReceipt(value.data.result.receipt.receipt_id)
       const matches = value.data.matches
@@ -180,10 +192,11 @@ function ReceiptPanel({ id, fact }: { id: string; fact: string | null }) {
         </dd>
       </dl>
       <Tabs defaultValue="result">
-        <TabsList className="w-full">
+        <TabsList className="w-full max-w-full overflow-x-auto">
           <TabsTrigger value="result">Result</TabsTrigger>
           <TabsTrigger value="sql">SQL</TabsTrigger>
           <TabsTrigger value="input">Input & scope</TabsTrigger>
+          {receipt.source && <TabsTrigger value="source">Source</TabsTrigger>}
           <TabsTrigger value="facts">Facts</TabsTrigger>
         </TabsList>
         <TabsContent value="result" className="pt-4">
@@ -216,6 +229,25 @@ function ReceiptPanel({ id, fact }: { id: string; fact: string | null }) {
             value={JSON.stringify(receipt.scope, null, 2)}
           />
         </TabsContent>
+        {receipt.source && (
+          <TabsContent value="source" className="min-w-0 pt-4">
+            <section aria-label="Receipt source" className="min-w-0 space-y-4">
+              <p className="text-sm leading-6 text-muted-foreground">
+                {receipt.source.kind === "otlp_replay"
+                  ? "Bounded OTLP replay. This run reads the recorded replay and index snapshot, not a production stream."
+                  : receipt.source.path === "indexed_window"
+                    ? "Indexed reference window. Files, query bounds, version stamps, and index freshness are recorded below."
+                    : "Direct scan of the recorded remote files and query bounds. Bytes read are not measured; any footer estimate is labelled separately."}
+              </p>
+              <ResultView
+                value={receipt.source}
+                facts={[]}
+                receiptId={id}
+                path="/source"
+              />
+            </section>
+          </TabsContent>
+        )}
         <TabsContent value="facts" className="pt-4">
           <ResultView value={receipt.facts} facts={[]} receiptId={id} />
         </TabsContent>
@@ -231,6 +263,7 @@ function ReceiptPanel({ id, fact }: { id: string; fact: string | null }) {
         </output>
         {newReceipt && <ReceiptLink id={newReceipt} />}
       </div>
+      {rerunError && <ToolErrorNotice error={rerunError} />}
     </section>
   )
 }

@@ -5,6 +5,7 @@ import {
   type Filter,
 } from "@workspace/domain/filters"
 import { formatInstant, parseInstant } from "@workspace/domain/time"
+import { datasetTitle } from "@/components/datasets/catalog"
 
 export function readScope(value: Record<string, unknown> = {}): Filter {
   // The dev question bank uses singular team/component labels. The tool filter
@@ -44,14 +45,12 @@ function utc(value: string | undefined, fallback: string) {
 export function scopeSummary(scope: Filter): string {
   if (Object.keys(scope).length === 0) return "Scope: chosen by the agent"
   const filters = [
-    scope.dataset === "bgl"
-      ? "BGL"
-      : scope.dataset === "openstack"
-        ? "OpenStack"
-        : "Dataset chosen by the agent",
+    scope.dataset ? datasetTitle(scope.dataset) : "Dataset chosen by the agent",
     scope.from || scope.to
       ? `[${utc(scope.from, "span start")}, ${utc(scope.to, "span end")}) UTC`
-      : "Full span",
+      : scope.dataset === "otel"
+        ? "Indexed reference for text; explicit window for direct scans"
+        : "Full span",
     scope.components && `Components: ${scope.components.join(", ")}`,
     scope.teams && `Teams: ${scope.teams.join(", ")} (fictional ownership)`,
     scope.levels && `Levels: ${scope.levels.join(", ")}`,
@@ -66,6 +65,12 @@ export function scopeSummary(scope: Filter): string {
     scope.http_status &&
       `HTTP status: ${scope.http_status.min}–${scope.http_status.max}`,
     scope.pattern_id && `Pattern: ${scope.pattern_id}`,
+    scope.block_id && `Block: ${scope.block_id}`,
+    scope.host && `Host: ${scope.host}`,
+    scope.process_id && `Process: ${scope.process_id}`,
+    scope.client_ip && `Client IP: ${scope.client_ip}`,
+    scope.thread && `Thread: ${scope.thread}`,
+    scope.trace_id && `Trace: ${scope.trace_id} (log records only)`,
     scope.text && `Message contains: ${scope.text}`,
   ]
   return `Scope: ${filters.filter(Boolean).join(" · ")}`

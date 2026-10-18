@@ -118,7 +118,18 @@ test("composer retains the question across roles and validates the UTC scope", a
   await page.getByRole("menuitemradio", { name: /Manager/ }).click()
   await expect(input).toHaveValue("Keep my investigation question")
   await page.getByRole("button", { name: /^Choose dataset/ }).click()
-  await page.getByRole("menuitemradio", { name: "BGL · 2005–2006" }).click()
+  await expect(
+    page.getByRole("menuitemradio", { name: "Agent chooses dataset" })
+  ).toBeVisible()
+  const loaded = await page
+    .getByRole("menuitemradio", { name: "BGL", exact: true })
+    .count()
+  if (loaded)
+    await page.getByRole("menuitemradio", { name: "BGL", exact: true }).click()
+  else {
+    await expect(page.getByText(/Loaded datasets unavailable/)).toBeVisible()
+    await page.keyboard.press("Escape")
+  }
   const windowButton = page.getByRole("button", { name: /^Set time window/ })
   await windowButton.click()
   await page.getByLabel("From · inclusive").fill("2005-07-01T00:00:00Z")
@@ -129,8 +140,16 @@ test("composer retains the question across roles and validates the UTC scope", a
   await page.getByRole("button", { name: "Apply window" }).click()
   await expect(page.getByText("Custom window", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: /^Choose dataset/ }).click()
-  await page.getByRole("menuitemradio", { name: "OpenStack · 2017" }).click()
-  await expect(page.getByText("Full span", { exact: true })).toBeVisible()
+  if (loaded) {
+    await page
+      .getByRole("menuitemradio", { name: "OpenStack", exact: true })
+      .click()
+    await expect(page.getByText("Full span", { exact: true })).toBeVisible()
+  } else {
+    await page
+      .getByRole("menuitemradio", { name: "Agent chooses dataset" })
+      .click()
+  }
   await expect(input).toHaveValue("Keep my investigation question")
   await input.press("Enter")
   await expect(page.getByText("Response interrupted")).toBeVisible()

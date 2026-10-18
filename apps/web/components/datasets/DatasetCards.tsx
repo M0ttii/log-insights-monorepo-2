@@ -14,6 +14,8 @@ import {
 } from "@workspace/ui/components/collapsible"
 import { ResultView } from "@/components/results/ResultView"
 const summaryKeys = [
+  "storage",
+  "counts_cover",
   "events",
   "lines_read",
   "rejected",
@@ -32,6 +34,9 @@ const detailKeys = [
   "requests",
   "time_basis",
   "label_source",
+  "capabilities",
+  "remote",
+  "replay",
 ]
 export function DatasetCards({
   datasets,
@@ -47,15 +52,26 @@ export function DatasetCards({
       {parsed.data.map((dataset, index) => (
         <Card key={String(dataset.dataset)} className="min-w-0 shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">
-              {dataset.dataset === "bgl"
-                ? "BGL"
-                : dataset.dataset === "openstack"
-                  ? "OpenStack"
-                  : String(dataset.dataset)}
+            <CardTitle className="text-base [overflow-wrap:anywhere]">
+              {typeof dataset.title === "string"
+                ? dataset.title
+                : String(dataset.dataset)}
             </CardTitle>
           </CardHeader>
           <CardContent className="min-w-0 space-y-5">
+            {dataset.counts_cover === "reference_window" && (
+              <p className="text-sm leading-6 text-muted-foreground">
+                Error counts, levels, components, and field statistics cover the
+                indexed reference window only. Parquet footer counts include
+                boundary duplicates and are not distinct events.
+              </p>
+            )}
+            {dataset.storage === "otlp_replay" && (
+              <p className="text-sm leading-6 text-muted-foreground">
+                Bounded OTLP replay of public records, not a production stream.
+                Tools read its recorded index snapshot.
+              </p>
+            )}
             <dl className="divide-y">
               {summaryKeys.map((key) => (
                 <div
@@ -83,19 +99,25 @@ export function DatasetCards({
                 Schema, labels & details
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-4 max-h-96 space-y-5 overflow-auto">
-                {detailKeys.map((key) => (
-                  <section key={key} className="min-w-0">
-                    <h3 className="mb-2 text-sm font-medium capitalize">
-                      {key.replaceAll("_", " ")}
-                    </h3>
-                    <ResultView
-                      value={dataset[key]}
-                      facts={result.facts}
-                      receiptId={result.receipt.receipt_id}
-                      path={`/result/datasets/${index}/${key}`}
-                    />
-                  </section>
-                ))}
+                {detailKeys
+                  .filter((key) =>
+                    key === "remote" || key === "replay"
+                      ? dataset[key] != null
+                      : true
+                  )
+                  .map((key) => (
+                    <section key={key} className="min-w-0">
+                      <h3 className="mb-2 text-sm font-medium capitalize">
+                        {key.replaceAll("_", " ")}
+                      </h3>
+                      <ResultView
+                        value={dataset[key]}
+                        facts={result.facts}
+                        receiptId={result.receipt.receipt_id}
+                        path={`/result/datasets/${index}/${key}`}
+                      />
+                    </section>
+                  ))}
               </CollapsibleContent>
             </Collapsible>
           </CardContent>

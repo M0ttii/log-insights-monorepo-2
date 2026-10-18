@@ -1,6 +1,12 @@
 import { useState } from "react"
 import { CalendarDays, ChevronDown, Database, X } from "lucide-react"
-import { FILTER_FIELDS, type Filter } from "@workspace/domain/filters"
+import {
+  FILTER_FIELDS,
+  datasetSchema,
+  type Filter,
+} from "@workspace/domain/filters"
+import { datasetTitle } from "@/components/datasets/catalog"
+import { useLoadedDatasets } from "@/components/providers/LoadedDatasets"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { Label } from "@workspace/ui/components/label"
@@ -33,17 +39,20 @@ export function ScopeControls({
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const datasets = useLoadedDatasets()
   const filters = FILTER_FIELDS.filter(
     (key) =>
       !["dataset", "from", "to"].includes(key) && scope[key] !== undefined
   )
-  const datasetLabel =
-    scope.dataset === "bgl"
-      ? "BGL"
-      : scope.dataset === "openstack"
-        ? "OpenStack"
-        : "Agent chooses"
-  const windowLabel = scope.from || scope.to ? "Custom window" : "Full span"
+  const datasetLabel = scope.dataset
+    ? datasetTitle(scope.dataset)
+    : "Agent chooses"
+  const windowLabel =
+    scope.from || scope.to
+      ? "Custom window"
+      : scope.dataset === "otel"
+        ? "Tool-specific window"
+        : "Full span"
   return (
     <>
       <DropdownMenu>
@@ -60,26 +69,27 @@ export function ScopeControls({
         <DropdownMenuContent align="start" className="max-w-72">
           <DropdownMenuRadioGroup
             value={scope.dataset ?? "auto"}
-            onValueChange={(value) =>
-              onChange(
-                changeDataset(
-                  scope,
-                  value === "bgl" || value === "openstack" ? value : undefined
-                )
-              )
-            }
+            onValueChange={(value) => {
+              if (value === "auto") onChange(changeDataset(scope))
+              else {
+                const parsed = datasetSchema.safeParse(value)
+                if (parsed.success && datasets.includes(parsed.data))
+                  onChange(changeDataset(scope, parsed.data))
+              }
+            }}
           >
             <DropdownMenuRadioItem value="auto" closeOnClick>
               Agent chooses dataset
             </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="bgl" closeOnClick>
-              BGL · 2005–2006
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="openstack" closeOnClick>
-              OpenStack · 2017
-            </DropdownMenuRadioItem>
+            {datasets.map((dataset) => (
+              <DropdownMenuRadioItem key={dataset} value={dataset} closeOnClick>
+                {datasetTitle(dataset)}
+              </DropdownMenuRadioItem>
+            ))}
           </DropdownMenuRadioGroup>
           <p className="px-3 py-2 text-xs leading-5 text-muted-foreground">
+            {datasets.length === 0 &&
+              "Loaded datasets unavailable. Check the corpus connection. "}
             Changing dataset clears the previous time window and filters.
           </p>
         </DropdownMenuContent>
@@ -112,8 +122,10 @@ export function ScopeControls({
         >
           <PopoverTitle>Time window</PopoverTitle>
           <PopoverDescription className="text-xs leading-5">
-            UTC. Start included, end excluded. Leave either boundary empty to
-            use the dataset’s span.
+            UTC. Start included, end excluded.{" "}
+            {scope.dataset === "otel"
+              ? "Text queries default to the indexed reference window. Direct counts and trends need both boundaries; see Corpus for scan limits."
+              : "Leave either boundary empty to use the dataset’s span."}
           </PopoverDescription>
           <Label htmlFor="scope-from">From · inclusive</Label>
           <Input

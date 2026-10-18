@@ -4,7 +4,7 @@ import type {
   ToolEntry,
 } from "@workspace/analytics/registry"
 import { ToolFailure } from "@workspace/analytics/registry"
-import { invalidInput } from "@workspace/domain/errors"
+import { invalidInput, sourceChanged } from "@workspace/domain/errors"
 import type { Fact } from "@workspace/domain/facts"
 import type { ToolResult } from "@workspace/domain/tool"
 import { z } from "zod"
@@ -261,6 +261,41 @@ describe("buildTools", () => {
 })
 
 describe("toExecuteResult / toolErrorValue (shared mapping, LOG-48)", () => {
+  it("preserves source_changed and its correction hint through the generic adapter", async () => {
+    const error = sourceChanged("otel", ["part_000.parquet"])
+    const registry = fakeRegistry(["count_events"], async () => ({
+      ok: false,
+      error,
+    }))
+    const tool = getTool(buildTools(registry, ctx), "count_events")
+    const output = await tool.execute?.(
+      { dataset: "otel" },
+      {
+        toolCallId: "changed-source",
+        messages: [],
+        abortSignal: new AbortController().signal,
+        context: undefined,
+      }
+    )
+    expect(output).toEqual(toExecuteResult({ ok: false, error }))
+    expect(
+      tool.toModelOutput?.({
+        toolCallId: "changed-source",
+        input: { dataset: "otel" },
+        output,
+      })
+    ).toEqual({
+      type: "json",
+      value: {
+        error: {
+          kind: "source_changed",
+          message: error.message,
+          hint: error.hint,
+        },
+      },
+    })
+  })
+
   it("maps a successful outcome to the full result, identically to the adapter", () => {
     const result = okResult()
     expect(toExecuteResult({ ok: true, result })).toEqual({

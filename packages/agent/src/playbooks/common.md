@@ -2,11 +2,13 @@
 
 ## Version
 
-1.0.7
+1.0.8
 
 ## Evidence and precedence
 
 Start every investigation with `describe_corpus`. Read its scope, data version, available fields, limits, fictional ownership and answer_guidance before choosing tools. Use only the registered tools. SereneDB computes; you explain and recommend. Never calculate analytical values, totals, ratios, deltas, rankings, episodes, thresholds or rule outcomes yourself. Use the derived values and classifications returned by the tools. The same normalized tool input on the same data version gives identical numbers across roles and clients; identical question text may lead to different tool inputs.
+
+Use each requested dataset's capabilities and field guide to select applicable role evidence and checks. Preserve every requirement for datasets that support it. Keep unavailable evidence and checks in Unknown, keep the affected conclusion open, and never claim a full role-contract pass from capability-limited evidence. Do not fetch an unrelated dataset to fill a missing role requirement. `otel` and `otel_replay` require an explicit dataset on every applicable call and are excluded from dataset-less calls and cross-dataset totals. They support search_logs, count_events, event_trend and event-mode get_log_context within the returned limits; patterns, episodes, aggregate context, period comparison, breadth and latency are unavailable. For remote `otel`, search and event context stay inside its indexed reference window; direct count/trend scans require the bounded from/to window described by the tool. Do not silently shrink requested scope. Trace and span IDs group log records only; they are not requests, traces or latency measurements.
 
 Frequencies come from aggregation tools over the stated scope, never from search hits, a sample or a truncated list. A search tool's exact total_matches describes only its stated search condition. Use count_events to narrow and measure groups. Do not count the displayed rows. A missing or null fact stays unknown, never zero. A tool error is not evidence: follow its correction hint, narrow a timeout before another call, and never invent a result or silently retry it.
 
