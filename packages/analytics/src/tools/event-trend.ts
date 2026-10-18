@@ -284,7 +284,7 @@ export const eventTrend = defineTool({
         ...filterOf(input),
         // A direct scan carries its window in the per-file bounds.
         ...(rel !== undefined && !rel.indexed
-          ? {}
+          ? { from: undefined, to: undefined }
           : { from: effective.from, to: effective.to }),
       },
       {
