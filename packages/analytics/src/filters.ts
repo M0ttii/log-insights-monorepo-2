@@ -34,6 +34,11 @@ const EQUALS: Partial<Record<FilterField, string>> = {
   alert_label: "alert_label",
   request_id: "request_id",
   instance_id: "instance_id",
+  block_id: "block_id",
+  host: "host",
+  process_id: "process_id",
+  client_ip: "client_ip",
+  thread: "thread",
   pattern_id: "pattern_id",
 }
 
@@ -56,6 +61,10 @@ const DIMENSIONS: Record<Dimension, (q: string) => string> = {
   pattern: (q) => `${q}.pattern_id`,
   http_status: (q) => `${q}.http_status`,
   endpoint: (q) => `${q}.endpoint`,
+  host: (q) => `${q}.host`,
+  client_ip: (q) => `${q}.client_ip`,
+  thread: (q) => `${q}.thread`,
+  block_id: (q) => `${q}.block_id`,
 }
 
 /**

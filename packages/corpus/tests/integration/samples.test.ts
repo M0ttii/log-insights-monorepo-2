@@ -374,10 +374,12 @@ describe("helper tables", () => {
     expect(manifest).toMatchObject({
       data_version: dataVersionOf(firstOutput),
       source: "samples",
-      // Final after U03 (LOG-12).
-      pattern_rules_version: "1.0.0",
-      ownership_version: "1.0.0",
-      rules_version: "concept-3.5",
+      // Final after U26 (LOG-40): the extension parsers, pattern chain and
+      // ownership teams bumped these stamps; the base-corpus rules are
+      // unchanged (packages/corpus/src/versions.ts).
+      pattern_rules_version: "1.1.0",
+      ownership_version: "1.1.0",
+      rules_version: "concept-3.8",
       files: [
         {
           path: "loghub-2k/BGL_2k.log",

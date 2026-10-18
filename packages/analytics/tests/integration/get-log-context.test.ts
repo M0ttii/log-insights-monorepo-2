@@ -253,7 +253,8 @@ describe("mode event on OpenStack", () => {
       issues: [
         {
           path: "scope",
-          message: "Event 10000067 has no node (OpenStack events have none).",
+          message:
+            "same_node is only available for bgl events; openstack events have no node.",
         },
       ],
     })

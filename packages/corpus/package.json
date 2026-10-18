@@ -11,6 +11,7 @@
     "data:profile": "node --env-file-if-exists=../../.env --import tsx src/profile.ts"
   },
   "dependencies": {
+    "@workspace/domain": "workspace:*",
     "pg": "8.23.1",
     "tar": "7.5.22",
     "yauzl": "3.4.0"

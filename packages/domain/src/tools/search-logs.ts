@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { formatFactValue, type Fact } from "../facts.ts"
+import { EXTENSION_ATTRIBUTES } from "../attributes.ts"
 import { datasetSchema, pickFilter } from "../filters.ts"
 import { instantSchema } from "../time.ts"
 import type { ToolResult } from "../tool.ts"
@@ -41,6 +42,11 @@ export const SEARCH_FILTER = pickFilter([
   "only_alerts",
   "request_id",
   "instance_id",
+  "block_id",
+  "host",
+  "process_id",
+  "client_ip",
+  "thread",
 ])
 
 export const matchModeSchema = z
@@ -126,6 +132,7 @@ export const searchHitSchema = z.strictObject({
     .string()
     .nullable()
     .describe("OpenStack request ID; null otherwise."),
+  ...EXTENSION_ATTRIBUTES,
   message: z
     .string()
     .nullable()

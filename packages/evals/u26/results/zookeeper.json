@@ -1,0 +1,174 @@
+{
+  "dataset": "zookeeper",
+  "role": "Engineer",
+  "question": "What precedes the shutdown-exception errors?",
+  "data_version": "dv_02dfa8cc8e16e2a2",
+  "client": "eval",
+  "model": "none (tools called directly through the registry)",
+  "tool_calls": [
+    {
+      "step": "search_logs",
+      "tool": "search_logs",
+      "input": {
+        "query": "Unexpected exception causing shutdown",
+        "match": "terms",
+        "dataset": "zookeeper",
+        "sort": "time_asc",
+        "limit": 5
+      },
+      "receipt_id": "r_b15d2a2b",
+      "data_summary": "total_matches=590, hits=5, truncated=true",
+      "facts_used": [
+        {
+          "id": "r_b15d2a2b.f6",
+          "path": "/result/total_matches",
+          "value": 590,
+          "metric": "matches",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    },
+    {
+      "step": "get_log_context_aggregate",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "zookeeper",
+        "query": "Unexpected exception causing shutdown",
+        "direction": "before",
+        "window_minutes": 10,
+        "top_n": 10
+      },
+      "receipt_id": "r_73ece7e0",
+      "data_summary": "aggregate: anchors=7, matched=590",
+      "facts_used": [
+        {
+          "id": "r_73ece7e0.f1",
+          "path": "/result/anchors",
+          "value": 7,
+          "metric": "anchors",
+          "unit": "anchors",
+          "group": {}
+        },
+        {
+          "id": "r_73ece7e0.f5",
+          "path": "/result/by_direction/0/patterns/0/anchor_share",
+          "value": 0.42857142857142855,
+          "metric": "anchor_share",
+          "unit": "ratio",
+          "group": {
+            "pattern_id": "00387016b6ab4153",
+            "direction": "before"
+          }
+        },
+        {
+          "id": "r_73ece7e0.f6",
+          "path": "/result/by_direction/0/patterns/0/anchors_with_pattern",
+          "value": 3,
+          "metric": "anchors_with_pattern",
+          "unit": "anchors",
+          "group": {
+            "pattern_id": "00387016b6ab4153",
+            "direction": "before"
+          }
+        },
+        {
+          "id": "r_73ece7e0.f56",
+          "path": "/result/matched_events",
+          "value": 590,
+          "metric": "matched_events",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    },
+    {
+      "step": "count_events_by_level",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["level"],
+        "dataset": "zookeeper",
+        "top_n": 10
+      },
+      "receipt_id": "r_088031dc",
+      "data_summary": "unit=log_events, total=74380, groups=3, shown=3",
+      "facts_used": [
+        {
+          "id": "r_088031dc.f6",
+          "path": "/result/groups/2/events",
+          "value": 617,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "level": "ERROR"
+          }
+        },
+        {
+          "id": "r_088031dc.f8",
+          "path": "/result/total",
+          "value": 74380,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    }
+  ],
+  "check_claims": {
+    "receipt_id": "r_a44f02ea",
+    "summary": "7 claims checked · 0 mismatch · 0 unresolved",
+    "claims": [
+      {
+        "fact": "r_b15d2a2b.f6",
+        "value": 590,
+        "metric": "matches",
+        "group": {}
+      },
+      {
+        "fact": "r_73ece7e0.f56",
+        "value": 590,
+        "metric": "matched_events",
+        "group": {}
+      },
+      {
+        "fact": "r_73ece7e0.f1",
+        "value": 7,
+        "metric": "anchors",
+        "group": {}
+      },
+      {
+        "fact": "r_088031dc.f8",
+        "value": 74380,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_088031dc.f6",
+        "value": 617,
+        "metric": "events",
+        "group": {
+          "level": "ERROR"
+        }
+      },
+      {
+        "fact": "r_73ece7e0.f6",
+        "value": 3,
+        "metric": "anchors_with_pattern",
+        "group": {
+          "pattern_id": "00387016b6ab4153",
+          "direction": "before"
+        }
+      },
+      {
+        "fact": "r_73ece7e0.f5",
+        "value": 0.42857142857142855,
+        "metric": "anchor_share",
+        "group": {
+          "pattern_id": "00387016b6ab4153",
+          "direction": "before"
+        }
+      }
+    ]
+  }
+}

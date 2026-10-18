@@ -5,11 +5,17 @@ import {
   type ToolError,
 } from "@workspace/domain/errors"
 import {
+  datasetsWithColumn,
+  SPECIFIC_DIMENSION_COLUMNS,
+  type SpecificDimension,
+} from "@workspace/domain/datasets"
+import {
   datasetSchema,
+  filterDatasets,
+  presentSpecificFilters,
   validateFilter,
   type Dataset,
   type Dimension,
-  type FilterField,
 } from "@workspace/domain/filters"
 import type { CountingUnit, Scope } from "@workspace/domain/receipt"
 import {
@@ -35,7 +41,6 @@ import {
 } from "@workspace/domain/tool"
 import {
   API_ACCESS_DIMENSIONS,
-  BGL_DIMENSIONS,
   COMPARE_MAX_TOP_N,
   COUNT_DEFAULT_TOP_N,
   COUNT_FILTER,
@@ -53,18 +58,19 @@ import {
 import { z } from "zod"
 
 import { comparisonCoverageSql } from "../comparison.ts"
-import { corpusNotLoaded, getDataSpan } from "../corpus.ts"
+import { requireDataSpan } from "../corpus.ts"
 import {
   apiAccessCondition,
   compileFilter,
   dimensionExpression,
 } from "../filters.ts"
 import {
-  ALL_DATASETS,
+  LOADED,
   describeFilters,
   describeWindows,
   resolveWindows,
   scopeFilters,
+  unknownErrorsNote,
   type ResolvedWindow,
 } from "../scope.ts"
 import { SqlParams } from "../sql.ts"
@@ -95,25 +101,19 @@ import { SqlParams } from "../sql.ts"
 
 const DIMENSION_KEYS = ["g1", "g2"] as const
 
-/** BGL-only filter fields; API accesses are OpenStack lines. */
-const BGL_FILTERS = [
-  "node",
-  "rack",
-  "alert_label",
-  "only_alerts",
-] as const satisfies readonly FilterField[]
-
 const LOG_EVENTS_NOTE =
   "Counts are log events (parsed lines), not incidents or outages."
 const API_NOTE =
   "Counts are OpenStack API accesses (lines with an HTTP status, with or without request ID), not log events and not requests (R-01)."
 const NO_SHARED_AXIS_NOTE =
   "BGL (2005–2006) and OpenStack (2017) share no time axis: numbers across both datasets are totals over each dataset's window, not a comparison over the same time."
+const NO_SHARED_AXIS_ALL_NOTE =
+  "No two datasets share a time axis (separate systems, even where calendars overlap): numbers across datasets are totals over each dataset's window, not a comparison over the same time."
 const TEAM_NOTE =
   "Teams come from a fictional ownership table (Serene Platform); unmapped components are 'unowned'."
 const LABEL_NOTE =
   "alert_label is a BGL dataset label, not a finding of this system."
-const COMPARE_HINT = `compare needs one dataset (comparisons run within one dataset; BGL and OpenStack share no time axis), from and to, exactly one group_by dimension, top_n ≤ ${COMPARE_MAX_TOP_N}, and either "previous_period" or a reference {from, to} as long as [from, to) that does not overlap it.`
+const COMPARE_HINT = `compare needs one dataset (comparisons run within one dataset; no two datasets share a time axis), from and to, exactly one group_by dimension, top_n ≤ ${COMPARE_MAX_TOP_N}, and either "previous_period" or a reference {from, to} as long as [from, to) that does not overlap it.`
 const CHANGE_NOTE = `Classification follows R-06: 'significantly increased' needs B > 0, C ≥ ${SIGNIFICANT_INCREASE_FACTOR} · B and at least ${SIGNIFICANT_INCREASE_MIN_EVENTS} more; a change is an observation, not a cause.`
 
 /** BIGINT columns arrive as exact strings and become numbers only after a range check. */
@@ -160,6 +160,10 @@ const DIMENSION_VALUE: Record<Dimension, z.ZodType<string | number | null>> = {
   pattern: z.string().nullable(),
   http_status: z.number().int().nullable(),
   endpoint: z.string().nullable(),
+  host: z.string().nullable(),
+  client_ip: z.string().nullable(),
+  thread: z.string().nullable(),
+  block_id: z.string().nullable(),
 }
 
 /** The two periods of a comparison and what the data span says about them. */
@@ -216,12 +220,12 @@ export const countEvents = defineTool({
     let windows: ResolvedWindow[]
     let periods: Periods | null = null
     if (input.compare === undefined) {
-      const datasets: readonly Dataset[] =
+      const datasets: readonly Dataset[] | typeof LOADED =
         input.dataset !== undefined
           ? [input.dataset]
           : api
             ? ["openstack"]
-            : ALL_DATASETS
+            : LOADED
       const resolved = await resolveWindows(ctx.db, datasets, input, ctx.signal)
       if (!resolved.ok) return resolved
       windows = resolved.windows
@@ -230,8 +234,9 @@ export const countEvents = defineTool({
       const { dataset, from, to } = input
       if (dataset === undefined || from === undefined || to === undefined)
         throw new Error("compare without dataset or window")
-      const span = await getDataSpan(ctx.db, dataset, ctx.signal)
-      if (span === null) return { ok: false, error: corpusNotLoaded }
+      const required = await requireDataSpan(ctx.db, dataset, ctx.signal)
+      if (!required.ok) return required
+      const { span } = required
       const current = { from, to }
       const reference = referencePeriod(current, input.compare)
       if (!reference.ok) throw new Error(reference.reason)
@@ -442,12 +447,13 @@ function changeFields(
   }
 }
 
-/** Clears the BGL-only filters, which validateCount reports itself for API accesses. */
-const withoutBglFilters = {
-  node: undefined,
-  rack: undefined,
-  alert_label: undefined,
-  only_alerts: undefined,
+/** Datasets a dataset-specific dimension applies to; null for shared ones. */
+function dimensionDatasets(dimension: Dimension): Dataset[] | null {
+  return dimension in SPECIFIC_DIMENSION_COLUMNS
+    ? datasetsWithColumn(
+        SPECIFIC_DIMENSION_COLUMNS[dimension as SpecificDimension]
+      )
+    : null
 }
 
 /**
@@ -467,36 +473,62 @@ function validateCount(input: CountEventsInput): ToolError | null {
   }
 
   const api = countsApiAccesses(input.group_by)
+  const specificFilters = presentSpecificFilters(input)
   if (api) {
     const apiDimensions = input.group_by
       .filter((dimension) => API_ACCESS_DIMENSIONS.includes(dimension))
       .join(", ")
-    for (const dimension of input.group_by.filter((d) =>
-      BGL_DIMENSIONS.includes(d)
-    ))
-      issues.push({
-        path: "group_by",
-        message: `${dimension} is BGL-only; ${apiDimensions} counts OpenStack API accesses.`,
-      })
-    if (input.dataset === "bgl")
+    for (const dimension of input.group_by) {
+      const datasets = dimensionDatasets(dimension)
+      if (datasets !== null && !datasets.includes("openstack"))
+        issues.push({
+          path: "group_by",
+          message: `${dimension} is ${datasets.join(", ")}-only; ${apiDimensions} counts OpenStack API accesses.`,
+        })
+    }
+    if (input.dataset !== undefined && input.dataset !== "openstack")
       issues.push({
         path: "dataset",
         message: `${apiDimensions} counts OpenStack API accesses; use dataset openstack or leave it out.`,
       })
-    for (const field of BGL_FILTERS.filter((f) => input[f] !== undefined))
-      issues.push({
-        path: field,
-        message: `BGL-only; ${apiDimensions} counts OpenStack API accesses.`,
-      })
+    for (const field of specificFilters) {
+      const datasets = filterDatasets(field)
+      if (!datasets.includes("openstack"))
+        issues.push({
+          path: field,
+          message: `${datasets.join(", ")}-only; ${apiDimensions} counts OpenStack API accesses.`,
+        })
+    }
+  } else if (input.dataset !== undefined) {
+    // A dataset-specific dimension for a dataset without that column would
+    // only yield the null category: rejected with a hint instead (U26).
+    for (const dimension of input.group_by) {
+      const datasets = dimensionDatasets(dimension)
+      if (datasets !== null && !datasets.includes(input.dataset))
+        issues.push({
+          path: "group_by",
+          message: `${dimension} has no meaning for dataset ${input.dataset}; only for ${datasets.join(", ")} (describe_corpus lists the dimensions per dataset).`,
+        })
+    }
   }
 
   const compareIssues =
     input.compare === undefined ? [] : validateCompare(input)
   issues.push(...compareIssues)
 
-  // With API dimensions the BGL-only fields were reported above.
+  // With API dimensions the non-OpenStack fields were reported above.
   const filterError = validateFilter(
-    api ? { ...input, dataset: "openstack", ...withoutBglFilters } : input
+    api
+      ? {
+          ...input,
+          dataset: "openstack",
+          ...Object.fromEntries(
+            specificFilters
+              .filter((field) => !filterDatasets(field).includes("openstack"))
+              .map((field) => [field, undefined])
+          ),
+        }
+      : input
   )
   if (filterError?.code === "invalid_input") issues.push(...filterError.issues)
   else if (filterError !== null) return filterError
@@ -505,7 +537,7 @@ function validateCount(input: CountEventsInput): ToolError | null {
   return invalidInput(
     issues,
     api
-      ? "http_status and endpoint count OpenStack API accesses: group or filter by BGL fields in a separate call."
+      ? "http_status and endpoint count OpenStack API accesses: group or filter by fields of other datasets in a separate call."
       : undefined
   )
 }
@@ -517,7 +549,7 @@ function validateCompare(input: CountEventsInput): InputIssue[] {
     issues.push({
       path: "dataset",
       message:
-        "compare needs exactly one dataset: comparisons run within one dataset; BGL and OpenStack share no time axis.",
+        "compare needs exactly one dataset: comparisons run within one dataset; no two datasets share a time axis.",
     })
   for (const field of ["from", "to"] as const)
     if (input[field] === undefined)
@@ -577,7 +609,12 @@ function notesFor(
 ): string[] {
   const notes = [data.unit === "log_events" ? LOG_EVENTS_NOTE : API_NOTE]
   if (periods === null && scope.windows.length > 1)
-    notes.push(NO_SHARED_AXIS_NOTE)
+    // The base-corpus wording stays for BGL and OpenStack alone (U26).
+    notes.push(
+      scope.windows.every(({ dataset }) => isBase(dataset))
+        ? NO_SHARED_AXIS_NOTE
+        : NO_SHARED_AXIS_ALL_NOTE
+    )
   if (data.total === 0 && (periods === null || data.group_count === 0)) {
     const filters = describeFilters(scope.filters)
     notes.push(
@@ -613,7 +650,12 @@ function notesFor(
     notes.push(TEAM_NOTE)
   if (input.group_by.includes("alert_label") || input.alert_label !== undefined)
     notes.push(LABEL_NOTE)
+  notes.push(...unknownErrorsNote(input, scope.windows))
   return notes
+}
+
+function isBase(dataset: Dataset): boolean {
+  return dataset === "bgl" || dataset === "openstack"
 }
 
 function comparisonNotes(input: CountEventsInput, periods: Periods): string[] {

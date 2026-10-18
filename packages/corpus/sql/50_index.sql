@@ -22,7 +22,9 @@ CREATE TEXT SEARCH DICTIONARY log_text AS
   | normalize_tokens('en_US.UTF-8', case := 'lower')
   WITH (frequency, position, norm);
 
--- Filter columns are indexed verbatim (equality and IN run inside the index).
+-- Filter columns are indexed verbatim (equality and IN run inside the index);
+-- host, process_id, client_ip, thread and block_id are the extension
+-- columns (U26), NULL for BGL and OpenStack.
 -- ts and event_id are deliberately not indexed: range filters inside the
 -- index over-counted on 26.09.1.3 (gate G4); outside it they run as an exact
 -- Column Filter on the index scan. Adding them back needs its own
@@ -30,7 +32,8 @@ CREATE TEXT SEARCH DICTIONARY log_text AS
 -- log_events_idx.
 CREATE INDEX log_events_idx ON log_events USING inverted (
   dataset, source_file, component, level, source_type, node, rack, midplane,
-  alert_label, request_id, instance_id, endpoint, pattern_id,
+  alert_label, request_id, instance_id, endpoint, host, process_id, client_ip,
+  thread, block_id, pattern_id,
   message log_text)
 WITH (optimize_top_k = 'bm25(1.2, 0.75)');
 

@@ -29,7 +29,8 @@ LEFT JOIN ownership o
 CREATE OR REPLACE TABLE corpus_stats AS
 WITH base AS (
   SELECT dataset, count(*) AS events, min(ts) AS first_ts, max(ts) AS last_ts,
-    count(*) FILTER (WHERE is_error) AS error_events,
+    -- NULL when the dataset has no error definition (is_error unknown, R-02).
+    CASE WHEN count(is_error) > 0 THEN count(*) FILTER (WHERE is_error) END AS error_events,
     count(DISTINCT pattern_id) AS patterns
   FROM log_events GROUP BY dataset
 ), report AS (
@@ -77,15 +78,10 @@ SELECT
   b.error_events,
   b.patterns,
   coalesce(s.single_event_patterns, 0) AS single_event_patterns,
-  CASE b.dataset
-    WHEN 'bgl' THEN 'Unix seconds (UTC) + microseconds of the text timestamp'
-    ELSE 'timestamp without zone, assumed UTC'
-  END AS time_basis,
-  CASE
-    WHEN b.dataset = 'bgl' THEN 'alert category in the first column (dataset label)'
-    WHEN {{OPENSTACK_LABELS_AVAILABLE}} THEN 'instances with injected anomalies, anomaly_labels.txt (dataset label)'
-    ELSE 'none: this source has no anomaly labels'
-  END AS label_source,
+  -- From the dataset catalog (src/plan.ts); the base corpus texts are those of
+  -- U02.
+  {{TIME_BASIS}} AS time_basis,
+  {{LABEL_SOURCE}} AS label_source,
   l.levels,
   c.components,
   lb.labels,
@@ -100,3 +96,11 @@ JOIN labels lb USING (dataset)
 LEFT JOIN single s USING (dataset)
 LEFT JOIN api a USING (dataset)
 ORDER BY b.dataset;
+
+-- Field guide of describe_corpus (U26, A-39): per dataset and catalog
+-- column the events with a value, the distinct values and the three most
+-- frequent values (ties by value), computed here once per load.
+-- The placeholder below holds one SELECT per dataset and column (src/plan.ts).
+CREATE OR REPLACE TABLE corpus_field_stats AS
+{{FIELD_STATS}}
+ORDER BY dataset, field;

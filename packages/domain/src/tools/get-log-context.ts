@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import { invalidInput, type InputIssue, type ToolError } from "../errors.ts"
 import { formatFactValue, type Fact } from "../facts.ts"
+import { EXTENSION_ATTRIBUTES } from "../attributes.ts"
 import { datasetSchema, pickFilter, validateFilter } from "../filters.ts"
 import {
   EPISODE_GAP_MINUTES,
@@ -58,6 +59,11 @@ export const PRECURSOR_FILTER = pickFilter([
   "only_alerts",
   "request_id",
   "instance_id",
+  "block_id",
+  "host",
+  "process_id",
+  "client_ip",
+  "thread",
   "pattern_id",
 ])
 
@@ -70,9 +76,18 @@ export const contextModeSchema = z
 export type ContextMode = z.infer<typeof contextModeSchema>
 
 export const contextScopeSchema = z
-  .enum(["same_node", "same_component", "same_request", "dataset"])
+  .enum([
+    "same_node",
+    "same_component",
+    "same_request",
+    "same_block",
+    "same_process",
+    "same_client",
+    "same_thread",
+    "dataset",
+  ])
   .describe(
-    "same_node: events on the event's node (BGL, needs a node). same_component: events of its component. same_request: events with its request ID (OpenStack, needs a request ID). dataset: every event of its dataset."
+    "same_node: events on the event's node (BGL, needs a node). same_component: events of its component. same_request: events with its request ID (OpenStack, needs a request ID). same_block: events of its HDFS block. same_process: events of its process ID (OpenSSH, Linux; one sshd process per connection). same_client: events with its remote IP (OpenSSH, Apache). same_thread: events of its ZooKeeper thread. dataset: every event of its dataset. describe_corpus lists the scopes per dataset."
   )
 
 export type ContextScope = z.infer<typeof contextScopeSchema>
@@ -125,7 +140,7 @@ export const getLogContextInputSchema = z.strictObject({
   scope: contextScopeSchema
     .optional()
     .describe(
-      "Mode event only: which neighbours to show. same_node (BGL events with a node), same_component, same_request (OpenStack events with a request ID) or dataset. Default: same_node for BGL events with a node, otherwise same_component."
+      "Mode event only: which neighbours to show; the anchor must carry the scope's value. Default: same_node for BGL events with a node, same_block for HDFS, same_process for OpenSSH, same_client for Apache events with a client, otherwise same_component."
     ),
   // Mode aggregate.
   pattern_id: patternIdField.describe(
@@ -231,7 +246,7 @@ export function validateLogContext(
           message: "Precursor analysis runs within one dataset.",
         },
       ],
-      'Set dataset to "bgl" or "openstack"; BGL and OpenStack share no time axis.'
+      "Set dataset to one loaded dataset (describe_corpus); no two datasets share a time axis."
     )
   }
   if ((input.pattern_id === undefined) === (input.query === undefined)) {
@@ -292,6 +307,7 @@ const eventColumns = {
     .string()
     .nullable()
     .describe("OpenStack request ID; null otherwise."),
+  ...EXTENSION_ATTRIBUTES,
   pattern_id: patternIdSchema,
   message,
   message_truncated: messageTruncated,
@@ -338,7 +354,7 @@ export const eventContextOutputSchema = z.strictObject({
     .string()
     .nullable()
     .describe(
-      "Node, component or request ID the neighbours share with the anchor; null for scope dataset."
+      "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP or thread); null for scope dataset."
     ),
   window_minutes: z
     .number()

@@ -1,0 +1,11 @@
+{
+  "extends": "@workspace/typescript-config/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "lib": ["es2023"],
+    "types": ["node"]
+  },
+  "include": ["u26"],
+  "exclude": ["node_modules"]
+}

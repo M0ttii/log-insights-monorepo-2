@@ -237,6 +237,9 @@ importers:
 
   packages/corpus:
     dependencies:
+      '@workspace/domain':
+        specifier: workspace:*
+        version: link:../domain
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -323,6 +326,34 @@ importers:
       typescript-eslint:
         specifier: ^8.56.0
         version: 8.71.2(eslint@10.12.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
+
+  packages/evals:
+    dependencies:
+      '@workspace/analytics':
+        specifier: workspace:*
+        version: link:../analytics
+      '@workspace/domain':
+        specifier: workspace:*
+        version: link:../domain
+    devDependencies:
+      '@types/node':
+        specifier: 24.19.2
+        version: 24.19.2
+      '@workspace/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      eslint:
+        specifier: ^10
+        version: 10.12.0(jiti@2.7.0)(supports-color@7.2.0)
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^5
+        version: 5.9.3
 
   packages/typescript-config: {}
 

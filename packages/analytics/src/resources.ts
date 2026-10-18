@@ -38,9 +38,10 @@ export async function readCorpusResource(
       break
     case "schema":
       data = {
-        datasets: corpus.datasets.map(({ dataset, fields }) => ({
+        datasets: corpus.datasets.map(({ dataset, fields, capabilities }) => ({
           dataset,
           fields,
+          capabilities,
         })),
         versions,
       }

@@ -6,6 +6,8 @@ type ManifestFile = { path: string; bytes: number; sha256: string }
 
 export type ManifestInput = {
   source: string
+  /** Loaded datasets in catalog order (U26). */
+  datasets: readonly string[]
   files: readonly ManifestFile[]
   /** Image reference Compose started: tag, plus `@sha256:` registry digest if pinned. */
   image: string

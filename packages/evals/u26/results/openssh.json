@@ -1,0 +1,195 @@
+{
+  "dataset": "openssh",
+  "role": "Manager",
+  "question": "Which observed SSH problems deserve attention first?",
+  "data_version": "dv_02dfa8cc8e16e2a2",
+  "client": "eval",
+  "model": "none (tools called directly through the registry)",
+  "tool_calls": [
+    {
+      "step": "recurring_patterns_investigation_order",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "openssh",
+        "rank": "investigation_order",
+        "limit": 3
+      },
+      "receipt_id": "r_39505436",
+      "data_summary": "rank=investigation_order, events=2087, pattern_count=13, shown=3",
+      "facts_used": [
+        {
+          "id": "r_39505436.f3",
+          "path": "/result/events",
+          "value": 2087,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        {
+          "id": "r_39505436.f4",
+          "path": "/result/investigation/candidates_checked",
+          "value": 13,
+          "metric": "candidates_checked",
+          "unit": "patterns",
+          "group": {}
+        },
+        {
+          "id": "r_39505436.f5",
+          "path": "/result/investigation/dominance/compared_with",
+          "value": 12,
+          "metric": "dominated_candidates",
+          "unit": "patterns",
+          "group": {}
+        },
+        {
+          "id": "r_39505436.f7",
+          "path": "/result/investigation/leaders/episodes/value",
+          "value": 112,
+          "metric": "leader_episodes",
+          "unit": "episodes",
+          "group": {}
+        },
+        {
+          "id": "r_39505436.f14",
+          "path": "/result/patterns/0/episodes",
+          "value": 112,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "7c1bc8c329abeadd"
+          }
+        },
+        {
+          "id": "r_39505436.f15",
+          "path": "/result/patterns/0/events",
+          "value": 952,
+          "metric": "events_current",
+          "unit": "log_events",
+          "group": {
+            "pattern_id": "7c1bc8c329abeadd"
+          }
+        }
+      ]
+    },
+    {
+      "step": "count_events_by_client_ip",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["client_ip"],
+        "dataset": "openssh",
+        "only_errors": true,
+        "top_n": 10
+      },
+      "receipt_id": "r_866b7f60",
+      "data_summary": "unit=log_events, total=2087, groups=15, shown=10",
+      "facts_used": [
+        {
+          "id": "r_866b7f60.f1",
+          "path": "/result/group_count",
+          "value": 15,
+          "metric": "groups",
+          "unit": "groups",
+          "group": {}
+        },
+        {
+          "id": "r_866b7f60.f2",
+          "path": "/result/groups/0/events",
+          "value": 967,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        {
+          "id": "r_866b7f60.f4",
+          "path": "/result/groups/1/events",
+          "value": 930,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "client_ip": "103.99.0.122"
+          }
+        },
+        {
+          "id": "r_866b7f60.f25",
+          "path": "/result/total",
+          "value": 2087,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    }
+  ],
+  "check_claims": {
+    "receipt_id": "r_4ea5dbcb",
+    "summary": "10 claims checked · 0 mismatch · 0 unresolved",
+    "claims": [
+      {
+        "fact": "r_39505436.f4",
+        "value": 13,
+        "metric": "candidates_checked",
+        "group": {}
+      },
+      {
+        "fact": "r_39505436.f3",
+        "value": 2087,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_39505436.f14",
+        "value": 112,
+        "metric": "episodes",
+        "group": {
+          "pattern_id": "7c1bc8c329abeadd"
+        }
+      },
+      {
+        "fact": "r_39505436.f15",
+        "value": 952,
+        "metric": "events_current",
+        "group": {
+          "pattern_id": "7c1bc8c329abeadd"
+        }
+      },
+      {
+        "fact": "r_39505436.f5",
+        "value": 12,
+        "metric": "dominated_candidates",
+        "group": {}
+      },
+      {
+        "fact": "r_39505436.f7",
+        "value": 112,
+        "metric": "leader_episodes",
+        "group": {}
+      },
+      {
+        "fact": "r_866b7f60.f25",
+        "value": 2087,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_866b7f60.f1",
+        "value": 15,
+        "metric": "groups",
+        "group": {}
+      },
+      {
+        "fact": "r_866b7f60.f2",
+        "value": 967,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_866b7f60.f4",
+        "value": 930,
+        "metric": "events",
+        "group": {
+          "client_ip": "103.99.0.122"
+        }
+      }
+    ]
+  }
+}

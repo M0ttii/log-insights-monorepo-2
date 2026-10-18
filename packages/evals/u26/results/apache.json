@@ -1,0 +1,178 @@
+{
+  "dataset": "apache",
+  "role": "Engineer",
+  "question": "What happened around the first mod_jk error-state event?",
+  "data_version": "dv_02dfa8cc8e16e2a2",
+  "client": "eval",
+  "model": "none (tools called directly through the registry)",
+  "tool_calls": [
+    {
+      "step": "search_logs",
+      "tool": "search_logs",
+      "input": {
+        "query": "mod_jk error state",
+        "match": "terms",
+        "dataset": "apache",
+        "sort": "time_asc",
+        "limit": 5
+      },
+      "receipt_id": "r_b6358736",
+      "data_summary": "total_matches=4349, hits=5, truncated=true",
+      "facts_used": [
+        {
+          "id": "r_b6358736.f1",
+          "path": "/result/hits/0/ts",
+          "value": "2005-06-17T04:03:46.000000Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "300001164"
+          }
+        },
+        {
+          "id": "r_b6358736.f6",
+          "path": "/result/total_matches",
+          "value": 4349,
+          "metric": "matches",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    },
+    {
+      "step": "get_log_context_event",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "event",
+        "event_id": 300001164,
+        "scope": "same_component",
+        "before": 5,
+        "after": 5,
+        "window_minutes": 10
+      },
+      "receipt_id": "r_c1e6cb06",
+      "data_summary": "event: scope=same_component, before=5, after=5",
+      "facts_used": [
+        {
+          "id": "r_c1e6cb06.f1",
+          "path": "/result/anchor/ts",
+          "value": "2005-06-17T04:03:46.000000Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "300001164"
+          }
+        },
+        {
+          "id": "r_c1e6cb06.f22",
+          "path": "/result/sides/0/in_window",
+          "value": 47,
+          "metric": "events_in_window",
+          "unit": "log_events",
+          "group": {
+            "direction": "before"
+          }
+        },
+        {
+          "id": "r_c1e6cb06.f23",
+          "path": "/result/sides/1/in_window",
+          "value": 9,
+          "metric": "events_in_window",
+          "unit": "log_events",
+          "group": {
+            "direction": "after"
+          }
+        }
+      ]
+    },
+    {
+      "step": "count_events_by_level",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["level"],
+        "dataset": "apache",
+        "top_n": 10
+      },
+      "receipt_id": "r_a4f0bc03",
+      "data_summary": "unit=log_events, total=52004, groups=3, shown=3",
+      "facts_used": [
+        {
+          "id": "r_a4f0bc03.f2",
+          "path": "/result/groups/0/events",
+          "value": 38081,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "level": "error"
+          }
+        },
+        {
+          "id": "r_a4f0bc03.f8",
+          "path": "/result/total",
+          "value": 52004,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    }
+  ],
+  "check_claims": {
+    "receipt_id": "r_9c06f40d",
+    "summary": "7 claims checked · 0 mismatch · 0 unresolved",
+    "claims": [
+      {
+        "fact": "r_b6358736.f6",
+        "value": 4349,
+        "metric": "matches",
+        "group": {}
+      },
+      {
+        "fact": "r_b6358736.f1",
+        "value": "2005-06-17T04:03:46.000000Z",
+        "metric": "event_time",
+        "group": {
+          "event_id": "300001164"
+        }
+      },
+      {
+        "fact": "r_c1e6cb06.f1",
+        "value": "2005-06-17T04:03:46.000000Z",
+        "metric": "event_time",
+        "group": {
+          "event_id": "300001164"
+        }
+      },
+      {
+        "fact": "r_c1e6cb06.f22",
+        "value": 47,
+        "metric": "events_in_window",
+        "group": {
+          "direction": "before"
+        }
+      },
+      {
+        "fact": "r_c1e6cb06.f23",
+        "value": 9,
+        "metric": "events_in_window",
+        "group": {
+          "direction": "after"
+        }
+      },
+      {
+        "fact": "r_a4f0bc03.f8",
+        "value": 52004,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_a4f0bc03.f2",
+        "value": 38081,
+        "metric": "events",
+        "group": {
+          "level": "error"
+        }
+      }
+    ]
+  }
+}

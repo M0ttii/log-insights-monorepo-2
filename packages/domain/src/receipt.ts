@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { DATASET_IDS } from "./datasets.ts"
 import { factSchema } from "./facts.ts"
 import { datasetSchema, filterSchema } from "./filters.ts"
 import { receiptIdSchema } from "./ids.ts"
@@ -45,9 +46,9 @@ export const scopeSchema = z
             ),
         })
       )
-      .max(2)
+      .max(DATASET_IDS.length)
       .describe(
-        "One window per dataset (BGL and OpenStack share no time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus."
+        "One window per dataset (no two datasets share a time axis), or the two periods of a comparison within one dataset; empty for check_claims, which reads receipts, not the corpus."
       ),
     filters: filterSchema
       .omit({ dataset: true, from: true, to: true })

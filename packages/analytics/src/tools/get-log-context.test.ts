@@ -18,6 +18,12 @@ const ANCHOR = {
   node: "R01-M0-N0-C:J02-U01",
   alert_label: null,
   request_id: null,
+  // The five extension columns SereneDB always selects; null for a BGL event.
+  host: null,
+  process_id: null,
+  client_ip: null,
+  thread: null,
+  block_id: null,
   pattern_id: "aaaa",
   message: "anchor",
   message_truncated: false,
@@ -240,7 +246,7 @@ describe("mode event SQL", () => {
         {
           path: "scope",
           message:
-            "same_request is only available for OpenStack events; BGL has no request IDs.",
+            "same_request is only available for openstack events; bgl events have no request ID.",
         },
       ],
     })

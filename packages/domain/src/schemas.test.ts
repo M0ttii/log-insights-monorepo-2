@@ -150,7 +150,15 @@ describe("JSON Schema export", () => {
     expect(input.required).toEqual(["dataset", "bucket"])
     expect(property(input, "dataset")).toMatchObject({
       type: "string",
-      enum: ["bgl", "openstack"],
+      enum: [
+        "bgl",
+        "openstack",
+        "hdfs",
+        "openssh",
+        "apache",
+        "linux",
+        "zookeeper",
+      ],
     })
     expect(property(input, "bucket").description).toMatch(/Monday/)
   })

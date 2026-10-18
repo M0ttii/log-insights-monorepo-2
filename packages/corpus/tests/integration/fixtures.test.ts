@@ -85,11 +85,24 @@ const FIXTURES: Source = {
   downloads: Object.entries(files).map(([name, content]) =>
     pinned(name, content)
   ),
-  bglLog: `${DIR}/bgl.log`,
-  openstackLogs: [`${DIR}/openstack-a.log`, `${DIR}/openstack-b.log`],
-  openstackLabels: `${DIR}/labels.txt`,
-  expectedLines: { bgl: 10, openstack: 7 },
-  expectedLinesSource: "fixtures",
+  // The new per-dataset load entries (U26); only BGL and OpenStack, in
+  // catalog order, with the hand-written fixture files.
+  datasets: [
+    {
+      dataset: "bgl",
+      logs: [`${DIR}/bgl.log`],
+      labels: null,
+      expectedLines: 10,
+      expectedLinesSource: "fixtures",
+    },
+    {
+      dataset: "openstack",
+      logs: [`${DIR}/openstack-a.log`, `${DIR}/openstack-b.log`],
+      labels: `${DIR}/labels.txt`,
+      expectedLines: 7,
+      expectedLinesSource: "fixtures",
+    },
+  ],
 }
 
 let result: LoadResult

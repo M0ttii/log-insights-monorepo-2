@@ -1,6 +1,8 @@
 -- Load balance per file (A-02): lines_read = events_loaded + rejected, with a
 -- count per reason. {{BGL_LOAD_S}} and {{OPENSTACK_LOAD_S}} are the measured
--- durations of read + parse per dataset, filled in by src/load.ts.
+-- durations of read + parse per dataset, filled in by src/load.ts. The
+-- {{EXTENSION_…}} placeholders add the same parts for each loaded extension
+-- dataset (src/plan.ts, U26); they are empty for the base corpus.
 
 CREATE OR REPLACE TABLE stage_rejects AS
 SELECT 'bgl' AS dataset, regexp_extract(filename, '[^/]+$') AS source_file,
@@ -14,7 +16,8 @@ SELECT 'openstack', regexp_extract(filename, '[^/]+$'), line_no, reason, raw_lin
 FROM stage_read_rejects_openstack
 UNION ALL
 SELECT 'openstack', source_file, line_no, reject_reason, line
-FROM stage_openstack WHERE reject_reason IS NOT NULL;
+FROM stage_openstack WHERE reject_reason IS NOT NULL
+{{EXTENSION_REJECTS}};
 
 -- Verbatim rejected lines, at most the first 1,000 per dataset and reason.
 CREATE OR REPLACE TABLE load_rejects AS
@@ -32,12 +35,14 @@ WITH files AS (
   SELECT 'bgl' AS dataset, source_file, file_ord, lines FROM stage_files_bgl
   UNION ALL
   SELECT 'openstack', source_file, file_ord, lines FROM stage_files_openstack
+  {{EXTENSION_FILES}}
 ), loaded AS (
   SELECT 'bgl' AS dataset, source_file, count(*) AS events
   FROM stage_bgl WHERE reject_reason IS NULL GROUP BY source_file
   UNION ALL
   SELECT 'openstack', source_file, count(*)
   FROM stage_openstack WHERE reject_reason IS NULL GROUP BY source_file
+  {{EXTENSION_LOADED}}
 ), reasons AS (
   SELECT dataset, source_file, sum(n) AS rejected,
     to_json(map(list(reason ORDER BY reason), list(n ORDER BY reason))) AS reason_counts
@@ -56,7 +61,7 @@ SELECT
   now() AS loaded_at,
   -- Read and parse run per dataset, not per file; every file of a dataset
   -- carries the dataset's duration.
-  CASE f.dataset WHEN 'bgl' THEN {{BGL_LOAD_S}} ELSE {{OPENSTACK_LOAD_S}} END::DOUBLE AS duration_s
+  CASE f.dataset WHEN 'bgl' THEN {{BGL_LOAD_S}} WHEN 'openstack' THEN {{OPENSTACK_LOAD_S}}{{EXTENSION_DURATIONS}} END::DOUBLE AS duration_s
 FROM files f
 LEFT JOIN loaded l USING (dataset, source_file)
 LEFT JOIN reasons r USING (dataset, source_file)

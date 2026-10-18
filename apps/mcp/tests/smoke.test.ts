@@ -440,4 +440,31 @@ describe("MCP stdio smoke against Loghub 2k samples", () => {
       await desktop.client.close()
     }
   })
+
+  it("serves an extension dataset when pointed at the extended samples database (U26)", async () => {
+    // A second stdio session against log_insights_samples_ext: the five Loghub
+    // extensions are loaded there by `pnpm data:setup --samples --with all`.
+    const extended = await startSession({
+      env: samplesEnv({
+        SERENEDB_DATABASE: "log_insights_samples_ext",
+        LOG_INSIGHTS_RECEIPTS_DIR: receiptDir,
+      }),
+    })
+    try {
+      const result = resultSchema.parse(
+        (
+          await callTool(extended.client, "search_logs", {
+            dataset: "openssh",
+            query: "password",
+            limit: 1,
+          })
+        ).structuredContent
+      )
+      const data = result.data as { total_matches: number }
+      expect(data.total_matches).toBeGreaterThan(0)
+      expect(extended.protocolErrors).toEqual([])
+    } finally {
+      await extended.client.close()
+    }
+  })
 })

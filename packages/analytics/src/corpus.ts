@@ -1,5 +1,5 @@
-import type { ToolError } from "@workspace/domain/errors"
-import type { Dataset } from "@workspace/domain/filters"
+import { DATASET_IDS, type Dataset } from "@workspace/domain/datasets"
+import { invalidInput, type ToolError } from "@workspace/domain/errors"
 import {
   formatInstant,
   parseInstant,
@@ -70,6 +70,62 @@ export async function getDataSpan(
   )
   if (rows.length === 0) return null
   return spanRow.parse(rows[0])
+}
+
+const datasetRow = z.object({ dataset: z.string() })
+
+/**
+ * Datasets of the current load in catalog order (BGL and OpenStack first),
+ * from `corpus_stats`. Through the tool's runner, so the query is in the
+ * receipt.
+ */
+export async function loadedDatasets(
+  db: QueryRunner,
+  signal: AbortSignal
+): Promise<Dataset[]> {
+  const { rows } = await db.query(
+    "SELECT dataset FROM corpus_stats ORDER BY dataset",
+    [],
+    signal
+  )
+  const loaded = new Set(rows.map((row) => datasetRow.parse(row).dataset))
+  return DATASET_IDS.filter((id) => loaded.has(id))
+}
+
+/** A known dataset that this load does not contain (U26). */
+export function datasetNotLoaded(
+  dataset: Dataset,
+  loaded: readonly Dataset[]
+): ToolError {
+  return invalidInput(
+    [
+      {
+        path: "dataset",
+        message: `Dataset ${dataset} is not loaded; loaded: ${loaded.join(", ")}.`,
+      },
+    ],
+    `Use one of ${loaded.join(", ")}, or ask the user to load it with \`pnpm data:setup --with ${dataset}\` and restart the client.`
+  )
+}
+
+/**
+ * The span of a dataset, or the error to return: a dataset missing from a
+ * valid load is invalid input naming the loaded datasets, an empty load is
+ * `corpusNotLoaded`.
+ */
+export async function requireDataSpan(
+  db: QueryRunner,
+  dataset: Dataset,
+  signal: AbortSignal
+): Promise<{ ok: true; span: DataSpan } | { ok: false; error: ToolError }> {
+  const span = await getDataSpan(db, dataset, signal)
+  if (span !== null) return { ok: true, span }
+  const loaded = await loadedDatasets(db, signal)
+  return {
+    ok: false,
+    error:
+      loaded.length === 0 ? corpusNotLoaded : datasetNotLoaded(dataset, loaded),
+  }
 }
 
 /**

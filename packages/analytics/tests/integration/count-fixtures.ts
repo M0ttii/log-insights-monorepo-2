@@ -109,11 +109,12 @@ const text = (value: string | null) =>
 function valuesRow(row: Row, index: number): string {
   const eventId = row.dataset === "bgl" ? index + 1 : 10_000_000 + index + 1
   const rack = row.node === null ? null : row.node.slice(0, 3)
-  return `(${eventId}::BIGINT, ${text(row.dataset)}, '${row.ts}'::TIMESTAMPTZ, ${text(row.level)}, ${text(row.component)}, ${text(row.node)}, ${text(rack)}, NULL::VARCHAR, false, false, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, ${row.http_status === null ? "NULL::INTEGER" : `${row.http_status}::INTEGER`}, ${text(`p_${row.component.toLowerCase()}`)}, 'fixture')`
+  // The five extension columns (U26) are NULL for the BGL/OpenStack fixtures.
+  return `(${eventId}::BIGINT, ${text(row.dataset)}, '${row.ts}'::TIMESTAMPTZ, ${text(row.level)}, ${text(row.component)}, ${text(row.node)}, ${text(rack)}, NULL::VARCHAR, false, false, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, ${row.http_status === null ? "NULL::INTEGER" : `${row.http_status}::INTEGER`}, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, ${text(`p_${row.component.toLowerCase()}`)}, 'fixture')`
 }
 
 const STATEMENTS = [
-  `CREATE OR REPLACE TABLE log_events AS SELECT * FROM (VALUES ${ROWS.map(valuesRow).join(", ")}) AS t(event_id, dataset, ts, level, component, node, rack, alert_label, is_alert, is_error, request_id, instance_id, endpoint, http_status, pattern_id, message)`,
+  `CREATE OR REPLACE TABLE log_events AS SELECT * FROM (VALUES ${ROWS.map(valuesRow).join(", ")}) AS t(event_id, dataset, ts, level, component, node, rack, alert_label, is_alert, is_error, request_id, instance_id, endpoint, http_status, host, process_id, client_ip, thread, block_id, pattern_id, message)`,
   "CREATE OR REPLACE TABLE ownership AS SELECT * FROM (VALUES ('bgl', 'KERNEL', 'Compute Platform', 'fictional (Serene Platform)', 'fixture'), ('openstack', 'nova-api', 'API Gateway', 'fictional (Serene Platform)', 'fixture')) AS t(dataset, component, team, note, reason)",
   "CREATE OR REPLACE TABLE corpus_stats AS SELECT dataset, min(ts) AS first_ts, max(ts) AS last_ts FROM log_events GROUP BY dataset",
   "CREATE OR REPLACE TABLE load_manifest AS SELECT 'dv_countfixture0000' AS data_version",

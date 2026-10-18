@@ -1,6 +1,7 @@
 {
   "source_commit": "0c201cbdcf17bc5e9a183158d29ade7f637bd929",
   "source": "LOG-32 characterization of unchanged lag implementation on 26.10.1 before migration; only random receipt prefix removed from fact IDs",
+  "source_note": "U26 (LOG-40): the four samples recurring_patterns digests were recomputed because the loaded 2k-samples manifest carries the bumped pattern_rules_version/rules_version that recurring_patterns echoes in result.rules. Episode and precursor computation is unchanged: the patterns/precursors fixture cases (which pin their own rule versions) and the samples get_log_context cases keep their original LOG-32 digests, and recurring-patterns.test.ts still verifies the numeric values over the samples.",
   "cases": [
     {
       "database": "patterns",
@@ -81,7 +82,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "b74b7ac6242e48a1c5b5372e6928755a401bed1e5f7a5ad13a84e76d739dd819",
+      "result_digest": "4bda83f7cc158e3be836343c0215642b293af1ca3a706bdeb44c3f194085ba11",
       "facts_sha256": "efa8e038fafd6a0a293a791e6edfbcb40cddd84f8a6520a56cfec36ddcf57e90"
     },
     {
@@ -94,7 +95,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "40d7edf6c3834700f004ee67bf7df040bfc4e069133f689b72bf027379542171",
+      "result_digest": "4688e9eee87e00fa53201071b43804a5ba02ceaba5ef02e5c210beb915e5bfda",
       "facts_sha256": "cb2d7a2fcf686467501d68cb2664d969e4b7f5e44fe6dc4aa2e195e3f4a4b768"
     },
     {
@@ -107,7 +108,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "8375a475819d84142131d44806c09256f8f0fabfa6a764e3d0b7d324c09edf79",
+      "result_digest": "ac03d89272bc4019ea088458155e1cf747d2b07beaa60520f0183a1ba9dc27c4",
       "facts_sha256": "e8d86fabc322af932744f660eea8f6619c723901eb53db7f392db1586fd1735c"
     },
     {
@@ -120,7 +121,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "824702279037c17cbc4f5e6d3ba7708aa818de791cf7609a2560d2c96d8983c4",
+      "result_digest": "c30254de5d3795c68a367c283c70448ec4cf5159c839ae99efaae3587bd41f8f",
       "facts_sha256": "2cc72fdf64852cfe126745bf7dba8025c003864a2b5f86f28683a2b15927f2e3"
     },
     {

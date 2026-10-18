@@ -55,6 +55,36 @@ const ROWS: Record<string, Record<string, unknown>[]> = {
       note: "fictional (Serene Platform); draft until U03",
     },
   ],
+  // Field guide (U26): per-field value stats computed at load time.
+  corpus_field_stats: [
+    {
+      dataset: "bgl",
+      field: "component",
+      events_with_value: "3",
+      distinct_values: "2",
+      examples: [
+        { value: "KERNEL", events: 2 },
+        { value: "SERV_NET", events: 1 },
+      ],
+    },
+    {
+      dataset: "bgl",
+      field: "level",
+      events_with_value: "3",
+      distinct_values: "2",
+      examples: [
+        { value: "INFO", events: 2 },
+        { value: "FATAL", events: 1 },
+      ],
+    },
+    {
+      dataset: "bgl",
+      field: "node",
+      events_with_value: "3",
+      distinct_values: "1",
+      examples: [{ value: "R02-M1-N0-C:J12-U11", events: 3 }],
+    },
+  ],
 }
 
 const GUIDANCE: RoleGuidance = {

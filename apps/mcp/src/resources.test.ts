@@ -13,6 +13,7 @@ import { registerResources } from "./resources.ts"
 const RESULT: ToolResult<unknown> = {
   data: {
     datasets: [],
+    license: "Loghub CC BY 4.0.",
     limits: ["Events are not incidents."],
     ownership: {
       fictional: true,

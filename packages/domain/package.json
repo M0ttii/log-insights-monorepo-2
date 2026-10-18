@@ -9,8 +9,10 @@
   },
   "exports": {
     "./answer": "./src/answer.ts",
+    "./attributes": "./src/attributes.ts",
     "./bigint": "./src/bigint.ts",
     "./claims": "./src/claims.ts",
+    "./datasets": "./src/datasets.ts",
     "./endpoint": "./src/endpoint.ts",
     "./errors": "./src/errors.ts",
     "./facts": "./src/facts.ts",

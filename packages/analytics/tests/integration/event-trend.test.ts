@@ -328,7 +328,7 @@ describe("limits and input", () => {
           {
             path: "dataset",
             message:
-              "BGL and OpenStack share no time axis; call event_trend once per dataset (bgl or openstack).",
+              "No two datasets share a time axis; call event_trend once per dataset (see describe_corpus for the loaded datasets).",
           },
         ],
       })

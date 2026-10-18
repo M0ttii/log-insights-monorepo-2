@@ -9,6 +9,17 @@
 --   bgl SERV_NET   3 events of service network setup; kept unowned so the
 --                  unowned path is visible on real data.
 --
+-- Extensions (U26, ownership 1.1.0; concept 5.3): the same organisation
+-- gets Storage Platform (HDFS datanode classes), Access Services (sshd and
+-- the login and remote-access programs of Linux), Web Platform (httpd) and
+-- Coordination Services (every ZooKeeper class, by rule below). Deliberately
+-- unowned, so the unowned path stays visible: the rarer Linux programs
+-- (named, cups, smartd, ntpd, logrotate, syslog, …) and Linux lines without
+-- a program; load_checks lists them with their event counts.
+--
+-- Only rows of the loaded datasets are kept (placeholder below), so a base-corpus
+-- load has exactly the rows of ownership 1.0.0.
+--
 -- `note` is the same label on every row (describe_corpus reports it once);
 -- `reason` explains the row. Bump VERSIONS.ownership in src/versions.ts with
 -- every change.
@@ -38,6 +49,56 @@ FROM (VALUES
   ('bgl', 'DISCOVERY', 'Hardware Operations',
     'hardware discovery: node card status, ecid and cable checks'),
   ('openstack', 'nova-api', 'API Gateway',
-    'compute and metadata API, token validation')
+    'compute and metadata API, token validation'),
+  ('hdfs', 'dfs.DataNode', 'Storage Platform',
+    'HDFS datanode: block storage and replication'),
+  ('hdfs', 'dfs.DataNode$BlockReceiver', 'Storage Platform',
+    'HDFS datanode: receiving block data'),
+  ('hdfs', 'dfs.DataNode$DataTransfer', 'Storage Platform',
+    'HDFS datanode: transferring blocks to other datanodes'),
+  ('hdfs', 'dfs.DataNode$DataXceiver', 'Storage Platform',
+    'HDFS datanode: serving and receiving block streams'),
+  ('hdfs', 'dfs.DataNode$PacketResponder', 'Storage Platform',
+    'HDFS datanode: acknowledging written packets'),
+  ('hdfs', 'dfs.FSDataset', 'Storage Platform',
+    'HDFS datanode: block files on local disks'),
+  ('hdfs', 'dfs.DataBlockScanner', 'Storage Platform',
+    'HDFS datanode: block verification'),
+  ('hdfs', 'dfs.FSNamesystem', 'Control Plane',
+    'HDFS namenode: namespace, block allocation and block map'),
+  ('hdfs', 'dfs.PendingReplicationBlocks$PendingReplicationMonitor', 'Control Plane',
+    'HDFS namenode: pending replication timeouts'),
+  ('openssh', 'sshd', 'Access Services',
+    'OpenSSH server: remote logins and authentication'),
+  ('apache', 'httpd', 'Web Platform',
+    'Apache HTTP server error log'),
+  ('linux', 'kernel', 'Compute Platform',
+    'Linux kernel of the server'),
+  ('linux', 'udev', 'Compute Platform',
+    'device manager of the kernel'),
+  ('linux', 'sshd(pam_unix)', 'Access Services',
+    'PAM authentication of sshd logins'),
+  ('linux', 'sshd', 'Access Services',
+    'OpenSSH server'),
+  ('linux', 'su(pam_unix)', 'Access Services',
+    'PAM authentication of su'),
+  ('linux', 'login(pam_unix)', 'Access Services',
+    'PAM authentication of console logins'),
+  ('linux', 'login', 'Access Services',
+    'console logins'),
+  ('linux', 'ftpd', 'Access Services',
+    'FTP server connections'),
+  ('linux', 'telnetd', 'Access Services',
+    'telnet server connections'),
+  ('linux', 'klogind', 'Access Services',
+    'Kerberos remote login server'),
+  ('linux', 'xinetd', 'Access Services',
+    'super-server that starts the remote-access daemons'),
+  ('linux', 'unix_chkpwd', 'Access Services',
+    'PAM password check helper'),
+  ('linux', 'httpd', 'Web Platform',
+    'Apache HTTP server on this host')
 ) AS t(dataset, component, team, reason)
+WHERE dataset IN ({{DATASETS}})
+{{EXTENSION_OWNERSHIP}}
 ORDER BY dataset, component;

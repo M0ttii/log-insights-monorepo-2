@@ -147,7 +147,10 @@ CREATE OR REPLACE MACRO pattern_mask_num(m) AS regexp_replace(m,
 CREATE OR REPLACE MACRO pattern_restore_codes(m) AS regexp_replace(m,
   'DIAGCODE(\d+)X', '\1', 'g');
 
-CREATE OR REPLACE MACRO log_pattern(dataset, m) AS
+-- The chain of the base corpus, unchanged since U03 (masks 1.0.0): BGL and
+-- OpenStack patterns and pattern IDs stay identical with the extensions
+-- (U26, checked by content fingerprints).
+CREATE OR REPLACE MACRO log_pattern_base(dataset, m) AS
   pattern_restore_codes(
   pattern_mask_num(
   pattern_protect_codes(
@@ -161,3 +164,73 @@ CREATE OR REPLACE MACRO log_pattern(dataset, m) AS
   pattern_mask_user(
   CASE WHEN dataset = 'bgl' THEN pattern_mask_path(pattern_mask_ts(m))
     ELSE pattern_mask_ts(m) END)))))))))));
+
+-- ---------------------------------------------------------------------------
+-- Extension datasets (U26, masks 1.1.0): HDFS, OpenSSH, Apache, Linux,
+-- ZooKeeper. Checked like U03 against the Loghub templates of their 2k
+-- samples (tests/integration/patterns.test.ts): no pattern merges two
+-- templates, every split is justified there. The BGL-only masks (<NODE>
+-- locations, <USER> of service actions, the ciod program names) are not
+-- applied: their tokens mean something else here (J05, U58 or R02 are no
+-- card slots in a syslog line).
+
+-- HDFS block IDs (blk_-1608999687919862906); the block is the unit of the
+-- dataset labels, never part of a pattern. A list of blocks ("ask … to
+-- delete blk_a blk_b blk_c") is one <BLOCK>: Loghub template E4 has one
+-- template for any length.
+CREATE OR REPLACE MACRO pattern_mask_block(m) AS regexp_replace(
+  regexp_replace(m, 'blk_-?\d+', '<BLOCK>', 'g'),
+  '<BLOCK>(?: <BLOCK>)+', '<BLOCK>', 'g');
+
+-- Paths: like the BGL path mask, but a path never starts with a placeholder,
+-- so "/<IP>" (HDFS and ZooKeeper peers) stays an address.
+CREATE OR REPLACE MACRO pattern_mask_ext_path(m) AS regexp_replace(m,
+  '(^|[\s(=,''"])\.{0,2}/(?:[^\s)''",:;<]|:[^\s)''",:;<])+', '\1<PATH>', 'g');
+
+-- Account names in the fixed OpenSSH and PAM forms (OpenSSH, Linux):
+-- "Invalid user X from", "invalid user X [preauth]", "Failed password for
+-- X from", "Accepted password for X from", "session opened/closed for user
+-- X". Not masked: "Too many authentication failures for root" and "… for
+-- admin", and the PAM "user=root" / "user=guest" suffix, which Loghub keeps
+-- as separate templates (OpenSSH E4/E5, Linux E17–E19).
+CREATE OR REPLACE MACRO pattern_mask_account(m) AS regexp_replace(
+  regexp_replace(
+    regexp_replace(m,
+      '\b([Ii]nvalid user) +[^\s\[]+', '\1 <USER>', 'g'),
+    '\b((?:Failed|Accepted) (?:password|publickey|none) for) [^\s<]+ from', '\1 <USER> from', 'g'),
+  '\b(session (?:opened|closed) for user) \S+', '\1 <USER>', 'g');
+
+-- Host names of the remote side, also where they are IP addresses (rhost=
+-- holds either, Loghub keeps one template): reverse mapping, "maps to",
+-- rhost=, and the parenthesised host of Linux ftpd connections.
+CREATE OR REPLACE MACRO pattern_mask_remote_host(m) AS regexp_replace(
+  regexp_replace(
+    regexp_replace(
+      regexp_replace(m,
+        '(getaddrinfo for) \S+ \[', '\1 <HOST> [', 'g'),
+      '(maps to) [^\s,]+,', '\1 <HOST>,', 'g'),
+    '\brhost=\S+', 'rhost=<HOST>', 'g'),
+  '(connection from <IP>) \([^)]*\)', '\1 (<HOST>)', 'g');
+
+-- Numbers with a duration or size unit stay one pattern
+-- ("timeout of 10000ms exceeded").
+CREATE OR REPLACE MACRO pattern_mask_num_unit(m) AS regexp_replace(m,
+  '\b\d+(?:\.\d+)?(ms|[KMGT]B)?\b', '<NUM>\1', 'g');
+
+CREATE OR REPLACE MACRO log_pattern_ext(dataset, m) AS
+  pattern_restore_codes(
+  pattern_mask_num_unit(
+  pattern_protect_codes(
+  pattern_mask_addr(
+  pattern_mask_hex_id(
+  pattern_mask_ext_path(
+  pattern_mask_remote_host(
+  pattern_mask_account(
+  pattern_mask_ip(
+  pattern_mask_uuid(
+  pattern_mask_block(
+  pattern_mask_ts(m))))))))))));
+
+CREATE OR REPLACE MACRO log_pattern(dataset, m) AS
+  CASE WHEN dataset IN ('bgl', 'openstack') THEN log_pattern_base(dataset, m)
+    ELSE log_pattern_ext(dataset, m) END;
