@@ -8,6 +8,7 @@
     "node": ">=24.0.0 <25"
   },
   "scripts": {
+    "report:perf": "pnpm --filter @workspace/analytics report:perf",
     "postinstall": "git submodule update --init --recursive",
     "dev": "turbo dev",
     "build": "turbo build",

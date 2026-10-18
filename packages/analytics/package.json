@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "report:perf": "node --env-file-if-exists=../../.env --import tsx src/report-perf.ts",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test:golden": "vitest run --config ../../vitest.config.ts --project analytics-golden --no-file-parallelism"

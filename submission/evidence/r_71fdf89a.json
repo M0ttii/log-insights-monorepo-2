@@ -1,0 +1,210 @@
+{
+  "receipt_id": "r_71fdf89a",
+  "created_at": "2026-10-18T15:08:49.063Z",
+  "client": "web",
+  "tool": "event_trend",
+  "tool_version": "1.1.0",
+  "input": {
+    "dataset": "bgl",
+    "bucket": "hour",
+    "from": "2005-06-03T23:00:00Z",
+    "to": "2005-06-04T01:00:00Z",
+    "pattern_id": "be1196c055349e9a"
+  },
+  "signature": "1f0895560ecbd569ff40e1250232b7e4c498e6540868f017bb2a9f06eea2b3e7",
+  "data_version": "dv_7ea6fcb2c9eb6882",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH grid AS (SELECT unnest(range(date_trunc('hour', $4::TIMESTAMPTZ), $5::TIMESTAMPTZ, $6::INTERVAL)) AS bucket), captured AS (SELECT date_trunc('hour', log_events.ts) AS bucket FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ GROUP BY 1) SELECT strftime(g.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, strftime(g.bucket + $7::INTERVAL, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket_end, g.bucket < $8::TIMESTAMPTZ OR g.bucket + $9::INTERVAL > $10::TIMESTAMPTZ AS partial, c.bucket IS NULL AS capture_gap FROM grid g LEFT JOIN captured c ON g.bucket = c.bucket ORDER BY g.bucket",
+    "WITH grid AS (SELECT unnest(range(date_trunc('hour', $5::TIMESTAMPTZ), $6::TIMESTAMPTZ, $7::INTERVAL)) AS bucket), counted AS (SELECT date_trunc('hour', log_events.ts) AS bucket, count(*) AS events FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.pattern_id = $4 GROUP BY 1) SELECT strftime(g.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, coalesce(c.events, 0)::BIGINT AS events, sum(coalesce(c.events, 0)) OVER ()::BIGINT AS total FROM grid g LEFT JOIN counted c ON g.bucket = c.bucket ORDER BY g.bucket"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "bgl",
+      "2005-06-03T23:00:00.000000Z",
+      "2005-06-04T01:00:00.000000Z",
+      "2005-06-03T23:00:00.000000Z",
+      "2005-06-04T01:00:00.000000Z",
+      "1 hour",
+      "1 hour",
+      "2005-06-03T23:00:00.000000Z",
+      "1 hour",
+      "2005-06-04T01:00:00.000000Z"
+    ],
+    [
+      "bgl",
+      "2005-06-03T23:00:00.000000Z",
+      "2005-06-04T01:00:00.000000Z",
+      "be1196c055349e9a",
+      "2005-06-03T23:00:00.000000Z",
+      "2005-06-04T01:00:00.000000Z",
+      "1 hour"
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-03T23:00:00.000000Z",
+        "to": "2005-06-04T01:00:00.000000Z"
+      }
+    ],
+    "filters": {
+      "pattern_id": "be1196c055349e9a"
+    }
+  },
+  "population": {
+    "count": 10,
+    "unit": "log_events"
+  },
+  "rows_returned": 2,
+  "truncated": false,
+  "row_limit": 120,
+  "duration_ms": 20.85,
+  "result": {
+    "dataset": "bgl",
+    "bucket": "hour",
+    "split_by": null,
+    "data_span": {
+      "first": "2005-06-03T22:42:50.363779Z",
+      "last": "2006-01-04T16:00:05.233639Z"
+    },
+    "effective_range": {
+      "from": "2005-06-03T23:00:00.000000Z",
+      "to": "2005-06-04T01:00:00.000000Z"
+    },
+    "bucket_count": 2,
+    "total": 10,
+    "series": [],
+    "other": null,
+    "buckets": [
+      {
+        "bucket_start": "2005-06-03T23:00:00.000000Z",
+        "bucket_end": "2005-06-04T00:00:00.000000Z",
+        "partial": false,
+        "capture_gap": false,
+        "events": 7,
+        "series": [],
+        "other_events": null
+      },
+      {
+        "bucket_start": "2005-06-04T00:00:00.000000Z",
+        "bucket_end": "2005-06-04T01:00:00.000000Z",
+        "partial": false,
+        "capture_gap": false,
+        "events": 3,
+        "series": [],
+        "other_events": null
+      }
+    ]
+  },
+  "result_digest": "bebbc2fb989b8b0f8160a44b85b0fae6b317d76e2f113410f68760a5cc493d23",
+  "facts": [
+    {
+      "id": "r_71fdf89a.f1",
+      "path": "/result/bucket_count",
+      "value": 2,
+      "metric": "buckets",
+      "unit": "buckets",
+      "group": {
+        "dataset": "bgl",
+        "bucket": "hour"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f2",
+      "path": "/result/buckets/0/events",
+      "value": 7,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-03T23:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f3",
+      "path": "/result/buckets/1/events",
+      "value": 3,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-04T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f4",
+      "path": "/result/data_span/first",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "data_span_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f5",
+      "path": "/result/data_span/last",
+      "value": "2006-01-04T16:00:05.233639Z",
+      "metric": "data_span_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f6",
+      "path": "/result/effective_range/from",
+      "value": "2005-06-03T23:00:00.000000Z",
+      "metric": "range_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f7",
+      "path": "/result/effective_range/to",
+      "value": "2005-06-04T01:00:00.000000Z",
+      "metric": "range_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f8",
+      "path": "/result/total",
+      "value": 10,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f9",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-03T23:00:00.000000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_71fdf89a.f10",
+      "path": "/scope/windows/0/to",
+      "value": "2005-06-04T01:00:00.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}
