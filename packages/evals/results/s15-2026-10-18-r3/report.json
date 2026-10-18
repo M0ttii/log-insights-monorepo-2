@@ -1,0 +1,25 @@
+{
+  "run_id": "s15-2026-10-18-r3",
+  "scope": "Focused S-15 / LOG-21 acceptance3; complete known-question regression round, not full U16.",
+  "outcome": "failed_round",
+  "assessment": "assessment.json",
+  "planned_attempts": 3,
+  "retained_attempts": 3,
+  "s15_passes": 2,
+  "s15_failures": 1,
+  "guidance_version": "1.0.4",
+  "contract_version": "2.9.0",
+  "failure": "Trial3: \u201cA different precursor there would mean more than one trigger\u201d promotes a temporal difference into a causal multiplicity claim. Earlier caveats do not repair this proposed next-check condition.",
+  "improvement_observed": "All three now distinguish symptom confinement from a single causal origin, execute a June-scoped aggregate check before recommending, and ground the formal hypothesis statuses. Trials1 and2 pass the focused S-15 criterion.",
+  "decision": "No complete-round acceptance. LOG-21 and LOG-19 remain In Progress. Bundle1.0.5 clarifies observable outcomes, status changes and remaining causal alternatives in each proposed check; its model behavior is not yet evaluated.",
+  "prior_round": "../s15-2026-10-18-r2/report.json",
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "Causal effect of guidance changes in a controlled comparison"
+  ],
+  "evidence": "All three complete answer transcriptions,28 tool receipts with exact inputs/SQL/parameters/results and original hashes, cited facts, frozen source pins and independent ratings are retained. Unavailable Desktop telemetry is explicitly null."
+}

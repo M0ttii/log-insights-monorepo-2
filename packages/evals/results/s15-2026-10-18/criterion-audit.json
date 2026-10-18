@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.0.0",
+  "audited_at": "2026-10-18T10:33:22.263103+00:00",
+  "reviewer": "/root/rate_s15",
+  "audit_type": "Correction of binary S-15 interpretation against unchanged repository criteria; not a new requirement or rubric.",
+  "preserved_assessment": {
+    "path": "assessment.json",
+    "sha256": "83d126e0c6cec2fcc5d282bf80b766bd811624878506d110010930c26c87aa10",
+    "unchanged": true,
+    "status": "Original binary verdicts are superseded by this criterion audit; original rubric scores and evidence remain visible.",
+    "local_unformatted_sha256": "582b9c234cbcafd123798ccd43241634b2db67ec7934be7d2386a3e8ba3de13e",
+    "hash_note": "sha256 pins the unchanged committed assessment.json. The separate local .data copy has identical JSON content but predates repository formatting; its byte hash is retained separately."
+  },
+  "reason_for_correction": "The initial assessment accepted a correctly grounded precursor hypothesis while recording an unsupported local-cause contradicted status only as a broader defect. That was too permissive. The local-vs-systemic hypothesis status is central to S-15 and must itself satisfy R-07. Existing fact IDs and a real check are necessary, but their results must logically justify the status actually stated.",
+  "unchanged_criteria": [
+    {
+      "file": "docs/concept.md",
+      "line": 578,
+      "id": "S-15",
+      "text": "Mindestens eine ausgef\u00fchrte unterscheidende Pr\u00fcfung, etwa Z\u00e4hlung nach Node bzw. Rack oder Vorl\u00e4uferanalyse; Hypothesenstatus mit deren Fakt-ID begr\u00fcndet; ein Vorl\u00e4ufer wird nicht als Ursache bezeichnet"
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 387,
+      "id": "A-17(3)",
+      "text": "Vor der Einstufung der Hypothese f\u00fchrt der Agent mindestens eine unterscheidende Pr\u00fcfung aus (Abschnitt 6); der Status nach R-07 ist mit deren Fakt-ID begr\u00fcndet (S-15)."
+    },
+    {
+      "file": "docs/concept.md",
+      "line": 552,
+      "id": "R-07",
+      "text": "supported braucht relevante verkn\u00fcpfte Beobachtungen und keinen bekannten entscheidenden Gegenbeleg; contradicted braucht einen Beleg gegen eine notwendige Annahme; fehlende oder gemischte Evidenz ergibt open. Der Status nennt die Pr\u00fcfung, auf der er beruht, mit Fakt-ID. Ein Vorl\u00e4ufer (R-11) kann supported begr\u00fcnden, nie einen Kausalbeweis."
+    }
+  ],
+  "application": {
+    "status_grounding": "Evaluate each relevant stated hypothesis status used to answer the local-vs-systemic question; do not select only one correct precursor hypothesis while excusing a false contradicted status on the competing local-cause explanation.",
+    "necessary_assumption_test": "A single initiating faulty node or rack does not necessarily produce symptoms confined to that node or rack. A shared front-end/service node can produce errors on many I/O nodes. Therefore 512 emitting nodes across 32 racks contradict a one-node symptom distribution, but do not by themselves contradict a single-node initiating cause.",
+    "scope_boundary": "Other whole-answer issues can remain outside scoped S-15, but an unsupported status on the very local-vs-systemic causal alternative is inside its status-grounding condition.",
+    "causality_test": "The same full-answer temporal-versus-cause test remains unchanged, including proposed next-check confirmation rules. Earlier disclaimers do not excuse later causal confirmation from timing or identifiers.",
+    "no_new_requirement": "No extra tool, minimum count, explicit repeat-citation format, new score dimension, or new threshold is introduced. The correction applies the original meaning of justified status and R-07 contradicted to the existing words and facts.",
+    "rubric_unchanged": "The five original 0\u20132 dimensions, operational anchors, and scores remain unchanged. Their reasons already penalized the cause-exclusion overclaim. Binary acceptance separately requires the stated status to be justified; a nonzero rubric score does not waive it."
+  },
+  "trial_corrections": [
+    {
+      "trial_id": "s15-01",
+      "original_binary_status": "pass",
+      "corrected_binary_status": "fail",
+      "rubric_total_unchanged": 7,
+      "failed_condition": "Hypothesis status logically justified by discriminating-check facts under R-07",
+      "evidence": {
+        "answer_file": "s15-01-answer.txt",
+        "line": 31,
+        "excerpt": "A single failing node or rack is the cause: contradicted."
+      },
+      "cited_fact_ids": ["r_a674fc90.f12", "r_a674fc90.f13", "r_76d19629.f2"],
+      "reason": "The answer treats breadth/evenness as ruling out the local initiating cause, yet supports a common peer explanation. Broad symptoms exclude confinement, not one shared faulty source.",
+      "aggregate_execution_condition": "pass",
+      "no_precursor_as_cause_condition": "pass"
+    },
+    {
+      "trial_id": "s15-02",
+      "original_binary_status": "pass",
+      "corrected_binary_status": "fail",
+      "rubric_total_unchanged": 6,
+      "failed_condition": "Hypothesis status logically justified by discriminating-check facts under R-07",
+      "evidence": {
+        "answer_file": "s15-02-answer.txt",
+        "line": 31,
+        "excerpt": "Single faulty node: contradicted."
+      },
+      "cited_fact_ids": ["r_6b12267c.f12", "r_6b12267c.f13", "r_a50782b8.f4"],
+      "reason": "Breadth and no prior events on one sampled node do not contradict the necessary assumptions of a single initiating faulty node. The answer does not limit its status to isolated symptom distribution.",
+      "aggregate_execution_condition": "pass",
+      "no_precursor_as_cause_condition": "pass"
+    },
+    {
+      "trial_id": "s15-03",
+      "original_binary_status": "fail",
+      "corrected_binary_status": "fail",
+      "rubric_total_unchanged": 5,
+      "failed_condition": "Hypothesis status logically justified by discriminating-check facts under R-07",
+      "evidence": {
+        "answer_file": "s15-03-answer.txt",
+        "line": 26,
+        "excerpt": "Single faulty node or rack: contradicted."
+      },
+      "cited_fact_ids": ["r_3f220b76.f12", "r_3f220b76.f13"],
+      "reason": "Breadth cannot exclude a shared single-node source. This adds a status-grounding failure to the already recorded failure that proposed temporal/identity observations would confirm or identify a cause.",
+      "aggregate_execution_condition": "pass",
+      "no_precursor_as_cause_condition": "fail"
+    }
+  ],
+  "effective_first_round_result": {
+    "planned_attempts": 3,
+    "rated_attempts": 3,
+    "original_passes": 2,
+    "original_failures": 1,
+    "corrected_passes": 0,
+    "corrected_failures": 3,
+    "all_aggregate_checks_executed": true,
+    "acceptance": "Not established. All three fail S-15 status grounding; trial 3 additionally fails the precursor-as-cause boundary."
+  },
+  "regression_provisional_result": {
+    "run_id": "s15-2026-10-18-r2",
+    "trial_id": "r2-01",
+    "initial_provisional_status": "pass",
+    "corrected_provisional_status": "fail",
+    "rubric_total_unchanged": 7,
+    "local_status": {
+      "answer_file": "r2-01-answer.txt",
+      "line": 33,
+      "excerpt": "A single bad node is the cause. Contradicted."
+    },
+    "shared_component_alternative": {
+      "answer_file": "r2-01-answer.txt",
+      "line": 6,
+      "excerpt": "a single shared failing component (the peer host) is still possible."
+    },
+    "facts": ["r_1684fa49.f12", "r_1684fa49.f13", "r_fd448e96.f2"],
+    "reason": "The answer both contradicts a single bad node as cause from emitting-node breadth and keeps a single shared peer cause possible. The cited breadth facts cannot justify that contradicted causal status. Its aggregate/precursor treatment passes the execution and temporal-boundary portions, but cannot repair the status failure."
+  },
+  "not_established": [
+    "Full U16 pass threshold",
+    "Baseline comparison",
+    "Holdout result",
+    "Claude Code acceptance",
+    "Whole-answer numerical correctness",
+    "A causal effect of any guidance change"
+  ],
+  "independence": {
+    "did_not_author_production_playbooks": true,
+    "production_source_or_rationale_inspected_for_audit": false,
+    "new_model_generation_or_prompt_tuning_performed_by_reviewer": false
+  }
+}

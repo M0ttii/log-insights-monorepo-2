@@ -1,0 +1,46 @@
+Scope: BGL, window [2005-06-01T00:00:00Z [r_1be1565d.f15], 2005-07-01T00:00:00Z [r_1be1565d.f16]) UTC. BGL data only starts at 2005-06-03T22:42:50 [r_28def5c9.f13], and nothing earlier exists to compare against. Filter: message text “ciod failed to read message prefix control stream”.
+
+Answer
+It is not one bad node. The symptom is spread across many I/O nodes, recurs in bursts, and every line points at the same peer endpoint. That points to something shared: the job, its launch, or the service at that address. The logs alone can’t rule out a single failing component behind the address, so the root cause is still open.
+
+Evidence
+Observation | Value
+Matching log events | 5,983 [r_1be1565d.f9]
+Episodes (bursts with gaps of 30 minutes or more) | 7 [r_1be1565d.f8] over 5 active days [r_1be1565d.f5]
+Distinct nodes / racks | 512 [r_1be1565d.f12] / 32 [r_1be1565d.f13]
+Highest per-node count (tied at the top, e.g. R00-M0-N0-I:J18-U01) | 15 [r_4fc413c1.f2]; the other 497 nodes [r_4fc413c1.f33] are summed
+Events whose message names peer 172.16.96.116 | 5,983 [r_761eb0fa.f11]
+Bursts preceded within 10 minutes by ciod: LOGIN chdir(...) failed: No such file or directory | 6 [r_532520e0.f6] of 7 [r_532520e0.f1] bursts; 145.2× its base rate [r_532520e0.f9]
+Total chdir failure lines in the window | 2,610 [r_81968434.f4]
+
+Timeline (UTC, daily)
+• 2005-06-04: 2,040 [r_5e95e1aa.f9]
+• 2005-06-09: 124 [r_5e95e1aa.f44]
+• 2005-06-13: 1,017 [r_5e95e1aa.f72]
+• 2005-06-16: 2,040 [r_5e95e1aa.f93]
+• 2005-06-20: 762 [r_5e95e1aa.f121]
+The first error was at 2005-06-04T07:24:32 [r_1be1565d.f10] and the last at 2005-06-20T08:42:45 [r_1be1565d.f11]. On the first day, a chdir failure on the path /p/gb2/draeger/benchmark/dat32k_060205 was logged at 2005-06-04T07:24:31.560 [r_81968434.f1]. The first control-stream error followed at 07:24:32.398 [r_f24f8e83.f1], under a second later.
+
+Narrowing
+• Spread: every I/O node fails a similar small number of times, with no outlier node.
+• Shared peer: all events reference the same peer address, each on a different port.
+• Rack pattern: the visible racks have identical counts per burst day, which looks like whole-partition job launches failing together rather than hardware drifting.
+• Labels: these lines carry the dataset label APPREAD. That is the dataset’s own classification, not a finding from this analysis.
+
+Hypotheses
+• The job’s working directory was missing or unmounted on the I/O nodes (the chdir path under /p/gb2). After that, the control-stream connection to the front-end/launcher at 172.16.96.116 dropped. Supported: the chdir failure precedes most bursts far above its base rate. This is a temporal link, not proof.
+• The launcher/front-end service at 172.16.96.116 closed or reset the connections. Open: the shared peer fits, but no check here separates “the peer failed” from “the peer aborted after the login failed”.
+• A single bad I/O node causes the errors. As a description of where symptoms appear, this is contradicted: they are not confined to one node (512 nodes [r_1be1565d.f12]). As a root cause, it stays open, because one failed shared component could still produce wide symptoms.
+
+Next check
+• Filesystem visibility: confirm whether /p/gb2/draeger/benchmark/dat32k_060205 existed and /p/gb2 was mounted on the I/O nodes at each burst start. Use mount and NFS/GPFS server logs or the job submission records for those dates. If the path was absent at every burst, the directory hypothesis is strengthened. If it was present while errors still occurred, it is weakened and the peer becomes the main suspect.
+• Peer logs: pull the logs of the launcher/front-end process at 172.16.96.116 (mpirun/ciod front-end, job scheduler) around each burst start. This shows whether it aborted the job deliberately or crashed on its own.
+• Job records: match the bursts to job IDs and users. Bursts all coming from the same benchmark job and user would point to a job configuration error rather than a system fault.
+
+Unknown
+• No baseline exists before 2005-06-03, so this can’t be compared with earlier behaviour.
+• The cause isn’t proven, and job outcome and impact aren’t in the logs.
+• The per-node and per-rack lists were truncated; only the top groups were inspected.
+• The sampled lines are examples, not counts.
+
+Verification: 24 claims checked [r_0caf5407.f1] · 0 mismatch [r_0caf5407.f2] · 0 unresolved [r_0caf5407.f3]. This covers the numbers and times only, not the reasoning.

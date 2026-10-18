@@ -1,0 +1,39 @@
+Scope
+BGL dataset, window [2005-06-01 [r_c432cc28.f12], 2005-07-01 [r_c432cc28.f13]) UTC, filtered on the message text “ciod failed to read message prefix on control stream”. The BGL data only starts on 2005-06-03, so the first days of June are not covered.
+
+Answer
+This is not one bad node. The failure is spread across the whole I/O-node population and arrives in synchronized bursts, which points to something shared by the job, not to local hardware. Each burst is usually preceded by a ciod LOGIN chdir failure. Your next step is to check the job’s working directory and whether the shared filesystem was reachable at those burst times.
+
+Evidence
+Observation | Value
+Matching log events | 5,983 [r_0f79733d.f25]
+Distinct nodes affected | 512 [r_60c767f5.f12]
+Distinct racks affected | 32 [r_60c767f5.f13]
+Highest per-node count (e.g. R00-M0-N0-I:J18-U01) | 15 [r_0f79733d.f2]
+Episodes (≥30-min gap) | 7 [r_60c767f5.f8]
+Active days | 5 [r_60c767f5.f5]
+All the lines I sampled are APP FATAL, on I/O nodes (…-I:J18-U01/U11), and every one targets the same peer, 172.16.96.116. The single pattern 287312f13c189c4d is the only pattern in scope. The top node only has a small count, and the rest are spread across many groups, so no single node dominates.
+
+Timeline
+- First seen 2005-06-04T07:24Z [r_60c767f5.f10], last seen 2005-06-20T08:42Z [r_60c767f5.f11]
+- Events per day: 06-04: 2,040 [r_afda7bc0.f3]; 06-09: 124 [r_afda7bc0.f8]; 06-13: 1,017 [r_afda7bc0.f12]; 06-16: 2,040 [r_afda7bc0.f15]; 06-20: 762 [r_afda7bc0.f19]. All other days in between had zero events.
+- Within a burst, dozens of nodes log the error within about one second of each other.
+
+Narrowing
+The local-versus-spread test points to spread. Every rack is affected, the per-node counts are small, and the timing is simultaneous. As background: in BG/L, ciod on each I/O node keeps a control stream to the job-control/mpirun front end. When every I/O node loses that stream at once, the likely cause is the peer or job side, not the I/O nodes.
+
+Hypotheses
+- Job launch or working-directory failure triggers a job-wide teardown: supported, not proven. A precursor check showed that “ciod: LOGIN chdir(<PATH>) failed: No such file or directory” appeared in the 10 minutes before 6 [r_7b6f03e4.f6] of 7 [r_7b6f03e4.f1] episode starts. That rate is 145.2× [r_7b6f03e4.f9] its normal background rate. This is a timing association only.
+- Failing control peer or network path to 172.16.96.116: open. It fits the single shared peer, but I haven’t run a check that separates it from the hypothesis above.
+- One bad node: contradicted by the node/rack breadth and the synchronized timing.
+
+Next check
+- Start with the chdir precursor. Use get_log_context (mode event) on the first burst’s LOGIN chdir event (event 14736) to see the exact path and which nodes logged it. If one missing or unmounted path appears on all I/O nodes just before each burst, the working-directory hypothesis gets stronger.
+- Then look at the one burst without it. Find which of the episodes had no chdir precursor and check its neighbourhood for front-end or MMCS events. If you find control-plane or network errors there, the peer/network hypothesis gets stronger.
+- Outside these logs: check scheduler/mpirun records for the jobs at those times (their cwd and exit reason), filesystem/NFS mount logs on the I/O nodes, and the health of host 172.16.96.116. Confirming a cause needs this independent evidence; more log timing alone won’t do it.
+
+Unknown
+Root cause is unproven. Job IDs aren’t in the logs, so I can’t confirm these bursts are the same job. There is no baseline before June. One episode has no observed precursor. Business or user impact is unknown.
+
+Verification
+18 claims checked [r_f65335a5.f1] · 0 mismatch [r_f65335a5.f2] · 0 unresolved [r_f65335a5.f3]. Only the numbers were checked; the explanations and hypotheses were not.

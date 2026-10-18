@@ -1,0 +1,52 @@
+Scope
+BGL dataset, window [2005-06-01 [r_928454fe.f12], 2005-07-01 [r_928454fe.f13]) UTC. BGL data actually starts at 2005-06-03T22:42Z [r_db7fc197.f13], so the first days of June aren’t observed. The search was an exact-phrase match on “failed to read message prefix on control stream”.
+
+Answer
+This is not one bad node. The error is spread evenly across the whole machine, comes in synchronized bursts, and every line points at the same remote peer. That pattern fits something job-wide or shared, such as a job launch, its working directory, or the service at the other end of the socket. The strongest lead is a ciod: LOGIN chdir(...) failed: No such file or directory message that shows up just before most of the bursts. The next thing to check is whether the job’s working directory existed and was mounted on the I/O nodes at launch time.
+
+Evidence
+Observation | Value
+Matching log events in June | 5,983 [r_928454fe.f11]
+Distinct I/O nodes reporting it | 512 [r_20e12c19.f12]
+Distinct racks | 32 [r_20e12c19.f13]
+Largest single node (R00-M0-N0-I:J18-U01) | 15 events [r_1e2fd555.f2]
+Largest single rack (R00) | 240 events [r_45302668.f2]
+Events whose message also contains peer 172.16.96.116 | 5,983 [r_e3148925.f4]
+The listed nodes and racks all have identical counts. Those are only the top groups the tool returned, though, so I can’t claim every node is exactly the same. The remainder is in the receipts.
+
+Timeline
+- First seen 2005-06-04T07:24Z [r_20e12c19.f10]; last seen 2005-06-20T08:42Z [r_20e12c19.f11]
+- 7 episodes [r_20e12c19.f8] across 5 active days [r_20e12c19.f5]
+- Daily counts:
+  - 06-04: 2,040 [r_ed67f977.f3]
+  - 06-09: 124 [r_ed67f977.f8]
+  - 06-13: 1,017 [r_ed67f977.f12]
+  - 06-16: 2,040 [r_ed67f977.f15]
+  - 06-20: 762 [r_ed67f977.f19]
+- Every other day in that range had zero events.
+In the first burst, the failures hit nodes in different racks (R04, R23, R35, R36…) within about one second of each other. That looks like one event fanning out, not a node degrading over time.
+
+Narrowing
+- Precursor across bursts: ciod: LOGIN chdir(<PATH>) failed: No such file or directory (pattern bdec89f666f62cf9) appears in the 10 minutes before 6 [r_abd16fdc.f6] of the 7 [r_abd16fdc.f1] burst starts. That is a ratio of 311.8 [r_abd16fdc.f9] compared with its base rate.
+- First burst up close: two I/O nodes logged chdir(/p/gb2/draeger/benchmark/dat32k_060205) failed at −838.005 ms [r_cd625f0e.f2] and −803.828 ms [r_cd625f0e.f4] before the first control-stream failure.
+
+Hypotheses
+- A job-level launch problem (missing or unmounted working directory, so the job aborts and the control connections drop on every I/O node) is supported, but not proven. The breadth, the synchronized bursts, the shared peer, and the chdir precursor all fit it. The precursor is only a timing relationship, though.
+- A single faulty node is contradicted. The error is spread across hundreds of nodes and dozens of racks, and the top node accounts for only a tiny share.
+- The shared peer 172.16.96.116 (the front-end or service node) being the failing side is open. It’s consistent with the data, but nothing here tells it apart from the job-launch explanation. Widespread symptoms can still come from one shared component.
+
+Next check
+1. Is the working directory the cause? Compare job IDs and launch times for each burst against the scheduler and MMCS records. Check whether /p/gb2/... was mounted and present on the I/O nodes at those moments.
+   - If each burst matches a job submitted with a missing directory, the job-launch explanation is strengthened.
+   - If bursts also happen for jobs whose directory existed, it’s weakened.
+2. Is the peer the cause? Look at the logs on 172.16.96.116 itself (the front-end or mpirun host) at 2005-06-04T07:24Z [r_20e12c19.f10] for socket resets or process exits. A crash or restart there would point to the peer instead of the job.
+3. What about the one unexplained burst? The burst without the chdir precursor deserves its own context lookup to see what happened just before it.
+
+Unknown
+- The root cause hasn’t been proven. The precursor relationship is temporal only.
+- These logs don’t record job IDs or what was happening on the peer host.
+- Impact and downtime are unknown.
+- No prior-period baseline exists, because the data begins in June.
+
+Verification
+23 claims checked [r_e942c82f.f1] · 0 mismatch [r_e942c82f.f2] · 0 unresolved [r_e942c82f.f3]. This checks the numbers only, not the reasoning.

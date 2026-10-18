@@ -1,0 +1,41 @@
+Scope: BGL dataset, window [2005-06-01T00:00:00Z [r_a792ef3b.f12], 2005-07-01T00:00:00Z [r_a792ef3b.f13]) UTC. Data actually starts at 2005-06-03T22:42:50Z [r_8ec555d2.f32]. Filter: message text “ciod failed to read message prefix on control stream”.
+
+Answer: It isn’t one bad node. The errors appear on many nodes at once and in recurring bursts, so the symptoms are job-wide or partition-wide. Every failing socket points to the same peer, and the errors closely follow ciod: LOGIN chdir(...) failed: No such file or directory messages. That makes the job’s launch environment (a missing working directory) or the shared peer the first thing to check. The cause is not proven. A single faulty component behind that peer could still produce symptoms this broad, so that origin also stays open.
+
+Evidence
+Observation | Value
+Matching log events | 5,983 [r_a792ef3b.f11]
+Distinct nodes / racks | 512 [r_7bdf0ca1.f12] / 32 [r_7bdf0ca1.f13]
+Example node R00-M0-N0-I:J18-U01 | 15 events [r_46a08889.f2]
+Example rack R00 | 240 events [r_3df2f894.f2]
+Matches that also contain peer 172.16.96.116 | 5,983 [r_509c5b63.f7]
+Episodes / active days | 7 [r_7bdf0ca1.f8] / 5 [r_7bdf0ca1.f5]
+All affected nodes are I/O nodes (…-I:J18-U01/U11), and the dataset labels these events APPREAD.
+
+Timeline
+• The first event is at 2005-06-04T07:24:32Z [r_7bdf0ca1.f10] and the last at 2005-06-20T08:42:45Z [r_7bdf0ca1.f11].
+• Daily counts:
+  ◦ Jun 4: 2,040 [r_8ec555d2.f3]
+  ◦ Jun 9: 124 [r_8ec555d2.f8]
+  ◦ Jun 13: 1,017 [r_8ec555d2.f12]
+  ◦ Jun 16: 2,040 [r_8ec555d2.f15]
+  ◦ Jun 20: 762 [r_8ec555d2.f19]
+• Every other day in the window had none.
+
+Narrowing
+• Precursor check (10-minute window before each episode start): the ciod: LOGIN chdir(<PATH>) failed pattern preceded 6 [r_728434c9.f6] of 7 [r_728434c9.f1] episode starts. Its base rate is only 0.59 % [r_728434c9.f7] of windows, a ratio of about 145 [r_728434c9.f9].
+• First burst: two chdir failures on /p/gb2/draeger/benchmark/dat32k_060205 came −838.005 ms [r_51f8c3c7.f2] and −803.828 ms [r_51f8c3c7.f4] before the first control-stream error.
+
+Hypotheses
+• Symptoms confined to one node: contradicted. That claim requires a single node, but the errors span 512 nodes [r_7bdf0ca1.f12].
+• Job launch failed because its working directory was missing, and ciod then lost the control stream on all I/O nodes: supported by the precursor check above. Timing alone doesn’t prove it caused the errors.
+• The shared peer 172.16.96.116 dropped or reset connections: open. Every match names that peer, but the logs say nothing about the peer’s own state.
+• A single faulty node or link triggered a partition-wide abort: open. Nothing executed here refutes it.
+
+Next check
+• Bursts without the chdir failure: find the one episode that had no chdir precursor. Use search_logs on “ciod failed to read message prefix” sorted by time, then get_log_context on that episode’s first event. A different precursor there would mean more than one trigger; no precursor would weaken the chdir hypothesis.
+• Outside the logs: check whether /p/gb2/... was mounted on the I/O nodes at those times, and pull the job-submission and service-node logs for 172.16.96.116. A missing filesystem mount at those times supports the launch-environment hypothesis; peer-side resets point to the peer instead.
+
+Unknown: The root cause, which jobs and users were affected, and any downtime impact are not in these logs. The node and rack breakdowns were truncated, so the per-node and per-rack counts above are examples, not uniform values. The period before June has no data, so I couldn’t compare against a baseline.
+
+Verification: 24 claims checked [r_b1659ea7.f1] · 0 mismatch [r_b1659ea7.f2] · 0 unresolved [r_b1659ea7.f3]. This covers the numbers only, not the reasoning.
