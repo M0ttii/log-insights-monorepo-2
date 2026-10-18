@@ -1137,3 +1137,5 @@ flowchart LR
 - [AI SDK](https://ai-sdk.dev/docs)
 - [Loghub](https://github.com/logpai/loghub)
 - [Anthropic: Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents), methodischer Hintergrund zu unabhängigen Versuchen und getrennter Bewertung; konkrete Abnahme nach concept A-21.
+
+**LOG-41 Facetten-Nachtrag:** Der produktive Dictionary-Pfad ist auf genau den gemessenen geladenen Basiskorpus BGL+OpenStack beschränkt, ohne Datensatz-/Zeit-/weitere Filter und mit einer Dimension level/component/node. Einzelne oder zusätzliche geladene Datensätze verwenden den bisherigen Pfad; eigene Messungen sind die Voraussetzung für eine Ausweitung.

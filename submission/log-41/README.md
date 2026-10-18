@@ -56,3 +56,8 @@ Simplification reused the canonical result digest, made entity source selection
 explicit and separated optional fact specifications. Parallel provider calls
 were not introduced: changing their order and failure-side request count would
 change behavior, and serial calls bound provider load.
+
+After integrating the latest `main` (LOG-55), `pnpm check` passed again with
+1,039 unit tests. Dictionary facets additionally require exactly the measured
+BGL/OpenStack loaded scope; single-dataset or extension-loaded scopes keep the
+existing path. Focused facet/count regressions and analytics typecheck pass.

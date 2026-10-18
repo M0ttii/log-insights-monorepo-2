@@ -336,7 +336,13 @@ export const countEvents = defineTool({
     const filter =
       remote?.filter ??
       (periods === null ? input : { ...input, from: undefined, to: undefined })
-    const facet = remote === null ? dictionaryFacetRelation(input) : undefined
+    const facet =
+      remote === null
+        ? dictionaryFacetRelation(
+            input,
+            windows.map(({ window }) => window.dataset)
+          )
+        : undefined
     const compiled = compileFilter(filter, {
       accepted: COUNT_FILTER.fields,
       params,

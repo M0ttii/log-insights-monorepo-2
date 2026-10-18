@@ -525,7 +525,8 @@ provider-backed retrieval benchmarks and genuine Claude role runs require keys;
 see [LOG-41 verification](submission/log-41/README.md) for actual evidence and
 remaining acceptance limits.
 
-Full-span one-dimension `level`, `component` and `node` counts without a dataset
+When exactly the base BGL/OpenStack corpus is loaded, full-span one-dimension
+`level`, `component` and `node` counts without a dataset
 selection or other filters use implicit dictionary facets (`TsDict:`). Measured
 BGL-only node and OpenStack-only scopes retain the existing table path, as do
 comparisons, joint distributions and calculated dimensions. NULL groups, SQL

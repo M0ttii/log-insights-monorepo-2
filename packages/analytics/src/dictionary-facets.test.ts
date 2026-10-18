@@ -8,11 +8,24 @@ describe("measured full-span dictionary facets", () => {
     const relation = dictionaryFacetRelation(
       countEventsInputSchema.parse({
         group_by: ["level"],
-      })
+      }),
+      ["bgl", "openstack"]
     )
     expect(relation?.from).toBe("log_events_idx")
     expect(relation?.countRows).toBe("count(*)")
   })
+
+  it.each([["bgl"], ["openstack"], ["bgl", "openstack", "hdfs"]] as const)(
+    "keeps unmeasured loaded datasets on the existing path: %j",
+    (...datasets) => {
+      expect(
+        dictionaryFacetRelation(
+          countEventsInputSchema.parse({ group_by: ["level"] }),
+          datasets
+        )
+      ).toBeUndefined()
+    }
+  )
 
   it.each([
     { dataset: "bgl", group_by: ["node"] },
@@ -27,7 +40,10 @@ describe("measured full-span dictionary facets", () => {
     { group_by: ["level"], entity: { type: "ip" } },
   ])("retains the existing path for an unproven scope: %j", (input) => {
     expect(
-      dictionaryFacetRelation(countEventsInputSchema.parse(input))
+      dictionaryFacetRelation(countEventsInputSchema.parse(input), [
+        "bgl",
+        "openstack",
+      ])
     ).toBeUndefined()
   })
 })

@@ -1,3 +1,4 @@
+import type { Dataset } from "@workspace/domain/datasets"
 import type { CountEventsInput } from "@workspace/domain/tools/count-events"
 
 import { logEventsRelation, type Relation } from "./relations.ts"
@@ -8,10 +9,14 @@ import { logEventsRelation, type Relation } from "./relations.ts"
  * bounds, comparisons or other filters. OpenStack-only was slower in the probe.
  */
 export function dictionaryFacetRelation(
-  input: CountEventsInput
+  input: CountEventsInput,
+  datasets: readonly Dataset[]
 ): Relation | undefined {
   const [dimension] = input.group_by
   if (
+    datasets.length !== 2 ||
+    !datasets.includes("bgl") ||
+    !datasets.includes("openstack") ||
     input.group_by.length !== 1 ||
     !["level", "component", "node"].some((value) => value === dimension) ||
     input.dataset !== undefined ||
