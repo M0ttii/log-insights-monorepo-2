@@ -159,7 +159,7 @@ test("real receipts expose SQL and link the re-run result", async ({
     data: {},
   })
   const body: unknown = await response.json()
-  if (!response.ok) {
+  if (!response.ok()) {
     const unavailable = z.object({ error: toolErrorSchema }).parse(body)
     expect(unavailable.error.code).toBe("db_unavailable")
     return
