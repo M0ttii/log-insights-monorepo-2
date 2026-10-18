@@ -158,6 +158,7 @@ describe("otel bounded direct scan", () => {
     // Reading both files naively counts the shared boundary row twice.
     expect(both).toBe(expected + 1)
     const source = result.receipt.source
+    if (source?.kind !== "remote_parquet") throw new Error("no remote source")
     expect(source).toMatchObject({
       dataset: "otel",
       path: "direct_scan",
@@ -168,12 +169,12 @@ describe("otel bounded direct scan", () => {
       bytes_estimated_from_footer: { kind: "estimate" },
       source_check: { files_checked: 2 },
     })
-    expect(source?.files.map((file) => [file.file_index, file.url])).toEqual([
+    expect(source.files.map((file) => [file.file_index, file.url])).toEqual([
       [0, PART_0],
       [1, PART_1],
     ])
-    expect(source?.files[0]?.read_to).toBe("2025-09-23T00:29:24.039037200Z")
-    expect(source?.files[1]?.read_from).toBe("2025-09-23T00:29:24.039037200Z")
+    expect(source.files[0]?.read_to).toBe("2025-09-23T00:29:24.039037200Z")
+    expect(source.files[1]?.read_from).toBe("2025-09-23T00:29:24.039037200Z")
     // The stored receipt carries the same source block.
     const stored = await receipts.get(result.receipt.receipt_id)
     expect(stored?.source).toEqual(source)
@@ -214,7 +215,7 @@ describe("otel bounded direct scan", () => {
     expect(data.total).toBe((counted.data as { total: number }).total)
     expect(data.buckets).toHaveLength(1)
     expect(data.buckets[0]?.events).toBe(data.total)
-    expect(trend.receipt.source?.path).toBe("direct_scan")
+    expect(trend.receipt.source).toMatchObject({ path: "direct_scan" })
   })
 
   it("rejects a missing window, more than 60 s and a window outside the span with hints", async () => {
@@ -365,7 +366,7 @@ describe("otel get_log_context", () => {
     expect(data.sides.map((side) => side.in_window)).toEqual([0, 1])
     expect(data.events_after[0]?.trace_id).toBe(trace)
     expect(data.events_after[0]?.offset_ms).toBeGreaterThanOrEqual(0)
-    expect(context.receipt.source?.path).toBe("indexed_window")
+    expect(context.receipt.source).toMatchObject({ path: "indexed_window" })
     expect(context.receipt.scope.windows[0]).toEqual({
       dataset: "otel",
       ...REFERENCE,

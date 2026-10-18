@@ -54,7 +54,8 @@ import { z } from "zod"
 import { requireDataSpan } from "../corpus.ts"
 import { compileFilter, dimensionExpression } from "../filters.ts"
 import type { Relation } from "../relations.ts"
-import { openReference, openScan, remoteNotes } from "../remote.ts"
+import { openReference, openScan, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
 import { resolveWindows, scopeFilters } from "../scope.ts"
 import { isoTime, SqlParams } from "../sql.ts"
 
@@ -167,7 +168,25 @@ export const eventTrend = defineTool({
     let requested: TimeRange
     let source: ReceiptSource | undefined
     let relationFor: (params: SqlParams) => Relation | undefined = noRelation
-    if (isExternal(input.dataset)) {
+    if (input.dataset === "otel_replay") {
+      // The OTLP replay (LOG-35): its index snapshot, with or without text.
+      const opened = await openReplay(ctx.db, ctx.signal)
+      if (!opened.ok) return opened
+      const { rel } = opened.opened
+      const resolved = await resolveWindows(
+        ctx.db,
+        [input.dataset],
+        input,
+        ctx.signal
+      )
+      if (!resolved.ok) return resolved
+      const [first] = resolved.windows
+      if (first === undefined) throw new Error("no window for the dataset")
+      span = first.span
+      requested = { from: first.window.from, to: first.window.to }
+      source = opened.opened.source
+      relationFor = () => rel
+    } else if (isExternal(input.dataset)) {
       if (input.text !== undefined) {
         const opened = await openReference(
           ctx.db,
@@ -214,7 +233,7 @@ export const eventTrend = defineTool({
     const effective = effectiveRange(requested, span)
     const filters = scopeFilters(input, TREND_FILTER.fields)
     const splitBy = input.split_by ?? null
-    const remote = source === undefined ? [] : remoteNotes(source.path)
+    const remote = source === undefined ? [] : sourceNotes(source)
     const withSource = source === undefined ? {} : { source }
 
     if (effective === null) {

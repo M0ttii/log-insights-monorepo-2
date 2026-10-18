@@ -37,7 +37,8 @@ import { z } from "zod"
 
 import { compileFilter } from "../filters.ts"
 import { extensionSelect, LOG_EVENTS_IDX, type Relation } from "../relations.ts"
-import { openReference, remoteNotes } from "../remote.ts"
+import { openReference, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
 import {
   LOADED,
   describeFilters,
@@ -183,7 +184,21 @@ export const searchLogs = defineTool({
     let windows: Scope["windows"]
     let excluded: string[] = []
     let source: ReceiptSource | undefined
-    if (input.dataset !== undefined && isExternal(input.dataset)) {
+    if (input.dataset === "otel_replay") {
+      // The OTLP replay (LOG-35): its index snapshot over the data span.
+      const opened = await openReplay(ctx.db, ctx.signal)
+      if (!opened.ok) return opened
+      const resolved = await resolveWindows(
+        ctx.db,
+        [input.dataset],
+        input,
+        ctx.signal
+      )
+      if (!resolved.ok) return resolved
+      rel = opened.opened.rel
+      windows = resolved.windows.map(({ window }) => window)
+      source = opened.opened.source
+    } else if (input.dataset !== undefined && isExternal(input.dataset)) {
       const opened = await openReference(
         ctx.db,
         input,
@@ -281,7 +296,7 @@ export const searchLogs = defineTool({
           ...notesFor(input, scope, total, hits, maxEdits),
           ...unknownErrorsNote(input, windows),
           ...excluded,
-          ...(source === undefined ? [] : remoteNotes(source.path)),
+          ...(source === undefined ? [] : sourceNotes(source)),
         ],
         ...(source === undefined ? {} : { source }),
       },

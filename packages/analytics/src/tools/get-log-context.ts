@@ -71,7 +71,8 @@ import {
   LOG_EVENTS,
   type Relation,
 } from "../relations.ts"
-import { openReference, remoteNotes } from "../remote.ts"
+import { openReference, remoteNotes, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
 import {
   describeFilters,
   describeWindows,
@@ -357,7 +358,20 @@ async function runEvent(
   let clip: { from: string; to: string } | null = null
   let found: Awaited<ReturnType<QueryRunner["query"]>>
   const external = externalDatasetOfEventId(eventId)
-  if (external === null) {
+  let notes: string[] = []
+  if (external === "otel_replay") {
+    // The OTLP replay (LOG-35): the event ID is a column of its index.
+    const opened = await openReplay(db, signal)
+    if (!opened.ok) return opened
+    rel = opened.opened.rel
+    source = opened.opened.source
+    notes = sourceNotes(opened.opened.source)
+    found = await db.query(
+      `SELECT ${EVENT_COLUMNS(rel)}, ${rel.col("dataset")} AS dataset, ${isoNanos(rel.col("ts"))} AS ts_exact FROM ${rel.from} WHERE ${rel.col("event_id")} = $1::BIGINT`,
+      [eventId],
+      signal
+    )
+  } else if (external === null) {
     found = await db.query(
       `SELECT ${EVENT_COLUMNS(rel)}, log_events.dataset, ${isoTime("log_events.ts")} AS ts_exact FROM log_events WHERE log_events.event_id = $1`,
       [eventId],
@@ -370,8 +384,8 @@ async function runEvent(
     rel = opened.opened.rel
     source = opened.opened.source
     clip = opened.opened.window
-    const { eventIdBase } = DATASETS[external]
-    const { eventIdFileStride } = DATASETS[external].remote
+    const { eventIdBase } = DATASETS.otel
+    const { eventIdFileStride } = DATASETS.otel.remote
     const fileIndex = Math.floor((eventId - eventIdBase) / eventIdFileStride)
     const row = (eventId - eventIdBase) % eventIdFileStride
     const file = reference.files.find((entry) => entry.file_index === fileIndex)
@@ -552,6 +566,7 @@ async function runEvent(
               `otel context covers only the indexed reference window [${clip.from}, ${clip.to}); events of the dataset outside it are not included, so a side can be cut short there.`,
               ...remoteNotes("indexed_window"),
             ]),
+        ...notes,
       ],
       ...(source === undefined ? {} : { source }),
     },

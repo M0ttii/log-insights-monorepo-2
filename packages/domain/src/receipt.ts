@@ -86,7 +86,7 @@ const nanoInstantSchema = z
  * Bytes are not instrumented on a normal query (only EXPLAIN ANALYZE shows
  * them), so they are `not_measured`; the footer figure is an estimate.
  */
-export const receiptSourceSchema = z
+const remoteParquetSourceSchema = z
   .strictObject({
     dataset: datasetSchema,
     kind: z.literal("remote_parquet"),
@@ -167,7 +167,44 @@ export const receiptSourceSchema = z
         "Upper-bound estimate from Parquet footers, labelled as such; null for the indexed path."
       ),
   })
-  .describe("Remote source of the run; only for remote datasets.")
+  .describe("Remote Parquet source of the run (otel).")
+
+/**
+ * Provenance of a run over the OTLP replay (LOG-35, D7): which replay of
+ * which committed fixture the run read, through which listener table and
+ * index snapshot.
+ */
+const otlpReplaySourceSchema = z
+  .strictObject({
+    dataset: datasetSchema,
+    kind: z.literal("otlp_replay"),
+    replay_id: z.string().describe("ID of the replay this load posted."),
+    replayed_at: instantSchema.describe(
+      "When the fixture was posted; the observed_timestamp of every record."
+    ),
+    records: z.number().int().nonnegative(),
+    fixture: z.strictObject({
+      path: z.string(),
+      sha256: z.string(),
+      source_url: z
+        .string()
+        .describe("text_bench file the records were selected from."),
+    }),
+    listener_table: z
+      .string()
+      .describe("SereneDB OTel table the listener wrote into."),
+    index: z.strictObject({
+      name: z.string(),
+      built_at: instantSchema.describe(
+        "When the index snapshot was built; later exports are not in it."
+      ),
+    }),
+  })
+  .describe("OTLP replay source of the run (otel_replay).")
+
+export const receiptSourceSchema = z
+  .discriminatedUnion("kind", [remoteParquetSourceSchema, otlpReplaySourceSchema])
+  .describe("Source of the run; only for datasets outside log_events.")
 
 export type ReceiptSource = z.infer<typeof receiptSourceSchema>
 

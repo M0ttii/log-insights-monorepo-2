@@ -23,6 +23,7 @@ import { z } from "zod"
 import { corpusNotLoaded, spanEnd } from "../corpus.ts"
 import { isoNanos } from "../relations.ts"
 import { readReference } from "../remote.ts"
+import { readReplay } from "../replay.ts"
 import { isoTime } from "../sql.ts"
 
 /**
@@ -91,7 +92,7 @@ const capabilitiesSchema = z
     patterns: z
       .boolean()
       .describe(
-        "Message patterns (R-04): pattern_id, the pattern dimension, recurring_patterns and get_log_context mode aggregate. False for otel (messages stay in remote files)."
+        "Message patterns (R-04): pattern_id, the pattern dimension, recurring_patterns and get_log_context mode aggregate. False for otel and otel_replay (messages are not normalised)."
       ),
     full_text: z
       .enum(["all", "reference_window"])
@@ -180,15 +181,47 @@ const remoteSchema = z
     "Remote Parquet source (otel); null for log_events datasets. Facts here describe the files, not counted events."
   )
 
+const replaySchema = z
+  .strictObject({
+    licence: z.string(),
+    replay_id: z.string().describe("ID of the replay of this load."),
+    replayed_at: instantSchema.describe(
+      "When the fixture was posted (= observed_timestamp of every record)."
+    ),
+    records: count.describe("Records posted and indexed in this replay."),
+    fixture: z.strictObject({
+      path: z.string(),
+      sha256: z.string(),
+      source_url: z.string(),
+      selection: z.string(),
+    }),
+    listener_table: z
+      .string()
+      .describe("SereneDB OTel table the OTLP/HTTP listener wrote."),
+    index: z.strictObject({
+      name: z.string(),
+      built_at: instantSchema.describe(
+        "When the index snapshot was built; later exports are not in it."
+      ),
+    }),
+    duplicates: z
+      .string()
+      .describe("What happens when the same export is sent twice."),
+  })
+  .nullable()
+  .describe(
+    "OTLP replay (otel_replay); null for other datasets. A replay of public records, not a production stream."
+  )
+
 const datasetSummarySchema = z.strictObject({
   dataset: datasetSchema,
   title: z.string(),
   origin: z.string().describe("System and collection as Loghub describes it."),
   citation: z.array(z.string()).describe("Papers to cite for this dataset."),
   storage: z
-    .enum(["log_events", "remote_parquet"])
+    .enum(["log_events", "remote_parquet", "otlp_replay"])
     .describe(
-      "log_events: loaded into SereneDB. remote_parquet: read in place from remote files (otel); queried only when named."
+      "log_events: loaded into SereneDB. remote_parquet: read in place from remote files (otel). otlp_replay: posted to SereneDB's OTLP listener and read from its OTel table (otel_replay). The last two are queried only when named."
     ),
   counts_cover: z
     .enum(["dataset", "reference_window"])
@@ -274,6 +307,7 @@ const datasetSummarySchema = z.strictObject({
       "Distinct request IDs among API accesses; null for other datasets."
     ),
   remote: remoteSchema,
+  replay: replaySchema,
 })
 
 const outputSchema = z.strictObject({
@@ -351,6 +385,10 @@ const LIMITS = [
 /** Added when a remote dataset is loaded (LOG-35). */
 const REMOTE_LIMIT = `otel is read in place from remote Parquet files: it is never included without dataset otel; full text works only in its indexed reference window; counts and trends without text scan at most ${REMOTE_SCAN_MAX_SECONDS} s of data in at most ${REMOTE_SCAN_MAX_FILES} files per call, so no answer covers the whole dataset; it has no patterns. Its counts are exact over the queried window only.`
 
+/** Added when the OTLP replay is loaded (LOG-35). */
+const REPLAY_LIMIT =
+  "otel_replay is a bounded replay of public text_bench records into SereneDB's OTLP listener, not a production stream: it is never included without dataset otel_replay, its counts cover only the replayed records, it has no patterns, and it shares no time axis with otel's files (same day, but a separate copy)."
+
 /** Filter field and dimension per column (technical.md § 8.1). */
 const COLUMN_FILTER: Partial<Record<DatasetColumn, string>> = {
   level: "levels",
@@ -388,6 +426,13 @@ const COLUMN_DIMENSION: Partial<Record<DatasetColumn, string>> = {
 function commonFields(dataset: Dataset): { field: string; meaning: string }[] {
   const spec = DATASETS[dataset]
   const base = spec.eventIdBase
+  if (spec.storage === "otlp_replay")
+    return [
+      {
+        field: "event_id",
+        meaning: `Stable event ID: ${base.toLocaleString("en-US")} + row of the committed replay fixture. otel_replay has no pattern_id: its messages are not normalised.`,
+      },
+    ]
   if (spec.storage === "remote_parquet")
     return [
       {
@@ -522,7 +567,7 @@ export const describeCorpus = defineTool({
     ],
     inputs: "none (empty object).",
     outputs:
-      "datasets[] with title, origin, citation, storage, counts_cover, events, lines_read, rejected (null for remote datasets), first_event and last_event (UTC, both included), error_events (null without an error definition), patterns (null without patterns), time_basis, fields (field guide: field, meaning, filter, dimension, events_with_value, distinct_values, up to three examples from the data), capabilities, levels, components (with team), labels and for OpenStack api_accesses and requests; remote (otel: allowlisted files with pins and footer facts, labelled footer counts incl. boundary duplicates, the indexed reference window with its exact events and removed duplicates, scan limits); license; limits; ownership (fictional) with unowned components; versions; answer_guidance per role (null without playbooks) and guidance_version. Cite numbers by their fact IDs.",
+      "datasets[] with title, origin, citation, storage, counts_cover, events, lines_read, rejected (null for remote datasets), first_event and last_event (UTC, both included), error_events (null without an error definition), patterns (null without patterns), time_basis, fields (field guide: field, meaning, filter, dimension, events_with_value, distinct_values, up to three examples from the data), capabilities, levels, components (with team), labels and for OpenStack api_accesses and requests; remote (otel: allowlisted files with pins and footer facts, labelled footer counts incl. boundary duplicates, the indexed reference window with its exact events and removed duplicates, scan limits); replay (otel_replay: replay ID and time, records, fixture with source and selection, listener table, index snapshot, duplicate behaviour); license; limits; ownership (fictional) with unowned components; versions; answer_guidance per role (null without playbooks) and guidance_version. Cite numbers by their fact IDs.",
     truncation: "none; every list is complete.",
     countingUnit:
       "log events (parsed lines), not incidents; OpenStack also api_accesses and requests (R-01); distinct_values counts values.",
@@ -615,6 +660,12 @@ export const describeCorpus = defineTool({
       groupKeys: ["dataset"],
     },
     {
+      path: "/result/datasets/*/replay/records",
+      metric: "replay_records",
+      unit: "log_events",
+      groupKeys: ["dataset"],
+    },
+    {
       path: "/result/datasets/*/remote/footer_rows",
       metric: "footer_rows",
       unit: "parquet_footer_rows",
@@ -658,6 +709,10 @@ export const describeCorpus = defineTool({
             (row) => remoteFileRow.parse(row)
           )
         : []
+    const hasReplay = datasets.some(
+      (row) => DATASETS[row.dataset].storage === "otlp_replay"
+    )
+    const replay = hasReplay ? await readReplay(ctx.db, ctx.signal) : null
     const manifestRows = manifest.rows.map((row) => manifestRow.parse(row))
     const versions = manifestRows[0]
     const first = datasets[0]
@@ -723,6 +778,28 @@ export const describeCorpus = defineTool({
                   },
                 }
               : null,
+          replay:
+            spec.storage === "otlp_replay" && replay !== null
+              ? {
+                  licence: spec.replay.licence,
+                  replay_id: replay.replay_id,
+                  replayed_at: replay.replayed_at,
+                  records: replay.records,
+                  fixture: {
+                    path: replay.fixture_path,
+                    sha256: replay.fixture_sha256,
+                    source_url: replay.source_url,
+                    selection: spec.replay.fixture.selection,
+                  },
+                  listener_table: replay.listener_table,
+                  index: {
+                    name: replay.index_name,
+                    built_at: replay.index_built_at,
+                  },
+                  duplicates:
+                    "SereneDB does not deduplicate OTLP exports: the same export sent twice stores every record twice. The loader posts once per load after deleting the previous replay rows; tools read the index snapshot of this replay only.",
+                }
+              : null,
           fields: [
             ...commonFields(row.dataset).map((field) => ({
               ...field,
@@ -773,7 +850,11 @@ export const describeCorpus = defineTool({
         }
       }),
       license: LICENSE,
-      limits: hasRemote ? [...LIMITS, REMOTE_LIMIT] : [...LIMITS],
+      limits: [
+        ...LIMITS,
+        ...(hasRemote ? [REMOTE_LIMIT] : []),
+        ...(hasReplay ? [REPLAY_LIMIT] : []),
+      ],
       ownership: {
         fictional: true,
         note: [...new Set(owned.map((row) => row.note))].join("; "),

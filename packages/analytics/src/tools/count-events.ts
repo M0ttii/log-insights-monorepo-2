@@ -75,7 +75,8 @@ import {
   dimensionExpression,
 } from "../filters.ts"
 import type { Relation } from "../relations.ts"
-import { openReference, openScan, remoteNotes } from "../remote.ts"
+import { openReference, openScan, sourceNotes } from "../remote.ts"
+import { openReplay } from "../replay.ts"
 import {
   LOADED,
   describeFilters,
@@ -238,7 +239,21 @@ export const countEvents = defineTool({
     // The relation and its filter: otel reads the reference index (text) or
     // a bounded direct scan (LOG-35); everything else log_events.
     let remote: { rel: Relation; filter: typeof input } | null = null
-    if (input.dataset !== undefined && isExternal(input.dataset)) {
+    if (input.dataset === "otel_replay") {
+      // The OTLP replay (LOG-35): its index snapshot, over the data span.
+      const opened = await openReplay(ctx.db, ctx.signal)
+      if (!opened.ok) return opened
+      const resolved = await resolveWindows(
+        ctx.db,
+        [input.dataset],
+        input,
+        ctx.signal
+      )
+      if (!resolved.ok) return resolved
+      windows = resolved.windows
+      source = opened.opened.source
+      remote = { rel: opened.opened.rel, filter: input }
+    } else if (input.dataset !== undefined && isExternal(input.dataset)) {
       if (input.text !== undefined) {
         const opened = await openReference(
           ctx.db,
@@ -449,7 +464,7 @@ export const countEvents = defineTool({
         notes: [
           ...notesFor(input, data, scope, windows, periods),
           ...excludedNote(excluded),
-          ...(source === undefined ? [] : remoteNotes(source.path)),
+          ...(source === undefined ? [] : sourceNotes(source)),
         ],
         ...(source === undefined ? {} : { source }),
       },
@@ -582,7 +597,10 @@ function validateCount(input: CountEventsInput): ToolError | null {
     if (input.compare !== undefined)
       issues.push({
         path: "compare",
-        message: `compare is not available for dataset ${dataset}: its counts read a bounded window of remote files; call count_events once per window instead (each at most ${REMOTE_SCAN_MAX_SECONDS} s).`,
+        message:
+          dataset === "otel"
+            ? `compare is not available for dataset ${dataset}: its counts read a bounded window of remote files; call count_events once per window instead (each at most ${REMOTE_SCAN_MAX_SECONDS} s).`
+            : `compare is not available for dataset ${dataset}: it is a replay of one millisecond of records, too short for a period comparison; call count_events once per window instead.`,
       })
     const scan = remoteScanError(input)
     if (scan?.code === "invalid_input") issues.push(...scan.issues)

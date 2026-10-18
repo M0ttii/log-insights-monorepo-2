@@ -42,6 +42,19 @@ export type ManifestInput = {
       sha256: string | null
     }>
   }>
+  /**
+   * The OTLP replay (LOG-35, D7): replay ID and time, the fixture pin and
+   * the listener table. Absent without `--with otel_replay`. The replay
+   * time is part of it (it is stored as every record's
+   * observed_timestamp), so every replay load has its own data version.
+   */
+  replay?: {
+    dataset: string
+    replay_id: string
+    replayed_at: string
+    fixture: { path: string; bytes: number; sha256: string; records: number }
+    listener: { database: string; table: string }
+  }
 }
 
 /** JSON with object keys sorted at every level, so equal content hashes equally. */

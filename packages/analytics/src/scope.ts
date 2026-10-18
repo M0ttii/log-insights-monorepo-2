@@ -75,7 +75,7 @@ export function excludedNote(excluded: readonly Dataset[]): string[] {
   return excluded.length === 0
     ? []
     : [
-        `${excluded.join(", ")} is loaded but not included: remote datasets are read only when named (dataset ${excluded[0]}), so these totals cover the log_events datasets only.`,
+        `${excluded.join(", ")} ${excluded.length === 1 ? "is" : "are"} loaded but not included: datasets outside log_events are read only when named (dataset ${excluded[0]}), so these totals cover the log_events datasets only.`,
       ]
 }
 

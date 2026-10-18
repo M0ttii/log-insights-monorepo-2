@@ -294,6 +294,47 @@ export function otelScanRelation(
   }
 }
 
+// ------------------------------------------------------------- OTLP replay
+
+const REPLAY_INDEX = "otel_replay_idx"
+
+/** The columns the replay index holds (corpus/sql/63, all INCLUDE columns). */
+const REPLAY_COLUMNS = new Set<RelationColumn>([
+  "event_id",
+  "dataset",
+  "ts",
+  "level",
+  "component",
+  "source_type",
+  "is_error",
+  "trace_id",
+  "span_id",
+  "severity_number",
+  "message",
+])
+
+/**
+ * The OTLP replay (LOG-35, design D7): the inverted index over the view
+ * otel_replay_events (corpus/sql/63), a snapshot of this load's replay
+ * with every column as an INCLUDE column. Every tool reads the index, with
+ * or without text, so counts and hits come from the same rows. ts is
+ * TIMESTAMPTZ_NS: bounds are nanosecond instants, outputs truncate.
+ */
+export function otelReplayRelation(): Relation {
+  const q = REPLAY_INDEX
+  return {
+    q,
+    from: q,
+    indexed: true,
+    dataset: "otel_replay",
+    col: (column) => (REPLAY_COLUMNS.has(column) ? `${q}.${column}` : nullOf(column)),
+    bound: (ref) => `${ref}::TIMESTAMPTZ_NS`,
+    epochMicros: (expr) => `(epoch_ns(${expr}) // 1000)`,
+    bucket: (unit) => nanoBucket(unit, `${q}.ts`),
+    countRows: `count(${q}.ts)`,
+  }
+}
+
 /**
  * The dataset-specific attribute columns of an event row: the five
  * extension columns (U26) and the three OpenTelemetry columns (LOG-35), as

@@ -19,7 +19,9 @@
  * corpus reads the allowlisted HTTPS files in place (pinned by HEAD at
  * load), the samples read the committed Parquet fixtures copied below
  * .data/raw, so CI stays hermetic. A samples load with a remote dataset goes
- * into its own database.
+ * into its own database. The OTLP replay (`--with otel_replay`) posts a
+ * committed fixture to SereneDB's own listener (serened.conf); with
+ * --samples into the same database as the otel fixtures.
  */
 import {
   BASE_DATASETS,
@@ -32,6 +34,7 @@ import {
   type ExternalDataset,
   type ParquetFixture,
   type PinnedFile,
+  type ReplayFixture,
   type TableDataset,
 } from "@workspace/domain/datasets"
 
@@ -50,9 +53,9 @@ type ExternalFile = {
   fixture: ParquetFixture | null
 }
 
-/** A remote dataset of a source (LOG-35). */
+/** A remote Parquet dataset of a source (LOG-35). */
 export type ExternalLoad = {
-  dataset: ExternalDataset
+  dataset: "otel"
   /** remote: HTTPS files pinned by HEAD; fixture: committed local copies. */
   kind: "remote" | "fixture"
   files: readonly ExternalFile[]
@@ -87,6 +90,22 @@ export type Source = {
   datasets: readonly DatasetLoad[]
   /** Remote datasets read in place (LOG-35); not in log_events. */
   external: readonly ExternalLoad[]
+  /** The OTLP replay (LOG-35, design D7); null without `--with otel_replay`. */
+  replay: ReplayLoad | null
+}
+
+/**
+ * The OTLP replay of a source: the committed fixture and the listener that
+ * receives it (serened.conf), which writes into `database`. The loader posts
+ * to 127.0.0.1 on the host port named by `portEnv`.
+ */
+export type ReplayLoad = {
+  dataset: "otel_replay"
+  fixture: ReplayFixture
+  database: string
+  portEnv: string
+  schema: string
+  table: string
 }
 
 export const SAMPLES_DATABASE = "log_insights_samples"
@@ -111,14 +130,19 @@ export function buildSource(
   const sourceOf = (dataset: TableDataset) =>
     kind === "corpus" ? DATASETS[dataset].corpus : DATASETS[dataset].samples
   const titles = specs.map((spec) => spec.title).join(", ")
-  const remote = external.map((dataset) => externalLoad(kind, dataset))
-  const remoteText = remote
-    .map(({ dataset }) =>
-      kind === "corpus"
-        ? ` + ${DATASETS[dataset].title} read in place over HTTPS`
-        : ` + ${DATASETS[dataset].title} Parquet fixtures`
-    )
-    .join("")
+  const remote = external.includes("otel") ? [externalLoad(kind, "otel")] : []
+  const replay = external.includes("otel_replay") ? replayLoad(kind) : null
+  const remoteText =
+    remote
+      .map(({ dataset }) =>
+        kind === "corpus"
+          ? ` + ${DATASETS[dataset].title} read in place over HTTPS`
+          : ` + ${DATASETS[dataset].title} Parquet fixtures`
+      )
+      .join("") +
+    (replay === null
+      ? ""
+      : ` + ${DATASETS.otel_replay.title} via the OTLP listener`)
   return {
     id: kind,
     description:
@@ -128,7 +152,7 @@ export function buildSource(
     database:
       kind === "corpus"
         ? null
-        : remote.length > 0
+        : remote.length > 0 || replay !== null
           ? SAMPLES_REMOTE_DATABASE
           : extended
             ? SAMPLES_EXTENDED_DATABASE
@@ -136,6 +160,7 @@ export function buildSource(
     archives: specs.flatMap((spec) => sourceOf(spec.id).archives),
     downloads: specs.flatMap((spec) => sourceOf(spec.id).downloads),
     external: remote,
+    replay,
     datasets: specs.map((spec) => {
       const source = sourceOf(spec.id)
       return {
@@ -151,10 +176,29 @@ export function buildSource(
 
 const container = (path: string) => joinPosix(CONTAINER_RAW_DIR, path)
 
+/**
+ * The replay of a source: corpus loads replay into the listener of database
+ * postgres, samples into log_insights_samples_otel (serened.conf).
+ */
+function replayLoad(kind: "corpus" | "samples"): ReplayLoad {
+  const { fixture, listener } = DATASETS.otel_replay.replay
+  const target = kind === "corpus" ? listener.corpus : listener.samples
+  if (kind === "samples" && target.database !== SAMPLES_REMOTE_DATABASE)
+    throw new Error("the samples OTLP listener must write the otel samples database")
+  return {
+    dataset: "otel_replay",
+    fixture,
+    database: target.database,
+    portEnv: target.portEnv,
+    schema: listener.schema,
+    table: listener.table,
+  }
+}
+
 /** The files and reference window of a remote dataset in a source. */
 function externalLoad(
   kind: "corpus" | "samples",
-  dataset: ExternalDataset
+  dataset: "otel"
 ): ExternalLoad {
   const { remote } = DATASETS[dataset]
   if (kind === "corpus")

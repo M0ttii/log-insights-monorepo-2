@@ -35,7 +35,7 @@ import {
 export const datasetSchema = z
   .enum(DATASET_IDS)
   .describe(
-    `Dataset: ${datasetList()}. No two datasets share a time axis; describe_corpus lists the loaded ones. ${EXTERNAL_DATASETS.join(", ")} is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most ${REMOTE_SCAN_MAX_SECONDS} s apart.`
+    `Dataset: ${datasetList()}. No two datasets share a time axis; describe_corpus lists the loaded ones. ${EXTERNAL_DATASETS.join(" and ")} are not in log_events and only queried when named here: otel is read in place from remote Parquet files (full text only inside its indexed reference window; counts or trends without text need from/to at most ${REMOTE_SCAN_MAX_SECONDS} s apart), otel_replay is a bounded OTLP replay of public records into SereneDB's OTel tables.`
   )
 
 export type { Dataset }
@@ -340,7 +340,7 @@ export function patternsUnsupported(
 ): InputIssue {
   return {
     path,
-    message: `Dataset ${dataset} has no message patterns (R-04): its messages stay in remote files and are not normalised at load time, so pattern_id, the pattern dimension, recurring_patterns and get_log_context mode aggregate are unavailable. Use search_logs for message text, or count_events / event_trend by component or level.`,
+    message: `Dataset ${dataset} has no message patterns (R-04): its messages are not normalised at load time, so pattern_id, the pattern dimension, recurring_patterns and get_log_context mode aggregate are unavailable. Use search_logs for message text, or count_events / event_trend by component or level.`,
   }
 }
 

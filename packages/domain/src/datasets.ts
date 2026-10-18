@@ -22,6 +22,7 @@ export const DATASET_IDS = [
   "linux",
   "zookeeper",
   "otel",
+  "otel_replay",
 ] as const
 
 export type Dataset = (typeof DATASET_IDS)[number]
@@ -48,11 +49,16 @@ export function isExtension(dataset: Dataset): dataset is ExtensionDataset {
 }
 
 /**
- * Datasets read in place from external storage (LOG-35, A-32): not stored in
- * log_events, never part of `--with all` and never included in a query
- * without `dataset`. Loaded on request with `--with otel`.
+ * Datasets outside log_events (LOG-35): otel is read in place from remote
+ * Parquet (A-32), otel_replay is a bounded OTLP/HTTP replay into SereneDB's
+ * own OTel tables. Never part of `--with all` and never included in a query
+ * without `dataset`. Loaded on request with `--with otel` / `--with
+ * otel_replay`.
  */
-export const EXTERNAL_DATASETS = ["otel"] as const satisfies readonly Dataset[]
+export const EXTERNAL_DATASETS = [
+  "otel",
+  "otel_replay",
+] as const satisfies readonly Dataset[]
 
 export type ExternalDataset = (typeof EXTERNAL_DATASETS)[number]
 
@@ -357,7 +363,52 @@ export type RemoteParquetSpec = CommonSpec & {
   remote: RemoteParquetSource
 }
 
-export type DatasetSpec = TableDatasetSpec | RemoteParquetSpec
+/** The committed OTLP replay fixture (LOG-35, design D7). */
+export type ReplayFixture = {
+  /** Repository path relative to packages/corpus. */
+  path: string
+  bytes: number
+  sha256: string
+  records: number
+  /** Allowlist index of the text_bench file the records come from. */
+  sourceFileIndex: number
+  /** [from, to) of the selected rows in the source file, nanosecond UTC. */
+  from: string
+  to: string
+  /** ResourceAttributes keys kept per record (all others are dropped). */
+  resourceKeys: readonly string[]
+  /** Selection and exclusion rule as stated in the fixture file. */
+  selection: string
+}
+
+export type OtlpReplaySource = {
+  licence: string
+  fixture: ReplayFixture
+  /**
+   * SereneDB's OTLP/HTTP listener (serened.conf): the schema its tables
+   * live in and, per load source, the database it writes and the env var
+   * of its host port on 127.0.0.1.
+   */
+  listener: {
+    schema: string
+    table: string
+    corpus: { database: string; portEnv: string }
+    samples: { database: string; portEnv: string }
+  }
+  /** Log record attributes the replayer adds to every record. */
+  attributes: { replayId: string; fixtureRow: string }
+  /** SeverityText values that are errors (R-02), as observed in the data. */
+  errorLevels: readonly string[]
+}
+
+/** A bounded OTLP/HTTP replay of public records into SereneDB (LOG-35, D7). */
+export type OtlpReplaySpec = CommonSpec & {
+  id: ExternalDataset
+  storage: "otlp_replay"
+  replay: OtlpReplaySource
+}
+
+export type DatasetSpec = TableDatasetSpec | RemoteParquetSpec | OtlpReplaySpec
 
 /**
  * Pre-declared limits of a bounded direct scan over remote Parquet (D3.2):
@@ -417,6 +468,7 @@ const sample = (
 
 export const DATASETS: { readonly [K in TableDataset]: TableDatasetSpec } & {
   readonly otel: RemoteParquetSpec
+  readonly otel_replay: OtlpReplaySpec
 } = {
   bgl: {
     id: "bgl",
@@ -1049,6 +1101,82 @@ export const DATASETS: { readonly [K in TableDataset]: TableDatasetSpec } & {
         from: "2025-09-23T00:29:24.037000Z",
         to: "2025-09-23T00:29:24.041000Z",
       },
+    },
+  },
+  otel_replay: {
+    id: "otel_replay",
+    storage: "otlp_replay",
+    title: "OpenTelemetry OTLP replay (text_bench sample)",
+    origin:
+      "A bounded, reproducible replay of public text_bench log records (the otel dataset's part_000.parquet, one millisecond of 2025-09-23) from a committed fixture, POSTed once per load as OTLP/JSON to SereneDB's own OTLP/HTTP listener (127.0.0.1 only) and read from its otel_logs table. A replay, not a production stream: no collector, no live sender.",
+    citation: [
+      "Records from the public bucket public-pme/text_bench listed in the challenge brief (part_000.parquet); licence not stated.",
+    ],
+    eventIdBase: 2_000_000_000_000,
+    timeBasis:
+      "timeUnixNano of each replayed record = the text_bench Timestamp (UTC, nanoseconds), stored by SereneDB as TIMESTAMP_NS holding the UTC wall clock; outputs truncate to microseconds, order and ties keep the nanoseconds and then event_id; observed_timestamp is the replay time, not an observation of the source system",
+    errorDefinition:
+      "SeverityText error or fatal as logged (lower case, as in otel); SeverityNumber is not used",
+    fields: {
+      ts: "Original record time (OTLP timeUnixNano = text_bench Timestamp), UTC; nanoseconds stored, truncated to microseconds in outputs. Not the replay time.",
+      message:
+        "Body as replayed, verbatim from text_bench (OTLP stringValue), untrusted text.",
+      level:
+        "SeverityText as logged (info, information, error, …); info and information stay distinct.",
+      component:
+        "service_name, which SereneDB promotes from the resource attribute service.name; null when the record has none (the Parquet source writes the empty string there).",
+      source_type:
+        "scope_name (OTel instrumentation scope) as replayed; null when empty.",
+      is_error: "SeverityText error or fatal (R-02).",
+      trace_id:
+        "TraceId as replayed (hex); null when the record has none (SereneDB stores an empty OTLP traceId as NULL). No traces are loaded: the ID only groups log records.",
+      span_id: "SpanId as replayed (hex); null when absent.",
+      severity_number:
+        "SeverityNumber as replayed; null for 0 (unspecified), which SereneDB stores as NULL; never used to derive the level.",
+    },
+    breadth: null,
+    contextScopes: ["same_trace"],
+    defaultsToSpecificScope: false,
+    labels: null,
+    apiAccesses: false,
+    patterns: false,
+    probeTerm: "called",
+    replay: {
+      licence:
+        "Public bucket listed in the challenge brief; licence not stated. The fixture keeps no LogAttributes and no record with email-, card- or long-number-like strings; Body is verbatim.",
+      fixture: {
+        path: "fixtures/otel-replay/part_000.json",
+        bytes: 210_689,
+        sha256:
+          "abed94bf944b2177ae6f5ffcd0cb6bc06b67d2ddbd871b9980a6e510f0e1a93d",
+        records: 365,
+        sourceFileIndex: 0,
+        from: "2025-09-23T00:20:00.000000000Z",
+        to: "2025-09-23T00:20:00.001000000Z",
+        resourceKeys: [
+          "service.name",
+          "service.namespace",
+          "service.version",
+          "k8s.namespace.name",
+          "k8s.pod.name",
+        ],
+        selection:
+          "Every row of text_bench part_000.parquet with Timestamp in [2025-09-23T00:20:00.000000000Z, 2025-09-23T00:20:00.001000000Z), in file_row_number order, except rows whose Body, ScopeName, ScopeVersion, kept ResourceAttributes or LogAttributes contain an email address, a 13–19 digit number, a card-like digit group or one of the words email, credit, card, cvv, password, ssn (case-insensitive). Kept per record: Timestamp (epoch ns), TraceId, SpanId, TraceFlags, SeverityText, SeverityNumber, ServiceName, Body (verbatim), ScopeName, ScopeVersion and the ResourceAttributes service.name, service.namespace, service.version, k8s.namespace.name, k8s.pod.name; LogAttributes are dropped. Built by `pnpm --filter @workspace/corpus otel:replay-fixture` (SereneDB selects the rows).",
+      },
+      listener: {
+        schema: "otlp",
+        table: "otel_logs",
+        corpus: { database: "postgres", portEnv: "SERENEDB_OTLP_PORT" },
+        samples: {
+          database: "log_insights_samples_otel",
+          portEnv: "SERENEDB_OTLP_SAMPLES_PORT",
+        },
+      },
+      attributes: {
+        replayId: "log_insights.replay_id",
+        fixtureRow: "log_insights.fixture_row",
+      },
+      errorLevels: ["error", "fatal"],
     },
   },
 }

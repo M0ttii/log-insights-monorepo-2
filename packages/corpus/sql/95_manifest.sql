@@ -26,4 +26,7 @@ SELECT
   -- version, the reference window with its index, build time and duration;
   -- NULL without a remote dataset. Everything except the build facts is
   -- part of data_version.
-  $15::JSON AS external_sources;
+  $15::JSON AS external_sources,
+  -- OTLP replay (LOG-35): replay ID and time, fixture pin, listener table;
+  -- NULL without otel_replay. Part of data_version.
+  $16::JSON AS otlp_replay;

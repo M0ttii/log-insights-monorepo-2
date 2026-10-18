@@ -14,6 +14,7 @@ import {
   datasetLoad,
   joinPosix,
   type ExternalLoad,
+  type ReplayLoad,
   type Source,
 } from "./sources.ts"
 import { sqlString, sqlStringList } from "./sql-script.ts"
@@ -36,6 +37,16 @@ export type LoadFacts = {
     to: string | null
   }[]
   otelIndex?: { builtAt: string; ms: number }
+  /** The OTLP replay of this load (LOG-35, D7), known before the steps run. */
+  replay?: {
+    replayId: string
+    replayedAt: string
+    replayedAtNanos: string
+    sourceUrl: string
+    /** First and last time_unix_nano of the fixture (digits). */
+    minNanos: string
+    maxNanos: string
+  }
 }
 
 export type Step = {
@@ -69,6 +80,7 @@ export const SQL_FILES = [
   "60_otel_sources.sql",
   "61_otel_reference.sql",
   "62_otel_stats.sql",
+  "63_otel_replay.sql",
   "90_checks.sql",
   "95_manifest.sql",
   "99_cleanup.sql",
@@ -355,15 +367,19 @@ export function loadSteps(source: Source): Step[] {
     },
     { file: "50_index.sql", timing: "shared", placeholders: none },
     ...source.external.flatMap((load) => otelSteps(load)),
+    ...(source.replay === null ? [] : [replayStep(source.replay)]),
     {
       file: "90_checks.sql",
       timing: "shared",
       placeholders: (_timings, facts = {}) => ({
         EXTENSION_VISIBILITY: pieces.EXTENSION_VISIBILITY,
         EXTENSION_CHECKS: pieces.EXTENSION_CHECKS,
-        OTEL_CHECKS: source.external
-          .flatMap((load) => otelChecks(load, ranges(facts)))
-          .join("\n  "),
+        OTEL_CHECKS: [
+          ...source.external.flatMap((load) => otelChecks(load, ranges(facts))),
+          ...(source.replay === null
+            ? []
+            : replayChecks(source.replay, replayFacts(facts))),
+        ].join("\n  "),
       }),
     },
   ]
@@ -564,6 +580,113 @@ function otelChecks(
     `UNION ALL SELECT 34, 'otel: full-text index @@ ''${term}'' = regex count over the reference window', ` +
       `(SELECT count(*) FROM otel_ref WHERE ${regex})::VARCHAR, (SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}')::VARCHAR, ` +
       `(SELECT count(*) FROM otel_ref_idx WHERE message @@ '${term}') = (SELECT count(*) FROM otel_ref WHERE ${regex}) AND (SELECT count(*) FROM otel_ref WHERE ${regex}) > 0`,
+  ]
+}
+
+// ----------------------------------------------------- otel_replay (LOG-35)
+
+const REPLAY_ID = /^rp_[0-9a-f]{12}$/
+const ATTRIBUTE = /^[a-z_.]+$/
+const IDENTIFIER = /^[a-z_][a-z0-9_]*$/
+
+function replayFacts(facts: LoadFacts): NonNullable<LoadFacts["replay"]> {
+  const replay = facts.replay
+  if (replay === undefined)
+    throw new Error("the replay run is set before the load steps")
+  if (
+    !REPLAY_ID.test(replay.replayId) ||
+    !NANO.test(replay.replayedAt) ||
+    ![replay.replayedAtNanos, replay.minNanos, replay.maxNanos].every((v) =>
+      /^\d+$/.test(v)
+    )
+  )
+    throw new Error("malformed replay facts")
+  return replay
+}
+
+function replayTableSql(load: ReplayLoad): string {
+  if (!IDENTIFIER.test(load.schema) || !IDENTIFIER.test(load.table))
+    throw new Error(`invalid listener table ${load.schema}.${load.table}`)
+  return `${load.schema}.${load.table}`
+}
+
+function replayAttributes(): { replayId: string; fixtureRow: string } {
+  const { attributes } = DATASETS.otel_replay.replay
+  if (!ATTRIBUTE.test(attributes.replayId) || !ATTRIBUTE.test(attributes.fixtureRow))
+    throw new Error("invalid replay attribute names")
+  return attributes
+}
+
+function replayErrorLevels(): string {
+  return DATASETS.otel_replay.replay.errorLevels
+    .map((level) => sqlString(level))
+    .join(", ")
+}
+
+/** 63_otel_replay.sql, after the loader has posted the fixture (load.ts). */
+function replayStep(load: ReplayLoad): Step {
+  return {
+    file: "63_otel_replay.sql",
+    timing: "shared",
+    placeholders: (_timings, facts = {}) => {
+      const replay = replayFacts(facts)
+      const attributes = replayAttributes()
+      const columns = guideColumns(load.dataset)
+      const value = (column: DatasetColumn) => {
+        if (!/^[a-z_]+$/.test(column)) throw new Error(column)
+        return column
+      }
+      if (replay.sourceUrl.includes("'") || load.fixture.path.includes("'"))
+        throw new Error("fixture path and source must not contain quotes")
+      return {
+        TABLE: replayTableSql(load),
+        REPLAY_ATTR: attributes.replayId,
+        ROW_ATTR: attributes.fixtureRow,
+        REPLAY_ID: replay.replayId,
+        EVENT_ID_BASE: String(DATASETS.otel_replay.eventIdBase),
+        ERROR_LEVELS: replayErrorLevels(),
+        FIXTURE_PATH: load.fixture.path,
+        FIXTURE_SHA256: load.fixture.sha256,
+        RECORDS: String(load.fixture.records),
+        SOURCE_URL: replay.sourceUrl,
+        REPLAYED_AT: replay.replayedAt,
+        TIME_BASIS: sqlString(DATASETS.otel_replay.timeBasis),
+        LABEL_SOURCE: sqlString("none: this dataset has no labels"),
+        FIELD_STATS: columns
+          .map((column) => {
+            const c = value(column)
+            return (
+              `SELECT ${literal(load.dataset)} AS dataset, ${sqlString(column)} AS field, count(${c}) AS events_with_value, count(DISTINCT ${c}) AS distinct_values, ` +
+              `coalesce((SELECT to_json(list({'value': v, 'events': n} ORDER BY n DESC, v)) FROM (SELECT ${c}::VARCHAR AS v, count(*) AS n FROM otel_replay_events ` +
+              `WHERE ${c} IS NOT NULL GROUP BY 1 ORDER BY n DESC, v LIMIT 3)), '[]'::JSON) AS examples FROM otel_replay_events`
+            )
+          })
+          .join("\nUNION ALL\n"),
+      }
+    },
+  }
+}
+
+/** Load checks of the OTLP replay (90_checks.sql), ord 40 and up. */
+function replayChecks(
+  load: ReplayLoad,
+  replay: NonNullable<LoadFacts["replay"]>
+): string[] {
+  const records = load.fixture.records
+  const term = DATASETS.otel_replay.probeTerm
+  if (!/^[a-z]+$/.test(term)) throw new Error(`probe term: ${term}`)
+  const regex = `regexp_matches(lower(message), '(^|[^a-z0-9_])${term}([^a-z0-9_]|$)')`
+  return [
+    `UNION ALL SELECT 40, 'otel_replay: the view, its index and the distinct event IDs each hold exactly the fixture records', '${records} records', ` +
+      "(SELECT count(*) FROM otel_replay_events)::VARCHAR || ' view, ' || (SELECT count(*) FROM otel_replay_idx) || ' index, ' || (SELECT count(DISTINCT event_id) FROM otel_replay_events) || ' distinct event IDs', " +
+      `(SELECT count(*) FROM otel_replay_events) = ${records} AND (SELECT count(*) FROM otel_replay_idx) = ${records} AND (SELECT count(DISTINCT event_id) FROM otel_replay_events) = ${records}`,
+    "UNION ALL SELECT 41, 'otel_replay: record times are the fixture''s timeUnixNano (ns kept), observed_timestamp is the replay time', " +
+      `'${replay.minNanos} – ${replay.maxNanos}, observed ${replay.replayedAtNanos}', ` +
+      "(SELECT min(epoch_ns(ts))::VARCHAR || ' – ' || max(epoch_ns(ts)) || ', observed ' || string_agg(DISTINCT epoch_ns(observed_ts)::VARCHAR, ',') FROM otel_replay_events), " +
+      `(SELECT min(epoch_ns(ts)) = ${replay.minNanos} AND max(epoch_ns(ts)) = ${replay.maxNanos} AND count(*) FILTER (WHERE epoch_ns(observed_ts) IS DISTINCT FROM ${replay.replayedAtNanos}) = 0 FROM otel_replay_events)`,
+    `UNION ALL SELECT 42, 'otel_replay: full-text index @@ ''${term}'' = regex count over the view', ` +
+      `(SELECT count(*) FROM otel_replay_events WHERE ${regex})::VARCHAR, (SELECT count(*) FROM otel_replay_idx WHERE message @@ '${term}')::VARCHAR, ` +
+      `(SELECT count(*) FROM otel_replay_idx WHERE message @@ '${term}') = (SELECT count(*) FROM otel_replay_events WHERE ${regex}) AND (SELECT count(*) FROM otel_replay_events WHERE ${regex}) > 0`,
   ]
 }
 

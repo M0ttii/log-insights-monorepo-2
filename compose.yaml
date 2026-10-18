@@ -29,10 +29,17 @@ services:
       # changing it later requires ALTER ROLE or a fresh volume.
       POSTGRES_PASSWORD: ${SERENEDB_PASSWORD:?Set SERENEDB_PASSWORD in .env (see .env.example)}
     # Published on loopback only (AGENTS.md: SereneDB binds to loopback).
+    # 4318 and 4319 are the OTLP/HTTP listeners of serened.conf (LOG-35,
+    # otel_replay): database postgres and log_insights_samples_otel.
     ports:
       - "127.0.0.1:${SERENEDB_PORT:?Set SERENEDB_PORT in .env (see .env.example)}:7890"
+      - "127.0.0.1:${SERENEDB_OTLP_PORT:?Set SERENEDB_OTLP_PORT in .env (see .env.example)}:4318"
+      - "127.0.0.1:${SERENEDB_OTLP_SAMPLES_PORT:?Set SERENEDB_OTLP_SAMPLES_PORT in .env (see .env.example)}:4319"
     volumes:
       - serenedb-data:/var/lib/serenedb
+      # Repository server configuration with the OTLP listeners (LOG-35);
+      # the entrypoint copies it before appending --flagfile.
+      - ./serened.conf:/etc/serenedb/serened.conf:ro
       # Raw corpus files for read_csv (technical.md § 7).
       - ./.data/raw:/data/raw:ro
       # Query receipts for read_json in the performance report (technical.md § 6.2).

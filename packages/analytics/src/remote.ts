@@ -24,6 +24,7 @@ import {
   type Relation,
   type ScanFile,
 } from "./relations.ts"
+import { replayNotes } from "./replay.ts"
 import { exactCount, isoTime, SqlParams } from "./sql.ts"
 
 /**
@@ -372,6 +373,13 @@ function referenceSource(
     bytes_read: { kind: "not_measured", reason: NOT_MEASURED },
     bytes_estimated_from_footer: null,
   }
+}
+
+/** Notes of a run with a receipt source (otel or otel_replay). */
+export function sourceNotes(source: ReceiptSource): string[] {
+  return source.kind === "remote_parquet"
+    ? remoteNotes(source.path)
+    : replayNotes(source)
 }
 
 /** Notes every otel result carries. */

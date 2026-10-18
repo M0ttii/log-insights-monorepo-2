@@ -22,3 +22,9 @@ DROP VIEW IF EXISTS otel_ref;
 DROP TABLE IF EXISTS otel_reference;
 DROP TABLE IF EXISTS otel_sources;
 DROP TABLE IF EXISTS otel_row_groups;
+-- The OTLP replay (LOG-35): index and view over the listener table, and the
+-- replay facts. The listener's own rows stay; a replay load clears its
+-- previous rows itself (src/replay.ts).
+DROP INDEX IF EXISTS otel_replay_idx;
+DROP VIEW IF EXISTS otel_replay_events;
+DROP TABLE IF EXISTS otel_replay;
