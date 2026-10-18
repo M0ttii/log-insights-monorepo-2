@@ -1,0 +1,26 @@
+{
+  "kind": "development_client_probe",
+  "formal_eval": false,
+  "client": "Claude Desktop",
+  "model_ui": "Opus 5.5",
+  "effort_ui": "Mittel",
+  "code_base_commit": "82f058537e2840f2234dd4bac73dcf952d1897d7",
+  "guidance_version": "1.0.8",
+  "common_sha256": "f8ff6bdfc580ffbcc559d67adff705f5704786f7b00f979a9dece4c860540163",
+  "data_version": "dv_5663ee75e955ec1d",
+  "question": "I need an analysis of the BGL logs.",
+  "prompt": null,
+  "chat_url": "https://claude.ai/chat/84eb633f-d970-4cfd-8e47-3a3c7784569d",
+  "receipt_id": "r_43109b4f",
+  "observed_preface": "I'll take a look at the BGL logs with your local log tools, starting with what's in the corpus.",
+  "observed_question": "Which perspective should the BGL analysis take?",
+  "observed_choices": [
+    "Team Lead Recurring patterns, trends and distribution by team and component",
+    "Manager Top investigation priorities and the decision needed",
+    "Engineer Diagnose one specific failure, event or time window in depth"
+  ],
+  "routing": "pass: clarification requested before role answer",
+  "numerical_contract": "pass: no analytical number/time claims in visible preface, question or choices",
+  "observation_format": "verbatim visible accessibility text; not Markdown export",
+  "check_claims": "not needed: no numerical/time answer claims"
+}

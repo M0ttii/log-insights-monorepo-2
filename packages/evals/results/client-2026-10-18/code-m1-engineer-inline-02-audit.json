@@ -1,0 +1,961 @@
+{
+  "trial": "dev-eng-inline-02",
+  "client": "Claude Code 2.1.302",
+  "requested_model": "claude-opus-5-5",
+  "observed_models": ["claude-opus-5-5"],
+  "m1_violations": [],
+  "actual_prompts_get": [
+    {
+      "at": "2026-10-18T18:43:22.413Z",
+      "event": "prompts_get",
+      "name": "engineer_investigation",
+      "client_arguments": {},
+      "bound_arguments": {
+        "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z"
+      },
+      "guidance_version": "1.0.8"
+    }
+  ],
+  "final_present": true,
+  "whole_answer_findings": [
+    {
+      "kind": "uncited",
+      "value": "2005-06-04",
+      "start": 473,
+      "end": 483,
+      "excerpt": "- Filter: full-text terms `ciod failed to read message prefix on control stream`. One simultaneity check covers only 2005-06-04, a narrower window that is labe…"
+    },
+    {
+      "kind": "uncited",
+      "value": "10",
+      "start": 1939,
+      "end": 1941,
+      "excerpt": "- **Same node, ±10 min:** 0 events before [r_740eb4a0.f4] and 1 after [r_740eb4a0.f5]. That one is the same message again at +42,258.222 ms [r_740eb4a0.f2]. No…"
+    },
+    {
+      "kind": "uncited",
+      "value": "5",
+      "start": 2152,
+      "end": 2153,
+      "excerpt": "- **Whole dataset, ±5 min:**"
+    },
+    {
+      "kind": "uncited",
+      "value": "2005-06-04 07:00",
+      "start": 2913,
+      "end": 2929,
+      "excerpt": "| 2005-06-04 07:00 hour (narrower window) | 1,020 events [r_deb4dcbd.f51]: `R00` 32 [r_deb4dcbd.f53], the 27 racks outside the top five [r_deb4dcbd.f175] 860 […"
+    },
+    {
+      "kind": "uncited",
+      "value": "2005-06-04 11:00",
+      "start": 3090,
+      "end": 3106,
+      "excerpt": "| 2005-06-04 11:00 hour | 1,020 events [r_deb4dcbd.f51 → see f79: r_deb4dcbd.f79] |"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 3193,
+      "end": 3195,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 3222,
+      "end": 3224,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 3249,
+      "end": 3251,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 3279,
+      "end": 3281,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 3309,
+      "end": 3311,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 4488,
+      "end": 4490,
+      "excerpt": "| The `LOGIN chdir` failure is linked to the prefix failures | **open** (mixed) | For: it appears less than a second before the anchor [r_5857fe61.f8] and also…"
+    },
+    {
+      "kind": "uncited",
+      "value": "06",
+      "start": 4534,
+      "end": 4536,
+      "excerpt": "| The `LOGIN chdir` failure is linked to the prefix failures | **open** (mixed) | For: it appears less than a second before the anchor [r_5857fe61.f8] and also…"
+    },
+    {
+      "kind": "uncited",
+      "value": "2005-06-04",
+      "start": 5858,
+      "end": 5868,
+      "excerpt": "- The day trend split by rack was too large to return here, so per-rack simultaneity was checked only for 2005-06-04."
+    },
+    {
+      "kind": "uncited",
+      "value": "1",
+      "start": 5948,
+      "end": 5949,
+      "excerpt": "- Batch 1: 30 claims checked [r_8aba9e4b.f1] · 0 mismatch [r_8aba9e4b.f2] · 0 unresolved [r_8aba9e4b.f3]."
+    },
+    {
+      "kind": "uncited",
+      "value": "2",
+      "start": 6054,
+      "end": 6055,
+      "excerpt": "- Batch 2: 4 claims checked [r_2d046e07.f1] · 0 mismatch [r_2d046e07.f2] · 0 unresolved [r_2d046e07.f3]."
+    },
+    {
+      "kind": "uncited",
+      "value": "11:00",
+      "start": 6157,
+      "end": 6162,
+      "excerpt": "- The 11:00 bucket citation is r_deb4dcbd.f79, which was checked; nothing checks the explanations above."
+    }
+  ],
+  "uncited_numbers": [
+    {
+      "value": "2005-06-04",
+      "start": 473,
+      "end": 483,
+      "excerpt": "- Filter: full-text terms `ciod failed to read message prefix on control stream`. One simultaneity check covers only 2005-06-04, a narrower window that is labe…"
+    },
+    {
+      "value": "10",
+      "start": 1939,
+      "end": 1941,
+      "excerpt": "- **Same node, ±10 min:** 0 events before [r_740eb4a0.f4] and 1 after [r_740eb4a0.f5]. That one is the same message again at +42,258.222 ms [r_740eb4a0.f2]. No…"
+    },
+    {
+      "value": "5",
+      "start": 2152,
+      "end": 2153,
+      "excerpt": "- **Whole dataset, ±5 min:**"
+    },
+    {
+      "value": "2005-06-04 07:00",
+      "start": 2913,
+      "end": 2929,
+      "excerpt": "| 2005-06-04 07:00 hour (narrower window) | 1,020 events [r_deb4dcbd.f51]: `R00` 32 [r_deb4dcbd.f53], the 27 racks outside the top five [r_deb4dcbd.f175] 860 […"
+    },
+    {
+      "value": "2005-06-04 11:00",
+      "start": 3090,
+      "end": 3106,
+      "excerpt": "| 2005-06-04 11:00 hour | 1,020 events [r_deb4dcbd.f51 → see f79: r_deb4dcbd.f79] |"
+    },
+    {
+      "value": "06",
+      "start": 3193,
+      "end": 3195,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "value": "06",
+      "start": 3222,
+      "end": 3224,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "value": "06",
+      "start": 3249,
+      "end": 3251,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "value": "06",
+      "start": 3279,
+      "end": 3281,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "value": "06",
+      "start": 3309,
+      "end": 3311,
+      "excerpt": "Days with failures: 06-04 2,040 [r_d915c620.f3], 06-09 124 [r_d915c620.f8], 06-13 1,017 [r_d915c620.f12], 06-16 2,040 [r_d915c620.f15], 06-20 762 [r_d915c620.f…"
+    },
+    {
+      "value": "06",
+      "start": 4488,
+      "end": 4490,
+      "excerpt": "| The `LOGIN chdir` failure is linked to the prefix failures | **open** (mixed) | For: it appears less than a second before the anchor [r_5857fe61.f8] and also…"
+    },
+    {
+      "value": "06",
+      "start": 4534,
+      "end": 4536,
+      "excerpt": "| The `LOGIN chdir` failure is linked to the prefix failures | **open** (mixed) | For: it appears less than a second before the anchor [r_5857fe61.f8] and also…"
+    },
+    {
+      "value": "2005-06-04",
+      "start": 5858,
+      "end": 5868,
+      "excerpt": "- The day trend split by rack was too large to return here, so per-rack simultaneity was checked only for 2005-06-04."
+    },
+    {
+      "value": "1",
+      "start": 5948,
+      "end": 5949,
+      "excerpt": "- Batch 1: 30 claims checked [r_8aba9e4b.f1] · 0 mismatch [r_8aba9e4b.f2] · 0 unresolved [r_8aba9e4b.f3]."
+    },
+    {
+      "value": "2",
+      "start": 6054,
+      "end": 6055,
+      "excerpt": "- Batch 2: 4 claims checked [r_2d046e07.f1] · 0 mismatch [r_2d046e07.f2] · 0 unresolved [r_2d046e07.f3]."
+    },
+    {
+      "value": "11:00",
+      "start": 6157,
+      "end": 6162,
+      "excerpt": "- The 11:00 bucket citation is r_deb4dcbd.f79, which was checked; nothing checks the explanations above."
+    }
+  ],
+  "receipt_metadata": [
+    {
+      "receipt_id": "r_0f740530",
+      "sha256": "0def103b7a9bf08b4df4b22cefe048e2bb5e6c15357bc3ff567d36313249cb9d",
+      "tool": "count_events",
+      "tool_version": "1.3.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "d5444cfce5ff5a938c158267fc804c1f63bbb4187bebde29ebee2e0c91aec628",
+      "result_digest": "c6324c06ac17f780e8c6c5a6a6e6a923268d6b8e6846886d47407ba76c5fd279",
+      "truncated": true,
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 10,
+      "duration_ms": 24.09,
+      "input": {
+        "group_by": ["node"],
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "top_n": 10
+      }
+    },
+    {
+      "receipt_id": "r_1b3d221d",
+      "sha256": "5618a0fc820d5c70837c0c8667da0f31fea179ba418628a0ea07ce018445950c",
+      "tool": "describe_corpus",
+      "tool_version": "3.0.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "b74a982cf1265d25d8f2534ede590f776976f44189e3a417b15fbb90130f04f2",
+      "result_digest": "99c22803d639b7940fa657be7b905e7d2930b9bf973a0f246cb7da428ce68af5",
+      "truncated": false,
+      "population": {
+        "count": 4956130,
+        "unit": "log_events"
+      },
+      "rows_returned": 50,
+      "duration_ms": 25.49,
+      "input": {}
+    },
+    {
+      "receipt_id": "r_2d046e07",
+      "sha256": "a1a362056bbf4002a17e97a2ccc1223dac039a5e0f79b9e59ff5db2daaf854d2",
+      "tool": "check_claims",
+      "tool_version": "1.0.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "9defaf3a24307a21c77296acd8ada39d44ff196bf81f99d8df554bfae171e124",
+      "result_digest": "dd6956361fc7e07e2adbf4335e776a98f236bf4bd8854762d5d69510171a3c14",
+      "truncated": false,
+      "population": null,
+      "rows_returned": 4,
+      "duration_ms": 0,
+      "input": {
+        "claims": [
+          {
+            "fact": "r_40807e8f.f34",
+            "value": 2178,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_40807e8f.f3",
+            "value": 8,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_40807e8f.f7",
+            "value": 1408,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-08T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_d915c620.f7",
+            "value": 0,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-08T00:00:00.000000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "receipt_id": "r_40807e8f",
+      "sha256": "3610eedd16dfd050d619503b82c94e24b0e2d71ecf4dc4eafb145142712810c2",
+      "tool": "event_trend",
+      "tool_version": "1.2.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "191a6980207bdee059562941f19137c89b9393078e1c072ac9257915a91b4345",
+      "result_digest": "6002f47d57ee490b84cf11a9c8af140b02396a391c0ac0bbdad4f2f68c4d459a",
+      "truncated": false,
+      "population": {
+        "count": 2178,
+        "unit": "log_events"
+      },
+      "rows_returned": 28,
+      "duration_ms": 22.81,
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod LOGIN chdir failed No such file or directory"
+      }
+    },
+    {
+      "receipt_id": "r_5857fe61",
+      "sha256": "75bc9c0cd9d4b5afcf9eaa65a689d1555706158f8b2b89bf198e6a477f27c438",
+      "tool": "get_log_context",
+      "tool_version": "1.1.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "f67dd887daea2fcd6737a97b39313efc91a5b631da270e3e4a8c3cc4099c90c6",
+      "result_digest": "f58b9d742ecf42afc2eaf46df60bc71c39685ad5ffefedb179fbcac7b903902e",
+      "truncated": true,
+      "population": {
+        "count": 1023,
+        "unit": "log_events"
+      },
+      "rows_returned": 5,
+      "duration_ms": 24.37,
+      "input": {
+        "mode": "event",
+        "window_minutes": 5,
+        "event_id": 14738,
+        "before": 8,
+        "after": 3,
+        "scope": "dataset"
+      }
+    },
+    {
+      "receipt_id": "r_714cabc0",
+      "sha256": "75dd4533907ff1045336c0a6b1fb45e92d602f929fe02e0ec8c3c1849d0260cf",
+      "tool": "count_events",
+      "tool_version": "1.3.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "12b4cc9cec934a81e2a16bb0bb6900229a955f4a9306c4220033e75dafe60e7f",
+      "result_digest": "792cba2f581d5fc0cbf7df7ca969f802ce52989fa2e562aa886ea52b1498075d",
+      "truncated": false,
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 1,
+      "duration_ms": 38.91,
+      "input": {
+        "group_by": ["component", "level"],
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "top_n": 5
+      }
+    },
+    {
+      "receipt_id": "r_740eb4a0",
+      "sha256": "99aa5dca3e4e21cfe41d68b204bb2fdf3c6b1545ac6571a56eb8aa800b40c970",
+      "tool": "get_log_context",
+      "tool_version": "1.1.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "f77f3b8b91fb3178637f2d2316fdfeb12722d5bfe7282258cbd21272d19171cd",
+      "result_digest": "de7cebb07c7f9513da3b50027d9eb9c032b38fbf061d8ddaa50a0ee844c42161",
+      "truncated": false,
+      "population": {
+        "count": 1,
+        "unit": "log_events"
+      },
+      "rows_returned": 1,
+      "duration_ms": 50.44,
+      "input": {
+        "mode": "event",
+        "window_minutes": 10,
+        "event_id": 14738,
+        "before": 5,
+        "after": 5,
+        "scope": "same_node"
+      }
+    },
+    {
+      "receipt_id": "r_89438045",
+      "sha256": "3f18bbda9fc6cb73bbed5eab09e7ea372c6e95a20dde4becce4008a346ba7a46",
+      "tool": "event_trend",
+      "tool_version": "1.2.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "4cab5b14c6114fec6c80db297472c2ee2e0b5012f32cfb772f22ca4fc50742c5",
+      "result_digest": "c45a5c94f98bc5c6f75226d21c65ce329e9301e3ace1ac66122f4b18de1ad467",
+      "truncated": false,
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 28,
+      "duration_ms": 34.42,
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "split_by": "rack"
+      }
+    },
+    {
+      "receipt_id": "r_8aba9e4b",
+      "sha256": "f54b169c63efb340688c2aefc15349c7a2d0231264c176af4e629cc9aec3c50a",
+      "tool": "check_claims",
+      "tool_version": "1.0.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "6b68a89baace27ead4e73314e8d30081e5f701e63d87b9eba6fd24fcbcab392e",
+      "result_digest": "8b87b355edefca1e969e05544d49081b22355c370dd34cf43d27e4c31928bb11",
+      "truncated": false,
+      "population": null,
+      "rows_returned": 30,
+      "duration_ms": 0,
+      "input": {
+        "claims": [
+          {
+            "fact": "r_d91a3550.f11",
+            "value": 5983,
+            "metric": "matches",
+            "group": {}
+          },
+          {
+            "fact": "r_d91a3550.f12",
+            "value": "2005-06-01",
+            "metric": "window_start",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_d91a3550.f13",
+            "value": "2005-07-01",
+            "metric": "window_end",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_d915c620.f30",
+            "value": "2005-06-03T22:42:50Z",
+            "metric": "data_span_start",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_714cabc0.f2",
+            "value": 5983,
+            "metric": "events",
+            "group": {
+              "component": "APP",
+              "level": "FATAL"
+            }
+          },
+          {
+            "fact": "r_740eb4a0.f1",
+            "value": "2005-06-04T07:24:32Z",
+            "metric": "event_time",
+            "group": {
+              "event_id": "14738"
+            }
+          },
+          {
+            "fact": "r_740eb4a0.f4",
+            "value": 0,
+            "metric": "events_in_window",
+            "group": {
+              "direction": "before"
+            }
+          },
+          {
+            "fact": "r_740eb4a0.f5",
+            "value": 1,
+            "metric": "events_in_window",
+            "group": {
+              "direction": "after"
+            }
+          },
+          {
+            "fact": "r_740eb4a0.f2",
+            "value": "42,258.222",
+            "metric": "offset",
+            "group": {
+              "event_id": "15250"
+            }
+          },
+          {
+            "fact": "r_5857fe61.f8",
+            "value": -838.005,
+            "metric": "offset",
+            "group": {
+              "event_id": "14736"
+            }
+          },
+          {
+            "fact": "r_5857fe61.f10",
+            "value": -803.828,
+            "metric": "offset",
+            "group": {
+              "event_id": "14737"
+            }
+          },
+          {
+            "fact": "r_5857fe61.f13",
+            "value": 1021,
+            "metric": "events_in_window",
+            "group": {
+              "direction": "after"
+            }
+          },
+          {
+            "fact": "r_5857fe61.f2",
+            "value": 33.908,
+            "metric": "offset",
+            "group": {
+              "event_id": "14739"
+            }
+          },
+          {
+            "fact": "r_0f740530.f1",
+            "value": 512,
+            "metric": "groups",
+            "group": {}
+          },
+          {
+            "fact": "r_0f740530.f2",
+            "value": 15,
+            "metric": "events",
+            "group": {
+              "node": "R00-M0-N0-I:J18-U01"
+            }
+          },
+          {
+            "fact": "r_bbf1e963.f1",
+            "value": 32,
+            "metric": "groups",
+            "group": {}
+          },
+          {
+            "fact": "r_bbf1e963.f2",
+            "value": 240,
+            "metric": "events",
+            "group": {
+              "rack": "R00"
+            }
+          },
+          {
+            "fact": "r_bbf1e963.f34",
+            "value": 144,
+            "metric": "events",
+            "group": {
+              "rack": "R31"
+            }
+          },
+          {
+            "fact": "r_bbf1e963.f43",
+            "value": 12,
+            "metric": "other_groups",
+            "group": {}
+          },
+          {
+            "fact": "r_bbf1e963.f42",
+            "value": 1581,
+            "metric": "other_events",
+            "group": {}
+          },
+          {
+            "fact": "r_deb4dcbd.f51",
+            "value": 1020,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T07:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_deb4dcbd.f53",
+            "value": 32,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T07:00:00.000000Z",
+              "rack": "R00"
+            }
+          },
+          {
+            "fact": "r_deb4dcbd.f52",
+            "value": 860,
+            "metric": "other_events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T07:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_deb4dcbd.f175",
+            "value": 27,
+            "metric": "merged_values",
+            "group": {
+              "dataset": "bgl"
+            }
+          },
+          {
+            "fact": "r_deb4dcbd.f79",
+            "value": 1020,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T11:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_d915c620.f3",
+            "value": 2040,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-04T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_d915c620.f8",
+            "value": 124,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-09T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_d915c620.f12",
+            "value": 1017,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-13T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_d915c620.f15",
+            "value": 2040,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-16T00:00:00.000000Z"
+            }
+          },
+          {
+            "fact": "r_d915c620.f19",
+            "value": 762,
+            "metric": "events",
+            "group": {
+              "dataset": "bgl",
+              "bucket_start": "2005-06-20T00:00:00.000000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "receipt_id": "r_bbf1e963",
+      "sha256": "6567ae04ff6dc08ac88980ba68c5c96f38ff763fc6c0cb2e70520f65de0a25d9",
+      "tool": "count_events",
+      "tool_version": "1.3.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "18df8f0b9ffacaa70c5b2d0d115d6f372aff38d2d814029dcec9fe58881bd38a",
+      "result_digest": "92f9ad93dfc23de1ac0f71666d448fb64f48b109e0650d1a35a5bd30ef66f837",
+      "truncated": true,
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 20,
+      "duration_ms": 19.36,
+      "input": {
+        "group_by": ["rack"],
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "top_n": 20
+      }
+    },
+    {
+      "receipt_id": "r_d915c620",
+      "sha256": "565b8a20d320c9e7c1ce25e13f4b73d02119c0883141a3a2fd2c653c3467112b",
+      "tool": "event_trend",
+      "tool_version": "1.2.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "e704200208e2842157247f3672304446a44872284c487784fe573358fe0de19c",
+      "result_digest": "54756a90b5e91b5ca4469e40588a38229565e6f0a05a5e6f6709b4a1ab04a3ad",
+      "truncated": false,
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 28,
+      "duration_ms": 24.68,
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream"
+      }
+    },
+    {
+      "receipt_id": "r_d91a3550",
+      "sha256": "87c1b86f55d553be4a2e63a6a189a09d5b108a6c702c746d36c3959316fb0309",
+      "tool": "search_logs",
+      "tool_version": "1.2.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "e91fb389e0d9852d41a3a519f191ef08822dc0aa43d720ce044b313760fcc7dc",
+      "result_digest": "a9ddc243216d17b5d927851c8785ff4956e9edbd3b285a20c7c57fbc1395524f",
+      "truncated": true,
+      "population": {
+        "count": 5983,
+        "unit": "log_events"
+      },
+      "rows_returned": 10,
+      "duration_ms": 39.45,
+      "input": {
+        "query": "ciod failed to read message prefix on control stream",
+        "match": "terms",
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "sort": "time_asc",
+        "limit": 10
+      }
+    },
+    {
+      "receipt_id": "r_deb4dcbd",
+      "sha256": "ab25a4dc73cd05cb18071a801d957be58f7ab831ac16140b40a45007640ec53b",
+      "tool": "event_trend",
+      "tool_version": "1.2.0",
+      "data_version": "dv_5663ee75e955ec1d",
+      "signature": "fb6eb61ff35f16ffae600674ea9152667e20b0aaa859f8fe1d78134f7466ab9e",
+      "result_digest": "655470061656c36909aea986c66012031d95772860ac70400332f950e6bfeccb",
+      "truncated": false,
+      "population": {
+        "count": 2040,
+        "unit": "log_events"
+      },
+      "rows_returned": 24,
+      "duration_ms": 47.09,
+      "input": {
+        "dataset": "bgl",
+        "bucket": "hour",
+        "from": "2005-06-04T00:00:00Z",
+        "to": "2005-06-05T00:00:00Z",
+        "text": "ciod failed to read message prefix on control stream",
+        "split_by": "rack"
+      }
+    }
+  ],
+  "check_summaries": [
+    {
+      "receipt_id": "r_2d046e07",
+      "summary": {
+        "checked": 4,
+        "verified": 4,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "4 claims checked · 0 mismatch · 0 unresolved"
+      }
+    },
+    {
+      "receipt_id": "r_8aba9e4b",
+      "summary": {
+        "checked": 30,
+        "verified": 30,
+        "mismatch": 0,
+        "unresolved": 0,
+        "text": "30 claims checked · 0 mismatch · 0 unresolved"
+      }
+    }
+  ],
+  "note": "Deterministic analysis only. No independent rubric/human rating; full expansion coverage unavailable in M1. Raw stream retained unchanged.",
+  "predeclared": {
+    "created_at_utc": "2026-10-18T18:43:20.851041+00:00",
+    "scope": "LOG-38 targeted client interoperability probe after describe_corpus result-size hint; development only",
+    "head": "82f058537e2840f2234dd4bac73dcf952d1897d7",
+    "tracked_dirty_at_predeclaration": [
+      " M packages/agent/src/playbooks.test.ts",
+      " M packages/agent/src/playbooks/common.md"
+    ],
+    "model_requested": "claude-opus-5-5",
+    "effort_requested": "medium",
+    "max_turns": 12,
+    "watchdog_seconds": 420,
+    "automatic_retries": 0,
+    "server_name": "log-insights",
+    "m1_tools": [
+      "describe_corpus",
+      "search_logs",
+      "get_log_context",
+      "count_events",
+      "event_trend",
+      "check_claims"
+    ],
+    "input_constraints": {
+      "search_logs.match": "terms only",
+      "get_log_context.mode": "event only",
+      "count_events.compare": "absent"
+    },
+    "question_source": "packages/evals/questions/dev.yaml (development only)",
+    "guidance_sha256": {
+      "common.md": "f8ff6bdfc580ffbcc559d67adff705f5704786f7b00f979a9dece4c860540163",
+      "engineer.md": "47772697a591ea4708573622a464cc393dcbc6e2d770ea4e61c576dd3ca7c8d7",
+      "team-lead.md": "5d8e11741e4bc15ae58f09de25142a704694655abf7ed63c4154e16e3b12c740",
+      "manager.md": "7b165fb8b3fcafab5f341f0a2a5463b0335bb2119ff49300065d7ebc31cf6158"
+    },
+    "trials": {
+      "dev-eng-inline-02": {
+        "role": "engineer",
+        "prompt": "engineer_investigation",
+        "args": {
+          "question": "On BGL in June 2005, ciod repeatedly failed to read the message prefix on the control stream. Is this one bad node or something job-wide, and what should I check next?",
+          "dataset": "bgl",
+          "from": "2005-06-01T00:00:00Z",
+          "to": "2005-07-01T00:00:00Z"
+        }
+      }
+    },
+    "prompt_delivery": "Actual Claude Code MCP slash command, no arguments; harness binds exact predeclared question/scope as renderer defaults, then appends explicit M1 boundary. Original source renderer remains unchanged.",
+    "documentation": [
+      "https://code.claude.com/docs/en/mcp#use-mcp-prompts-as-commands",
+      "https://code.claude.com/docs/en/cli-reference"
+    ],
+    "risk_reduction_before_first_model_process": {
+      "reason": "Automatic approval rejected potential private-log transfer; no model process started. Local source hash verifies exactly public Loghub BGL.",
+      "public_source": "https://zenodo.org/records/8196385/files/BGL.zip?download=1",
+      "observed_and_catalog_log_sha256": "666130b15ef44eb32fd02bd053e6c6e007c37696b5e7e8b9d8e45b729876a5d2",
+      "hard_guards": [
+        "search/count/trend explicit dataset bgl",
+        "context only BGL IDs returned by this trial search",
+        "check_claims isolated new trial receipt store",
+        "describe_corpus canonical public catalog metadata only"
+      ],
+      "excludes": [
+        "customer logs",
+        "credentials",
+        "private source code",
+        "private holdout",
+        "API-key spending"
+      ]
+    },
+    "prior_attempt": "../code/dev-eng-01 retained unchanged and failed",
+    "intervention": "Only production describe_corpus tools/list _meta anthropic/maxResultSizeChars=200000; same question/model/effort/guidance and six M1 guards. No MAX_MCP_OUTPUT_TOKENS override.",
+    "source_sha256": {
+      "apps/mcp/src/server.ts": "b8880ca706783e79bf9f0b9983a487278053b5ebfae785263a4124ab0b564b6b",
+      "packages/agent/src/playbooks/common.md": "f8ff6bdfc580ffbcc559d67adff705f5704786f7b00f979a9dece4c860540163"
+    }
+  },
+  "execution": {
+    "trial_id": "dev-eng-inline-02",
+    "started_at": "2026-10-18T18:43:20.885609+00:00",
+    "finished_at": "2026-10-18T18:44:49.933084+00:00",
+    "exit_code": 0,
+    "watchdog_triggered": false,
+    "command": [
+      "/Users/adrian/.local/bin/claude",
+      "--print",
+      "/mcp__log-insights__engineer_investigation",
+      "--verbose",
+      "--output-format",
+      "stream-json",
+      "--no-session-persistence",
+      "--model",
+      "claude-opus-5-5",
+      "--effort",
+      "medium",
+      "--max-turns",
+      "12",
+      "--tools",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "/Users/adrian/Documents/GitHub/log-insights-log35/.data/log39-acceptance-20261018/code-inline/dev-eng-inline-02-mcp.json",
+      "--allowedTools",
+      "mcp__log-insights__describe_corpus,mcp__log-insights__search_logs,mcp__log-insights__get_log_context,mcp__log-insights__count_events,mcp__log-insights__event_trend,mcp__log-insights__check_claims",
+      "--disallowedTools",
+      "mcp__log-insights__recurring_patterns,mcp__log-insights__latency_stats",
+      "--permission-mode",
+      "dontAsk",
+      "--permission-prompts",
+      "none",
+      "--no-chrome"
+    ],
+    "cwd": "/Users/adrian/Documents/GitHub/log-insights-log35",
+    "raw_stream_sha256": "4fbad8b83d7b9fcb184836eb6a3b631a9c438add947dbe64baf8aec436304234",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "no_automatic_retry": true
+  },
+  "acceptance": "failed",
+  "semantic_findings": [
+    "Opening denies one bad node and calls symptoms job-wide without a job identifier or job-membership check. Breadth of symptoms does not refute a one-node causal origin.",
+    "The supported job-level hypothesis is grounded only in hourly rack spread, which is not a discriminating job-lifecycle check.",
+    "Opening says every failing line names the peer, but the evidence section narrows that observation to displayed hits; no full-population peer measurement was executed.",
+    "The claim that all other days in the requested window had none includes time before the observed data span. Missing coverage is not a measured zero.",
+    "The 11:00 row uses a malformed mixed citation with the 07:00 fact and a correction to another fact; later correction text does not establish unambiguous value/metric/group alignment in the row."
+  ],
+  "describe_inline_observation": {
+    "characters": 116402,
+    "utf8_bytes": 116439,
+    "sha256": "dc8d77c052adab52ec78d879ca2ebc5098c8acfc5175af5424edc1994775024a",
+    "complete_json": true,
+    "has_answer_guidance": true,
+    "no_offload_message": true,
+    "metadata_hint": 200000,
+    "MAX_MCP_OUTPUT_TOKENS_override": null,
+    "claim": "Complete result delivered inline in this actual Code tool_result. This does not prove semantic reading or compliance."
+  }
+}

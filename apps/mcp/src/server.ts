@@ -68,6 +68,11 @@ export function createMcpServer(options: {
         inputSchema: tool.inputSchema,
         outputSchema: tool.outputSchema,
         annotations: tool.annotations,
+        // Keep required corpus/role guidance readable in MCP-only clients.
+        // https://code.claude.com/docs/en/mcp#raise-the-limit-for-a-specific-tool
+        ...(tool.name === "describe_corpus"
+          ? { _meta: { "anthropic/maxResultSizeChars": 200_000 } }
+          : {}),
       },
       (input, extra) => call(tool.name, input, extra.signal)
     )
