@@ -5,7 +5,7 @@ import { z } from "zod"
 import { findWorkspaceRoot } from "@workspace/analytics/config"
 import { canonicalJson } from "@workspace/domain/receipt"
 import { EVAL_VERSION } from "./contracts.ts"
-import { recomputeReport, saveReport } from "./report.ts"
+import { recomputeReport, saveReport, readHoldoutStatus } from "./report.ts"
 import { semanticAssessmentSchema } from "./evaluate.ts"
 import {
   prepareReview,
@@ -19,6 +19,7 @@ import {
   runLiveRound,
 } from "./runner.ts"
 import { registerHoldout, freezeHoldout, releaseHoldout } from "./holdout.ts"
+import { prepareHoldoutRound, executeHoldoutRound } from "./holdout-executor.ts"
 
 export async function main(argv: string[]): Promise<void> {
   const [command, path, ...rest] = argv
@@ -37,12 +38,55 @@ export async function main(argv: string[]): Promise<void> {
       "holdout-register",
       "holdout-freeze",
       "holdout-release",
+      "holdout-plan",
+      "holdout-execute",
+      "holdout-report",
+      "holdout-status",
     ].includes(command ?? "")
   )
     throw new Error(
-      "Usage: eval plan <new-directory> --data-version <version> | execute <prepared-directory> | fixture <new-directory> | run <new-directory> --data-version <version> | report <directory> [reviewer-version] | assess <directory> <new-reviewer-version> <assessments.json> | prepare-review <directory> <version> | review <directory> <version> <review-input.json> | development-report <directory> <version> | holdout-register <new-preparation-directory> <metadata.json> | holdout-freeze <new-freeze-directory> <preparation-directory> <development-directory> <reviewer-version> | holdout-release <preparation-directory> <freeze-directory> <private-vault-directory>"
+      "Usage: eval plan <new-directory> --data-version <version> | execute <prepared-directory> | fixture <new-directory> | run <new-directory> --data-version <version> | report <directory> [reviewer-version] | assess <directory> <new-reviewer-version> <assessments.json> | prepare-review <directory> <version> | review <directory> <version> <review-input.json> | development-report <directory> <version> | holdout-register <new-preparation-directory> <metadata.json> | holdout-freeze <new-freeze-directory> <preparation-directory> <development-directory> <reviewer-version> | holdout-release <preparation-directory> <freeze-directory> <private-vault-directory> | holdout-plan <new-directory> <preparation-directory> <freeze-directory> | holdout-execute <prepared-directory> | holdout-report <directory> <reviewer-version> | holdout-status <directory>"
     )
   const dir = resolve(findWorkspaceRoot(), path)
+  if (command === "holdout-status") {
+    if (rest.length !== 0)
+      throw new Error("Unexpected holdout-status arguments")
+    process.stdout.write(
+      `${JSON.stringify(await readHoldoutStatus(dir), null, 2)}\n`
+    )
+    return
+  }
+  if (command === "holdout-plan") {
+    const [preparation, freeze] = rest
+    if (preparation === undefined || freeze === undefined || rest.length !== 2)
+      throw new Error(
+        "holdout-plan requires preparation and freeze directories"
+      )
+    const result = await prepareHoldoutRound(
+      resolve(findWorkspaceRoot(), preparation),
+      resolve(findWorkspaceRoot(), freeze),
+      dir
+    )
+    process.stdout.write(
+      `${JSON.stringify({ round_id: result.round_id, split: result.split, attempts: result.attempts.length, holdout: result.holdout }, null, 2)}\n`
+    )
+    return
+  }
+  if (command === "holdout-execute") {
+    if (rest.length !== 0)
+      throw new Error("Unexpected holdout-execute arguments")
+    const controller = new AbortController(),
+      onSignal = () => controller.abort()
+    process.once("SIGINT", onSignal)
+    process.once("SIGTERM", onSignal)
+    try {
+      await executeHoldoutRound(dir, controller.signal)
+    } finally {
+      process.off("SIGINT", onSignal)
+      process.off("SIGTERM", onSignal)
+    }
+    return
+  }
   if (command === "holdout-register") {
     const [metadata] = rest
     if (metadata === undefined || rest.length !== 1)
@@ -90,7 +134,12 @@ export async function main(argv: string[]): Promise<void> {
     return
   }
   if (
-    ["prepare-review", "review", "development-report"].includes(command ?? "")
+    [
+      "prepare-review",
+      "review",
+      "development-report",
+      "holdout-report",
+    ].includes(command ?? "")
   ) {
     const [version, file] = rest
     if (version === undefined)
@@ -121,9 +170,19 @@ export async function main(argv: string[]): Promise<void> {
         await readFile(resolve(dir, "review-input", `${version}.json`), "utf8")
       )
       const report = await recomputeDevelopmentReport(dir, version, input)
+      if ((command === "holdout-report") !== (report.split === "holdout_first"))
+        throw new Error(
+          "Use the report command for the saved development or first-holdout split"
+        )
       const original = JSON.parse(
         await readFile(
-          resolve(dir, "development-reports", `${version}.json`),
+          resolve(
+            dir,
+            report.split === "holdout_first"
+              ? "holdout-reports"
+              : "development-reports",
+            `${version}.json`
+          ),
           "utf8"
         )
       )

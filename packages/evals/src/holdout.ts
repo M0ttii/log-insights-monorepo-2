@@ -1,14 +1,6 @@
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { constants } from "node:fs"
-import {
-  lstat,
-  mkdir,
-  open,
-  readFile,
-  realpath,
-  writeFile,
-} from "node:fs/promises"
+import { lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises"
 import {
   basename,
   dirname,
@@ -17,14 +9,14 @@ import {
   relative,
   resolve,
 } from "node:path"
+import { readHoldoutFile, readHoldoutJson } from "./holdout-files.ts"
 import { z } from "zod"
 import { parse, stringify } from "yaml"
-import { investigationScopeSchema } from "@workspace/agent/ai-sdk"
 import { findWorkspaceRoot } from "@workspace/analytics/config"
 import { digest, writeArtifact } from "./artifacts.ts"
 import { receiptSchema } from "@workspace/domain/receipt"
 import { answerRoleSchema } from "@workspace/domain/answer"
-import { attemptSchema, manifestSchema } from "./contracts.ts"
+import { attemptSchema } from "./contracts.ts"
 import { recomputeDevelopmentReport } from "./development.ts"
 import { loadRoundSnapshot } from "./report.ts"
 import { createManifest } from "./runner.ts"
@@ -34,142 +26,34 @@ import {
   runtimeSchema,
 } from "./holdout-runtime.ts"
 
+import {
+  holdoutQuestionBankSchema,
+  holdoutInvestigationInput,
+  bindHoldoutSlots,
+} from "./holdout-questions.ts"
+export {
+  holdoutQuestionBankSchema,
+  holdoutInvestigationInput,
+} from "./holdout-questions.ts"
+
+import {
+  holdoutMetadataSchema,
+  holdoutRegistrationSchema,
+  holdoutFreezeSchema,
+  holdoutReleaseAttemptSchema,
+  holdoutReleaseSchema,
+} from "./holdout-artifacts.ts"
+export {
+  holdoutMetadataSchema,
+  holdoutReleaseAttemptSchema,
+  holdoutReleaseSchema,
+} from "./holdout-artifacts.ts"
 const id = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}$/)
 const hash = z.string().regex(/^[a-f0-9]{64}$/)
-const role = answerRoleSchema
-const roles = role.options
 const date = z.iso.datetime()
+const roles = answerRoleSchema.options
 const rawHash = (value: Buffer) =>
   createHash("sha256").update(value).digest("hex")
-
-/** The only information the implementation sees before a valid freeze. */
-export const holdoutMetadataSchema = z.strictObject({
-  schema_version: z.literal(1),
-  set_id: id,
-  created_at: date,
-  author_id: id,
-  author_not_playbook_author: z.literal(true),
-  sealed: z.literal(true),
-  contaminated: z.literal(false),
-  role_counts: z.strictObject({
-    engineer: z.number().int().min(2).max(100),
-    team_lead: z.number().int().min(2).max(100),
-    manager: z.number().int().min(2).max(100),
-  }),
-  datasets: z.tuple([z.literal("bgl"), z.literal("openstack")]),
-  data_version: z.string().regex(/^dv_[a-zA-Z0-9]+$/),
-  files: z.strictObject({
-    questions_sha256: hash,
-    expectations_sha256: hash,
-    evidence_sha256: hash,
-  }),
-})
-const holdoutQuestionSchema = z.strictObject({
-  id,
-  role,
-  question: z.string().min(1).max(4000),
-  scope: investigationScopeSchema.refine((scope) => {
-    const datasets = Array.isArray(scope.dataset)
-      ? scope.dataset
-      : [scope.dataset]
-    return datasets.every((dataset) =>
-      ["bgl", "openstack"].includes(dataset ?? "")
-    )
-  }, "An explicit base-corpus dataset is required"),
-})
-export const holdoutQuestionBankSchema = z
-  .strictObject({
-    schema_version: z.literal(1),
-    set_id: id,
-    questions: z.array(holdoutQuestionSchema).min(6).max(300),
-  })
-  .refine(
-    (bank) =>
-      new Set(bank.questions.map((question) => question.id)).size ===
-      bank.questions.length,
-    "Question IDs must be unique"
-  )
-
-/** Parse first and select only agent input. Reviewer material has no route here. */
-export function holdoutInvestigationInput(value: unknown) {
-  const question = checked(holdoutQuestionSchema, value)
-  return {
-    question: question.question,
-    role: question.role,
-    scope: question.scope,
-  }
-}
-
-const registrationSchema = z.strictObject({
-  schema_version: z.literal(1),
-  registered_at: date,
-  metadata_sha256: hash,
-  metadata: holdoutMetadataSchema,
-})
-const slotSchema = z.strictObject({
-  slot: id,
-  role,
-  ordinal: z.number().int().positive(),
-  variant: z.enum(["baseline", "playbook"]),
-  repetition: z.literal(1),
-  order: z.number().int().nonnegative(),
-})
-const freezeSchema = z.strictObject({
-  schema_version: z.literal(1),
-  state: z.literal("frozen_before_release"),
-  frozen_at: date,
-  metadata_sha256: hash,
-  preparation_sha256: hash,
-  development: z.strictObject({
-    directory: z.string().min(1),
-    reviewer_version: id,
-    manifest_sha256: hash,
-    report_sha256: hash,
-    review_input_sha256: hash,
-  }),
-  configuration: manifestSchema,
-  lockfile_sha256: hash,
-  runtime: runtimeSchema,
-  plan: z.array(slotSchema).min(12),
-  repeat_anchors: z.strictObject({
-    split: z.literal("development"),
-    question_ids: z.array(id).length(3),
-    trials_per_variant: z.literal(3),
-    holdout_trials_per_variant: z.literal(1),
-  }),
-  policy: z.strictObject({
-    version: z.literal("log54-v1"),
-    comparison: z.literal("blind_both_orders"),
-    human_sample: z.literal("one_pair_per_role_and_all_critical_findings"),
-    error_policy: z.literal("retain_all_no_replacement_or_resume"),
-    acceptance: z.literal("unchanged_technical_13_1_per_split"),
-    inspection: z.literal("questions_become_regression_after_inspection"),
-  }),
-  limitations: z.array(z.string()),
-})
-export const holdoutReleaseAttemptSchema = z.strictObject({
-  schema_version: z.literal(1),
-  state: z.literal("release_attempted"),
-  attempted_at: date,
-  set_id: id,
-  freeze_sha256: hash,
-  sealed_questions_sha256: hash,
-  retry_policy: z.literal("fresh_set_required_after_any_attempt"),
-  expectations_released: z.literal(false),
-})
-export const holdoutReleaseSchema = z.strictObject({
-  schema_version: z.literal(1),
-  state: z.literal("released_known_questions"),
-  released_at: date,
-  set_id: id,
-  freeze_sha256: hash,
-  release_attempt_sha256: hash,
-  sealed_questions_sha256: hash,
-  public_questions_sha256: hash,
-  file: z.string().regex(/^holdout-[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}\.yaml$/),
-  slot_bindings: z.array(slotSchema.extend({ question_id: id })).min(12),
-  expectations_released: z.literal(false),
-})
 
 function checked<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value)
@@ -177,56 +61,10 @@ function checked<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.data
 }
 
-/** Reject links and bound reads, including links in the selected directory. */
-async function readFileBounded(dir: string, file: string): Promise<Buffer> {
-  const maximum = 4_194_304
-  const directory = await lstat(dir)
-  if (!directory.isDirectory() || directory.isSymbolicLink())
-    throw new Error("Holdout artifact directory must not be a link")
-  const target = join(dir, file)
-  const info = await lstat(target)
-  if (!info.isFile() || info.isSymbolicLink() || info.size > maximum)
-    throw new Error("Invalid holdout artifact file")
-  if ((await realpath(target)) !== join(await realpath(dir), file))
-    throw new Error("Holdout artifact path leaves its directory")
-  const handle = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW)
-  try {
-    const opened = await handle.stat()
-    if (
-      !opened.isFile() ||
-      opened.ino !== info.ino ||
-      opened.dev !== info.dev ||
-      opened.size > maximum
-    )
-      throw new Error("Holdout artifact changed while opening")
-    const bytes = Buffer.alloc(maximum + 1)
-    let size = 0
-    while (size < bytes.length) {
-      const part = await handle.read(bytes, size, bytes.length - size, null)
-      if (part.bytesRead === 0) break
-      size += part.bytesRead
-    }
-    if (size > maximum)
-      throw new Error("Holdout artifact file exceeds its limit")
-    return bytes.subarray(0, size)
-  } finally {
-    await handle.close()
-  }
-}
-
-async function readJson(dir: string, file: string): Promise<unknown> {
-  const raw = await readFileBounded(dir, file)
-  try {
-    return JSON.parse(raw.toString("utf8"))
-  } catch {
-    throw new Error("Invalid holdout JSON artifact")
-  }
-}
-
-async function registration(dir: string) {
+export async function loadHoldoutRegistration(dir: string) {
   const value = checked(
-    registrationSchema,
-    await readJson(dir, "registration.json")
+    holdoutRegistrationSchema,
+    await readHoldoutJson(dir, "registration.json")
   )
   if (
     digest(value.metadata) !== value.metadata_sha256 ||
@@ -236,13 +74,13 @@ async function registration(dir: string) {
   return value
 }
 
-async function checkRuntimeReceipt(
+export async function checkRuntimeReceipt(
   directory: string,
   runtime: z.infer<typeof runtimeSchema>
 ) {
   const receipt = checked(
     receiptSchema,
-    await readJson(directory, `${runtime.corpus_receipt_id}.json`)
+    await readHoldoutJson(directory, `${runtime.corpus_receipt_id}.json`)
   )
   if (
     digest(receipt) !== runtime.corpus_receipt_sha256 ||
@@ -271,11 +109,11 @@ export async function registerHoldout(
 ) {
   const metadata = checked(
     holdoutMetadataSchema,
-    await readJson(dirname(metadataPath), basename(metadataPath))
+    await readHoldoutJson(dirname(metadataPath), basename(metadataPath))
   )
   if (Date.parse(metadata.created_at) > Date.now())
     throw new Error("Holdout creation time is in the future")
-  const result = registrationSchema.parse({
+  const result = holdoutRegistrationSchema.parse({
     schema_version: 1,
     registered_at: new Date().toISOString(),
     metadata_sha256: digest(metadata),
@@ -286,8 +124,8 @@ export async function registerHoldout(
   return result
 }
 
-function holdoutPlan(metadata: z.infer<typeof holdoutMetadataSchema>) {
-  const plan: z.infer<typeof slotSchema>[] = []
+export function holdoutPlan(metadata: z.infer<typeof holdoutMetadataSchema>) {
+  const plan: z.infer<typeof holdoutFreezeSchema>["plan"] = []
   let pair = 0
   for (const requestedRole of roles)
     for (
@@ -328,21 +166,27 @@ async function acceptedDevelopment(dir: string, reviewerInput: string) {
       manifest_sha256: hash,
       runtime_sha256: hash,
     }),
-    await readJson(dir, "execution.json")
+    await readHoldoutJson(dir, "execution.json")
   )
   if (
     execution.manifest_sha256 !== digest(manifest) ||
     Date.parse(execution.started_at) < Date.parse(manifest.created_at)
   )
     throw new Error("Development execution binding differs")
-  const runtime = checked(runtimeSchema, await readJson(dir, "runtime.json"))
+  const runtime = checked(
+    runtimeSchema,
+    await readHoldoutJson(dir, "runtime.json")
+  )
   if (
     digest(runtime) !== execution.runtime_sha256 ||
     runtime.data_version !== manifest.versions.data_version ||
     Date.parse(runtime.observed_at) > Date.parse(execution.started_at)
   )
     throw new Error("Development runtime observation differs")
-  const reviewInput = await readJson(dir, `review-input/${reviewer}.json`)
+  const reviewInput = await readHoldoutJson(
+    dir,
+    `review-input/${reviewer}.json`
+  )
   const report = await recomputeDevelopmentReport(dir, reviewer, reviewInput)
   if (
     report.acceptance !== "passed" ||
@@ -352,14 +196,15 @@ async function acceptedDevelopment(dir: string, reviewerInput: string) {
     throw new Error("Development acceptance has not passed")
   await checkRuntimeReceipt(join(dir, "runtime-receipts"), runtime)
   if (
-    digest(await readJson(dir, `development-reports/${reviewer}.json`)) !==
-    digest(report)
+    digest(
+      await readHoldoutJson(dir, `development-reports/${reviewer}.json`)
+    ) !== digest(report)
   )
     throw new Error("Saved development report differs from replay")
   for (const planned of manifest.attempts) {
     const attempt = checked(
       attemptSchema,
-      await readJson(dir, `attempts/${planned.id}.json`)
+      await readHoldoutJson(dir, `attempts/${planned.id}.json`)
     )
     if (
       digest(attempt.plan) !== digest(planned) ||
@@ -394,7 +239,7 @@ export async function freezeHoldout(
   reviewerVersion: string,
   newFreezeDirectory: string
 ) {
-  const prepared = await registration(preparationDirectory)
+  const prepared = await loadHoldoutRegistration(preparationDirectory)
   const development = await acceptedDevelopment(
     developmentDirectory,
     reviewerVersion
@@ -417,7 +262,7 @@ export async function freezeHoldout(
     runtime.lockfile_sha256 !== development.runtime.lockfile_sha256
   )
     throw new Error("Current database differs from development and holdout")
-  const result = freezeSchema.parse({
+  const result = holdoutFreezeSchema.parse({
     schema_version: 1,
     state: "frozen_before_release",
     frozen_at: new Date().toISOString(),
@@ -473,10 +318,10 @@ export async function releaseHoldout(
   vaultDirectory: string,
   targetQuestionsDirectory: string
 ) {
-  const prepared = await registration(preparationDirectory)
+  const prepared = await loadHoldoutRegistration(preparationDirectory)
   const frozen = checked(
-    freezeSchema,
-    await readJson(freezeDirectory, "freeze.json")
+    holdoutFreezeSchema,
+    await readHoldoutJson(freezeDirectory, "freeze.json")
   )
   if (
     frozen.preparation_sha256 !== digest(prepared) ||
@@ -538,14 +383,14 @@ export async function releaseHoldout(
     expectations_released: false,
   })
   await writeArtifact(freezeDirectory, "release-attempt.json", attempted)
-  const raw = await readFileBounded(vaultDirectory, "questions.yaml")
+  const raw = await readHoldoutFile(vaultDirectory, "questions.yaml")
   if (rawHash(raw) !== prepared.metadata.files.questions_sha256)
     throw new Error("Sealed question file hash differs")
   for (const [file, expected] of [
     ["expectations.json", prepared.metadata.files.expectations_sha256],
     ["evidence.json", prepared.metadata.files.evidence_sha256],
   ]) {
-    if (rawHash(await readFileBounded(vaultDirectory, file ?? "")) !== expected)
+    if (rawHash(await readHoldoutFile(vaultDirectory, file ?? "")) !== expected)
       throw new Error("Sealed reviewer evidence hash differs")
   }
   let bank: z.infer<typeof holdoutQuestionBankSchema>
@@ -587,7 +432,7 @@ export async function releaseHoldout(
     flag: "wx",
   })
   if (
-    rawHash(await readFileBounded(targetQuestionsDirectory, file)) !==
+    rawHash(await readHoldoutFile(targetQuestionsDirectory, file)) !==
     publicHash
   )
     throw new Error("Published holdout question file hash differs")
@@ -601,12 +446,7 @@ export async function releaseHoldout(
     sealed_questions_sha256: rawHash(raw),
     public_questions_sha256: publicHash,
     file,
-    slot_bindings: frozen.plan.map((slot) => ({
-      ...slot,
-      question_id: bank.questions.filter(
-        (question) => question.role === slot.role
-      )[slot.ordinal - 1]?.id,
-    })),
+    slot_bindings: bindHoldoutSlots(frozen.plan, bank),
     expectations_released: false,
   })
   await writeArtifact(freezeDirectory, "release.json", released)

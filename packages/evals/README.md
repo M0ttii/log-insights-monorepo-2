@@ -199,11 +199,66 @@ completed `release.json`. A failed attempt remains visible without claiming
 successful publication and requires a fresh independently authored set; do not
 delete markers or overwrite the target to retry.
 
-The LOG-55 executor still needs to bind execution to the frozen base commit and
-allow only the explicitly hash-bound question-file commit after release. A new
-HEAD must not bypass the existing commit check merely because the source digest
-matches. This integration is required before the first holdout answer round;
-these preparation commands do not execute that round.
+After a real release, commit exactly the released question file as one direct
+child of the frozen base commit. A merge, extra commit, changed source, unrelated
+file in that commit, dirty public question, unexpected untracked file or changed
+public hash blocks the first-holdout executor. Development execution still
+requires its original exact commit; the holdout exception is proven by Git
+ancestry and the released blob hash before normalizing that one commit for the
+frozen configuration comparison.
+
+```sh
+# Offline, only after actual freeze/release and the question-only child commit:
+pnpm eval holdout-plan packages/evals/results/MY_SET-first \
+  packages/evals/holdouts/MY_SET .data/evals/MY_SET-freeze
+
+# Separate explicit paid operation; never run as part of preparation or CI:
+pnpm eval holdout-execute packages/evals/results/MY_SET-first
+
+# Safe metadata-only progress, including a consumed round without completion:
+pnpm eval holdout-status packages/evals/results/MY_SET-first
+
+# Only after the entire planned round has finished: independent offline review.
+pnpm eval prepare-review packages/evals/results/MY_SET-first independent-first-v1
+pnpm eval review packages/evals/results/MY_SET-first independent-first-v1 /tmp/holdout-review.json
+pnpm eval holdout-report packages/evals/results/MY_SET-first independent-first-v1
+```
+
+The saved manifest uses `holdout_first`, the pre-released slot order and both
+variants. Its repeated anchors remain in the completed development split; each
+holdout slot runs once per variant as frozen in LOG-54. Model, pricing, limits,
+instructions and tool catalog come from the frozen development configuration.
+Question-only projection metadata gives reviewers the common rubric; sealed
+case-specific expectations and independent SQL evidence stay in the author's
+separate assessment path and are never passed to `runInvestigation`. The agent
+receives only question, role, structured scope, variant and empty history.
+
+Before any model call, execution replays the saved development acceptance,
+checks release/source/configuration hashes, observes the current image and corpus,
+and writes an append-only first-execution marker in the freeze directory. That
+marker binds the set to one round across output directories; failures and aborts
+cannot be resumed, replaced or relabelled as another first round. Configuration
+is checked again before every planned attempt. Source drift stops the round;
+already saved failures and remaining missing attempts stay visible in the report.
+No answer stream is printed while the planned attempts run.
+
+`holdout-status` reads only the validated manifest, completion metadata and attempt
+metadata. It shows every completed, failed, aborted, missing or invalid slot;
+answers, questions, receipts and reviewer files are not opened. Missing completion
+is `unconfirmed`, not proof that a process stopped; liveness is not checked. The
+status always reports acceptance as `not_demonstrated`. If a process is killed
+before recording completion, the consumed first-round marker remains unchanged:
+status is still available, while full answer inspection/review stays locked and
+no resume or abandonment override is offered.
+
+Core reports and independent review use the same saved receipt/claim checks,
+blinded pair orders, calibration and human sample rules as development. The
+first pair per role is selected from the frozen role/ordinal slots before answers.
+Independent reports are stored under `holdout-reports/`, separate from
+`development-reports/`, and carry the split explicitly. The passed development
+S-13 gate precedes release; client and visible Web evidence remain separate
+acceptance gates. A synthetic executor test establishes none of these real
+acceptance outcomes. No actual first-holdout round was run for this integration.
 
 If any implementing agent sees unreleased questions or expectations, mark that
 set contaminated and replace it through an independent author. Never relabel a

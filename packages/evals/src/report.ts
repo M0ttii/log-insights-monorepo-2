@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises"
+import { readHoldoutJson } from "./holdout-files.ts"
 import { z } from "zod"
 import { runUsageSchema, type RunRecord } from "@workspace/agent/ai-sdk"
+import { answerRoleSchema } from "@workspace/domain/answer"
 import { canonicalJson } from "@workspace/domain/receipt"
 import {
   digest,
@@ -10,9 +12,11 @@ import {
 } from "./artifacts.ts"
 import {
   EVAL_VERSION,
+  attemptSchema,
   makePlan,
   manifestSchema,
   questionBankSchema,
+  releasedEvaluationBankSchema,
   type EvalManifest,
 } from "./contracts.ts"
 import {
@@ -21,6 +25,16 @@ import {
   semanticAssessmentSchema,
   type SemanticAssessment,
 } from "./evaluate.ts"
+import {
+  holdoutFreezeSchema,
+  holdoutReleaseSchema,
+} from "./holdout-artifacts.ts"
+import {
+  holdoutQuestionBankSchema,
+  bindHoldoutSlots,
+  projectHoldoutQuestions,
+  releasedHoldoutPlan,
+} from "./holdout-questions.ts"
 import { experimentPlan } from "./experiment.ts"
 
 const RUBRIC_DIMENSIONS = [
@@ -168,9 +182,11 @@ export async function loadRoundSnapshot(dir: string) {
   const manifest = manifestSchema.parse(
     await readArtifact(dir, "manifest.json")
   )
-  const bank = questionBankSchema.parse(
-    await readArtifact(dir, "questions.json")
-  )
+  const bank = (
+    manifest.split === "holdout_first"
+      ? releasedEvaluationBankSchema
+      : questionBankSchema
+  ).parse(await readArtifact(dir, "questions.json"))
   if (digest(bank) !== manifest.versions.questions_sha256)
     throw new Error("Question snapshot hash differs")
   if (
@@ -180,6 +196,7 @@ export async function loadRoundSnapshot(dir: string) {
     throw new Error("Manifest instruction/catalog hash differs")
   if (
     !manifest.fixture_only &&
+    manifest.split !== "holdout_first" &&
     canonicalJson(
       manifest.experiment === undefined
         ? makePlan(bank, manifest.repeated_questions)
@@ -187,8 +204,177 @@ export async function loadRoundSnapshot(dir: string) {
     ) !== canonicalJson(manifest.attempts)
   )
     throw new Error("Manifest omits required attempts")
+  if (manifest.split === "holdout_first") {
+    const frozen = holdoutFreezeSchema.parse(
+      await readArtifact(dir, "holdout-freeze.json")
+    )
+    const released = holdoutReleaseSchema.parse(
+      await readArtifact(dir, "holdout-release.json")
+    )
+    const publicBank = holdoutQuestionBankSchema.parse(
+      await readArtifact(dir, "released-questions.json")
+    )
+    const bindings = bindHoldoutSlots(frozen.plan, publicBank)
+    if (
+      manifest.holdout?.freeze_sha256 !== digest(frozen) ||
+      manifest.holdout.release_sha256 !== digest(released) ||
+      released.freeze_sha256 !== digest(frozen) ||
+      released.set_id !== publicBank.set_id ||
+      digest(bindings) !== digest(released.slot_bindings) ||
+      digest(
+        projectHoldoutQuestions(publicBank, manifest.versions.data_version)
+      ) !== digest(bank) ||
+      digest(releasedHoldoutPlan(publicBank)) !== digest(manifest.attempts) ||
+      digest(manifest.instructions) !==
+        digest(frozen.configuration.instructions) ||
+      digest(manifest.tool_catalog) !==
+        digest(frozen.configuration.tool_catalog) ||
+      digest(manifest.model) !== digest(frozen.configuration.model) ||
+      digest(manifest.limits) !== digest(frozen.configuration.limits) ||
+      digest(manifest.pricing) !== digest(frozen.configuration.pricing) ||
+      manifest.experiment !== undefined ||
+      manifest.repeated_questions.length !== 0 ||
+      manifest.holdout.frozen_base_commit !==
+        frozen.configuration.versions.code_commit ||
+      manifest.holdout.question_commit !== manifest.versions.code_commit ||
+      manifest.holdout.set_id !== released.set_id ||
+      manifest.holdout.file !== released.file ||
+      manifest.holdout.public_questions_sha256 !==
+        released.public_questions_sha256 ||
+      manifest.holdout.judge_max_bytes !==
+        frozen.configuration.experiment?.judge_max_bytes ||
+      digest(manifest.holdout.human_question_ids) !==
+        digest(
+          answerRoleSchema.options.map(
+            (role) => bank.questions.find((q) => q.role === role)?.id
+          )
+        ) ||
+      digest({
+        ...manifest.versions,
+        code_commit: frozen.configuration.versions.code_commit,
+        questions_sha256: frozen.configuration.versions.questions_sha256,
+      }) !== digest(frozen.configuration.versions)
+    )
+      throw new Error("Holdout snapshot differs from the frozen released slots")
+  }
   return { manifest, bank }
 }
+const holdoutCompletionSchema = z.strictObject({
+  attempts_written: z.number().int().nonnegative(),
+  planned: z.number().int().positive(),
+  aborted: z.boolean(),
+  all_attempts_recorded: z.boolean(),
+  finished_at: z.iso.datetime(),
+  manifest_sha256: z.string(),
+})
+
+function validateHoldoutCompletion(value: unknown, manifest: EvalManifest) {
+  const completion = holdoutCompletionSchema.parse(value)
+  if (
+    completion.manifest_sha256 !== digest(manifest) ||
+    completion.planned !== manifest.attempts.length ||
+    completion.attempts_written > completion.planned ||
+    completion.all_attempts_recorded !==
+      (completion.attempts_written === completion.planned)
+  )
+    throw new Error("First-holdout completion binding differs")
+  return completion
+}
+
+/** Full inspection is unavailable until the whole first-round process ends. */
+export async function requireFinishedHoldout(
+  dir: string,
+  manifest: EvalManifest
+) {
+  if (manifest.split !== "holdout_first") return
+  validateHoldoutCompletion(
+    await readArtifact(dir, "round-finished.json"),
+    manifest
+  )
+}
+
+/** Status only, including a consumed round whose process never saved completion.
+ * No questions, run records, answers, receipts or reviewer artifacts are opened.
+ */
+export async function readHoldoutStatus(dir: string) {
+  const manifest = manifestSchema.parse(
+    await readHoldoutJson(dir, "manifest.json")
+  )
+  if (manifest.split !== "holdout_first")
+    throw new Error("A first-holdout manifest is required")
+  let completion: "confirmed" | "unconfirmed" | "invalid" = "unconfirmed"
+  try {
+    validateHoldoutCompletion(
+      await readHoldoutJson(dir, "round-finished.json"),
+      manifest
+    )
+    completion = "confirmed"
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT"))
+      completion = "invalid"
+  }
+  const attempts = []
+  for (const plan of manifest.attempts) {
+    let status: "completed" | "error" | "aborted" | "missing" | "invalid" =
+      "missing"
+    let elapsedMs: number | null = null
+    try {
+      const attempt = attemptSchema.parse(
+        await readHoldoutJson(dir, `attempts/${plan.id}.json`)
+      )
+      if (digest(attempt.plan) !== digest(plan))
+        throw new Error("Attempt metadata plan differs")
+      status = attempt.status
+      elapsedMs = attempt.elapsed_ms
+    } catch (error) {
+      if (!(
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ))
+        status = "invalid"
+    }
+    attempts.push({
+      attempt_id: plan.id,
+      variant: plan.variant,
+      repetition: plan.repetition,
+      order: plan.order,
+      status,
+      elapsed_ms: elapsedMs,
+    })
+  }
+  return {
+    round_id: manifest.round_id,
+    split: manifest.split,
+    manifest_sha256: digest(manifest),
+    inspection: "status_only" as const,
+    completion,
+    process_liveness: "not_checked" as const,
+    acceptance: "not_demonstrated" as const,
+    totals: {
+      planned: attempts.length,
+      recorded: attempts.filter((attempt) =>
+        ["completed", "error", "aborted"].includes(attempt.status)
+      ).length,
+      completed: attempts.filter((attempt) => attempt.status === "completed")
+        .length,
+      failed: attempts.filter((attempt) => attempt.status === "error").length,
+      aborted: attempts.filter((attempt) => attempt.status === "aborted")
+        .length,
+      missing: attempts.filter((attempt) => attempt.status === "missing")
+        .length,
+      invalid: attempts.filter((attempt) => attempt.status === "invalid")
+        .length,
+    },
+    attempts,
+    limitations: [
+      "Status metadata establishes no answer quality or acceptance; answer and reviewer artifacts were not inspected.",
+      "Missing or invalid completion does not prove that a process stopped. Process liveness has not been checked.",
+      "This read-only command changes no first-round marker and permits no resume, replacement or abandonment override; full inspection still requires confirmed completion.",
+    ],
+  }
+}
+
 /** Rebuilds solely from saved JSON. No model or database is constructed. */
 export async function recomputeReport(
   dir: string,
@@ -196,6 +382,7 @@ export async function recomputeReport(
   assessments: SemanticAssessment[] = []
 ): Promise<EvalReport> {
   const { manifest, bank } = await loadRoundSnapshot(dir)
+  await requireFinishedHoldout(dir, manifest)
   const parsedAssessments = assessments.map((a) =>
     semanticAssessmentSchema.parse(a)
   )
@@ -425,7 +612,9 @@ export async function recomputeReport(
           ? "failed"
           : "pending_external_acceptance",
     limitations: [
-      "No holdout acceptance is established by a development report.",
+      manifest.split === "holdout_first"
+        ? "First-holdout results cover this released set only; after inspection it is regression material. Independent review and human sampling remain required."
+        : "No holdout acceptance is established by a development report.",
       "S-13 client evidence and human spot-check remain external acceptance gates.",
       ...(manifest.fixture_only
         ? ["Fixture metadata tests the evaluator; it is not corpus evidence."]
