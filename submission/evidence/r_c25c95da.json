@@ -1,0 +1,1551 @@
+{
+  "receipt_id": "r_c25c95da",
+  "created_at": "2026-10-18T11:50:45.045Z",
+  "client": "test",
+  "tool": "get_log_context",
+  "tool_version": "1.0.0",
+  "input": {
+    "mode": "aggregate",
+    "window_minutes": 60,
+    "pattern_id": "8eb053329ba11348",
+    "dataset": "bgl",
+    "direction": "both",
+    "top_n": 10
+  },
+  "signature": "6876263c696079641f6b5433d0ddf8ab9ba847c3ecaaac83f7c5794c5cf4be35",
+  "data_version": "dv_7ea6fcb2c9eb6882",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.pattern_id = $2), anchors AS (SELECT event_id, ts FROM matched MATCH_RECOGNIZE (ORDER BY ts, event_id MEASURES FIRST(event_id) AS event_id, FIRST(ts) AS ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $3::INTERVAL)) SELECT (SELECT count(*) FROM matched) AS matched_events, (SELECT count(*) FROM anchors) AS anchors, (SELECT count(DISTINCT pattern_id) FROM matched) AS excluded_patterns, (epoch_us($4::TIMESTAMPTZ) - epoch_us($5::TIMESTAMPTZ) + $6::BIGINT - 1) // $7::BIGINT AS grid_windows",
+    "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.pattern_id = $2), anchors AS (SELECT event_id, ts FROM matched MATCH_RECOGNIZE (ORDER BY ts, event_id MEASURES FIRST(event_id) AS event_id, FIRST(ts) AS ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $3::INTERVAL)), excluded AS (SELECT DISTINCT pattern_id FROM matched WHERE pattern_id IS NOT NULL), hits AS (SELECT 'before' AS direction, e.pattern_id, count(DISTINCT a.event_id) AS anchors_with_pattern, min(e.event_id) AS example_event_id FROM anchors a JOIN log_events e ON e.dataset = $4 AND e.ts >= a.ts - $5::INTERVAL AND e.ts < a.ts WHERE e.pattern_id NOT IN (SELECT pattern_id FROM excluded) GROUP BY e.pattern_id UNION ALL SELECT 'after' AS direction, e.pattern_id, count(DISTINCT a.event_id) AS anchors_with_pattern, min(e.event_id) AS example_event_id FROM anchors a JOIN log_events e ON e.dataset = $4 AND e.ts > a.ts AND e.ts <= a.ts + $5::INTERVAL WHERE e.pattern_id NOT IN (SELECT pattern_id FROM excluded) GROUP BY e.pattern_id), ranked AS (SELECT *, row_number() OVER (PARTITION BY direction ORDER BY anchors_with_pattern DESC, pattern_id) AS rank, count(*) OVER (PARTITION BY direction) AS patterns_found FROM hits), top AS (SELECT * FROM ranked WHERE rank <= $6::BIGINT), info AS (SELECT e.dataset, e.pattern_id, any_value(e.component) AS component, any_value(e.pattern) AS pattern FROM log_events e WHERE e.dataset = $4 AND e.pattern_id IN (SELECT pattern_id FROM top) GROUP BY e.dataset, e.pattern_id), n AS (SELECT count(*) AS anchors FROM anchors), grid AS (SELECT e.pattern_id, count(DISTINCT (epoch_us(e.ts) - epoch_us($7::TIMESTAMPTZ)) // $9::BIGINT) AS windows_with_pattern FROM log_events e WHERE e.dataset = $4 AND e.ts >= $7::TIMESTAMPTZ AND e.ts < $8::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM top) GROUP BY e.pattern_id), grid_size AS (SELECT (epoch_us($10::TIMESTAMPTZ) - epoch_us($11::TIMESTAMPTZ) + $12::BIGINT - 1) // $13::BIGINT AS windows) SELECT t.direction, t.patterns_found, t.pattern_id, left(i.pattern, 400) AS pattern, length(i.pattern) > 400 AS pattern_truncated, i.component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = i.dataset AND o.component = i.component), 'unowned') AS team, t.anchors_with_pattern, t.anchors_with_pattern / n.anchors::DOUBLE AS anchor_share, coalesce(g.windows_with_pattern, 0) AS base_rate_windows, coalesce(g.windows_with_pattern, 0) / gs.windows::DOUBLE AS base_rate, CASE WHEN g.windows_with_pattern > 0 THEN (t.anchors_with_pattern / n.anchors::DOUBLE) / (g.windows_with_pattern / gs.windows::DOUBLE) END AS ratio, t.example_event_id FROM top t JOIN info i ON i.pattern_id = t.pattern_id CROSS JOIN n CROSS JOIN grid_size gs LEFT JOIN grid g ON g.pattern_id = t.pattern_id ORDER BY CASE t.direction WHEN 'before' THEN 0 ELSE 1 END, t.rank"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "bgl",
+      "8eb053329ba11348",
+      "30 minutes",
+      "2006-01-04T16:00:05.233640Z",
+      "2005-06-03T22:42:50.363779Z",
+      3600000000,
+      3600000000
+    ],
+    [
+      "bgl",
+      "8eb053329ba11348",
+      "30 minutes",
+      "bgl",
+      "60 minutes",
+      10,
+      "2005-06-03T22:42:50.363779Z",
+      "2006-01-04T16:00:05.233640Z",
+      3600000000,
+      "2006-01-04T16:00:05.233640Z",
+      "2005-06-03T22:42:50.363779Z",
+      3600000000,
+      3600000000
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-03T22:42:50.363779Z",
+        "to": "2006-01-04T16:00:05.233640Z"
+      }
+    ],
+    "filters": {
+      "pattern_id": "8eb053329ba11348"
+    }
+  },
+  "population": {
+    "count": 201206,
+    "unit": "log_events"
+  },
+  "rows_returned": 20,
+  "truncated": true,
+  "row_limit": 10,
+  "duration_ms": 3444.95,
+  "result": {
+    "mode": "aggregate",
+    "dataset": "bgl",
+    "anchor_pattern_id": "8eb053329ba11348",
+    "anchor_query": null,
+    "matched_events": 201206,
+    "anchors": 1561,
+    "episode_gap_minutes": 30,
+    "window_minutes": 60,
+    "direction": "both",
+    "top_n": 10,
+    "excluded_patterns": 1,
+    "base_rate_grid": {
+      "from": "2005-06-03T22:42:50.363779Z",
+      "to": "2006-01-04T16:00:05.233640Z",
+      "window_minutes": 60,
+      "windows": 5154
+    },
+    "by_direction": [
+      {
+        "direction": "before",
+        "window": "[anchor − 60 min, anchor)",
+        "patterns_found": 565,
+        "truncated": true,
+        "patterns": [
+          {
+            "pattern_id": "bc048d75f905460b",
+            "pattern": "<NUM> ddr errors(s) detected and corrected on rank <NUM>, symbol <NUM>, bit <NUM>",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 1420,
+            "anchor_share": 0.9096732863549007,
+            "base_rate_windows": 1724,
+            "base_rate": 0.3344974776872332,
+            "ratio": 2.7195221101352427,
+            "example_event_id": 4882
+          },
+          {
+            "pattern_id": "be1196c055349e9a",
+            "pattern": "<NUM> L3 EDRAM error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 710,
+            "anchor_share": 0.4548366431774504,
+            "base_rate_windows": 1095,
+            "base_rate": 0.21245634458672877,
+            "ratio": 2.1408475424078346,
+            "example_event_id": 4883
+          },
+          {
+            "pattern_id": "6ce6d0a9fe3eedbb",
+            "pattern": "<NUM> torus receiver x+ input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 643,
+            "anchor_share": 0.4119154388212684,
+            "base_rate_windows": 918,
+            "base_rate": 0.1781140861466822,
+            "ratio": 2.312649424493265,
+            "example_event_id": 139430
+          },
+          {
+            "pattern_id": "6fdb93f6055ae4f2",
+            "pattern": "<NUM> tree receiver <NUM> in re-synch state event(s) (dcr <ADDR>) detected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 594,
+            "anchor_share": 0.38052530429212045,
+            "base_rate_windows": 1098,
+            "base_rate": 0.21303841676367868,
+            "ratio": 1.7861816196007185,
+            "example_event_id": 139444
+          },
+          {
+            "pattern_id": "2aa30ef3ecea724b",
+            "pattern": "total of <NUM> ddr error(s) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 531,
+            "anchor_share": 0.3401665598975016,
+            "base_rate_windows": 1718,
+            "base_rate": 0.3333333333333333,
+            "ratio": 1.020499679692505,
+            "example_event_id": 29772
+          },
+          {
+            "pattern_id": "f1fdb529c6f498e2",
+            "pattern": "ddr: activating redundant bit steering: rank=<NUM> symbol=<NUM>",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 286,
+            "anchor_share": 0.1832158872517617,
+            "base_rate_windows": 708,
+            "base_rate": 0.13736903376018628,
+            "ratio": 1.3337495521124005,
+            "example_event_id": 16852
+          },
+          {
+            "pattern_id": "7d7b4d85be690686",
+            "pattern": "<NUM> torus receiver y+ input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 255,
+            "anchor_share": 0.16335682254964767,
+            "base_rate_windows": 639,
+            "base_rate": 0.1239813736903376,
+            "ratio": 1.3175916485459847,
+            "example_event_id": 139436
+          },
+          {
+            "pattern_id": "9043ce905e836982",
+            "pattern": "<NUM> torus receiver z- input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 252,
+            "anchor_share": 0.16143497757847533,
+            "base_rate_windows": 717,
+            "base_rate": 0.13911525029103608,
+            "ratio": 1.1604405501247725,
+            "example_event_id": 139442
+          },
+          {
+            "pattern_id": "c4de774642754d2a",
+            "pattern": "MidplaneSwitchController performing bit sparing on <NODE> bit <NUM>",
+            "pattern_truncated": false,
+            "component": "LINKCARD",
+            "team": "Hardware Operations",
+            "anchors_with_pattern": 222,
+            "anchor_share": 0.14221652786675207,
+            "base_rate_windows": 443,
+            "base_rate": 0.08595265812960808,
+            "ratio": 1.654591387415892,
+            "example_event_id": 1477
+          },
+          {
+            "pattern_id": "5627a568a7877760",
+            "pattern": "instruction cache parity error corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 219,
+            "anchor_share": 0.14029468289557975,
+            "base_rate_windows": 702,
+            "base_rate": 0.1362048894062864,
+            "ratio": 1.0300267744213931,
+            "example_event_id": 1
+          }
+        ]
+      },
+      {
+        "direction": "after",
+        "window": "(anchor, anchor + 60 min]",
+        "patterns_found": 518,
+        "truncated": true,
+        "patterns": [
+          {
+            "pattern_id": "2aa30ef3ecea724b",
+            "pattern": "total of <NUM> ddr error(s) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 1415,
+            "anchor_share": 0.9064702114029468,
+            "base_rate_windows": 1718,
+            "base_rate": 0.3333333333333333,
+            "ratio": 2.7194106342088404,
+            "example_event_id": 4885
+          },
+          {
+            "pattern_id": "bc048d75f905460b",
+            "pattern": "<NUM> ddr errors(s) detected and corrected on rank <NUM>, symbol <NUM>, bit <NUM>",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 1147,
+            "anchor_share": 0.7347853939782191,
+            "base_rate_windows": 1724,
+            "base_rate": 0.3344974776872332,
+            "ratio": 2.196684408679664,
+            "example_event_id": 4906
+          },
+          {
+            "pattern_id": "6fdb93f6055ae4f2",
+            "pattern": "<NUM> tree receiver <NUM> in re-synch state event(s) (dcr <ADDR>) detected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 865,
+            "anchor_share": 0.5541319666880204,
+            "base_rate_windows": 1098,
+            "base_rate": 0.21303841676367868,
+            "ratio": 2.6010893955465004,
+            "example_event_id": 34045
+          },
+          {
+            "pattern_id": "be1196c055349e9a",
+            "pattern": "<NUM> L3 EDRAM error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 670,
+            "anchor_share": 0.42921204356181936,
+            "base_rate_windows": 1095,
+            "base_rate": 0.21245634458672877,
+            "ratio": 2.0202364132580977,
+            "example_event_id": 4886
+          },
+          {
+            "pattern_id": "9043ce905e836982",
+            "pattern": "<NUM> torus receiver z- input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 612,
+            "anchor_share": 0.3920563741191544,
+            "base_rate_windows": 717,
+            "base_rate": 0.13911525029103608,
+            "ratio": 2.8182127645887336,
+            "example_event_id": 34024
+          },
+          {
+            "pattern_id": "6ce6d0a9fe3eedbb",
+            "pattern": "<NUM> torus receiver x+ input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 530,
+            "anchor_share": 0.3395259449071108,
+            "base_rate_windows": 918,
+            "base_rate": 0.1781140861466822,
+            "ratio": 1.9062273638902494,
+            "example_event_id": 33950
+          },
+          {
+            "pattern_id": "7d7b4d85be690686",
+            "pattern": "<NUM> torus receiver y+ input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 518,
+            "anchor_share": 0.33183856502242154,
+            "base_rate_windows": 639,
+            "base_rate": 0.1239813736903376,
+            "ratio": 2.676519505673804,
+            "example_event_id": 34000
+          },
+          {
+            "pattern_id": "3e7ee65ab1cad6b2",
+            "pattern": "<NUM> torus receiver z+ input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 390,
+            "anchor_share": 0.2498398462524023,
+            "base_rate_windows": 456,
+            "base_rate": 0.08847497089639116,
+            "ratio": 2.8238477359317575,
+            "example_event_id": 119921
+          },
+          {
+            "pattern_id": "c6335b6cd4bd0e8b",
+            "pattern": "<NUM> torus receiver x- input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 346,
+            "anchor_share": 0.2216527866752082,
+            "base_rate_windows": 460,
+            "base_rate": 0.0892510671323244,
+            "ratio": 2.483474918530485,
+            "example_event_id": 33974
+          },
+          {
+            "pattern_id": "e63b31ea6a6e3dfc",
+            "pattern": "<NUM> torus receiver y- input pipe error(s) (dcr <ADDR>) detected and corrected",
+            "pattern_truncated": false,
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "anchors_with_pattern": 321,
+            "anchor_share": 0.20563741191543883,
+            "base_rate_windows": 377,
+            "base_rate": 0.07314707023670936,
+            "ratio": 2.811287058387723,
+            "example_event_id": 119934
+          }
+        ]
+      }
+    ]
+  },
+  "result_digest": "b90f1e5f6814702944131b2fbf922683c87f25c45263c463ba39f19a64a99d03",
+  "facts": [
+    {
+      "id": "r_c25c95da.f1",
+      "path": "/result/anchors",
+      "value": 1561,
+      "metric": "anchors",
+      "unit": "anchors",
+      "group": {}
+    },
+    {
+      "id": "r_c25c95da.f2",
+      "path": "/result/base_rate_grid/from",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "grid_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_c25c95da.f3",
+      "path": "/result/base_rate_grid/to",
+      "value": "2006-01-04T16:00:05.233640Z",
+      "metric": "grid_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_c25c95da.f4",
+      "path": "/result/base_rate_grid/windows",
+      "value": 5154,
+      "metric": "grid_windows",
+      "unit": "windows",
+      "group": {}
+    },
+    {
+      "id": "r_c25c95da.f5",
+      "path": "/result/by_direction/0/patterns/0/anchor_share",
+      "value": 0.9096732863549007,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f6",
+      "path": "/result/by_direction/0/patterns/0/anchors_with_pattern",
+      "value": 1420,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f7",
+      "path": "/result/by_direction/0/patterns/0/base_rate",
+      "value": 0.3344974776872332,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f8",
+      "path": "/result/by_direction/0/patterns/0/base_rate_windows",
+      "value": 1724,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f9",
+      "path": "/result/by_direction/0/patterns/0/ratio",
+      "value": 2.7195221101352427,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f10",
+      "path": "/result/by_direction/0/patterns/1/anchor_share",
+      "value": 0.4548366431774504,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f11",
+      "path": "/result/by_direction/0/patterns/1/anchors_with_pattern",
+      "value": 710,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f12",
+      "path": "/result/by_direction/0/patterns/1/base_rate",
+      "value": 0.21245634458672877,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f13",
+      "path": "/result/by_direction/0/patterns/1/base_rate_windows",
+      "value": 1095,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f14",
+      "path": "/result/by_direction/0/patterns/1/ratio",
+      "value": 2.1408475424078346,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f15",
+      "path": "/result/by_direction/0/patterns/2/anchor_share",
+      "value": 0.4119154388212684,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f16",
+      "path": "/result/by_direction/0/patterns/2/anchors_with_pattern",
+      "value": 643,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f17",
+      "path": "/result/by_direction/0/patterns/2/base_rate",
+      "value": 0.1781140861466822,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f18",
+      "path": "/result/by_direction/0/patterns/2/base_rate_windows",
+      "value": 918,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f19",
+      "path": "/result/by_direction/0/patterns/2/ratio",
+      "value": 2.312649424493265,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f20",
+      "path": "/result/by_direction/0/patterns/3/anchor_share",
+      "value": 0.38052530429212045,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f21",
+      "path": "/result/by_direction/0/patterns/3/anchors_with_pattern",
+      "value": 594,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f22",
+      "path": "/result/by_direction/0/patterns/3/base_rate",
+      "value": 0.21303841676367868,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f23",
+      "path": "/result/by_direction/0/patterns/3/base_rate_windows",
+      "value": 1098,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f24",
+      "path": "/result/by_direction/0/patterns/3/ratio",
+      "value": 1.7861816196007185,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f25",
+      "path": "/result/by_direction/0/patterns/4/anchor_share",
+      "value": 0.3401665598975016,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f26",
+      "path": "/result/by_direction/0/patterns/4/anchors_with_pattern",
+      "value": 531,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f27",
+      "path": "/result/by_direction/0/patterns/4/base_rate",
+      "value": 0.3333333333333333,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f28",
+      "path": "/result/by_direction/0/patterns/4/base_rate_windows",
+      "value": 1718,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f29",
+      "path": "/result/by_direction/0/patterns/4/ratio",
+      "value": 1.020499679692505,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f30",
+      "path": "/result/by_direction/0/patterns/5/anchor_share",
+      "value": 0.1832158872517617,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f31",
+      "path": "/result/by_direction/0/patterns/5/anchors_with_pattern",
+      "value": 286,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f32",
+      "path": "/result/by_direction/0/patterns/5/base_rate",
+      "value": 0.13736903376018628,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f33",
+      "path": "/result/by_direction/0/patterns/5/base_rate_windows",
+      "value": 708,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f34",
+      "path": "/result/by_direction/0/patterns/5/ratio",
+      "value": 1.3337495521124005,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "f1fdb529c6f498e2",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f35",
+      "path": "/result/by_direction/0/patterns/6/anchor_share",
+      "value": 0.16335682254964767,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f36",
+      "path": "/result/by_direction/0/patterns/6/anchors_with_pattern",
+      "value": 255,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f37",
+      "path": "/result/by_direction/0/patterns/6/base_rate",
+      "value": 0.1239813736903376,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f38",
+      "path": "/result/by_direction/0/patterns/6/base_rate_windows",
+      "value": 639,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f39",
+      "path": "/result/by_direction/0/patterns/6/ratio",
+      "value": 1.3175916485459847,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f40",
+      "path": "/result/by_direction/0/patterns/7/anchor_share",
+      "value": 0.16143497757847533,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f41",
+      "path": "/result/by_direction/0/patterns/7/anchors_with_pattern",
+      "value": 252,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f42",
+      "path": "/result/by_direction/0/patterns/7/base_rate",
+      "value": 0.13911525029103608,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f43",
+      "path": "/result/by_direction/0/patterns/7/base_rate_windows",
+      "value": 717,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f44",
+      "path": "/result/by_direction/0/patterns/7/ratio",
+      "value": 1.1604405501247725,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f45",
+      "path": "/result/by_direction/0/patterns/8/anchor_share",
+      "value": 0.14221652786675207,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f46",
+      "path": "/result/by_direction/0/patterns/8/anchors_with_pattern",
+      "value": 222,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f47",
+      "path": "/result/by_direction/0/patterns/8/base_rate",
+      "value": 0.08595265812960808,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f48",
+      "path": "/result/by_direction/0/patterns/8/base_rate_windows",
+      "value": 443,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f49",
+      "path": "/result/by_direction/0/patterns/8/ratio",
+      "value": 1.654591387415892,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f50",
+      "path": "/result/by_direction/0/patterns/9/anchor_share",
+      "value": 0.14029468289557975,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "5627a568a7877760",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f51",
+      "path": "/result/by_direction/0/patterns/9/anchors_with_pattern",
+      "value": 219,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "5627a568a7877760",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f52",
+      "path": "/result/by_direction/0/patterns/9/base_rate",
+      "value": 0.1362048894062864,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "5627a568a7877760",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f53",
+      "path": "/result/by_direction/0/patterns/9/base_rate_windows",
+      "value": 702,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "5627a568a7877760",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f54",
+      "path": "/result/by_direction/0/patterns/9/ratio",
+      "value": 1.0300267744213931,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "5627a568a7877760",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f55",
+      "path": "/result/by_direction/0/patterns_found",
+      "value": 565,
+      "metric": "patterns_found",
+      "unit": "patterns",
+      "group": {
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_c25c95da.f56",
+      "path": "/result/by_direction/1/patterns/0/anchor_share",
+      "value": 0.9064702114029468,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f57",
+      "path": "/result/by_direction/1/patterns/0/anchors_with_pattern",
+      "value": 1415,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f58",
+      "path": "/result/by_direction/1/patterns/0/base_rate",
+      "value": 0.3333333333333333,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f59",
+      "path": "/result/by_direction/1/patterns/0/base_rate_windows",
+      "value": 1718,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f60",
+      "path": "/result/by_direction/1/patterns/0/ratio",
+      "value": 2.7194106342088404,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "2aa30ef3ecea724b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f61",
+      "path": "/result/by_direction/1/patterns/1/anchor_share",
+      "value": 0.7347853939782191,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f62",
+      "path": "/result/by_direction/1/patterns/1/anchors_with_pattern",
+      "value": 1147,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f63",
+      "path": "/result/by_direction/1/patterns/1/base_rate",
+      "value": 0.3344974776872332,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f64",
+      "path": "/result/by_direction/1/patterns/1/base_rate_windows",
+      "value": 1724,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f65",
+      "path": "/result/by_direction/1/patterns/1/ratio",
+      "value": 2.196684408679664,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bc048d75f905460b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f66",
+      "path": "/result/by_direction/1/patterns/2/anchor_share",
+      "value": 0.5541319666880204,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f67",
+      "path": "/result/by_direction/1/patterns/2/anchors_with_pattern",
+      "value": 865,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f68",
+      "path": "/result/by_direction/1/patterns/2/base_rate",
+      "value": 0.21303841676367868,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f69",
+      "path": "/result/by_direction/1/patterns/2/base_rate_windows",
+      "value": 1098,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f70",
+      "path": "/result/by_direction/1/patterns/2/ratio",
+      "value": 2.6010893955465004,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6fdb93f6055ae4f2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f71",
+      "path": "/result/by_direction/1/patterns/3/anchor_share",
+      "value": 0.42921204356181936,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f72",
+      "path": "/result/by_direction/1/patterns/3/anchors_with_pattern",
+      "value": 670,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f73",
+      "path": "/result/by_direction/1/patterns/3/base_rate",
+      "value": 0.21245634458672877,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f74",
+      "path": "/result/by_direction/1/patterns/3/base_rate_windows",
+      "value": 1095,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f75",
+      "path": "/result/by_direction/1/patterns/3/ratio",
+      "value": 2.0202364132580977,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "be1196c055349e9a",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f76",
+      "path": "/result/by_direction/1/patterns/4/anchor_share",
+      "value": 0.3920563741191544,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f77",
+      "path": "/result/by_direction/1/patterns/4/anchors_with_pattern",
+      "value": 612,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f78",
+      "path": "/result/by_direction/1/patterns/4/base_rate",
+      "value": 0.13911525029103608,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f79",
+      "path": "/result/by_direction/1/patterns/4/base_rate_windows",
+      "value": 717,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f80",
+      "path": "/result/by_direction/1/patterns/4/ratio",
+      "value": 2.8182127645887336,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "9043ce905e836982",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f81",
+      "path": "/result/by_direction/1/patterns/5/anchor_share",
+      "value": 0.3395259449071108,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f82",
+      "path": "/result/by_direction/1/patterns/5/anchors_with_pattern",
+      "value": 530,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f83",
+      "path": "/result/by_direction/1/patterns/5/base_rate",
+      "value": 0.1781140861466822,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f84",
+      "path": "/result/by_direction/1/patterns/5/base_rate_windows",
+      "value": 918,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f85",
+      "path": "/result/by_direction/1/patterns/5/ratio",
+      "value": 1.9062273638902494,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "6ce6d0a9fe3eedbb",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f86",
+      "path": "/result/by_direction/1/patterns/6/anchor_share",
+      "value": 0.33183856502242154,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f87",
+      "path": "/result/by_direction/1/patterns/6/anchors_with_pattern",
+      "value": 518,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f88",
+      "path": "/result/by_direction/1/patterns/6/base_rate",
+      "value": 0.1239813736903376,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f89",
+      "path": "/result/by_direction/1/patterns/6/base_rate_windows",
+      "value": 639,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f90",
+      "path": "/result/by_direction/1/patterns/6/ratio",
+      "value": 2.676519505673804,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "7d7b4d85be690686",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f91",
+      "path": "/result/by_direction/1/patterns/7/anchor_share",
+      "value": 0.2498398462524023,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "3e7ee65ab1cad6b2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f92",
+      "path": "/result/by_direction/1/patterns/7/anchors_with_pattern",
+      "value": 390,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "3e7ee65ab1cad6b2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f93",
+      "path": "/result/by_direction/1/patterns/7/base_rate",
+      "value": 0.08847497089639116,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "3e7ee65ab1cad6b2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f94",
+      "path": "/result/by_direction/1/patterns/7/base_rate_windows",
+      "value": 456,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "3e7ee65ab1cad6b2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f95",
+      "path": "/result/by_direction/1/patterns/7/ratio",
+      "value": 2.8238477359317575,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "3e7ee65ab1cad6b2",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f96",
+      "path": "/result/by_direction/1/patterns/8/anchor_share",
+      "value": 0.2216527866752082,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c6335b6cd4bd0e8b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f97",
+      "path": "/result/by_direction/1/patterns/8/anchors_with_pattern",
+      "value": 346,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "c6335b6cd4bd0e8b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f98",
+      "path": "/result/by_direction/1/patterns/8/base_rate",
+      "value": 0.0892510671323244,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c6335b6cd4bd0e8b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f99",
+      "path": "/result/by_direction/1/patterns/8/base_rate_windows",
+      "value": 460,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "c6335b6cd4bd0e8b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f100",
+      "path": "/result/by_direction/1/patterns/8/ratio",
+      "value": 2.483474918530485,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c6335b6cd4bd0e8b",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f101",
+      "path": "/result/by_direction/1/patterns/9/anchor_share",
+      "value": 0.20563741191543883,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "e63b31ea6a6e3dfc",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f102",
+      "path": "/result/by_direction/1/patterns/9/anchors_with_pattern",
+      "value": 321,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "e63b31ea6a6e3dfc",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f103",
+      "path": "/result/by_direction/1/patterns/9/base_rate",
+      "value": 0.07314707023670936,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "e63b31ea6a6e3dfc",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f104",
+      "path": "/result/by_direction/1/patterns/9/base_rate_windows",
+      "value": 377,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "e63b31ea6a6e3dfc",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f105",
+      "path": "/result/by_direction/1/patterns/9/ratio",
+      "value": 2.811287058387723,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "e63b31ea6a6e3dfc",
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f106",
+      "path": "/result/by_direction/1/patterns_found",
+      "value": 518,
+      "metric": "patterns_found",
+      "unit": "patterns",
+      "group": {
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_c25c95da.f107",
+      "path": "/result/matched_events",
+      "value": 201206,
+      "metric": "matched_events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_c25c95da.f108",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c25c95da.f109",
+      "path": "/scope/windows/0/to",
+      "value": "2006-01-04T16:00:05.233640Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}

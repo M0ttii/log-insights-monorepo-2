@@ -248,8 +248,10 @@ versions before using an API, and never infer an installation from a plan.
   `prefer-tag-over-role`; `pnpm-workspace.yaml` allows ESLint 10 for
   `eslint-plugin-react`, `-import` and `-jsx-a11y`, whose peer ranges stop at 9
   although their rules were verified to run; knip exempts the exports of
-  `packages/ui/src/components` (shadcn generates complete APIs) and ignores `tsx` in
-  `packages/analytics` (tests start it only as `node --import tsx`).
+  `packages/ui/src/components` (shadcn generates complete APIs). Original receipt
+  JSON under `submission/evidence/` is excluded from formatting to preserve its
+  exact bytes; Vitest checks its schema, signature, result digest and SHA-256
+  against the saved performance report.
 
 ## Tests and checks
 

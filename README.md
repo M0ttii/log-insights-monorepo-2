@@ -20,6 +20,12 @@ receipt.
 > comparison, complete live acceptance for all three web roles, and full
 > MCP-client role acceptance remain open.
 
+The tracked [submission evidence and remaining gates](submission/README.md) identify
+what is ready and what still needs final release verification. The
+[SereneDB function reference](submission/serenedb-functions.md) links implemented
+SQL paths to complete, unchanged receipts from real corpus runs. Live API evals
+and the human review sample are postponed; no passing U16 result is claimed.
+
 The [editable Typst presentation template](presentation/README.md) includes a
 [PDF preview](presentation/log-insights-template.pdf). It covers the three roles,
 architecture and query evidence; findings remain explicit placeholders until
@@ -28,13 +34,23 @@ verified runs are available.
 ## Requirements
 
 - Node.js 24 (see `.nvmrc`)
-- pnpm 11 (pinned via `packageManager`; Corepack picks it up)
+- pnpm 11.25.0 (exact `packageManager` version; activate it with your package
+  manager/version manager, or install it with `npm install --global pnpm@11.25.0`)
+- Git and access to this repository and its `vendor/serene-design` submodule
 - Docker with Compose (SereneDB only)
 
 ## Getting started
 
+Repository access is required while it is private. Clone the pinned design
+submodule too; it supplies the CSS and fonts used by the web build:
+
 ```bash
-pnpm install
+git clone --recurse-submodules https://github.com/M0ttii/log-insights-monorepo-2.git
+cd log-insights-monorepo-2
+# Activate Node 24 first (for example: nvm use).
+node --version                  # v24.x
+pnpm --version                  # 11.25.0
+pnpm install --frozen-lockfile
 pnpm check
 
 cp .env.example .env            # then set SERENEDB_PASSWORD, e.g. openssl rand -hex 16,
@@ -47,14 +63,28 @@ pnpm data:setup                 # starts SereneDB, downloads and loads the corpu
 identity, downloads `BGL.zip` and `OpenStack.tar.gz` from
 [Zenodo](https://zenodo.org/records/8196385) into `.data/raw` if they are
 missing (about 63 MB, 810 MB unpacked; every file is checked against a pinned
-SHA-256), loads them into SereneDB and prints the load balance. It needs no
-tools besides Docker, Node and pnpm, takes well under a minute on an Apple M
-laptop and can be rerun at any time: a second run downloads nothing and yields
-the same data version.
+SHA-256), loads them into SereneDB and prints the load balance and data version.
+It needs Docker, Node and pnpm after checkout; its durations depend on download,
+hardware and cache state. A second run with the same source, code and image downloads
+nothing and yields the same data version.
+
+On Apple Silicon, obtain the matching unpublished image archive before running
+the loader; a clean clone cannot download that image from a registry. See the
+[image prerequisites](#serenedb-image). On a supported amd64 host the loader can
+fetch the official digest-pinned image. No `.data/`, `.env`, receipts or
+`node_modules` from another checkout are required for the documented setup.
+
+For a smaller transport/integration check, run `pnpm data:setup --samples`. It
+creates `log_insights_samples` rather than replacing the full corpus; with
+extensions it uses `log_insights_samples_ext`. To inspect samples in MCP or the
+web app, explicitly set `SERENEDB_DATABASE=log_insights_samples` (or the extended
+name) in `.env` before starting that client, then restore the full-corpus target
+for the demo. Sample counts and data versions are not full-corpus evidence.
 
 The password seeds the SereneDB superuser when its data volume is first
-created; to change it later, run `ALTER ROLE` or recreate the volume
-(`docker compose down -v`, which deletes all loaded data).
+created. Changing the `.env` value alone does not update an existing role; use
+`ALTER ROLE` with the current credentials for an existing volume. A second
+checkout needs its own `COMPOSE_PROJECT_NAME`, `SERENEDB_PORT` and data volume.
 
 ### Web workspace
 
@@ -67,8 +97,12 @@ and links cited facts to their receipts. Each `check_claims` call has its own
 verification line; unchecked facts and uncited numbers are separate syntactic
 markings, not a judgment of the explanation. Stop retains completed receipts.
 `Export run` downloads the answer, its tool results and public run metadata,
-without server instructions or credentials. Role comparison and recorded-run
-import remain separate work. Overview, Logs, Corpus and receipts use real tools; no demo
+without server instructions or credentials. To reproduce evidence, open a cited
+fact or receipt and select **Re-run** in the evidence drawer. It executes the
+registered tool with the saved validated input, creates a new receipt and reports
+whether the query signature, data version and result digest match. A data-version
+change is visible; re-run never executes SQL supplied by a user or an old receipt.
+Role comparison and recorded-run import remain separate work. Overview, Logs, Corpus and receipts use real tools; no demo
 findings are substituted when the database is unavailable.
 
 Follow-up questions restore the full private model history from a matching
@@ -106,6 +140,42 @@ with its own `COMPOSE_PROJECT_NAME` (own container and volume) and
 use those settings. Build provenance, restore and rollback to 26.09.1.3 are
 in the technical spec (§ 5.1).
 
+## Architecture, schema and answer rules
+
+MCP, the web routes and the AI SDK agent call the same
+[analytics registry](packages/analytics/src/registry.ts). Only that package
+executes SQL. SereneDB searches and computes corpus values and rule outcomes;
+Claude (`claude-opus-5-5`, default effort `high`) explains the returned evidence
+and recommends a next check. The pure domain package owns the Zod contracts and
+reference rule oracles. Tool results, model output and original log text remain
+untrusted text in the UI.
+
+| Stored relation | Purpose | Source |
+|---|---|---|
+| `log_events` | Parsed original messages with stable event/pattern IDs, UTC time, dataset-specific fields and explicit missing values | [Event schema](packages/corpus/sql/25_log_events.sql), [dataset field meanings](packages/domain/src/datasets.ts) |
+| `api_access` | OpenStack lines with an HTTP status, with or without a request ID | [Views and corpus statistics](packages/corpus/sql/40_stats.sql) |
+| `ownership`, `component_teams` | Fictional component-to-team mapping; absent ownership is `unowned` | [Ownership definitions](packages/corpus/sql/30_ownership.sql) |
+| `corpus_stats`, `corpus_field_stats` | Dataset spans, populations and available field values | [Statistics](packages/corpus/sql/40_stats.sql) |
+| `load_report`, `load_rejects`, `load_checks`, `load_manifest` | Line balance, preserved rejects, load checks, source/image/rule provenance and data version | [Load balance](packages/corpus/sql/15_load_report.sql), [checks](packages/corpus/sql/90_checks.sql), [manifest](packages/corpus/sql/95_manifest.sql) |
+| `log_events_idx` | Inverted index over messages and supported search fields | [Index definition](packages/corpus/sql/50_index.sql) |
+| Receipt JSON files | Exact tool input, SQL/parameters, scope, result, digest and fact list; outside the database | [Receipt contract](packages/domain/src/receipt.ts) |
+
+Roles share Scope, Answer, Unknown and Verification, with different decision cores:
+engineers investigate a specific symptom and discriminating check; team leads
+consider recurring work and the next review/owner; managers compare episodes and
+breadth with explicit trade-offs. The [versioned playbooks](packages/agent/src/playbooks)
+are shared by MCP and web. They do not supply a business-risk score or prove a
+cause. Every numerical claim must cite its assigned fact ID and pass
+`check_claims`; that check covers numbers, metrics and groups, not explanations.
+
+Windows include their start and exclude their end; UTC is the visible default.
+Dataset time axes remain separate. Frequencies come from full-scope aggregation,
+not search examples. Missing evidence stays unknown; a zero outside a dataset's
+span is not an observation. Labels are dataset annotations and ownership is
+fictional. Precursors are temporal associations, and episodes are not incidents
+or outages. The [engine reference](submission/serenedb-functions.md) shows where
+these calculations happen.
+
 ## Scripts
 
 | Script | Purpose |
@@ -113,6 +183,8 @@ in the technical spec (§ 5.1).
 | `pnpm dev` | Start the preliminary web workspace on 127.0.0.1:3000 |
 | `pnpm build` | Build the web workspace |
 | `pnpm test:e2e` | Browser and accessibility checks against a production build |
+| `pnpm report:perf [options]` | Read saved receipts with SereneDB `read_json`; report observed database round-trip n/median/p95/min/max by data/tool version and client; no model calls |
+| `pnpm eval <command> …` | Prepare development plans and reviewer packets offline, or explicitly execute paid runs later; see [eval workflow and cost boundary](packages/evals/README.md) |
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
 | `pnpm data:setup [--samples] [--with <ids>\|all]` | Load BGL and OpenStack into SereneDB (idempotent); `--with hdfs,openssh,apache,linux,zookeeper` (or `all`) adds the extension datasets; `--samples` loads the Loghub 2k samples into `log_insights_samples` instead (with `--with` into `log_insights_samples_ext`) |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
@@ -139,6 +211,46 @@ full-BGL precursor benchmark (`both`, 60 minutes). Its Golden timing measures
 anchor-summary validation; complete precursor rows are independently checked by
 the smaller aggregate cases. These single-run timings are not a performance
 percentile report.
+
+## Database performance report
+
+An [actual historical example](submission/performance/historical-2026-10-18/report.md)
+summarizes the nine archived receipts in [submission/evidence](submission/evidence/).
+Its small, selected groups demonstrate the report and do not establish a benchmark.
+
+After real tool calls have created receipts, run:
+
+```bash
+pnpm report:perf
+# Keep the JSON/Markdown report and exact SQL in a new, immutable output directory.
+pnpm report:perf --output submission/performance/my-receipt-snapshot
+```
+
+The report reads validated complete receipts from the configured host receipt
+directory and the matching read-only Compose mount `/data/receipts`. SereneDB
+`read_json` computes n, median, p95, minimum and maximum of `duration_ms`,
+separately by data version, tool, tool version and client. This field sums a
+tool's recorded database round trips; it excludes model waiting, answer
+generation and receipt writing. It is neither engine CPU time nor end-to-end
+investigation latency. Observational percentiles over mixed scopes/cache states
+are not a controlled benchmark or a performance guarantee; inspect n and scope
+variation before interpreting p95.
+
+Use `--from <UTC>` (inclusive) and `--to <UTC>` (exclusive) for receipt creation
+time, `--receipts-dir <host-directory>` to select a local snapshot, and `--json`
+for machine-readable stdout. The selected receipts must also exist unchanged in
+the database's fixed `/data/receipts` mount; the command does not upload them.
+SereneDB 26.10.1 cannot describe a prepared file-path argument, so the SQL uses
+a fixed canonical filename glob and binds receipt IDs and time filters. Source
+and group caps default to 10,000 receipts and 200 groups; `--max-receipts` and
+`--max-groups` set bounded limits. Exceeding a cap fails rather than silently
+truncating. The fixed glob can scan metadata from other canonical mounted files
+before filtering selected IDs: an unrelated malformed file can fail the query,
+and selecting fewer local files does not bound that scan cost. The shared pool's
+10-second query limit still applies. Output directories must be new. This command requires configured
+SereneDB, performs no model calls and computes no statistics from raw corpus in
+TypeScript. Agent duration, calls, tokens/cache and estimated API costs belong
+to the separate [eval reports](packages/evals/README.md).
 
 ## MCP connection
 
@@ -237,9 +349,32 @@ result; those remain separate U16 gates.
 ## Tools
 
 Every tool runs through one registry (`packages/analytics`), writes a query
-receipt to `.data/receipts/` and returns fact IDs for its numbers. Until the
-README tool reference is generated from the registry, this table is kept by
-hand; the full descriptions are in the tool definitions.
+receipt to `.data/receipts/` and returns fact IDs for its numbers. The table below
+is checked against the eight implemented entries in the
+[registry](packages/analytics/src/registry.ts). Canonical strict input/output
+schemas and complete field descriptions live in
+[domain/tools](packages/domain/src/tools), with the `describe_corpus` output in
+[analytics describe_corpus](packages/analytics/src/tools/describe-corpus.ts) and versioned
+[JSON Schema snapshots](packages/domain/src/__snapshots__/schemas.test.ts.snap).
+Unsupported fields are rejected rather than silently ignored.
+
+Common filters use `dataset`, `from` and `to`, exact-name `components` (1–20),
+`teams` (1–10), `levels` (1–10), `text` (1–200 characters), `pattern_id`,
+`only_errors` and dataset-specific fields. OpenStack adds request/instance IDs,
+masked `endpoints` (1–20) and inclusive `http_status: {min, max}` (100–599);
+BGL adds `node`, `rack`, `alert_label` and `only_alerts`. Extension fields retain
+the [catalog meanings](packages/domain/src/datasets.ts); the
+[filter contract](packages/domain/src/filters.ts) lists every accepted field.
+Individual tools restrict these fields further as documented below.
+
+Successful results contain `data`, `facts`, `receipt` and `notes`. Full results
+are bounded to 256 KiB. Counts and shares retain their stated population and
+unit; `truncated`, limits and `other` identify what a bounded list omits. Every
+expected failure has a code, safe English message and correction hint:
+`invalid_input`, `not_found`, `query_timeout` (10-second query limit),
+`db_unavailable`, `receipt_unavailable` and `limit_exceeded`. A failed receipt
+write returns no numerical result. Narrow invalid/slow requests rather than
+retrying unchanged. See the [error contract](packages/domain/src/errors.ts).
 
 SereneDB computes episodes and precursor anchors with `MATCH_RECOGNIZE`
 after applying the full scope filter. Gate G11 covers timestamp ties, the
@@ -300,10 +435,10 @@ is in `docs/technical.md` § 5.3 (local planning docs are gitignored).
 
 | Tool | Purpose | Limits |
 |---|---|---|
-| `describe_corpus` | Datasets with events, time spans, fields, levels, components with their fictional team, labels, known limits, versions and answer guidance per role | – |
+| `describe_corpus` | Datasets with events, time spans, field meanings/capabilities, levels, components with their fictional team, labels, known limits, versions and answer guidance per role; no list is truncated | Empty strict input object `{}` |
 | `search_logs` | Full-text search over log messages with BM25 ranking; `total_matches` is exact and comes from the same condition as the hits. Modes: `terms` (default, all words in any order), `phrase` (words adjacent and in order), `fuzzy` (one term with `max_edits` 1–2 typos, default 1) | `limit` 1–50 (default 20), `query` ≤ 200 characters, messages cut to 400 Unicode code points, with index-derived `match_ranges` (`start` inclusive, `end` exclusive, zero-based code points, no added markup); `fuzzy` expands a term to at most 50 index terms per index segment (`sdb_levenshtein_max_terms`), and count and hits use the same expansion |
 | `get_log_context` | Temporal context in two modes. `event`: the events right before and after one `event_id` (from `search_logs`) on the `same_node`, in the `same_component`, with the `same_request` (OpenStack) or in the `dataset`, with exact `offset_ms` (microseconds kept, computed in SereneDB); before covers `[anchor − w, anchor)`, after `(anchor, anchor + w]`, ties on the anchor's timestamp are placed by `event_id`, and each side reports the exact number of events in the window. `aggregate` (precursor analysis, R-11): anchors are the episode starts (gap ≥ 30 min) of a `pattern_id` or a `query` (all words) in one `dataset` after all filters, so a burst is one anchor; per pattern in the window before and/or after: anchors with an occurrence, their share of all anchors, the base rate (share of equally long grid windows from the start of the data span in scope that contain the pattern) and the ratio of both, all computed in SereneDB. Precursors are temporal observations, not causes | `event`: `before`/`after` 0–25 (default 10), `window_minutes` 1–60 (default 10), default scope `same_node` for BGL events with a node, else `same_component`; messages cut to 400 characters. `aggregate`: exactly one `dataset`, `top_n` 1–20 per direction (default 10), anchor patterns excluded, base rate and ratio omitted below five anchors; filters select anchors, window events come from the whole dataset |
-| `count_events` | Counts over the stated scope grouped by 1–2 dimensions (`dataset`, `team`, `component`, `level`, `alert_label`, `rack`, `node`, `pattern`, `http_status`, `endpoint`), with exact `total`, `share` per group (fraction of `total`, computed in SereneDB) and the groups beyond `top_n` summed in `other`. Without `from`/`to` each dataset counts over its full span. A missing value is its own category `null`; unmapped components count as team `unowned`. `http_status` and `endpoint` count OpenStack API accesses, not log events. `compare` (`"previous_period"` or an equally long `{from, to}`) adds per group and in total the baseline B, C − B, the change in percent (none when B = 0) and the R-06 classification; a reference outside the data span makes the comparison not determinable instead of reporting B = 0 | `top_n` 1–50 (default 20), with `compare` ≤ 25; `compare` needs one `dataset`, `from`, `to` and one dimension; BGL-only dimensions and filters cannot be combined with `http_status` or `endpoint` |
+| `count_events` | Counts over the stated scope grouped by 1–2 dimensions (`dataset`, `team`, `component`, `level`, `alert_label`, `rack`, `node`, `pattern`, `http_status`, `endpoint`, `host`, `client_ip`, `thread`, `block_id`), with exact `total`, `share` per group (fraction of `total`, computed in SereneDB) and the groups beyond `top_n` summed in `other`. Without `from`/`to` each dataset counts over its full span. A missing value is its own category `null`; unmapped components count as team `unowned`. `http_status` and `endpoint` count OpenStack API accesses, not log events. `compare` (`"previous_period"` or an equally long `{from, to}`) adds per group and in total the baseline B, C − B, the change in percent (none when B = 0) and the R-06 classification; a reference outside the data span makes the comparison not determinable instead of reporting B = 0 | `top_n` 1–50 (default 20), with `compare` ≤ 25; `compare` needs one `dataset`, `from`, `to` and one dimension; BGL-only dimensions and filters cannot be combined with `http_status` or `endpoint` |
 | `event_trend` | Log events per UTC `hour`, `day` or `week` bucket (weeks start on Monday) for exactly one dataset, optionally `split_by` one dimension into the top 5 series plus `other`. Returns the dataset's `data_span` and the `effective_range` (window ∩ span): empty buckets inside it are observed zeros, buckets outside the span are never listed. Edge buckets are marked `partial`, buckets without any event of the dataset `capture_gap` | At most 120 buckets (otherwise `limit_exceeded` naming the next coarser bucket); `dataset` required, no shared time axis; `http_status` and `endpoint` are no split dimensions |
 | `recurring_patterns` | Patterns of exactly one `dataset` with `events`, `first_seen`/`last_seen`, `episodes` (R-05: a new episode after ≥ 30 min without the pattern, computed after all filters, so filtering by node can split an episode), `recurring` (≥ 2 episodes), `active_days`/`active_weeks`, breadth (BGL `nodes` and `racks`, OpenStack `instances` and `requests`; `null` when not every event carries the unit), C − B against the previous equally long period with the same filters and the R-10 `status` (`new`, `escalating`, `reappeared`, `ongoing`, `quiet`; without a determinable reference only `new`/`ongoing`). `rank`: `episodes` (default), `events`, `increase`, `investigation_order`: the error and alert patterns (OpenStack also 5xx accesses) by episodes, breadth, increase, events, `pattern_id` (R-08), a criterion missing for any candidate dropped for all, with `candidates_checked`, `rank_basis`, the leader per criterion, R-09 dominance (`clear_priority` or `trade_off` with the conflicts, over every candidate checked), levels, labels, share of error events and the R-09 limit; no composite score | `limit` 1–25 (default 10); with `investigation_order` 1–5 (default 3) and no `text`, `request_id` or `pattern_id`; `rank: increase` needs a previous period inside the data span |
 | `latency_stats` | OpenStack API accesses (lines with an HTTP status, with or without request ID) overall or grouped by `endpoint`, `method`, `status`, `component`, UTC `hour` or `day`: `api_access_events`, `without_request_id`, `unique_requests` (a separate counting unit), `p50_ms`/`p90_ms`/`p95_ms`/`p99_ms`/`max_ms` (continuous percentiles, `quantile_cont` with linear interpolation, over the accesses with a latency), `errors_5xx` (500–599) with `rate_5xx` and `errors_4xx` (400–499, client errors, not failures) with `rate_4xx`, each rate over `api_access_events`, computed in SereneDB. A scope without 5xx says so as an observed zero with its denominator; groups beyond `top_n` are aggregated in `other` over their own accesses; time buckets list every bucket of the data span in scope with `partial` and `capture_gap`. Filters `endpoints` (masked paths) and `http_status` (inclusive range) | OpenStack only (`dataset: bgl` is `invalid_input`); `top_n` 1–20 (default 10) only for `endpoint`, `method`, `status`, `component`; at most 120 time buckets |
@@ -312,14 +447,43 @@ is in `docs/technical.md` § 5.3 (local planning docs are gitignored).
 Matching is case-insensitive on whole tokens without stemming; operators,
 quotes and `*` are not evaluated. Hits are examples, never a frequency.
 
+## Known development questions and boundaries
+
+These questions come from the checked-in [development bank](packages/evals/questions/dev.yaml).
+They are useful tool-level examples, not frozen-release verified model answers
+and not holdout questions. The final submission must link each to its actual
+answer, executed check and complete receipts after evaluation.
+
+| Role | Known question | Evidence the answer must obtain |
+|---|---|---|
+| Engineer | On BGL in June 2005, is the repeated `ciod` control-stream read failure confined to one emitting node or spread across the job, and what should I check next? | `describe_corpus`; exact search total and original examples; event context; full-scope node/rack counts; aggregate context over episode starts, with its actual window/base rate/truncation; `check_claims`. Broad symptoms do not exclude one initiating cause. |
+| Team lead | Which recurring problems did Workload Runtime have on BGL in June 2005, and what should the team investigate first? | `describe_corpus`; patterns with episodes, active days and breadth; weekly trend; scoped team/component comparison with valid baseline coverage; `check_claims`. One burst with many lines does not establish recurrence. |
+| Manager | What should we investigate first on BGL? At most three priorities. | `describe_corpus`; `recurring_patterns` with `rank: investigation_order`, full candidate/rank basis, omitted criteria and dominance/trade-off; team counts/comparison; `check_claims`. Volume alone is not priority, and business impact is unknown. |
+
+A request for financial cost, downtime or affected customers receives an explicit
+unknown because the corpus supplies no validated business mapping. A request for
+a proven root cause remains a hypothesis plus an executed discriminating check
+and next evidence to obtain. A request to compare BGL and OpenStack on one
+calendar trend must be narrowed to separate dataset spans. An ambiguous request
+such as “I need an analysis of BGL” first asks for the user's decision or role.
+
 ## Data
 
 The base corpus is [Loghub](https://github.com/logpai/loghub) BGL and OpenStack
 (Zhu et al., *Loghub: A Large Collection of System Log Datasets for AI-driven
 Log Analytics*, ISSRE 2023; BGL: Oliner & Stearley, *What Supercomputers Say*,
-DSN 2007). Raw files are never committed.
+DSN 2007). The [dataset catalog](packages/domain/src/datasets.ts) pins sources,
+checksums, field meanings and citations. The Zenodo corpus is
+[CC BY 4.0](https://zenodo.org/records/8196385); retain Loghub attribution and cite
+the paper when reusing these datasets or the bounded original evidence in the
+[submission receipts](submission/evidence/). Raw files are never committed.
+SereneDB performs the local computation; Anthropic Claude is the external model
+service used when an explicitly configured agent run is started. No model key is
+needed for offline documents, receipt inspection or report replay.
 
-Load balance of `pnpm data:setup` (17.10.2026):
+Historical load balance of `pnpm data:setup` (17 October 2026), preserved in
+[this complete corpus description](submission/evidence/r_676abcd3.json), data
+version `dv_7ea6fcb2c9eb6882` (captured 18 October 2026):
 
 | Dataset | Lines read | Expected (brief) | Events loaded | Rejected |
 |---|---:|---:|---:|---:|
@@ -497,7 +661,7 @@ and [port management](https://docs.superset.sh/ports).
 
 ```text
 apps/mcp                    stdio MCP server, resources, playbook interface, desktop config and smoke tests
-apps/web                    preliminary Next.js workspace; streaming chat pending
+apps/web                    Next.js workspace; streaming Ask, analytics, log search and evidence drawer
 packages/analytics          pool, filter compiler, receipts, tool registry and tools
 packages/corpus             pnpm data:setup (loader, SQL, integration tests), pnpm data:profile and the SereneDB gate
 packages/agent              role playbooks (./playbooks) and the AI SDK agent runInvestigation with run records (./ai-sdk)

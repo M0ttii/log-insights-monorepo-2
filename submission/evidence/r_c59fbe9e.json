@@ -1,0 +1,174 @@
+{
+  "receipt_id": "r_c59fbe9e",
+  "created_at": "2026-10-17T23:35:07.537Z",
+  "client": "mcp",
+  "tool": "search_logs",
+  "tool_version": "1.0.0",
+  "input": {
+    "query": "instruction address",
+    "match": "phrase",
+    "dataset": "bgl",
+    "from": "2005-06-14T00:00:00Z",
+    "to": "2005-06-15T00:00:00Z",
+    "sort": "time_asc",
+    "limit": 3
+  },
+  "signature": "4c89f2ab33996aabf4599a2b10c254ff0385cee6ba2358ddb91192a3f76fd08f",
+  "data_version": "dv_7ea6fcb2c9eb6882",
+  "sql": [
+    "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ",
+    "SELECT log_events_idx.event_id, log_events_idx.dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.component, log_events_idx.level, log_events_idx.node, log_events_idx.alert_label, log_events_idx.request_id, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ ORDER BY log_events_idx.ts, log_events_idx.event_id LIMIT $5"
+  ],
+  "params": [
+    [
+      "instruction address"
+    ],
+    [
+      "bgl"
+    ],
+    [
+      "instruction address",
+      "bgl",
+      "2005-06-14T00:00:00Z",
+      "2005-06-15T00:00:00Z"
+    ],
+    [
+      "instruction address",
+      "bgl",
+      "2005-06-14T00:00:00Z",
+      "2005-06-15T00:00:00Z",
+      3
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-14T00:00:00Z",
+        "to": "2005-06-15T00:00:00Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 53248,
+    "unit": "log_events"
+  },
+  "rows_returned": 3,
+  "truncated": true,
+  "row_limit": 3,
+  "duration_ms": 32.62,
+  "result": {
+    "query": "instruction address",
+    "match_mode": "phrase",
+    "max_edits": null,
+    "sort": "time_asc",
+    "total_matches": 53248,
+    "hits": [
+      {
+        "event_id": 399347,
+        "dataset": "bgl",
+        "ts": "2005-06-14T00:44:59.774915Z",
+        "component": "KERNEL",
+        "level": "FATAL",
+        "node": "R10-M0-N5-C:J09-U11",
+        "alert_label": null,
+        "request_id": null,
+        "message": "instruction address: 0x00004ed8",
+        "message_truncated": false,
+        "score": 4.1852145
+      },
+      {
+        "event_id": 399348,
+        "dataset": "bgl",
+        "ts": "2005-06-14T00:44:59.846240Z",
+        "component": "KERNEL",
+        "level": "FATAL",
+        "node": "R10-M0-N5-C:J15-U11",
+        "alert_label": null,
+        "request_id": null,
+        "message": "instruction address: 0x00004ed8",
+        "message_truncated": false,
+        "score": 4.1852145
+      },
+      {
+        "event_id": 399349,
+        "dataset": "bgl",
+        "ts": "2005-06-14T00:44:59.874244Z",
+        "component": "KERNEL",
+        "level": "FATAL",
+        "node": "R10-M0-N5-C:J11-U11",
+        "alert_label": null,
+        "request_id": null,
+        "message": "instruction address: 0x00004ed8",
+        "message_truncated": false,
+        "score": 4.1852145
+      }
+    ],
+    "truncated": true,
+    "row_limit": 3
+  },
+  "result_digest": "3068d12b677f78c68263924e09bc80b083b81a990088be6a400466eda9cc6404",
+  "facts": [
+    {
+      "id": "r_c59fbe9e.f1",
+      "path": "/result/hits/0/ts",
+      "value": "2005-06-14T00:44:59.774915Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "399347"
+      }
+    },
+    {
+      "id": "r_c59fbe9e.f2",
+      "path": "/result/hits/1/ts",
+      "value": "2005-06-14T00:44:59.846240Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "399348"
+      }
+    },
+    {
+      "id": "r_c59fbe9e.f3",
+      "path": "/result/hits/2/ts",
+      "value": "2005-06-14T00:44:59.874244Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "399349"
+      }
+    },
+    {
+      "id": "r_c59fbe9e.f4",
+      "path": "/result/total_matches",
+      "value": 53248,
+      "metric": "matches",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_c59fbe9e.f5",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-14T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c59fbe9e.f6",
+      "path": "/scope/windows/0/to",
+      "value": "2005-06-15T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}

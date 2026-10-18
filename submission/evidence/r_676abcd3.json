@@ -1,0 +1,1011 @@
+{
+  "receipt_id": "r_676abcd3",
+  "created_at": "2026-10-18T09:59:49.385Z",
+  "client": "test",
+  "tool": "describe_corpus",
+  "tool_version": "1.0.0",
+  "input": {},
+  "signature": "407df2e074a0a25742dda7d3ec5c5b0de43f4c299af9753d797a4e67f1c2835b",
+  "data_version": "dv_7ea6fcb2c9eb6882",
+  "sql": [
+    "SELECT dataset, lines_read, events, rejected, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_event, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_event, error_events, patterns, single_event_patterns, time_basis, label_source, levels, components, labels, api_accesses, api_accesses_without_request_id, requests FROM corpus_stats ORDER BY dataset",
+    "SELECT dataset, component, team, note FROM ownership ORDER BY team, dataset, component",
+    "SELECT data_version, source, loader_version, parser_version, pattern_rules_version, ownership_version, rules_version FROM load_manifest"
+  ],
+  "params": [
+    [],
+    [],
+    []
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-03T22:42:50.363779Z",
+        "to": "2006-01-04T16:00:05.233640Z"
+      },
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 4955765,
+    "unit": "log_events"
+  },
+  "rows_returned": 15,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 4,
+  "result": {
+    "datasets": [
+      {
+        "dataset": "bgl",
+        "events": 4747945,
+        "lines_read": 4747963,
+        "rejected": 18,
+        "first_event": "2005-06-03T22:42:50.363779Z",
+        "last_event": "2006-01-04T16:00:05.233639Z",
+        "error_events": 988783,
+        "patterns": 684,
+        "single_event_patterns": 43,
+        "time_basis": "Unix seconds (UTC) + microseconds of the text timestamp",
+        "label_source": "alert category in the first column (dataset label)",
+        "fields": [
+          {
+            "name": "event_id",
+            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+          },
+          {
+            "name": "ts",
+            "meaning": "Event time, UTC with microseconds."
+          },
+          {
+            "name": "level",
+            "meaning": "Severity as logged."
+          },
+          {
+            "name": "component",
+            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+          },
+          {
+            "name": "source_type",
+            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+          },
+          {
+            "name": "message",
+            "meaning": "Original log message, untrusted text."
+          },
+          {
+            "name": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04)."
+          },
+          {
+            "name": "is_error",
+            "meaning": "Error level after R-02."
+          },
+          {
+            "name": "node",
+            "meaning": "Node ID, e.g. R02-M1-N0-C:J12-U11."
+          },
+          {
+            "name": "midplane",
+            "meaning": "Midplane derived from the node, e.g. R02-M1."
+          },
+          {
+            "name": "rack",
+            "meaning": "Rack derived from the node, e.g. R02."
+          },
+          {
+            "name": "alert_label",
+            "meaning": "Dataset alert category; null for non-alert lines."
+          }
+        ],
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 3735805
+          },
+          {
+            "level": "FATAL",
+            "events": 855501
+          },
+          {
+            "level": "ERROR",
+            "events": 112355
+          },
+          {
+            "level": "WARNING",
+            "events": 23357
+          },
+          {
+            "level": "SEVERE",
+            "events": 19213
+          },
+          {
+            "level": "FAILURE",
+            "events": 1714
+          }
+        ],
+        "components": [
+          {
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "events": 4324949
+          },
+          {
+            "component": "APP",
+            "team": "Workload Runtime",
+            "events": 228536
+          },
+          {
+            "component": "DISCOVERY",
+            "team": "Hardware Operations",
+            "events": 97172
+          },
+          {
+            "component": "MMCS",
+            "team": "Control Plane",
+            "events": 88930
+          },
+          {
+            "component": "HARDWARE",
+            "team": "Hardware Operations",
+            "events": 5148
+          },
+          {
+            "component": "MONITOR",
+            "team": "Hardware Operations",
+            "events": 1681
+          },
+          {
+            "component": "LINKCARD",
+            "team": "Hardware Operations",
+            "events": 1170
+          },
+          {
+            "component": "CMCS",
+            "team": "Control Plane",
+            "events": 211
+          },
+          {
+            "component": "BGLMASTER",
+            "team": "Control Plane",
+            "events": 145
+          },
+          {
+            "component": "SERV_NET",
+            "team": "unowned",
+            "events": 3
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 4399485
+          },
+          {
+            "label": "KERNDTLB",
+            "events": 152734
+          },
+          {
+            "label": "KERNSTOR",
+            "events": 63491
+          },
+          {
+            "label": "APPSEV",
+            "events": 49651
+          },
+          {
+            "label": "KERNMNTF",
+            "events": 31531
+          },
+          {
+            "label": "KERNTERM",
+            "events": 23338
+          },
+          {
+            "label": "KERNREC",
+            "events": 6145
+          },
+          {
+            "label": "APPREAD",
+            "events": 5983
+          },
+          {
+            "label": "KERNRTSP",
+            "events": 3983
+          },
+          {
+            "label": "APPRES",
+            "events": 2370
+          },
+          {
+            "label": "APPUNAV",
+            "events": 2048
+          },
+          {
+            "label": "APPTO",
+            "events": 1991
+          },
+          {
+            "label": "KERNMICRO",
+            "events": 1503
+          },
+          {
+            "label": "APPOUT",
+            "events": 816
+          },
+          {
+            "label": "KERNMNT",
+            "events": 720
+          },
+          {
+            "label": "APPBUSY",
+            "events": 512
+          },
+          {
+            "label": "KERNMC",
+            "events": 342
+          },
+          {
+            "label": "APPCHILD",
+            "events": 320
+          },
+          {
+            "label": "KERNSOCK",
+            "events": 209
+          },
+          {
+            "label": "KERNPOW",
+            "events": 192
+          },
+          {
+            "label": "LINKIAP",
+            "events": 166
+          },
+          {
+            "label": "APPALLOC",
+            "events": 144
+          },
+          {
+            "label": "KERNSERV",
+            "events": 94
+          },
+          {
+            "label": "MASABNORM",
+            "events": 37
+          },
+          {
+            "label": "LINKDISC",
+            "events": 24
+          },
+          {
+            "label": "KERNPAN",
+            "events": 18
+          },
+          {
+            "label": "KERNCON",
+            "events": 16
+          },
+          {
+            "label": "KERNNOETH",
+            "events": 14
+          },
+          {
+            "label": "LINKPAP",
+            "events": 14
+          },
+          {
+            "label": "MONPOW",
+            "events": 12
+          },
+          {
+            "label": "APPTORUS",
+            "events": 10
+          },
+          {
+            "label": "MASNORM",
+            "events": 10
+          },
+          {
+            "label": "KERNPROG",
+            "events": 5
+          },
+          {
+            "label": "KERNFLOAT",
+            "events": 3
+          },
+          {
+            "label": "KERNRTSA",
+            "events": 3
+          },
+          {
+            "label": "MMCS",
+            "events": 3
+          },
+          {
+            "label": "LINKBLL",
+            "events": 2
+          },
+          {
+            "label": "MONNULL",
+            "events": 2
+          },
+          {
+            "label": "KERNBIT",
+            "events": 1
+          },
+          {
+            "label": "KERNEXT",
+            "events": 1
+          },
+          {
+            "label": "KERNTLBE",
+            "events": 1
+          },
+          {
+            "label": "MONILL",
+            "events": 1
+          }
+        ],
+        "api_accesses": null,
+        "api_accesses_without_request_id": null,
+        "requests": null
+      },
+      {
+        "dataset": "openstack",
+        "events": 207820,
+        "lines_read": 207820,
+        "rejected": 0,
+        "first_event": "2017-05-14T19:39:01.445000Z",
+        "last_event": "2017-05-17T12:02:35.320000Z",
+        "error_events": 196,
+        "patterns": 106,
+        "single_event_patterns": 3,
+        "time_basis": "timestamp without zone, assumed UTC",
+        "label_source": "instances with injected anomalies, anomaly_labels.txt (dataset label)",
+        "fields": [
+          {
+            "name": "event_id",
+            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+          },
+          {
+            "name": "ts",
+            "meaning": "Event time, UTC with microseconds."
+          },
+          {
+            "name": "level",
+            "meaning": "Severity as logged."
+          },
+          {
+            "name": "component",
+            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+          },
+          {
+            "name": "source_type",
+            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+          },
+          {
+            "name": "message",
+            "meaning": "Original log message, untrusted text."
+          },
+          {
+            "name": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04)."
+          },
+          {
+            "name": "is_error",
+            "meaning": "Error level after R-02."
+          },
+          {
+            "name": "request_id",
+            "meaning": "Request ID (req-…) of the request block."
+          },
+          {
+            "name": "instance_id",
+            "meaning": "Instance UUID named in the line."
+          },
+          {
+            "name": "http_method",
+            "meaning": "HTTP method of an API access line."
+          },
+          {
+            "name": "endpoint",
+            "meaning": "API path with IDs masked (R-04)."
+          },
+          {
+            "name": "http_status",
+            "meaning": "HTTP status of an API access line."
+          },
+          {
+            "name": "latency_ms",
+            "meaning": "Response time of an API access in milliseconds."
+          },
+          {
+            "name": "is_anomalous",
+            "meaning": "Dataset anomaly label of the instance, where assignable."
+          }
+        ],
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 204506
+          },
+          {
+            "level": "WARNING",
+            "events": 3118
+          },
+          {
+            "level": "ERROR",
+            "events": 194
+          },
+          {
+            "level": "CRITICAL",
+            "events": 2
+          }
+        ],
+        "components": [
+          {
+            "component": "nova-compute",
+            "team": "Compute Platform",
+            "events": 104086
+          },
+          {
+            "component": "nova-api",
+            "team": "API Gateway",
+            "events": 102868
+          },
+          {
+            "component": "nova-scheduler",
+            "team": "Control Plane",
+            "events": 866
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 156267
+          },
+          {
+            "label": "not_anomalous",
+            "events": 51453
+          },
+          {
+            "label": "anomalous",
+            "events": 100
+          }
+        ],
+        "api_accesses": 98733,
+        "api_accesses_without_request_id": 9196,
+        "requests": 89535
+      }
+    ],
+    "limits": [
+      "No shared time axis: BGL (2005–2006) and OpenStack (2017) do not overlap. Trends and period comparisons are per dataset; numbers across both are totals over each full span and are labelled as such.",
+      "Logs only: there is no business, customer, cost or downtime data. Such impact is unknown and must be named as unknown.",
+      "Labels belong to the dataset: BGL alert categories and OpenStack anomaly labels are not findings of this system; cite them as dataset labels.",
+      "Matches are log entries: counted events, patterns and episodes are neither incidents nor outages."
+    ],
+    "ownership": {
+      "fictional": true,
+      "note": "fictional (Serene Platform)",
+      "teams": [
+        {
+          "team": "API Gateway",
+          "components": [
+            {
+              "dataset": "openstack",
+              "component": "nova-api"
+            }
+          ]
+        },
+        {
+          "team": "Compute Platform",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "KERNEL"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-compute"
+            }
+          ]
+        },
+        {
+          "team": "Control Plane",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "BGLMASTER"
+            },
+            {
+              "dataset": "bgl",
+              "component": "CMCS"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MMCS"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-scheduler"
+            }
+          ]
+        },
+        {
+          "team": "Hardware Operations",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "DISCOVERY"
+            },
+            {
+              "dataset": "bgl",
+              "component": "HARDWARE"
+            },
+            {
+              "dataset": "bgl",
+              "component": "LINKCARD"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MONITOR"
+            }
+          ]
+        },
+        {
+          "team": "Workload Runtime",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "APP"
+            }
+          ]
+        }
+      ],
+      "unowned": [
+        {
+          "dataset": "bgl",
+          "component": "SERV_NET",
+          "events": 3
+        }
+      ]
+    },
+    "versions": {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "source": "corpus",
+      "loader_version": "1.0.0",
+      "parser_version": "1.0.0",
+      "pattern_rules_version": "1.0.0",
+      "ownership_version": "1.0.0",
+      "rules_version": "concept-3.5",
+      "contract_version": "2.9.0"
+    },
+    "answer_guidance": null,
+    "guidance_version": null
+  },
+  "result_digest": "00dd1558f374da1ed88b4826b1d1654a3c30add3dcccf284984fc8807521293f",
+  "facts": [
+    {
+      "id": "r_676abcd3.f1",
+      "path": "/result/datasets/0/components/0/events",
+      "value": 4324949,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Compute Platform",
+        "component": "KERNEL"
+      }
+    },
+    {
+      "id": "r_676abcd3.f2",
+      "path": "/result/datasets/0/components/1/events",
+      "value": 228536,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Workload Runtime",
+        "component": "APP"
+      }
+    },
+    {
+      "id": "r_676abcd3.f3",
+      "path": "/result/datasets/0/components/2/events",
+      "value": 97172,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "DISCOVERY"
+      }
+    },
+    {
+      "id": "r_676abcd3.f4",
+      "path": "/result/datasets/0/components/3/events",
+      "value": 88930,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Control Plane",
+        "component": "MMCS"
+      }
+    },
+    {
+      "id": "r_676abcd3.f5",
+      "path": "/result/datasets/0/components/4/events",
+      "value": 5148,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "HARDWARE"
+      }
+    },
+    {
+      "id": "r_676abcd3.f6",
+      "path": "/result/datasets/0/components/5/events",
+      "value": 1681,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "MONITOR"
+      }
+    },
+    {
+      "id": "r_676abcd3.f7",
+      "path": "/result/datasets/0/components/6/events",
+      "value": 1170,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Hardware Operations",
+        "component": "LINKCARD"
+      }
+    },
+    {
+      "id": "r_676abcd3.f8",
+      "path": "/result/datasets/0/components/7/events",
+      "value": 211,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Control Plane",
+        "component": "CMCS"
+      }
+    },
+    {
+      "id": "r_676abcd3.f9",
+      "path": "/result/datasets/0/components/8/events",
+      "value": 145,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "Control Plane",
+        "component": "BGLMASTER"
+      }
+    },
+    {
+      "id": "r_676abcd3.f10",
+      "path": "/result/datasets/0/components/9/events",
+      "value": 3,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "team": "unowned",
+        "component": "SERV_NET"
+      }
+    },
+    {
+      "id": "r_676abcd3.f11",
+      "path": "/result/datasets/0/error_events",
+      "value": 988783,
+      "metric": "error_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_676abcd3.f12",
+      "path": "/result/datasets/0/events",
+      "value": 4747945,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_676abcd3.f13",
+      "path": "/result/datasets/0/first_event",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "first_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_676abcd3.f14",
+      "path": "/result/datasets/0/last_event",
+      "value": "2006-01-04T16:00:05.233639Z",
+      "metric": "last_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_676abcd3.f15",
+      "path": "/result/datasets/0/levels/0/events",
+      "value": 3735805,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "INFO"
+      }
+    },
+    {
+      "id": "r_676abcd3.f16",
+      "path": "/result/datasets/0/levels/1/events",
+      "value": 855501,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "FATAL"
+      }
+    },
+    {
+      "id": "r_676abcd3.f17",
+      "path": "/result/datasets/0/levels/2/events",
+      "value": 112355,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "ERROR"
+      }
+    },
+    {
+      "id": "r_676abcd3.f18",
+      "path": "/result/datasets/0/levels/3/events",
+      "value": 23357,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "WARNING"
+      }
+    },
+    {
+      "id": "r_676abcd3.f19",
+      "path": "/result/datasets/0/levels/4/events",
+      "value": 19213,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "SEVERE"
+      }
+    },
+    {
+      "id": "r_676abcd3.f20",
+      "path": "/result/datasets/0/levels/5/events",
+      "value": 1714,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "level": "FAILURE"
+      }
+    },
+    {
+      "id": "r_676abcd3.f21",
+      "path": "/result/datasets/0/lines_read",
+      "value": 4747963,
+      "metric": "lines_read",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_676abcd3.f22",
+      "path": "/result/datasets/0/rejected",
+      "value": 18,
+      "metric": "rejected_lines",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_676abcd3.f23",
+      "path": "/result/datasets/1/api_accesses",
+      "value": 98733,
+      "metric": "api_accesses",
+      "unit": "api_accesses",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f24",
+      "path": "/result/datasets/1/api_accesses_without_request_id",
+      "value": 9196,
+      "metric": "api_accesses_without_request_id",
+      "unit": "api_accesses",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f25",
+      "path": "/result/datasets/1/components/0/events",
+      "value": 104086,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "team": "Compute Platform",
+        "component": "nova-compute"
+      }
+    },
+    {
+      "id": "r_676abcd3.f26",
+      "path": "/result/datasets/1/components/1/events",
+      "value": 102868,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "team": "API Gateway",
+        "component": "nova-api"
+      }
+    },
+    {
+      "id": "r_676abcd3.f27",
+      "path": "/result/datasets/1/components/2/events",
+      "value": 866,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "team": "Control Plane",
+        "component": "nova-scheduler"
+      }
+    },
+    {
+      "id": "r_676abcd3.f28",
+      "path": "/result/datasets/1/error_events",
+      "value": 196,
+      "metric": "error_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f29",
+      "path": "/result/datasets/1/events",
+      "value": 207820,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f30",
+      "path": "/result/datasets/1/first_event",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "first_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f31",
+      "path": "/result/datasets/1/last_event",
+      "value": "2017-05-17T12:02:35.320000Z",
+      "metric": "last_event_time",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f32",
+      "path": "/result/datasets/1/levels/0/events",
+      "value": 204506,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "INFO"
+      }
+    },
+    {
+      "id": "r_676abcd3.f33",
+      "path": "/result/datasets/1/levels/1/events",
+      "value": 3118,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "WARNING"
+      }
+    },
+    {
+      "id": "r_676abcd3.f34",
+      "path": "/result/datasets/1/levels/2/events",
+      "value": 194,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "ERROR"
+      }
+    },
+    {
+      "id": "r_676abcd3.f35",
+      "path": "/result/datasets/1/levels/3/events",
+      "value": 2,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack",
+        "level": "CRITICAL"
+      }
+    },
+    {
+      "id": "r_676abcd3.f36",
+      "path": "/result/datasets/1/lines_read",
+      "value": 207820,
+      "metric": "lines_read",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f37",
+      "path": "/result/datasets/1/rejected",
+      "value": 0,
+      "metric": "rejected_lines",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_676abcd3.f38",
+      "path": "/result/datasets/1/requests",
+      "value": 89535,
+      "metric": "requests",
+      "unit": "requests",
+      "group": {
+        "dataset": "openstack"
+      }
+    }
+  ]
+}

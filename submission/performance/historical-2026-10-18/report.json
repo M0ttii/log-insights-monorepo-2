@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "status": "measured",
+  "reason": null,
+  "options": {
+    "database_receipts_dir": "/data/receipts",
+    "max_receipts": 10000,
+    "max_groups": 200
+  },
+  "measurement": "Sum of database round trips per successful persisted receipt, in milliseconds.",
+  "caveats": [
+    "duration_ms sums pg database round trips, including network time; it is neither engine CPU time nor end-to-end investigation latency.",
+    "This is a retrospective summary of successful persisted receipts, not a controlled benchmark; failures without receipts are absent and cache state, concurrency and machine load are unknown.",
+    "Groups separate data version, tool, tool version and client; scopes and query signatures can still differ within a group, so groups are not directly comparable workloads.",
+    "The date window refers to receipt creation times, not corpus event times; filters include from and exclude to.",
+    "Continuous sample p95 is descriptive even for small n; no tail-latency or performance guarantee follows from it.",
+    "Only canonical r_XXXXXXXX.json receipt files are selected; temporary and unrelated files are excluded. File hashes bind the exact source bytes for replay."
+  ],
+  "n": 9,
+  "date_window": {
+    "first_created_at": "2026-10-17T22:52:44.585000Z",
+    "last_created_at": "2026-10-18T15:08:49.063000Z"
+  },
+  "sources": [
+    {
+      "receipt_id": "r_1f63d33f",
+      "filename": "r_1f63d33f.json",
+      "sha256": "826ed4cc5d2a4c60b14a5d04aa6924f6cf9b54d1aa2cd491b0d79f25b8cc3b4d",
+      "signature": "d480329a2ae3a4a91fac48f96ab6500effc17681a52124341928bb25b595976f",
+      "result_digest": "a1871906323fd135514258a93455840a3725fcbd20e0557b0234a6fb32645bce"
+    },
+    {
+      "receipt_id": "r_2bb56624",
+      "filename": "r_2bb56624.json",
+      "sha256": "391c5aee14925fddbd024ec93ca9e0d81f958119108abde37ded5ffded1eb27d",
+      "signature": "088c8db5a58f2bd65bd62db7bbedf0990ade34c4198092cf7fa6c234a5bc8de4",
+      "result_digest": "cd7483d19dd2cd70f200c077c5f29ccb544fa7c6ebd27c187bc6296a8f389418"
+    },
+    {
+      "receipt_id": "r_62ef5805",
+      "filename": "r_62ef5805.json",
+      "sha256": "802e4007d66d3e6eb3a32a8a22a8f006db47300de261f66099a46d683a354960",
+      "signature": "7302ae1632342c7e32ce022d49e3a83211b4f7f289bae678431e2f6ef148841f",
+      "result_digest": "6ab77a78dd7effaa8093fbfb6e896bf7b095c73559cecf2d35d9b154d759d562"
+    },
+    {
+      "receipt_id": "r_676abcd3",
+      "filename": "r_676abcd3.json",
+      "sha256": "5a004eb6c4ba8213d017c77ecc9883ec249e06c77b01437a97c6e5e9b411c9ec",
+      "signature": "407df2e074a0a25742dda7d3ec5c5b0de43f4c299af9753d797a4e67f1c2835b",
+      "result_digest": "00dd1558f374da1ed88b4826b1d1654a3c30add3dcccf284984fc8807521293f"
+    },
+    {
+      "receipt_id": "r_71fdf89a",
+      "filename": "r_71fdf89a.json",
+      "sha256": "116fd544ecde9811283b993726d0763a206f0f41f3add7815cb156c4cc4a14a5",
+      "signature": "1f0895560ecbd569ff40e1250232b7e4c498e6540868f017bb2a9f06eea2b3e7",
+      "result_digest": "bebbc2fb989b8b0f8160a44b85b0fae6b317d76e2f113410f68760a5cc493d23"
+    },
+    {
+      "receipt_id": "r_84999dea",
+      "filename": "r_84999dea.json",
+      "sha256": "2e61e8bc1102bd0679136e8155df3272bfc16fd3fb1d08f1d3b906a108f8d70b",
+      "signature": "cff8c10fee799c6901bceefa24a2f75e34422498f99e99184cfa6f69ab3d3ff1",
+      "result_digest": "cca57c5b34620c2399513152da18d7b10bc1ba37d4c09c451752caf92c02348d"
+    },
+    {
+      "receipt_id": "r_c25c95da",
+      "filename": "r_c25c95da.json",
+      "sha256": "d18ebbbb5fac62d6bacd005b740d97caeca9600550b9c99260d6ebbb2e911aca",
+      "signature": "6876263c696079641f6b5433d0ddf8ab9ba847c3ecaaac83f7c5794c5cf4be35",
+      "result_digest": "b90f1e5f6814702944131b2fbf922683c87f25c45263c463ba39f19a64a99d03"
+    },
+    {
+      "receipt_id": "r_c59fbe9e",
+      "filename": "r_c59fbe9e.json",
+      "sha256": "aa023b6573c6c316552c4d79d3cb8a0670ee4d562c5f1578c452e6577a846221",
+      "signature": "4c89f2ab33996aabf4599a2b10c254ff0385cee6ba2358ddb91192a3f76fd08f",
+      "result_digest": "3068d12b677f78c68263924e09bc80b083b81a990088be6a400466eda9cc6404"
+    },
+    {
+      "receipt_id": "r_feb1ffab",
+      "filename": "r_feb1ffab.json",
+      "sha256": "0d33dd2174c45f9224466568eb72b28aa9062717119253fa63bfc14f54b18187",
+      "signature": "f36c0df6a30eed647603b2df56f9797a7f15bbe1ce8f0ec1be086577c9facb8b",
+      "result_digest": "82151d81bb10b6375f8227ef2e819f79497c6a7f6c904e334e32f2789f14b32f"
+    }
+  ],
+  "queries": [
+    {
+      "sql": "WITH source AS (\n  SELECT receipt_id, created_at, signature, result_digest, data_version,\n         tool, tool_version, client, duration_ms\n  FROM read_json('/data/receipts/r_[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json', union_by_name = true, columns = {\n    receipt_id: 'VARCHAR', created_at: 'TIMESTAMPTZ', signature: 'VARCHAR',\n    result_digest: 'VARCHAR', data_version: 'VARCHAR', tool: 'VARCHAR',\n    tool_version: 'VARCHAR', client: 'VARCHAR', duration_ms: 'DOUBLE'\n  })\n  WHERE receipt_id = ANY($1::VARCHAR[])\n), filtered AS (\n  SELECT * FROM source\n  WHERE ($2::TIMESTAMPTZ IS NULL OR created_at >= $2::TIMESTAMPTZ)\n    AND ($3::TIMESTAMPTZ IS NULL OR created_at < $3::TIMESTAMPTZ)\n), grouped AS (\n  SELECT data_version, tool, tool_version, client,\n         count(*) AS group_n, median(duration_ms) AS median_ms,\n         quantile_cont(duration_ms, 0.95) AS p95_ms,\n         min(duration_ms) AS min_ms, max(duration_ms) AS max_ms,\n         min(created_at) AS group_first_created_at,\n         max(created_at) AS group_last_created_at\n  FROM filtered\n  GROUP BY data_version, tool, tool_version, client\n), summary AS (\n  SELECT count(*) AS n, (SELECT count(*) FROM grouped) AS group_count,\n         min(created_at) AS first_created_at, max(created_at) AS last_created_at\n  FROM filtered\n)\nSELECT summary.n, summary.group_count,\n       strftime(summary.first_created_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_created_at,\n       strftime(summary.last_created_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_created_at,\n       filtered.receipt_id,\n       strftime(filtered.created_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS source_created_at,\n       filtered.signature, filtered.result_digest, filtered.duration_ms,\n       filtered.data_version, filtered.tool, filtered.tool_version, filtered.client,\n       grouped.group_n, grouped.median_ms, grouped.p95_ms, grouped.min_ms, grouped.max_ms,\n       strftime(grouped.group_first_created_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS group_first_created_at,\n       strftime(grouped.group_last_created_at, '%Y-%m-%dT%H:%M:%S.%fZ') AS group_last_created_at\nFROM summary\nLEFT JOIN filtered ON true\nLEFT JOIN grouped ON filtered.data_version = grouped.data_version\n  AND filtered.tool = grouped.tool AND filtered.tool_version = grouped.tool_version\n  AND filtered.client = grouped.client\nORDER BY data_version, tool, tool_version, client, receipt_id",
+      "params": [
+        [
+          "r_1f63d33f",
+          "r_2bb56624",
+          "r_62ef5805",
+          "r_676abcd3",
+          "r_71fdf89a",
+          "r_84999dea",
+          "r_c25c95da",
+          "r_c59fbe9e",
+          "r_feb1ffab"
+        ],
+        null,
+        null
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "count_events",
+      "tool_version": "1.2.0",
+      "client": "eval",
+      "n": 1,
+      "median_ms": 18.18,
+      "p95_ms": 18.18,
+      "min_ms": 18.18,
+      "max_ms": 18.18,
+      "date_window": {
+        "first_created_at": "2026-10-18T15:06:16.702000Z",
+        "last_created_at": "2026-10-18T15:06:16.702000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "describe_corpus",
+      "tool_version": "1.0.0",
+      "client": "test",
+      "n": 1,
+      "median_ms": 4,
+      "p95_ms": 4,
+      "min_ms": 4,
+      "max_ms": 4,
+      "date_window": {
+        "first_created_at": "2026-10-18T09:59:49.385000Z",
+        "last_created_at": "2026-10-18T09:59:49.385000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "event_trend",
+      "tool_version": "1.1.0",
+      "client": "web",
+      "n": 1,
+      "median_ms": 20.85,
+      "p95_ms": 20.85,
+      "min_ms": 20.85,
+      "max_ms": 20.85,
+      "date_window": {
+        "first_created_at": "2026-10-18T15:08:49.063000Z",
+        "last_created_at": "2026-10-18T15:08:49.063000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "get_log_context",
+      "tool_version": "1.0.0",
+      "client": "test",
+      "n": 1,
+      "median_ms": 3444.95,
+      "p95_ms": 3444.95,
+      "min_ms": 3444.95,
+      "max_ms": 3444.95,
+      "date_window": {
+        "first_created_at": "2026-10-18T11:50:45.045000Z",
+        "last_created_at": "2026-10-18T11:50:45.045000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "latency_stats",
+      "tool_version": "1.0.0",
+      "client": "test",
+      "n": 1,
+      "median_ms": 11.8,
+      "p95_ms": 11.8,
+      "min_ms": 11.8,
+      "max_ms": 11.8,
+      "date_window": {
+        "first_created_at": "2026-10-18T12:56:19.046000Z",
+        "last_created_at": "2026-10-18T12:56:19.046000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "recurring_patterns",
+      "tool_version": "1.1.0",
+      "client": "test",
+      "n": 1,
+      "median_ms": 157.83,
+      "p95_ms": 157.83,
+      "min_ms": 157.83,
+      "max_ms": 157.83,
+      "date_window": {
+        "first_created_at": "2026-10-18T11:52:09.353000Z",
+        "last_created_at": "2026-10-18T11:52:09.353000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "search_logs",
+      "tool_version": "1.0.0",
+      "client": "mcp",
+      "n": 2,
+      "median_ms": 25.849999999999998,
+      "p95_ms": 31.942999999999998,
+      "min_ms": 19.08,
+      "max_ms": 32.62,
+      "date_window": {
+        "first_created_at": "2026-10-17T22:52:44.585000Z",
+        "last_created_at": "2026-10-17T23:35:07.537000Z"
+      }
+    },
+    {
+      "data_version": "dv_7ea6fcb2c9eb6882",
+      "tool": "search_logs",
+      "tool_version": "1.1.0",
+      "client": "test",
+      "n": 1,
+      "median_ms": 27.65,
+      "p95_ms": 27.65,
+      "min_ms": 27.65,
+      "max_ms": 27.65,
+      "date_window": {
+        "first_created_at": "2026-10-18T12:56:16.834000Z",
+        "last_created_at": "2026-10-18T12:56:16.834000Z"
+      }
+    }
+  ]
+}
