@@ -1,0 +1,195 @@
+{
+  "receipt_id": "r_ef9745b3",
+  "created_at": "2026-10-18T17:41:40.574Z",
+  "client": "eval",
+  "tool": "count_events",
+  "tool_version": "1.2.0",
+  "input": {
+    "group_by": [
+      "team"
+    ],
+    "dataset": "bgl",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z",
+    "teams": [
+      "Workload Runtime"
+    ],
+    "top_n": 20,
+    "compare": "previous_period"
+  },
+  "signature": "e4ec4d62313b645b1efe2acbbda75a413f5d973a547c8c133386fd41c75f6f6a",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH comparison_bounds AS (SELECT $1::TIMESTAMPTZ AS cf, $2::TIMESTAMPTZ AS ct, $3::TIMESTAMPTZ AS bf, $4::TIMESTAMPTZ AS bt, $5::TIMESTAMPTZ AS first_ts, $6::TIMESTAMPTZ + INTERVAL '1 microsecond' AS end_ts), comparison_coverage AS (SELECT CASE WHEN ct <= first_ts OR cf >= end_ts THEN 'none' WHEN cf >= first_ts AND ct <= end_ts THEN 'full' ELSE 'partial' END AS current, CASE WHEN bt <= first_ts OR bf >= end_ts THEN 'none' WHEN bf >= first_ts AND bt <= end_ts THEN 'full' ELSE 'partial' END AS baseline FROM comparison_bounds) SELECT current, baseline, current <> 'none' AND baseline <> 'none' AS determinable FROM comparison_coverage",
+    "WITH grouped AS (SELECT coalesce((SELECT o.team FROM ownership o WHERE o.dataset = log_events.dataset AND o.component = log_events.component), 'unowned') AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.dataset = $1 AND coalesce((SELECT o.team FROM ownership o WHERE o.dataset = log_events.dataset AND o.component = log_events.component), 'unowned') IN ($2) AND log_events.ts >= $3::TIMESTAMPTZ AND log_events.ts < $4::TIMESTAMPTZ GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) FILTER (WHERE rank > $5) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $5), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $5) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, CASE WHEN b IS NULL THEN NULL WHEN b = 0 AND c > 0 THEN 'first observed in this comparison' WHEN b = 0 THEN 'not observed in either period' WHEN c >= $6::BIGINT * b AND c - b >= $7::BIGINT THEN 'significantly increased' END AS classification, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, CASE WHEN baseline IS NULL THEN NULL WHEN baseline = 0 AND events > 0 THEN 'first observed in this comparison' WHEN baseline = 0 THEN 'not observed in either period' WHEN events >= $6::BIGINT * baseline AND events - baseline >= $7::BIGINT THEN 'significantly increased' END AS classification, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= $5 ORDER BY rank"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      "2005-05-02T00:00:00.000000Z",
+      "2005-06-01T00:00:00.000000Z",
+      "2005-06-03T22:42:50.363779Z",
+      "2006-01-04T16:00:05.233639Z"
+    ],
+    [
+      "bgl",
+      "Workload Runtime",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      20,
+      2,
+      20
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z",
+        "period": "current"
+      },
+      {
+        "dataset": "bgl",
+        "from": "2005-05-02T00:00:00.000000Z",
+        "to": "2005-06-01T00:00:00.000000Z",
+        "period": "baseline"
+      }
+    ],
+    "filters": {
+      "teams": [
+        "Workload Runtime"
+      ]
+    }
+  },
+  "population": {
+    "count": 13409,
+    "unit": "log_events"
+  },
+  "rows_returned": 1,
+  "truncated": false,
+  "row_limit": 20,
+  "duration_ms": 11.27,
+  "result": {
+    "group_by": [
+      "team"
+    ],
+    "unit": "log_events",
+    "total": 13409,
+    "group_count": 1,
+    "groups": [
+      {
+        "team": "Workload Runtime",
+        "events": 13409,
+        "share": 1,
+        "baseline": null,
+        "delta": null,
+        "pct_change": null,
+        "classification": null
+      }
+    ],
+    "other": null,
+    "comparison": {
+      "reference": "previous_period",
+      "coverage": {
+        "current": "partial",
+        "baseline": "none"
+      },
+      "determinable": false,
+      "baseline": null,
+      "delta": null,
+      "pct_change": null,
+      "classification": null
+    },
+    "truncated": false,
+    "top_n": 20
+  },
+  "result_digest": "1d6503ac806ce2342a2461adf68d50c71501762abc39f5a8a3f2b1a7ddcaf40b",
+  "facts": [
+    {
+      "id": "r_ef9745b3.f1",
+      "path": "/result/group_count",
+      "value": 1,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_ef9745b3.f2",
+      "path": "/result/groups/0/events",
+      "value": 13409,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "team": "Workload Runtime"
+      }
+    },
+    {
+      "id": "r_ef9745b3.f3",
+      "path": "/result/groups/0/share",
+      "value": 1,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "team": "Workload Runtime"
+      }
+    },
+    {
+      "id": "r_ef9745b3.f4",
+      "path": "/result/total",
+      "value": 13409,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_ef9745b3.f5",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-01T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_ef9745b3.f6",
+      "path": "/scope/windows/0/to",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_ef9745b3.f7",
+      "path": "/scope/windows/1/from",
+      "value": "2005-05-02T00:00:00.000000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "id": "r_ef9745b3.f8",
+      "path": "/scope/windows/1/to",
+      "value": "2005-06-01T00:00:00.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    }
+  ]
+}

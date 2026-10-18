@@ -1,0 +1,398 @@
+{
+  "receipt_id": "r_51762d3b",
+  "created_at": "2026-10-18T17:43:59.939Z",
+  "client": "eval",
+  "tool": "check_claims",
+  "tool_version": "1.0.0",
+  "input": {
+    "claims": [
+      {
+        "fact": "r_8207d0e9.f11",
+        "value": "5,983",
+        "metric": "leader_events",
+        "group": {}
+      },
+      {
+        "fact": "r_7643eff2.f14",
+        "value": "34",
+        "metric": "episodes",
+        "group": {
+          "pattern_id": "842c2fed6a156022"
+        }
+      },
+      {
+        "fact": "r_872d82bd.f8",
+        "value": "2",
+        "metric": "errors_5xx",
+        "group": {}
+      },
+      {
+        "fact": "r_872d82bd.f6",
+        "value": "98,733",
+        "metric": "api_access_events",
+        "group": {}
+      },
+      {
+        "fact": "r_872d82bd.f16",
+        "value": "0.0000202567",
+        "metric": "rate_5xx",
+        "group": {}
+      },
+      {
+        "fact": "r_872d82bd.f17",
+        "value": "89,535",
+        "metric": "unique_requests",
+        "group": {}
+      },
+      {
+        "fact": "r_872d82bd.f18",
+        "value": "9,196",
+        "metric": "without_request_id",
+        "group": {}
+      },
+      {
+        "fact": "r_872d82bd.f14",
+        "value": "514.388",
+        "metric": "p99_ms",
+        "group": {}
+      }
+    ]
+  },
+  "signature": "ac7283b92b8f9e5157203344caca3a6df7da35daac37879b392322a78c7acea2",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [],
+  "params": [],
+  "scope": {
+    "windows": [],
+    "filters": {}
+  },
+  "population": null,
+  "rows_returned": 8,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 0,
+  "result": {
+    "claims": [
+      {
+        "claim": {
+          "fact": "r_8207d0e9.f11",
+          "value": "5,983",
+          "metric": "leader_events",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 5983,
+          "metric": "leader_events",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_8207d0e9",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "teams": [
+                "Workload Runtime"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_7643eff2.f14",
+          "value": "34",
+          "metric": "episodes",
+          "group": {
+            "pattern_id": "842c2fed6a156022"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 34,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "842c2fed6a156022"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_7643eff2",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_872d82bd.f8",
+          "value": "2",
+          "metric": "errors_5xx",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 2,
+          "metric": "errors_5xx",
+          "unit": "api_accesses",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_872d82bd",
+          "tool": "latency_stats",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_872d82bd.f6",
+          "value": "98,733",
+          "metric": "api_access_events",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 98733,
+          "metric": "api_access_events",
+          "unit": "api_accesses",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_872d82bd",
+          "tool": "latency_stats",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_872d82bd.f16",
+          "value": "0.0000202567",
+          "metric": "rate_5xx",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 0.00002025665177802761,
+          "metric": "rate_5xx",
+          "unit": "ratio",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_872d82bd",
+          "tool": "latency_stats",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_872d82bd.f17",
+          "value": "89,535",
+          "metric": "unique_requests",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 89535,
+          "metric": "unique_requests",
+          "unit": "requests",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_872d82bd",
+          "tool": "latency_stats",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_872d82bd.f18",
+          "value": "9,196",
+          "metric": "without_request_id",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 9196,
+          "metric": "without_request_id",
+          "unit": "api_accesses",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_872d82bd",
+          "tool": "latency_stats",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_872d82bd.f14",
+          "value": "514.388",
+          "metric": "p99_ms",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 514.3884039999999,
+          "metric": "p99_ms",
+          "unit": "ms",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_872d82bd",
+          "tool": "latency_stats",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      }
+    ],
+    "summary": {
+      "checked": 8,
+      "verified": 8,
+      "mismatch": 0,
+      "unresolved": 0,
+      "text": "8 claims checked · 0 mismatch · 0 unresolved"
+    }
+  },
+  "result_digest": "891be6b7b1ffb083a3a5c4c44f2cf846e4582a745e465ff2d1092dc994f00cc7",
+  "facts": [
+    {
+      "id": "r_51762d3b.f1",
+      "path": "/result/summary/checked",
+      "value": 8,
+      "metric": "claims_checked",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_51762d3b.f2",
+      "path": "/result/summary/mismatch",
+      "value": 0,
+      "metric": "claims_mismatch",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_51762d3b.f3",
+      "path": "/result/summary/unresolved",
+      "value": 0,
+      "metric": "claims_unresolved",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_51762d3b.f4",
+      "path": "/result/summary/verified",
+      "value": 8,
+      "metric": "claims_verified",
+      "unit": "claims",
+      "group": {}
+    }
+  ]
+}

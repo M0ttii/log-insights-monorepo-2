@@ -1,0 +1,844 @@
+{
+  "receipt_id": "r_c53dc64f",
+  "created_at": "2026-10-18T17:41:40.559Z",
+  "client": "eval",
+  "tool": "event_trend",
+  "tool_version": "1.1.0",
+  "input": {
+    "dataset": "bgl",
+    "bucket": "week",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z",
+    "teams": [
+      "Workload Runtime"
+    ],
+    "split_by": "pattern"
+  },
+  "signature": "576865752a8b4beac2ef514b31653b3e6ea6a27dfd725519febeae9425157f8e",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH grid AS (SELECT unnest(range(date_trunc('week', $4::TIMESTAMPTZ), $5::TIMESTAMPTZ, $6::INTERVAL)) AS bucket), captured AS (SELECT date_trunc('week', log_events.ts) AS bucket FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ GROUP BY 1) SELECT strftime(g.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, strftime(g.bucket + $7::INTERVAL, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket_end, g.bucket < $8::TIMESTAMPTZ OR g.bucket + $9::INTERVAL > $10::TIMESTAMPTZ AS partial, c.bucket IS NULL AS capture_gap FROM grid g LEFT JOIN captured c ON g.bucket = c.bucket ORDER BY g.bucket",
+    "WITH grid AS (SELECT unnest(range(date_trunc('week', $5::TIMESTAMPTZ), $6::TIMESTAMPTZ, $7::INTERVAL)) AS bucket), cells AS (SELECT date_trunc('week', log_events.ts) AS bucket, log_events.pattern_id AS value, count(*) AS events FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND coalesce((SELECT o.team FROM ownership o WHERE o.dataset = log_events.dataset AND o.component = log_events.component), 'unowned') IN ($4) GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, 6) AS slot, CASE WHEN series_rank <= 5 THEN value END AS value, series_rank, events FROM ranked) SELECT slot, value, sum(events) AS events, count(DISTINCT series_rank) AS merged_values, sum(sum(events)) OVER () AS total FROM slots GROUP BY slot, value ORDER BY slot",
+    "WITH grid AS (SELECT unnest(range(date_trunc('week', $5::TIMESTAMPTZ), $6::TIMESTAMPTZ, $7::INTERVAL)) AS bucket), cells AS (SELECT date_trunc('week', log_events.ts) AS bucket, log_events.pattern_id AS value, count(*) AS events FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND coalesce((SELECT o.team FROM ownership o WHERE o.dataset = log_events.dataset AND o.component = log_events.component), 'unowned') IN ($4) GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, 6) AS slot, CASE WHEN series_rank <= 5 THEN value END AS value, series_rank, events FROM ranked), slot_totals AS (SELECT bucket, slot, sum(events) AS events FROM slots GROUP BY bucket, slot), named_slots AS (SELECT DISTINCT slot FROM slots), completed AS (SELECT g.bucket, n.slot, coalesce(c.events, 0)::BIGINT AS events FROM grid g LEFT JOIN named_slots n ON TRUE LEFT JOIN slot_totals c ON c.bucket = g.bucket AND c.slot = n.slot) SELECT strftime(bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, slot, events, sum(events) OVER (PARTITION BY bucket)::BIGINT AS bucket_events FROM completed ORDER BY bucket, slot"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "bgl",
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00.000000Z",
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00.000000Z",
+      "1 week",
+      "1 week",
+      "2005-06-03T22:42:50.363779Z",
+      "1 week",
+      "2005-07-01T00:00:00.000000Z"
+    ],
+    [
+      "bgl",
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00.000000Z",
+      "Workload Runtime",
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00.000000Z",
+      "1 week"
+    ],
+    [
+      "bgl",
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00.000000Z",
+      "Workload Runtime",
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00.000000Z",
+      "1 week"
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-03T22:42:50.363779Z",
+        "to": "2005-07-01T00:00:00.000000Z"
+      }
+    ],
+    "filters": {
+      "teams": [
+        "Workload Runtime"
+      ]
+    }
+  },
+  "population": {
+    "count": 13409,
+    "unit": "log_events"
+  },
+  "rows_returned": 5,
+  "truncated": false,
+  "row_limit": 120,
+  "duration_ms": 19.82,
+  "result": {
+    "dataset": "bgl",
+    "bucket": "week",
+    "split_by": "pattern",
+    "data_span": {
+      "first": "2005-06-03T22:42:50.363779Z",
+      "last": "2006-01-04T16:00:05.233639Z"
+    },
+    "effective_range": {
+      "from": "2005-06-03T22:42:50.363779Z",
+      "to": "2005-07-01T00:00:00.000000Z"
+    },
+    "bucket_count": 5,
+    "total": 13409,
+    "series": [
+      {
+        "pattern": "287312f13c189c4d",
+        "events": 5983
+      },
+      {
+        "pattern": "61c1ec3180ed1d40",
+        "events": 3384
+      },
+      {
+        "pattern": "bdec89f666f62cf9",
+        "events": 2178
+      },
+      {
+        "pattern": "ac11bb6eff3a3ef3",
+        "events": 1024
+      },
+      {
+        "pattern": "7d9d5b2130280b56",
+        "events": 432
+      }
+    ],
+    "other": {
+      "events": 408,
+      "merged_values": 3
+    },
+    "buckets": [
+      {
+        "bucket_start": "2005-05-30T00:00:00.000000Z",
+        "bucket_end": "2005-06-06T00:00:00.000000Z",
+        "partial": true,
+        "capture_gap": false,
+        "events": 2408,
+        "series": [
+          {
+            "pattern": "287312f13c189c4d",
+            "events": 2040
+          },
+          {
+            "pattern": "61c1ec3180ed1d40",
+            "events": 168
+          },
+          {
+            "pattern": "bdec89f666f62cf9",
+            "events": 200
+          },
+          {
+            "pattern": "ac11bb6eff3a3ef3",
+            "events": 0
+          },
+          {
+            "pattern": "7d9d5b2130280b56",
+            "events": 0
+          }
+        ],
+        "other_events": 0
+      },
+      {
+        "bucket_start": "2005-06-06T00:00:00.000000Z",
+        "bucket_end": "2005-06-13T00:00:00.000000Z",
+        "partial": false,
+        "capture_gap": false,
+        "events": 2240,
+        "series": [
+          {
+            "pattern": "287312f13c189c4d",
+            "events": 124
+          },
+          {
+            "pattern": "61c1ec3180ed1d40",
+            "events": 80
+          },
+          {
+            "pattern": "bdec89f666f62cf9",
+            "events": 1924
+          },
+          {
+            "pattern": "ac11bb6eff3a3ef3",
+            "events": 0
+          },
+          {
+            "pattern": "7d9d5b2130280b56",
+            "events": 112
+          }
+        ],
+        "other_events": 0
+      },
+      {
+        "bucket_start": "2005-06-13T00:00:00.000000Z",
+        "bucket_end": "2005-06-20T00:00:00.000000Z",
+        "partial": false,
+        "capture_gap": false,
+        "events": 3393,
+        "series": [
+          {
+            "pattern": "287312f13c189c4d",
+            "events": 3057
+          },
+          {
+            "pattern": "61c1ec3180ed1d40",
+            "events": 312
+          },
+          {
+            "pattern": "bdec89f666f62cf9",
+            "events": 24
+          },
+          {
+            "pattern": "ac11bb6eff3a3ef3",
+            "events": 0
+          },
+          {
+            "pattern": "7d9d5b2130280b56",
+            "events": 0
+          }
+        ],
+        "other_events": 0
+      },
+      {
+        "bucket_start": "2005-06-20T00:00:00.000000Z",
+        "bucket_end": "2005-06-27T00:00:00.000000Z",
+        "partial": false,
+        "capture_gap": false,
+        "events": 4200,
+        "series": [
+          {
+            "pattern": "287312f13c189c4d",
+            "events": 762
+          },
+          {
+            "pattern": "61c1ec3180ed1d40",
+            "events": 2696
+          },
+          {
+            "pattern": "bdec89f666f62cf9",
+            "events": 14
+          },
+          {
+            "pattern": "ac11bb6eff3a3ef3",
+            "events": 0
+          },
+          {
+            "pattern": "7d9d5b2130280b56",
+            "events": 320
+          }
+        ],
+        "other_events": 408
+      },
+      {
+        "bucket_start": "2005-06-27T00:00:00.000000Z",
+        "bucket_end": "2005-07-04T00:00:00.000000Z",
+        "partial": true,
+        "capture_gap": false,
+        "events": 1168,
+        "series": [
+          {
+            "pattern": "287312f13c189c4d",
+            "events": 0
+          },
+          {
+            "pattern": "61c1ec3180ed1d40",
+            "events": 128
+          },
+          {
+            "pattern": "bdec89f666f62cf9",
+            "events": 16
+          },
+          {
+            "pattern": "ac11bb6eff3a3ef3",
+            "events": 1024
+          },
+          {
+            "pattern": "7d9d5b2130280b56",
+            "events": 0
+          }
+        ],
+        "other_events": 0
+      }
+    ]
+  },
+  "result_digest": "ed79043627779e8dc1f9af2aabdaa7188b5965b1e0b8b26d23245c4902bb0354",
+  "facts": [
+    {
+      "id": "r_c53dc64f.f1",
+      "path": "/result/bucket_count",
+      "value": 5,
+      "metric": "buckets",
+      "unit": "buckets",
+      "group": {
+        "dataset": "bgl",
+        "bucket": "week"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f2",
+      "path": "/result/buckets/0/events",
+      "value": 2408,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f3",
+      "path": "/result/buckets/0/other_events",
+      "value": 0,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f4",
+      "path": "/result/buckets/0/series/0/events",
+      "value": 2040,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z",
+        "pattern": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f5",
+      "path": "/result/buckets/0/series/1/events",
+      "value": 168,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z",
+        "pattern": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f6",
+      "path": "/result/buckets/0/series/2/events",
+      "value": 200,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z",
+        "pattern": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f7",
+      "path": "/result/buckets/0/series/3/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z",
+        "pattern": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f8",
+      "path": "/result/buckets/0/series/4/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z",
+        "pattern": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f9",
+      "path": "/result/buckets/1/events",
+      "value": 2240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f10",
+      "path": "/result/buckets/1/other_events",
+      "value": 0,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f11",
+      "path": "/result/buckets/1/series/0/events",
+      "value": 124,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z",
+        "pattern": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f12",
+      "path": "/result/buckets/1/series/1/events",
+      "value": 80,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z",
+        "pattern": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f13",
+      "path": "/result/buckets/1/series/2/events",
+      "value": 1924,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z",
+        "pattern": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f14",
+      "path": "/result/buckets/1/series/3/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z",
+        "pattern": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f15",
+      "path": "/result/buckets/1/series/4/events",
+      "value": 112,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z",
+        "pattern": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f16",
+      "path": "/result/buckets/2/events",
+      "value": 3393,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f17",
+      "path": "/result/buckets/2/other_events",
+      "value": 0,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f18",
+      "path": "/result/buckets/2/series/0/events",
+      "value": 3057,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z",
+        "pattern": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f19",
+      "path": "/result/buckets/2/series/1/events",
+      "value": 312,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z",
+        "pattern": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f20",
+      "path": "/result/buckets/2/series/2/events",
+      "value": 24,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z",
+        "pattern": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f21",
+      "path": "/result/buckets/2/series/3/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z",
+        "pattern": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f22",
+      "path": "/result/buckets/2/series/4/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z",
+        "pattern": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f23",
+      "path": "/result/buckets/3/events",
+      "value": 4200,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f24",
+      "path": "/result/buckets/3/other_events",
+      "value": 408,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f25",
+      "path": "/result/buckets/3/series/0/events",
+      "value": 762,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z",
+        "pattern": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f26",
+      "path": "/result/buckets/3/series/1/events",
+      "value": 2696,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z",
+        "pattern": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f27",
+      "path": "/result/buckets/3/series/2/events",
+      "value": 14,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z",
+        "pattern": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f28",
+      "path": "/result/buckets/3/series/3/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z",
+        "pattern": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f29",
+      "path": "/result/buckets/3/series/4/events",
+      "value": 320,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z",
+        "pattern": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f30",
+      "path": "/result/buckets/4/events",
+      "value": 1168,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f31",
+      "path": "/result/buckets/4/other_events",
+      "value": 0,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f32",
+      "path": "/result/buckets/4/series/0/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z",
+        "pattern": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f33",
+      "path": "/result/buckets/4/series/1/events",
+      "value": 128,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z",
+        "pattern": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f34",
+      "path": "/result/buckets/4/series/2/events",
+      "value": 16,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z",
+        "pattern": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f35",
+      "path": "/result/buckets/4/series/3/events",
+      "value": 1024,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z",
+        "pattern": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f36",
+      "path": "/result/buckets/4/series/4/events",
+      "value": 0,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z",
+        "pattern": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f37",
+      "path": "/result/data_span/first",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "data_span_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f38",
+      "path": "/result/data_span/last",
+      "value": "2006-01-04T16:00:05.233639Z",
+      "metric": "data_span_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f39",
+      "path": "/result/effective_range/from",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "range_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f40",
+      "path": "/result/effective_range/to",
+      "value": "2005-07-01T00:00:00.000000Z",
+      "metric": "range_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f41",
+      "path": "/result/other/events",
+      "value": 408,
+      "metric": "other_events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f42",
+      "path": "/result/other/merged_values",
+      "value": 3,
+      "metric": "merged_values",
+      "unit": "dimension_values",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f43",
+      "path": "/result/series/0/events",
+      "value": 5983,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "pattern": "287312f13c189c4d"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f44",
+      "path": "/result/series/1/events",
+      "value": 3384,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "pattern": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f45",
+      "path": "/result/series/2/events",
+      "value": 2178,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "pattern": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f46",
+      "path": "/result/series/3/events",
+      "value": 1024,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "pattern": "ac11bb6eff3a3ef3"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f47",
+      "path": "/result/series/4/events",
+      "value": 432,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl",
+        "pattern": "7d9d5b2130280b56"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f48",
+      "path": "/result/total",
+      "value": 13409,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f49",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_c53dc64f.f50",
+      "path": "/scope/windows/0/to",
+      "value": "2005-07-01T00:00:00.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}

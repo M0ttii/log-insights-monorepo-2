@@ -5,6 +5,34 @@ the SereneDB colors from `DESIGN.md`. It contains six main slides and three
 reserve slides. The checked-in PDF is a **template preview**, not the final
 submission: purple `TO FILL` text marks evidence or metadata still to supply.
 
+## Worked-case deck
+
+[Editable worked-case source](worked-investigation.typ) and its
+[PDF draft](worked-investigation.pdf) apply the existing layout to the
+[English APPREAD investigation](../submission/worked-investigation.md). This
+is a known development case, with direct registered tool calls and analyst-written
+role views. It contains no new Claude answer or evaluation result. The original
+template below remains available.
+
+Build the case deck from the repository root:
+
+```sh
+typst compile --root . --font-path presentation/fonts --ignore-system-fonts \
+  presentation/worked-investigation.typ presentation/worked-investigation.pdf
+```
+
+The root flag allows read-only access to the tracked claim ledger and original
+receipt JSON under `submission/`. Displayed figures come from that ledger; a
+missing fact stops compilation. The SQL appendix reads a complete executed
+statement and its parameters directly from the archived search receipt.
+`theme.typ` accepts an optional status footer for this draft.
+
+Six main slides and three reserves retain the template layout. The footer marks
+the open evaluation. Link targets use the repository main branch and become
+available after merge to authorized readers; public access is not established.
+The deck does not replace the missing independent evaluation, final release
+verification, live rehearsal or video.
+
 ## Build and edit
 
 Use **Typst 0.14.2** (the version used to verify this template). No Typst packages,

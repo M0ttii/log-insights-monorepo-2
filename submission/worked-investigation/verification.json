@@ -1,0 +1,345 @@
+{
+  "scope": "known development case, full loaded BGL/OpenStack base corpus; not release or role-eval acceptance",
+  "data_version": "dv_229e422f86a9fc6e",
+  "golden": {
+    "status": "passed for the seven listed base-corpus suites",
+    "suites": [
+      {
+        "path": "packages/analytics/tests/golden/count-events.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "count_events independent full-corpus SQL dataset: every group, share and truncated other",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL team: every group, share and truncated other",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL component: every group, share and truncated other",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL level: every group, share and truncated other",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL two dimensions preserve missing node categories",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL HTTP status counts API accesses, including missing request IDs",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL previous_period: C, B, deltas, percent and R-06",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL custom: C, B, deltas, percent and R-06",
+            "status": "passed"
+          },
+          {
+            "name": "count_events independent full-corpus SQL reference outside data span is unknown, never a zero baseline",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "packages/analytics/tests/golden/event-trend.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "event_trend independent full-corpus SQL openstack hour: UTC grid, totals, filtered zeros and capture gaps",
+            "status": "passed"
+          },
+          {
+            "name": "event_trend independent full-corpus SQL bgl day: UTC grid, totals, filtered zeros and capture gaps",
+            "status": "passed"
+          },
+          {
+            "name": "event_trend independent full-corpus SQL bgl week: UTC grid, totals, filtered zeros and capture gaps",
+            "status": "passed"
+          },
+          {
+            "name": "event_trend independent full-corpus SQL full BGL weekly level split has five series plus independently summed other",
+            "status": "passed"
+          },
+          {
+            "name": "event_trend independent full-corpus SQL a half-open partial hour uses its exact UTC boundaries",
+            "status": "passed"
+          },
+          {
+            "name": "event_trend independent full-corpus SQL outside the dataset span means no buckets and an unknown total",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "packages/analytics/tests/golden/get-log-context.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 same_node, event 14738, limits 25/25",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 same_component, event 14738, limits 3/25",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 dataset, event 14738, limits 25/2",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 same_request, event 10000108, limits 25/25",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 same_request, event 10070746, limits 25/25",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 dataset, event 14738, limits 0/0",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context event \u00b7 A-06 / LOG-19 dataset, event 3399618, limits 25/25",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 APPREAD full span, both directions, grid and top-n",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 APPREAD before, clipped grid and fewer than five anchors",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 APPREAD after, end-exclusive anchor scope",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 OpenStack error search anchors independently matched by regex",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 APPREAD node filter restricts anchors but not window events",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 APPREAD scope starts/ends exactly on episode anchors",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 unknown anchor pattern",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 T-12: full BGL {\"query\":\"error\"}, both directions, 60 minutes",
+            "status": "passed"
+          },
+          {
+            "name": "get_log_context aggregate \u00b7 R-05/R-11 / LOG-21 T-12: full BGL {\"pattern_id\":\"8eb053329ba11348\"}, both directions, 60 minutes",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "packages/analytics/tests/golden/latency-stats.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "latency_stats independent full-corpus SQL all accesses: three counting units, percentiles, maxima and separate 4xx/5xx rates",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL endpoint: ranked groups and other percentiles over original accesses",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL method: ranked groups and other percentiles over original accesses",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL status: ranked groups and other percentiles over original accesses",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL component: ranked groups and other percentiles over original accesses",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL hour: UTC bucket statistics including empty captured gaps",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL day: UTC bucket statistics including empty captured gaps",
+            "status": "passed"
+          },
+          {
+            "name": "latency_stats independent full-corpus SQL scope without 5xx keeps its nonzero denominator and explicit observed-zero note",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "packages/analytics/tests/golden/recurring-patterns.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL bgl: events, episodes, UTC activity, breadth and recurrence",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL bgl: episodes, episodes, UTC activity, breadth and recurrence",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL bgl: investigation_order, episodes, UTC activity, breadth and recurrence",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL bgl: increase with reference period and R-10 statuses",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL bgl: investigation_order with reference period and R-10 statuses",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL openstack: events, episodes, UTC activity, breadth and recurrence",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL openstack: episodes, episodes, UTC activity, breadth and recurrence",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL openstack: investigation_order, episodes, UTC activity, breadth and recurrence",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL openstack: increase with reference period and R-10 statuses",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL openstack: investigation_order with reference period and R-10 statuses",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL BGL Workload Runtime preserves determinable breadth in R-08",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL R-10: independently classified examples cover all five statuses",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL real A/B/A chain splits into two episodes only after filtering the node",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL real simultaneous first events start exactly one episode",
+            "status": "passed"
+          },
+          {
+            "name": "recurring_patterns independently derived full-corpus Golden SQL S-16: the largest error pattern by events is not first by episodes",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "packages/analytics/tests/golden/search-and-claims.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "search_logs independent message scans terms full corpus, S-06 limit 50",
+            "status": "passed"
+          },
+          {
+            "name": "search_logs independent message scans terms AND with component and half-open time filter",
+            "status": "passed"
+          },
+          {
+            "name": "search_logs independent message scans S-07 no matching events",
+            "status": "passed"
+          },
+          {
+            "name": "search_logs independent message scans phrase against normalized substring",
+            "status": "passed"
+          },
+          {
+            "name": "search_logs independent message scans fuzzy parrity, distance 1, independent token-distance enumeration",
+            "status": "passed"
+          },
+          {
+            "name": "search_logs independent message scans fuzzy parriity, distance 1, independent token-distance enumeration",
+            "status": "passed"
+          },
+          {
+            "name": "search_logs independent message scans fuzzy parriity, distance 2, independent token-distance enumeration",
+            "status": "passed"
+          },
+          {
+            "name": "check_claims verifies independently counted requests and catches each mismatch and unknown",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "path": "packages/analytics/tests/golden/corpus.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "reconciles every raw file, load_report, rejects and brief totals",
+            "status": "passed"
+          },
+          {
+            "name": "describe_corpus and cached corpus_stats equal direct full-corpus aggregates, including unowned",
+            "status": "passed"
+          }
+        ]
+      }
+    ],
+    "initial_full_suite": {
+      "status": "failed",
+      "passed": 63,
+      "failed": 31,
+      "total": 94,
+      "reason": "Five extension datasets are not loaded in the selected base database; the base load-balance test initially also lacked the worktree raw-file path. No suite or assertion was disabled or weakened.",
+      "followup": "Linked the existing raw files read-only into this worktree and reran corpus.test.ts successfully. The six base tool suites passed separately. The unloaded extension suite remains outside this base-only verification."
+    }
+  },
+  "pdf": {
+    "compiler": "Typst 0.14.2",
+    "pages": 9,
+    "layout": "six main slides and three reserves",
+    "inspection": "All pages rendered with Poppler and inspected; no overflow after shortening the SQL selection to a complete executed phrase-count statement.",
+    "byte_identical_rebuild": true,
+    "original_template_output_unchanged": true
+  },
+  "model_calls": 0,
+  "holdout_accessed": false,
+  "remaining": [
+    "Independent Dev-Eval, first holdout and quality acceptance",
+    "Final release fresh-clone/client/web S-01",
+    "Actual timed live rehearsal and recorded submission video",
+    "Signed-out public accessibility of repository, PDF and evidence"
+  ],
+  "quality_checks": {
+    "pnpm check": {
+      "status": "passed",
+      "test_files": 76,
+      "tests": 916
+    },
+    "pnpm build": {
+      "status": "passed"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "pnpm": "11.25.0"
+    }
+  }
+}

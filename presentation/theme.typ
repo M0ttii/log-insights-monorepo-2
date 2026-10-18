@@ -27,7 +27,7 @@
 
 #let setup(deck, body) = {
   set document(
-    title: deck.title + if deck.draft { " - Presentation template" } else { "" },
+    title: deck.title + if deck.draft { if "status" in deck { " - Draft" } else { " - Presentation template" } } else { "" },
     author: if deck.team == none { deck.title } else { deck.team },
     date: none,
   )
@@ -48,7 +48,7 @@
       set text(size: 10.5pt, fill: if dark { palette.mist } else { palette.muted })
       grid(columns: (1fr, auto, 1fr), align: (left, center, right),
         text(if appendix { deck.title + " / Appendix" } else { deck.title }),
-        if deck.draft { [TEMPLATE / EVIDENCE PENDING] },
+        if "status" in deck { text(deck.status) } else if deck.draft { [TEMPLATE / EVIDENCE PENDING] },
         [#counter(page).display("1")],
       )
     },

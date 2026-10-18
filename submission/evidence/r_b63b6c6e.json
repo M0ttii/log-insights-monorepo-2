@@ -1,0 +1,192 @@
+{
+  "receipt_id": "r_b63b6c6e",
+  "created_at": "2026-10-18T17:41:23.454Z",
+  "client": "eval",
+  "tool": "search_logs",
+  "tool_version": "1.1.0",
+  "input": {
+    "query": "failed to read message prefix",
+    "match": "phrase",
+    "dataset": "bgl",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z",
+    "sort": "time_asc",
+    "limit": 3
+  },
+  "signature": "5dab796c083ada8975d45d3bcaa8947b7278f165452d7ec6060ace4d3c4ef05f",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ",
+    "WITH hits AS MATERIALIZED (SELECT log_events_idx.event_id, log_events_idx.dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.component, log_events_idx.level, log_events_idx.node, log_events_idx.alert_label, log_events_idx.request_id, log_events_idx.host, log_events_idx.process_id, log_events_idx.client_ip, log_events_idx.thread, log_events_idx.block_id, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND log_events_idx.dataset = $2 AND log_events_idx.ts >= $3::TIMESTAMPTZ AND log_events_idx.ts < $4::TIMESTAMPTZ ORDER BY log_events_idx.ts, log_events_idx.event_id LIMIT $5) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT log_events_idx.event_id, ts_offsets(log_events_idx.message) AS match_offsets FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND CASE WHEN log_events_idx.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY hits.ts, hits.event_id"
+  ],
+  "params": [
+    [
+      "failed to read message prefix"
+    ],
+    [
+      "bgl"
+    ],
+    [
+      "failed to read message prefix",
+      "bgl",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z"
+    ],
+    [
+      "failed to read message prefix",
+      "bgl",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      3
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 5983,
+    "unit": "log_events"
+  },
+  "rows_returned": 3,
+  "truncated": true,
+  "row_limit": 3,
+  "duration_ms": 19.18,
+  "result": {
+    "query": "failed to read message prefix",
+    "match_mode": "phrase",
+    "max_edits": null,
+    "sort": "time_asc",
+    "total_matches": 5983,
+    "hits": [
+      {
+        "event_id": 14738,
+        "dataset": "bgl",
+        "ts": "2005-06-04T07:24:32.398284Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R23-M1-N8-I:J18-U11",
+        "alert_label": "APPREAD",
+        "request_id": null,
+        "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399",
+        "message_truncated": false,
+        "match_ranges": [
+          {
+            "start": 6,
+            "end": 35
+          }
+        ],
+        "score": 7.468655
+      },
+      {
+        "event_id": 14739,
+        "dataset": "bgl",
+        "ts": "2005-06-04T07:24:32.432192Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R04-M1-N4-I:J18-U11",
+        "alert_label": "APPREAD",
+        "request_id": null,
+        "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33569",
+        "message_truncated": false,
+        "match_ranges": [
+          {
+            "start": 6,
+            "end": 35
+          }
+        ],
+        "score": 7.468655
+      },
+      {
+        "event_id": 14740,
+        "dataset": "bgl",
+        "ts": "2005-06-04T07:24:32.481570Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R04-M1-N4-I:J18-U01",
+        "alert_label": "APPREAD",
+        "request_id": null,
+        "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33570",
+        "message_truncated": false,
+        "match_ranges": [
+          {
+            "start": 6,
+            "end": 35
+          }
+        ],
+        "score": 7.468655
+      }
+    ],
+    "truncated": true,
+    "row_limit": 3
+  },
+  "result_digest": "63e63aa499c4bf891e641aa6df76eb8e99a4457da315104d6c1c85f0b2bdc503",
+  "facts": [
+    {
+      "id": "r_b63b6c6e.f1",
+      "path": "/result/hits/0/ts",
+      "value": "2005-06-04T07:24:32.398284Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14738"
+      }
+    },
+    {
+      "id": "r_b63b6c6e.f2",
+      "path": "/result/hits/1/ts",
+      "value": "2005-06-04T07:24:32.432192Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14739"
+      }
+    },
+    {
+      "id": "r_b63b6c6e.f3",
+      "path": "/result/hits/2/ts",
+      "value": "2005-06-04T07:24:32.481570Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14740"
+      }
+    },
+    {
+      "id": "r_b63b6c6e.f4",
+      "path": "/result/total_matches",
+      "value": 5983,
+      "metric": "matches",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_b63b6c6e.f5",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-01T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_b63b6c6e.f6",
+      "path": "/scope/windows/0/to",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}

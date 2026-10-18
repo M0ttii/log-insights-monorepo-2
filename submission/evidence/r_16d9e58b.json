@@ -1,0 +1,315 @@
+{
+  "receipt_id": "r_16d9e58b",
+  "created_at": "2026-10-18T17:41:40.533Z",
+  "client": "eval",
+  "tool": "get_log_context",
+  "tool_version": "1.0.0",
+  "input": {
+    "mode": "aggregate",
+    "window_minutes": 10,
+    "pattern_id": "287312f13c189c4d",
+    "dataset": "bgl",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z",
+    "direction": "before",
+    "top_n": 5
+  },
+  "signature": "b94a459e20bd81f91ad863297f634a8db8aa9e749c4fe3ecf7bc8e8a30e3fe42",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.pattern_id = $4), anchors AS (SELECT event_id, ts FROM matched MATCH_RECOGNIZE (ORDER BY ts, event_id MEASURES FIRST(event_id) AS event_id, FIRST(ts) AS ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $5::INTERVAL)) SELECT (SELECT count(*) FROM matched) AS matched_events, (SELECT count(*) FROM anchors) AS anchors, (SELECT count(DISTINCT pattern_id) FROM matched) AS excluded_patterns, (epoch_us($6::TIMESTAMPTZ) - epoch_us($7::TIMESTAMPTZ) + $8::BIGINT - 1) // $9::BIGINT AS grid_windows",
+    "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.pattern_id = $4), anchors AS (SELECT event_id, ts FROM matched MATCH_RECOGNIZE (ORDER BY ts, event_id MEASURES FIRST(event_id) AS event_id, FIRST(ts) AS ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $5::INTERVAL)), excluded AS (SELECT DISTINCT pattern_id FROM matched WHERE pattern_id IS NOT NULL), hits AS (SELECT 'before' AS direction, e.pattern_id, count(DISTINCT a.event_id) AS anchors_with_pattern, min(e.event_id) AS example_event_id FROM anchors a JOIN log_events e ON e.dataset = $6 AND e.ts >= a.ts - $7::INTERVAL AND e.ts < a.ts WHERE e.pattern_id NOT IN (SELECT pattern_id FROM excluded) GROUP BY e.pattern_id), ranked AS (SELECT *, row_number() OVER (PARTITION BY direction ORDER BY anchors_with_pattern DESC, pattern_id) AS rank, count(*) OVER (PARTITION BY direction) AS patterns_found FROM hits), top AS (SELECT * FROM ranked WHERE rank <= $8::BIGINT), info AS (SELECT e.dataset, e.pattern_id, any_value(e.component) AS component, any_value(e.pattern) AS pattern FROM log_events e WHERE e.dataset = $6 AND e.pattern_id IN (SELECT pattern_id FROM top) GROUP BY e.dataset, e.pattern_id), n AS (SELECT count(*) AS anchors FROM anchors), grid AS (SELECT e.pattern_id, count(DISTINCT (epoch_us(e.ts) - epoch_us($9::TIMESTAMPTZ)) // $11::BIGINT) AS windows_with_pattern FROM log_events e WHERE e.dataset = $6 AND e.ts >= $9::TIMESTAMPTZ AND e.ts < $10::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM top) GROUP BY e.pattern_id), grid_size AS (SELECT (epoch_us($12::TIMESTAMPTZ) - epoch_us($13::TIMESTAMPTZ) + $14::BIGINT - 1) // $15::BIGINT AS windows) SELECT t.direction, t.patterns_found, t.pattern_id, left(i.pattern, 400) AS pattern, length(i.pattern) > 400 AS pattern_truncated, i.component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = i.dataset AND o.component = i.component), 'unowned') AS team, t.anchors_with_pattern, t.anchors_with_pattern / n.anchors::DOUBLE AS anchor_share, coalesce(g.windows_with_pattern, 0) AS base_rate_windows, coalesce(g.windows_with_pattern, 0) / gs.windows::DOUBLE AS base_rate, CASE WHEN g.windows_with_pattern > 0 THEN (t.anchors_with_pattern / n.anchors::DOUBLE) / (g.windows_with_pattern / gs.windows::DOUBLE) END AS ratio, t.example_event_id FROM top t JOIN info i ON i.pattern_id = t.pattern_id CROSS JOIN n CROSS JOIN grid_size gs LEFT JOIN grid g ON g.pattern_id = t.pattern_id ORDER BY CASE t.direction WHEN 'before' THEN 0 ELSE 1 END, t.rank"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "bgl",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      "287312f13c189c4d",
+      "30 minutes",
+      "2005-07-01T00:00:00Z",
+      "2005-06-03T22:42:50.363779Z",
+      600000000,
+      600000000
+    ],
+    [
+      "bgl",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      "287312f13c189c4d",
+      "30 minutes",
+      "bgl",
+      "10 minutes",
+      5,
+      "2005-06-03T22:42:50.363779Z",
+      "2005-07-01T00:00:00Z",
+      600000000,
+      "2005-07-01T00:00:00Z",
+      "2005-06-03T22:42:50.363779Z",
+      600000000,
+      600000000
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z"
+      }
+    ],
+    "filters": {
+      "pattern_id": "287312f13c189c4d"
+    }
+  },
+  "population": {
+    "count": 5983,
+    "unit": "log_events"
+  },
+  "rows_returned": 2,
+  "truncated": false,
+  "row_limit": 5,
+  "duration_ms": 43.76,
+  "result": {
+    "mode": "aggregate",
+    "dataset": "bgl",
+    "anchor_pattern_id": "287312f13c189c4d",
+    "anchor_query": null,
+    "matched_events": 5983,
+    "anchors": 7,
+    "episode_gap_minutes": 30,
+    "window_minutes": 10,
+    "direction": "before",
+    "top_n": 5,
+    "excluded_patterns": 1,
+    "base_rate_grid": {
+      "from": "2005-06-03T22:42:50.363779Z",
+      "to": "2005-07-01T00:00:00Z",
+      "window_minutes": 10,
+      "windows": 3896
+    },
+    "by_direction": [
+      {
+        "direction": "before",
+        "window": "[anchor − 10 min, anchor)",
+        "patterns_found": 2,
+        "truncated": false,
+        "patterns": [
+          {
+            "pattern_id": "bdec89f666f62cf9",
+            "pattern": "ciod: LOGIN chdir(<PATH>) failed: No such file or directory",
+            "pattern_truncated": false,
+            "component": "APP",
+            "team": "Workload Runtime",
+            "anchors_with_pattern": 6,
+            "anchor_share": 0.8571428571428571,
+            "base_rate_windows": 23,
+            "base_rate": 0.005903490759753593,
+            "ratio": 145.1925465838509,
+            "example_event_id": 14736
+          },
+          {
+            "pattern_id": "c4de774642754d2a",
+            "pattern": "MidplaneSwitchController performing bit sparing on <NODE> bit <NUM>",
+            "pattern_truncated": false,
+            "component": "LINKCARD",
+            "team": "Hardware Operations",
+            "anchors_with_pattern": 1,
+            "anchor_share": 0.14285714285714285,
+            "base_rate_windows": 155,
+            "base_rate": 0.03978439425051335,
+            "ratio": 3.5907834101382488,
+            "example_event_id": 194195
+          }
+        ]
+      }
+    ]
+  },
+  "result_digest": "f2b31164b07510028fbf23caa22a25d9f16e17981326afdf1aa123511c43975b",
+  "facts": [
+    {
+      "id": "r_16d9e58b.f1",
+      "path": "/result/anchors",
+      "value": 7,
+      "metric": "anchors",
+      "unit": "anchors",
+      "group": {}
+    },
+    {
+      "id": "r_16d9e58b.f2",
+      "path": "/result/base_rate_grid/from",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "grid_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_16d9e58b.f3",
+      "path": "/result/base_rate_grid/to",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "grid_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_16d9e58b.f4",
+      "path": "/result/base_rate_grid/windows",
+      "value": 3896,
+      "metric": "grid_windows",
+      "unit": "windows",
+      "group": {}
+    },
+    {
+      "id": "r_16d9e58b.f5",
+      "path": "/result/by_direction/0/patterns/0/anchor_share",
+      "value": 0.8571428571428571,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f6",
+      "path": "/result/by_direction/0/patterns/0/anchors_with_pattern",
+      "value": 6,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f7",
+      "path": "/result/by_direction/0/patterns/0/base_rate",
+      "value": 0.005903490759753593,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f8",
+      "path": "/result/by_direction/0/patterns/0/base_rate_windows",
+      "value": 23,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f9",
+      "path": "/result/by_direction/0/patterns/0/ratio",
+      "value": 145.1925465838509,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f10",
+      "path": "/result/by_direction/0/patterns/1/anchor_share",
+      "value": 0.14285714285714285,
+      "metric": "anchor_share",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f11",
+      "path": "/result/by_direction/0/patterns/1/anchors_with_pattern",
+      "value": 1,
+      "metric": "anchors_with_pattern",
+      "unit": "anchors",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f12",
+      "path": "/result/by_direction/0/patterns/1/base_rate",
+      "value": 0.03978439425051335,
+      "metric": "base_rate",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f13",
+      "path": "/result/by_direction/0/patterns/1/base_rate_windows",
+      "value": 155,
+      "metric": "base_rate_windows",
+      "unit": "windows",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f14",
+      "path": "/result/by_direction/0/patterns/1/ratio",
+      "value": 3.5907834101382488,
+      "metric": "precursor_ratio",
+      "unit": "ratio",
+      "group": {
+        "pattern_id": "c4de774642754d2a",
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f15",
+      "path": "/result/by_direction/0/patterns_found",
+      "value": 2,
+      "metric": "patterns_found",
+      "unit": "patterns",
+      "group": {
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f16",
+      "path": "/result/matched_events",
+      "value": 5983,
+      "metric": "matched_events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_16d9e58b.f17",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-01T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_16d9e58b.f18",
+      "path": "/scope/windows/0/to",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}

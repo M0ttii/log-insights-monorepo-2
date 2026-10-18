@@ -1,0 +1,330 @@
+{
+  "receipt_id": "r_b6ce5f6c",
+  "created_at": "2026-10-18T17:41:40.485Z",
+  "client": "eval",
+  "tool": "get_log_context",
+  "tool_version": "1.0.0",
+  "input": {
+    "mode": "event",
+    "window_minutes": 10,
+    "event_id": 14738,
+    "before": 4,
+    "after": 3,
+    "scope": "same_component"
+  },
+  "signature": "c244a7e1c1f11d91fe70ac05145e227f82d7e782aa8cee5fbc4c04510f675ed8",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT log_events.event_id, strftime(log_events.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events.component, log_events.level, log_events.node, log_events.alert_label, log_events.request_id, log_events.host, log_events.process_id, log_events.client_ip, log_events.thread, log_events.block_id, log_events.pattern_id, left(log_events.message, 400) AS message, length(log_events.message) > 400 AS message_truncated, log_events.dataset FROM log_events WHERE log_events.event_id = $1",
+    "SELECT count(*) FILTER (WHERE log_events.ts >= $1::TIMESTAMPTZ - $3::INTERVAL AND (log_events.ts < $1::TIMESTAMPTZ OR (log_events.ts = $1::TIMESTAMPTZ AND log_events.event_id < $2))) AS before, count(*) FILTER (WHERE log_events.ts <= $1::TIMESTAMPTZ + $3::INTERVAL AND (log_events.ts > $1::TIMESTAMPTZ OR (log_events.ts = $1::TIMESTAMPTZ AND log_events.event_id > $2))) AS after FROM log_events WHERE log_events.dataset = $4 AND log_events.component = $5 AND ((log_events.ts >= $1::TIMESTAMPTZ - $3::INTERVAL AND (log_events.ts < $1::TIMESTAMPTZ OR (log_events.ts = $1::TIMESTAMPTZ AND log_events.event_id < $2))) OR (log_events.ts <= $1::TIMESTAMPTZ + $3::INTERVAL AND (log_events.ts > $1::TIMESTAMPTZ OR (log_events.ts = $1::TIMESTAMPTZ AND log_events.event_id > $2))))",
+    "SELECT log_events.event_id, strftime(log_events.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events.component, log_events.level, log_events.node, log_events.alert_label, log_events.request_id, log_events.host, log_events.process_id, log_events.client_ip, log_events.thread, log_events.block_id, log_events.pattern_id, left(log_events.message, 400) AS message, length(log_events.message) > 400 AS message_truncated, (epoch_us(log_events.ts) - epoch_us($1::TIMESTAMPTZ))::DOUBLE / 1000 AS offset_ms FROM log_events WHERE log_events.dataset = $4 AND log_events.component = $5 AND log_events.ts >= $1::TIMESTAMPTZ - $3::INTERVAL AND (log_events.ts < $1::TIMESTAMPTZ OR (log_events.ts = $1::TIMESTAMPTZ AND log_events.event_id < $2)) ORDER BY log_events.ts DESC, log_events.event_id DESC LIMIT $6",
+    "SELECT log_events.event_id, strftime(log_events.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events.component, log_events.level, log_events.node, log_events.alert_label, log_events.request_id, log_events.host, log_events.process_id, log_events.client_ip, log_events.thread, log_events.block_id, log_events.pattern_id, left(log_events.message, 400) AS message, length(log_events.message) > 400 AS message_truncated, (epoch_us(log_events.ts) - epoch_us($1::TIMESTAMPTZ))::DOUBLE / 1000 AS offset_ms FROM log_events WHERE log_events.dataset = $4 AND log_events.component = $5 AND log_events.ts <= $1::TIMESTAMPTZ + $3::INTERVAL AND (log_events.ts > $1::TIMESTAMPTZ OR (log_events.ts = $1::TIMESTAMPTZ AND log_events.event_id > $2)) ORDER BY log_events.ts, log_events.event_id LIMIT $6"
+  ],
+  "params": [
+    [
+      14738
+    ],
+    [
+      "2005-06-04T07:24:32.398284Z",
+      14738,
+      "10 minutes",
+      "bgl",
+      "APP"
+    ],
+    [
+      "2005-06-04T07:24:32.398284Z",
+      14738,
+      "10 minutes",
+      "bgl",
+      "APP",
+      4
+    ],
+    [
+      "2005-06-04T07:24:32.398284Z",
+      14738,
+      "10 minutes",
+      "bgl",
+      "APP",
+      3
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-04T07:14:32.398284Z",
+        "to": "2005-06-04T07:34:32.398285Z"
+      }
+    ],
+    "filters": {
+      "components": [
+        "APP"
+      ]
+    }
+  },
+  "population": {
+    "count": 1023,
+    "unit": "log_events"
+  },
+  "rows_returned": 5,
+  "truncated": true,
+  "row_limit": 7,
+  "duration_ms": 16.27,
+  "result": {
+    "mode": "event",
+    "anchor": {
+      "event_id": 14738,
+      "ts": "2005-06-04T07:24:32.398284Z",
+      "component": "APP",
+      "level": "FATAL",
+      "node": "R23-M1-N8-I:J18-U11",
+      "alert_label": "APPREAD",
+      "request_id": null,
+      "pattern_id": "287312f13c189c4d",
+      "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33399",
+      "message_truncated": false,
+      "dataset": "bgl"
+    },
+    "scope": "same_component",
+    "scope_value": "APP",
+    "window_minutes": 10,
+    "events_before": [
+      {
+        "event_id": 14736,
+        "ts": "2005-06-04T07:24:31.560279Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R23-M0-N4-I:J18-U11",
+        "alert_label": null,
+        "request_id": null,
+        "pattern_id": "bdec89f666f62cf9",
+        "message": "ciod: LOGIN chdir(/p/gb2/draeger/benchmark/dat32k_060205) failed: No such file or directory",
+        "message_truncated": false,
+        "offset_ms": -838.005
+      },
+      {
+        "event_id": 14737,
+        "ts": "2005-06-04T07:24:31.594456Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R23-M1-N8-I:J18-U01",
+        "alert_label": null,
+        "request_id": null,
+        "pattern_id": "bdec89f666f62cf9",
+        "message": "ciod: LOGIN chdir(/p/gb2/draeger/benchmark/dat32k_060205) failed: No such file or directory",
+        "message_truncated": false,
+        "offset_ms": -803.828
+      }
+    ],
+    "events_after": [
+      {
+        "event_id": 14739,
+        "ts": "2005-06-04T07:24:32.432192Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R04-M1-N4-I:J18-U11",
+        "alert_label": "APPREAD",
+        "request_id": null,
+        "pattern_id": "287312f13c189c4d",
+        "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33569",
+        "message_truncated": false,
+        "offset_ms": 33.908
+      },
+      {
+        "event_id": 14740,
+        "ts": "2005-06-04T07:24:32.481570Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R04-M1-N4-I:J18-U01",
+        "alert_label": "APPREAD",
+        "request_id": null,
+        "pattern_id": "287312f13c189c4d",
+        "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33570",
+        "message_truncated": false,
+        "offset_ms": 83.286
+      },
+      {
+        "event_id": 14741,
+        "ts": "2005-06-04T07:24:33.168659Z",
+        "component": "APP",
+        "level": "FATAL",
+        "node": "R35-M1-N0-I:J18-U11",
+        "alert_label": "APPREAD",
+        "request_id": null,
+        "pattern_id": "287312f13c189c4d",
+        "message": "ciod: failed to read message prefix on control stream (CioStream socket to 172.16.96.116:33459",
+        "message_truncated": false,
+        "offset_ms": 770.375
+      }
+    ],
+    "sides": [
+      {
+        "direction": "before",
+        "limit": 4,
+        "in_window": 2,
+        "returned": 2,
+        "truncated": false
+      },
+      {
+        "direction": "after",
+        "limit": 3,
+        "in_window": 1021,
+        "returned": 3,
+        "truncated": true
+      }
+    ]
+  },
+  "result_digest": "8516ae420334d9ed41512d615004dca9ea74030a512944f4a21e94452795d2ca",
+  "facts": [
+    {
+      "id": "r_b6ce5f6c.f1",
+      "path": "/result/anchor/ts",
+      "value": "2005-06-04T07:24:32.398284Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14738"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f2",
+      "path": "/result/events_after/0/offset_ms",
+      "value": 33.908,
+      "metric": "offset",
+      "unit": "ms",
+      "group": {
+        "event_id": "14739"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f3",
+      "path": "/result/events_after/0/ts",
+      "value": "2005-06-04T07:24:32.432192Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14739"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f4",
+      "path": "/result/events_after/1/offset_ms",
+      "value": 83.286,
+      "metric": "offset",
+      "unit": "ms",
+      "group": {
+        "event_id": "14740"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f5",
+      "path": "/result/events_after/1/ts",
+      "value": "2005-06-04T07:24:32.481570Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14740"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f6",
+      "path": "/result/events_after/2/offset_ms",
+      "value": 770.375,
+      "metric": "offset",
+      "unit": "ms",
+      "group": {
+        "event_id": "14741"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f7",
+      "path": "/result/events_after/2/ts",
+      "value": "2005-06-04T07:24:33.168659Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14741"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f8",
+      "path": "/result/events_before/0/offset_ms",
+      "value": -838.005,
+      "metric": "offset",
+      "unit": "ms",
+      "group": {
+        "event_id": "14736"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f9",
+      "path": "/result/events_before/0/ts",
+      "value": "2005-06-04T07:24:31.560279Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14736"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f10",
+      "path": "/result/events_before/1/offset_ms",
+      "value": -803.828,
+      "metric": "offset",
+      "unit": "ms",
+      "group": {
+        "event_id": "14737"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f11",
+      "path": "/result/events_before/1/ts",
+      "value": "2005-06-04T07:24:31.594456Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "14737"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f12",
+      "path": "/result/sides/0/in_window",
+      "value": 2,
+      "metric": "events_in_window",
+      "unit": "log_events",
+      "group": {
+        "direction": "before"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f13",
+      "path": "/result/sides/1/in_window",
+      "value": 1021,
+      "metric": "events_in_window",
+      "unit": "log_events",
+      "group": {
+        "direction": "after"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f14",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-04T07:14:32.398284Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_b6ce5f6c.f15",
+      "path": "/scope/windows/0/to",
+      "value": "2005-06-04T07:34:32.398285Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}
