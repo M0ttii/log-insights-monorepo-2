@@ -1,0 +1,31 @@
+@import "@workspace/ui/globals.css";
+
+/* Workspace composition; controls and status colors use the shared theme. */
+@layer base {
+  ::selection {
+    background: var(--conclusion-border);
+    color: var(--foreground);
+  }
+  * {
+    scrollbar-color: var(--control-border) transparent;
+    scrollbar-width: thin;
+  }
+  textarea,
+  input {
+    caret-color: var(--thirdly);
+  }
+}
+@layer components {
+  .page-heading {
+    @apply text-2xl leading-8 font-semibold tracking-tight;
+  }
+  .page-description {
+    @apply mt-2 max-w-prose text-sm leading-6 text-muted-foreground;
+  }
+  .workspace-page {
+    @apply mx-auto w-full max-w-(--data-width) px-4 py-8 sm:px-8 lg:py-10;
+  }
+  .data-label {
+    @apply text-xs leading-5 text-muted-foreground;
+  }
+}
