@@ -201,6 +201,32 @@ describe("prepared chat", () => {
     )
     expect(screen.getByText(/Stopped · partial response/)).toBeTruthy()
   })
+  it("preserves focus moved away from the composer during a response", async () => {
+    const wire = streamTransport()
+    render(
+      createElement(InvestigationView, {
+        brief,
+        available: true,
+        chatTransport: wire.transport,
+      })
+    )
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "Investigate without stealing focus" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Send question" }))
+    await waitFor(() => expect(wire.sendMessages).toHaveBeenCalledOnce())
+    const help = screen.getByRole("link", { name: "How it works" })
+    help.focus()
+    await act(async () => {
+      wire.push({ type: "start", messageId: "focus-reply" })
+      wire.push({ type: "finish", finishReason: "stop" })
+      wire.close()
+    })
+    await waitFor(() =>
+      expect(screen.getByRole("textbox").getAttribute("readonly")).toBeNull()
+    )
+    expect(document.activeElement).toBe(help)
+  })
   it.each(["refusal", "timeout", "error", "stopped"])(
     "restores the submitted question after a %s run",
     async (status) => {

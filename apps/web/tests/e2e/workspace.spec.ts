@@ -180,30 +180,41 @@ test("search keeps filter scope in the URL and exposes real evidence or a recove
     path: testInfo.outputPath("search.png"),
     fullPage: true,
   })
+})
+
+test("real event context uses the available width and returns keyboard focus", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/logs?dataset=bgl&q=parity")
+  await expect(
+    page.getByRole("region", { name: "Search results" })
+  ).toContainText(/matching log events|unavailable|could not|not loaded/i)
   const contextButton = page
     .getByRole("button", { name: /^Open context for event/ })
     .first()
-  if (await contextButton.count()) {
-    await contextButton.click()
-    const context = page.getByRole("dialog", { name: "Event context" })
-    await expect(context).toBeVisible()
-    await expect
-      .poll(() =>
-        context.evaluate((element) =>
-          Math.round(element.getBoundingClientRect().width)
-        )
+  test.fixme(
+    (await contextButton.count()) === 0,
+    "LOG-39: event-context browser coverage requires a loaded corpus; the unavailable state is covered separately."
+  )
+  await contextButton.click()
+  const context = page.getByRole("dialog", { name: "Event context" })
+  await expect(context).toBeVisible()
+  await expect
+    .poll(() =>
+      context.evaluate((element) =>
+        Math.round(element.getBoundingClientRect().width)
       )
-      .toBe(testInfo.project.name === "mobile" ? 390 : 768)
-    const accessibility = await new AxeBuilder({ page }).analyze()
-    expect(
-      accessibility.violations.filter(
-        (item) => item.impact === "serious" || item.impact === "critical"
-      )
-    ).toEqual([])
-    await page.getByRole("button", { name: "Back to results" }).click()
-    await expect(context).toBeHidden()
-    await expect(contextButton).toBeFocused()
-  }
+    )
+    .toBe(testInfo.project.name === "mobile" ? 390 : 768)
+  const accessibility = await new AxeBuilder({ page }).analyze()
+  expect(
+    accessibility.violations.filter(
+      (item) => item.impact === "serious" || item.impact === "critical"
+    )
+  ).toEqual([])
+  await page.getByRole("button", { name: "Back to results" }).click()
+  await expect(context).toBeHidden()
+  await expect(contextButton).toBeFocused()
 })
 
 test("receipt IDs are validated and unresolved receipts are explicit", async ({

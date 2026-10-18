@@ -106,7 +106,8 @@ export function InvestigationView({
     if (restore && submittedQuestion.current !== null)
       setQuestion(submittedQuestion.current)
     submittedQuestion.current = null
-    input.current?.focus()
+    if (form.current?.contains(document.activeElement))
+      input.current?.focus({ preventScroll: true })
   }
   const chat = useChat({
     transport: chatTransport,
@@ -267,6 +268,7 @@ export function InvestigationView({
             chat.clearError()
             submittedQuestion.current = question
             setQuestion("")
+            input.current?.focus({ preventScroll: true })
             const id = crypto.randomUUID()
             setContexts((previous) => ({
               ...previous,
