@@ -19,6 +19,7 @@ type Call = { sql: string; params: readonly unknown[] }
 function setup(
   answers: {
     buckets?: Record<string, unknown>[]
+    grid?: Record<string, unknown>[]
     series?: Record<string, unknown>[]
     cells?: Record<string, unknown>[]
     covered?: string[]
@@ -35,11 +36,25 @@ function setup(
         if (sql === "SELECT data_version FROM load_manifest")
           return [{ data_version: "dv_test" }]
         if (sql.includes("FROM corpus_stats")) return [answers.span ?? SPAN]
+        if (sql.includes("AS capture_gap FROM grid"))
+          return (
+            answers.grid ??
+            [
+              { bucket: DAY_3, bucket_end: DAY_4, partial: true },
+              { bucket: DAY_4, bucket_end: DAY_5, partial: false },
+              {
+                bucket: DAY_5,
+                bucket_end: "2005-06-06T00:00:00.000000Z",
+                partial: true,
+              },
+            ].map((slot) => ({
+              ...slot,
+              capture_gap: !(answers.covered ?? []).includes(slot.bucket),
+            }))
+          )
         if (sql.includes("slot, value")) return answers.series ?? []
         if (sql.includes("bucket_events")) return answers.cells ?? []
-        if (sql.includes("sum(c.events) OVER ()")) return answers.buckets ?? []
-        if (sql.startsWith("SELECT strftime(c.bucket"))
-          return (answers.covered ?? []).map((bucket) => ({ bucket }))
+        if (sql.includes("LEFT JOIN counted c")) return answers.buckets ?? []
         throw new Error(`unexpected SQL: ${sql}`)
       })()
       return { rows, durationMs: 1 }
@@ -78,6 +93,7 @@ describe("event_trend SQL", () => {
     const { calls, trend } = setup({
       buckets: [
         { bucket: DAY_3, events: "4", total: "9" },
+        { bucket: DAY_4, events: "0", total: "9" },
         { bucket: DAY_5, events: "5", total: "9" },
       ],
       covered: [DAY_3, DAY_5],
@@ -91,14 +107,38 @@ describe("event_trend SQL", () => {
     if (!outcome.ok) throw new Error(outcome.error.message)
     const [span, covered, counted] = toolCalls(calls)
     expect(span?.params).toEqual(["bgl"])
-    expect(covered).toEqual({
-      sql: "SELECT strftime(c.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket FROM (SELECT date_trunc('day', log_events.ts) AS bucket FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ GROUP BY 1) c ORDER BY c.bucket",
-      params: ["bgl", SPAN.first, "2005-06-05T10:00:00.000001Z"],
-    })
-    expect(counted).toEqual({
-      sql: "SELECT strftime(c.bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, c.events, sum(c.events) OVER () AS total FROM (SELECT date_trunc('day', log_events.ts) AS bucket, count(*) AS events FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.level IN ($4) GROUP BY 1) c ORDER BY c.bucket",
-      params: ["bgl", SPAN.first, "2005-06-05T10:00:00.000001Z", "FATAL"],
-    })
+    expect(covered?.sql).toContain("unnest(range(")
+    expect(covered?.sql).toContain(
+      "LEFT JOIN captured c ON g.bucket = c.bucket"
+    )
+    expect(covered?.sql).toContain("c.bucket IS NULL AS capture_gap")
+    expect(covered?.sql).toContain("strftime(g.bucket + $7::INTERVAL,")
+    expect(covered?.params).toEqual([
+      "bgl",
+      SPAN.first,
+      "2005-06-05T10:00:00.000001Z",
+      SPAN.first,
+      "2005-06-05T10:00:00.000001Z",
+      "1 day",
+      "1 day",
+      SPAN.first,
+      "1 day",
+      "2005-06-05T10:00:00.000001Z",
+    ])
+    expect(counted?.sql).toContain("unnest(range(")
+    expect(counted?.sql).toContain("LEFT JOIN counted c ON g.bucket = c.bucket")
+    expect(counted?.sql).toContain("coalesce(c.events, 0)::BIGINT AS events")
+    expect(counted?.sql).toContain("log_events.level IN ($4)")
+    expect(counted?.sql).toContain("ORDER BY g.bucket")
+    expect(counted?.params).toEqual([
+      "bgl",
+      SPAN.first,
+      "2005-06-05T10:00:00.000001Z",
+      "FATAL",
+      SPAN.first,
+      "2005-06-05T10:00:00.000001Z",
+      "1 day",
+    ])
     const data = outcome.result.data
     expect(data).toMatchObject({
       total: 9,
@@ -126,7 +166,10 @@ describe("event_trend SQL", () => {
       cells: [
         { bucket: DAY_3, slot: "1", events: "4", bucket_events: "6" },
         { bucket: DAY_3, slot: "6", events: "2", bucket_events: "6" },
+        { bucket: DAY_4, slot: "1", events: "0", bucket_events: "0" },
+        { bucket: DAY_4, slot: "6", events: "0", bucket_events: "0" },
         { bucket: DAY_5, slot: "1", events: "3", bucket_events: "3" },
+        { bucket: DAY_5, slot: "6", events: "0", bucket_events: "3" },
       ],
       covered: [DAY_3, DAY_4, DAY_5],
     })
@@ -137,14 +180,17 @@ describe("event_trend SQL", () => {
     })
     if (!outcome.ok) throw new Error(outcome.error.message)
     const [, , series, cells] = toolCalls(calls)
-    const cte =
-      "WITH cells AS (SELECT date_trunc('day', log_events.ts) AS bucket, log_events.component AS value, count(*) AS events FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, 6) AS slot, CASE WHEN series_rank <= 5 THEN value END AS value, series_rank, events FROM ranked)"
-    expect(series?.sql).toBe(
-      `${cte} SELECT slot, value, sum(events) AS events, count(DISTINCT series_rank) AS merged_values, sum(sum(events)) OVER () AS total FROM slots GROUP BY slot, value ORDER BY slot`
+    expect(series?.sql).toContain("unnest(range(")
+    expect(series?.sql).toContain(
+      "dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST)"
     )
-    expect(cells?.sql).toBe(
-      `${cte} SELECT strftime(bucket, '%Y-%m-%dT%H:%M:%S.%fZ') AS bucket, slot, sum(events) AS events, sum(sum(events)) OVER (PARTITION BY bucket) AS bucket_events FROM slots GROUP BY bucket, slot ORDER BY bucket, slot`
+    expect(series?.sql).toContain("GROUP BY slot, value ORDER BY slot")
+    expect(cells?.sql).toContain("LEFT JOIN named_slots n ON TRUE")
+    expect(cells?.sql).toContain(
+      "LEFT JOIN slot_totals c ON c.bucket = g.bucket AND c.slot = n.slot"
     )
+    expect(cells?.sql).toContain("coalesce(c.events, 0)::BIGINT AS events")
+    expect(cells?.sql).toContain("ORDER BY bucket, slot")
     expect(cells?.params).toEqual(series?.params)
 
     const { data, facts } = outcome.result
@@ -185,6 +231,84 @@ describe("event_trend SQL", () => {
     expect(text).toMatch(
       /2005-06-03T00:00:00\.000000Z 6 \[r_[0-9a-f]{8}\.f\d+\] \("KERNEL" 4 \[r_[0-9a-f]{8}\.f\d+\], other 2 \[r_[0-9a-f]{8}\.f\d+\]\) \[partial\]/
     )
+  })
+
+  it("preserves the SQL zero grid when no split series matches", async () => {
+    const { stored, trend } = setup({
+      cells: [DAY_3, DAY_4, DAY_5].map((bucket) => ({
+        bucket,
+        slot: null,
+        events: "0",
+        bucket_events: "0",
+      })),
+      covered: [DAY_3, DAY_5],
+    })
+    const outcome = await trend({
+      dataset: "bgl",
+      bucket: "day",
+      split_by: "component",
+      levels: ["UNKNOWN"],
+    })
+    if (!outcome.ok) throw new Error(outcome.error.message)
+    expect(outcome.result.data).toMatchObject({
+      total: 0,
+      series: [],
+      other: null,
+      bucket_count: 3,
+      buckets: [
+        { events: 0, series: [], other_events: null, capture_gap: false },
+        { events: 0, series: [], other_events: null, capture_gap: true },
+        { events: 0, series: [], other_events: null, capture_gap: false },
+      ],
+    })
+    expect(stored[0]?.population).toEqual({ count: 0, unit: "log_events" })
+    expect(outcome.result.notes).toContain(
+      "No log event matches the filters in the effective range; every bucket is a zero."
+    )
+    expect(
+      outcome.result.facts.find(
+        (fact) => fact.path === "/result/buckets/1/events"
+      )
+    ).toMatchObject({
+      value: 0,
+      group: { dataset: "bgl", bucket_start: DAY_4 },
+    })
+  })
+
+  it("fails when SQL omits a bucket instead of fabricating a zero", async () => {
+    const { stored, trend } = setup({
+      buckets: [
+        { bucket: DAY_3, events: "4", total: "9" },
+        { bucket: DAY_5, events: "5", total: "9" },
+      ],
+    })
+    await expect(trend({ dataset: "bgl", bucket: "day" })).rejects.toThrow(
+      "Tool event_trend failed unexpectedly"
+    )
+    expect(stored).toEqual([])
+  })
+
+  it("fails when SQL omits a split cell instead of fabricating a zero", async () => {
+    const { stored, trend } = setup({
+      series: [
+        {
+          slot: "1",
+          value: "KERNEL",
+          events: "4",
+          merged_values: "1",
+          total: "4",
+        },
+      ],
+      cells: [
+        { bucket: DAY_3, slot: "1", events: "4", bucket_events: "4" },
+        { bucket: DAY_4, slot: null, events: "0", bucket_events: "0" },
+        { bucket: DAY_5, slot: "1", events: "0", bucket_events: "0" },
+      ],
+    })
+    await expect(
+      trend({ dataset: "bgl", bucket: "day", split_by: "component" })
+    ).rejects.toThrow("Tool event_trend failed unexpectedly")
+    expect(stored).toEqual([])
   })
 
   it("stops after the span when the window lies outside it", async () => {

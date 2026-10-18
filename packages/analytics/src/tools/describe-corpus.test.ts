@@ -22,6 +22,7 @@ const ROWS: Record<string, Record<string, unknown>[]> = {
   corpus_stats: [
     {
       dataset: "bgl",
+      population_count: "3",
       lines_read: "3",
       events: "3",
       rejected: "0",

@@ -480,13 +480,40 @@ describe("receipts and reproducibility", () => {
     expect(stored.sql).toHaveLength(4)
     expect(stored.sql[0]).toContain("FROM corpus_stats")
     expect(stored.sql[1]).toContain("date_trunc('day', log_events.ts)")
+    expect(stored.sql[1]).toContain("unnest(range(")
+    expect(stored.sql[1]).toContain("LEFT JOIN captured")
     expect(stored.sql[2]).toContain("dense_rank() OVER")
     expect(stored.sql[3]).toContain("PARTITION BY bucket")
     expect(stored.params).toEqual([
       ["bgl"],
-      ["bgl", BGL_FIRST, "2005-06-10T00:00:00.000000Z"],
-      ["bgl", BGL_FIRST, "2005-06-10T00:00:00.000000Z"],
-      ["bgl", BGL_FIRST, "2005-06-10T00:00:00.000000Z"],
+      [
+        "bgl",
+        BGL_FIRST,
+        "2005-06-10T00:00:00.000000Z",
+        BGL_FIRST,
+        "2005-06-10T00:00:00.000000Z",
+        "1 day",
+        "1 day",
+        BGL_FIRST,
+        "1 day",
+        "2005-06-10T00:00:00.000000Z",
+      ],
+      [
+        "bgl",
+        BGL_FIRST,
+        "2005-06-10T00:00:00.000000Z",
+        BGL_FIRST,
+        "2005-06-10T00:00:00.000000Z",
+        "1 day",
+      ],
+      [
+        "bgl",
+        BGL_FIRST,
+        "2005-06-10T00:00:00.000000Z",
+        BGL_FIRST,
+        "2005-06-10T00:00:00.000000Z",
+        "1 day",
+      ],
     ])
     expect(stored.result).toMatchObject({
       bucket_count: 7,

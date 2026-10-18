@@ -1,4 +1,5 @@
 import type { Receipt } from "@workspace/domain/receipt"
+import { comparisonCoverage } from "@workspace/domain/rules/compare"
 import { describe, expect, it } from "vitest"
 
 import { createRegistry } from "../registry.ts"
@@ -23,7 +24,12 @@ const SPAN = {
 
 type Row = Record<string, unknown>
 
-const NO_CHANGE = { baseline: null, delta: null, pct_change: null }
+const NO_CHANGE = {
+  baseline: null,
+  delta: null,
+  pct_change: null,
+  classification: null,
+}
 const NO_OTHER_CHANGE = {
   other_baseline: null,
   other_delta: null,
@@ -88,6 +94,14 @@ function setup(rows: Row[] = [SUMMARY, ...GROUPS]) {
           const dataset = params[0] === "openstack" ? "openstack" : "bgl"
           return [SPAN[dataset]]
         }
+        if (sql.startsWith("WITH comparison_bounds"))
+          return [
+            comparisonCoverage(
+              { from: String(params[0]), to: String(params[1]) },
+              { from: String(params[2]), to: String(params[3]) },
+              { first: String(params[4]), last: String(params[5]) }
+            ),
+          ]
         if (sql.startsWith("WITH grouped")) return rows
         throw new Error(`unexpected SQL: ${sql}`)
       })()
@@ -139,10 +153,19 @@ describe("count_events SQL", () => {
       ["bgl"],
       ["openstack"],
     ])
-    expect(counted).toEqual({
-      sql: `WITH grouped AS (SELECT log_events.dataset AS g1, ${TEAM} AS g2, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.is_error GROUP BY 1, 2), ranked AS (SELECT g1, g2, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST, g2 ASC NULLS LAST) AS rank, sum(events) OVER () AS total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) FILTER (WHERE rank > $1) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $1), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $1) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, NULL AS g2, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change FROM summary UNION ALL SELECT rank, g1, g2, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= $1 ORDER BY rank`,
-      params: [2],
-    })
+    expect(counted?.sql).toContain(
+      `WITH grouped AS (SELECT log_events.dataset AS g1, ${TEAM} AS g2, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.is_error GROUP BY 1, 2)`
+    )
+    expect(counted?.sql).toContain(
+      "ORDER BY events DESC, g1 ASC NULLS LAST, g2 ASC NULLS LAST"
+    )
+    expect(counted?.sql).toContain(
+      "other_c::DOUBLE / NULLIF(c, 0) AS other_share"
+    )
+    expect(counted?.sql).toContain("WHERE rank <= $1 ORDER BY rank")
+    expect(counted?.sql).toContain("$2::BIGINT * baseline")
+    expect(counted?.sql).toContain("events - baseline >= $3::BIGINT")
+    expect(counted?.params).toEqual([2, 2, 20])
   })
 
   it("reads the index relation for text and binds the filters before top_n", async () => {
@@ -164,6 +187,8 @@ describe("count_events SQL", () => {
       "2005-06-01T00:00:00Z",
       "2005-07-01T00:00:00Z",
       "cache parity",
+      20,
+      2,
       20,
     ])
   })
@@ -504,6 +529,7 @@ const COMPARED_GROUPS: Row[] = [
     baseline: "10",
     delta: "20",
     pct_change: 200,
+    classification: "significantly increased",
   },
   {
     ...GROUPS[0],
@@ -533,6 +559,20 @@ describe("count_events compare", () => {
     ])
     const outcome = await count({ ...compareInput, only_errors: true })
     if (!outcome.ok) throw new Error(outcome.error.message)
+    const coverage = toolCalls(calls).find((call) =>
+      call.sql.startsWith("WITH comparison_bounds")
+    )
+    expect(coverage?.params).toEqual([
+      C_FROM,
+      C_TO,
+      "2005-07-01T00:00:00.000000Z",
+      "2005-08-01T00:00:00.000000Z",
+      SPAN.bgl.first,
+      SPAN.bgl.last,
+    ])
+    expect(coverage?.sql).toContain(
+      "$6::TIMESTAMPTZ + INTERVAL '1 microsecond'"
+    )
     const counted = toolCalls(calls).at(-1)
     const inC =
       "log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ"
@@ -555,7 +595,11 @@ describe("count_events compare", () => {
       "2005-07-01T00:00:00.000000Z",
       "2005-08-01T00:00:00.000000Z",
       20,
+      2,
+      20,
     ])
+    expect(counted?.sql).toContain("events >= $7::BIGINT * baseline")
+    expect(counted?.sql).toContain("events - baseline >= $8::BIGINT")
     expect(stored[0]?.scope).toEqual({
       windows: [
         { dataset: "bgl", from: C_FROM, to: C_TO, period: "current" },
@@ -598,6 +642,19 @@ describe("count_events compare", () => {
         pct_change: 150,
         classification: null,
       },
+    })
+  })
+
+  it("uses the classification SQL returned without recalculating it", async () => {
+    const { count } = setup([
+      COMPARED_SUMMARY,
+      { ...COMPARED_GROUPS[0], classification: null },
+      COMPARED_GROUPS[1] ?? {},
+    ])
+    const outcome = await count(compareInput)
+    if (!outcome.ok) throw new Error(outcome.error.message)
+    expect(outcome.result.data).toMatchObject({
+      groups: [{ events: 30, baseline: 10, classification: null }, {}],
     })
   })
 

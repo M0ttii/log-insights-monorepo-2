@@ -137,6 +137,23 @@ export const searchHitSchema = z.strictObject({
     .describe(
       `True when the stored message is longer than ${SEARCH_MESSAGE_MAX_CHARS} characters.`
     ),
+  match_ranges: z
+    .array(
+      z
+        .strictObject({
+          start: z
+            .number()
+            .int()
+            .nonnegative()
+            .max(SEARCH_MESSAGE_MAX_CHARS - 1),
+          end: z.number().int().positive().max(SEARCH_MESSAGE_MAX_CHARS),
+        })
+        .refine((range) => range.end > range.start, "end must be after start")
+    )
+    .max(SEARCH_MESSAGE_MAX_CHARS)
+    .describe(
+      "Index match ranges in the returned message: zero-based Unicode code points, start inclusive, end exclusive (not UTF-8 bytes or JavaScript UTF-16 indices). Sorted, non-overlapping (overlapping index spans are merged); phrase matches can span several words. Ranges crossing the message cutoff are clipped; ranges beyond it are omitted. Empty for null messages or matches entirely beyond the cutoff. Contains no markup; render the verbatim message safely."
+    ),
   score: z
     .number()
     .describe(

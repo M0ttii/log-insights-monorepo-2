@@ -1,0 +1,719 @@
+{
+  "source": "LOG-31 pre-change characterization, Loghub 2k samples on SereneDB 26.10.1",
+  "data_version": "dv_379bf006bbb73434",
+  "cases": [
+    {
+      "name": "count-totals",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["dataset", "team"]
+      },
+      "result_digest": "c71bcc44a1c7819275a57732cb996866b242e23bcee72e7027f4b2c3ab895b87",
+      "normalized_facts_sha256": "f90e655249377b15447794f45cbae99c0900f968b05cb287a869067848b98574"
+    },
+    {
+      "name": "count-null-and-other",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["dataset", "node"],
+        "top_n": 4
+      },
+      "result_digest": "ec2963be6315bc5a28e6c9ff2d9441997cd2d6fb75cbdac1bef38e3148657b29",
+      "normalized_facts_sha256": "a91f01f7dd765afd00bd17e1469c3be88e10b9f2ba178589f74f1ac25044aac0"
+    },
+    {
+      "name": "count-api",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["http_status"]
+      },
+      "result_digest": "d7f52abd3371ce94c216cdad57b5c9731f9d4e2df75ab3ae935a32b195f7bf3c",
+      "normalized_facts_sha256": "849e935870a5d4892b03300d1b8fc829c23c71988c9812e3bf8a6c09a3c008b3"
+    },
+    {
+      "name": "count-full",
+      "tool": "count_events",
+      "input": {
+        "dataset": "bgl",
+        "group_by": ["component"],
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z",
+        "compare": "previous_period"
+      },
+      "result_digest": "09ed3969026a8544e53b9f49507541e3b45cb6d0fdfcff1c984d35fdfa6e9edb",
+      "normalized_facts_sha256": "0c63e0994b244be111023c79cc92dda3812ecc979df3b4304671a9f978277b95"
+    },
+    {
+      "name": "count-significant",
+      "tool": "count_events",
+      "input": {
+        "dataset": "bgl",
+        "group_by": ["dataset"],
+        "only_errors": true,
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z",
+        "compare": "previous_period"
+      },
+      "result_digest": "04862e1b8d64e6002de958c019d2ca3cb4e194fffe0b86573e2e8d1a4baf3f26",
+      "normalized_facts_sha256": "12b8feef4d9f9529d350bacd33811b518f85d06a8d2b8fc12fbb64e790f7074c"
+    },
+    {
+      "name": "count-empty",
+      "tool": "count_events",
+      "input": {
+        "dataset": "bgl",
+        "group_by": ["component"],
+        "text": "absenttokenlog31",
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z",
+        "compare": "previous_period"
+      },
+      "result_digest": "f3cc63fb3c70271eb2ab50f15b34b91140fe0db53ddd9095d5f835095315cf74",
+      "normalized_facts_sha256": "2f3ef84dc455de20d16ce82d030da89773598b1f363147ee8e4bac6a71778a0a"
+    },
+    {
+      "name": "count-other-comparison",
+      "tool": "count_events",
+      "input": {
+        "dataset": "bgl",
+        "group_by": ["component"],
+        "top_n": 2,
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z",
+        "compare": "previous_period"
+      },
+      "result_digest": "012d80101fd3dd9b289bf5db19e8b86f5e977c2d0b10fab6587062358ff69180",
+      "normalized_facts_sha256": "b07c6b4e2040c6077e73785cfdb85278e2d25ae2da7c76aa6e385714de4e6520"
+    },
+    {
+      "name": "count-current-partial",
+      "tool": "count_events",
+      "input": {
+        "dataset": "bgl",
+        "group_by": ["component"],
+        "from": "2005-06-03T00:00:00Z",
+        "to": "2005-06-05T00:00:00Z",
+        "compare": {
+          "from": "2005-06-05T00:00:00Z",
+          "to": "2005-06-07T00:00:00Z"
+        }
+      },
+      "result_digest": "6be023774d6b3ae9f2837ad16ef1e3363b77be69d88c0082e2c3c6d142e029d3",
+      "normalized_facts_sha256": "1644cc2f3d4db06815bb54d398562802059fd29413d24896209919ef7711da59"
+    },
+    {
+      "name": "count-baseline-partial",
+      "tool": "count_events",
+      "input": {
+        "dataset": "openstack",
+        "group_by": ["level"],
+        "from": "2017-05-16T00:05:00Z",
+        "to": "2017-05-16T00:10:00Z",
+        "compare": "previous_period"
+      },
+      "result_digest": "c7ef11ab52cf433a080df5f81edc1d7a30e5424c3e5c0813f4468e6b0ca17c6d",
+      "normalized_facts_sha256": "2ef4f07bd88eefa8e05b313c1a98eaffe76e2c5fa9556861ec7f9578849c5b58"
+    },
+    {
+      "name": "count-baseline-none",
+      "tool": "count_events",
+      "input": {
+        "dataset": "openstack",
+        "group_by": ["level"],
+        "from": "2017-05-16T00:00:00.008Z",
+        "to": "2017-05-16T00:05:00.008Z",
+        "compare": "previous_period"
+      },
+      "result_digest": "a12d1d5b35eaaff18eea37de1dcb068f1402ae4480662f4ed164fc16173f5dbe",
+      "normalized_facts_sha256": "daaa72ad205faf06744b177d4f17c2a49b3e10edffe2516e4327e9a73916574c"
+    },
+    {
+      "name": "count-current-none",
+      "tool": "count_events",
+      "input": {
+        "dataset": "openstack",
+        "group_by": ["level"],
+        "from": "2018-01-01T00:00:00Z",
+        "to": "2018-01-01T00:10:00Z",
+        "compare": {
+          "from": "2017-05-16T00:00:00Z",
+          "to": "2017-05-16T00:10:00Z"
+        }
+      },
+      "result_digest": "dd30d62b7e37258ffbd5fc7e4d7e40a75802c0cbe7b5a9d64ca5123432e3b0e8",
+      "normalized_facts_sha256": "68471b7f3bab4e71f95d4b34a620bf5ec430c79b5bfd787e99a4785cde7df709"
+    },
+    {
+      "name": "patterns-events",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "events",
+        "limit": 5,
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "adbcb1d1e503149f2b3c4f6db6eb3765b02360fb2b45d58ca784f88cc0686caf",
+      "normalized_facts_sha256": "5621e55ac6490f97ac0f0a8ab8fc10cd12f39501f6e2f6c721af56f79249146c"
+    },
+    {
+      "name": "patterns-episodes",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "episodes",
+        "limit": 5,
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "57e1426fe90552d10a3107b1dbcbe409bb192e8f87987de881a1eea1712e93a4",
+      "normalized_facts_sha256": "60e1d72e68303278321d9ef143430e016f0e7f717e6939af16429ff8e460a18c"
+    },
+    {
+      "name": "patterns-increase",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "increase",
+        "limit": 5,
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "3d5997812e3f690b4fc5f6479e7a0cc706efbb518a6db8ae3cc6cf71e2acba4f",
+      "normalized_facts_sha256": "afd45f418e0a6dafeb2f5610f8c87dc970e1f8654a4450e9c12c046ca59ef538"
+    },
+    {
+      "name": "patterns-investigation",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "investigation_order",
+        "limit": 5,
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "236d00cf0dc223a29a7789a00504c14f6dfe025f4609bd740926b491c599a868",
+      "normalized_facts_sha256": "3227cf74ea5bf60a2c3aba02fe60bd4de9bc3f846e9d7b6bb6901404c7a200f6"
+    },
+    {
+      "name": "patterns-missing-comparison",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "investigation_order",
+        "limit": 5
+      },
+      "result_digest": "3912cd381cd206c3633a010dd0514edc5f16ac4a55a9da76daaa8564857942fa",
+      "normalized_facts_sha256": "a066fc62809c21d488063fb106b09b99ce4baed65d9517d2afbf0e89089b32f3"
+    },
+    {
+      "name": "patterns-empty",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "openstack",
+        "rank": "investigation_order",
+        "limit": 5
+      },
+      "result_digest": "a720dfcc25a337f643e320711f3397bb501a0997a59c9f2d2dc2df3f8f97bdcd",
+      "normalized_facts_sha256": "ead190552a9114a9b214f33a193317df4026b1cf37c33274022e3db358ec0ad7"
+    },
+    {
+      "name": "trend-hour",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "hour",
+        "from": "2005-06-03T22:42:53.276129Z",
+        "to": "2005-06-04T02:00:00Z"
+      },
+      "result_digest": "1af9a49f15c8eaf426b0b106f71e9a8817b44eeb9ae0a93aa292aece772d049d",
+      "normalized_facts_sha256": "c428d287a7eb0ff348a03db3ca49855dfc469b20ba386d238a37924d4b771baf"
+    },
+    {
+      "name": "trend-day",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-01T00:00:00-07:00",
+        "to": "2005-06-15T00:00:00-07:00",
+        "split_by": "level"
+      },
+      "result_digest": "9df792f4c30b7b696221b246c5cd57db9649b97f00d6079329338f6df47a44f3",
+      "normalized_facts_sha256": "1b5620e9b44b8cc8242109219dc71ea801f571f5ce82a7f50aa482fbabeaaaff"
+    },
+    {
+      "name": "trend-week",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "week",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z"
+      },
+      "result_digest": "0102d7e3b16460ac2a86416c669443d4a6081cbcef974a0cb657ff8c992df90c",
+      "normalized_facts_sha256": "044c38fec235f82e1e7bb39082e2f5de708d3fd96468acc74ec4461e22c819ce"
+    },
+    {
+      "name": "trend-null-other",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "week",
+        "split_by": "node"
+      },
+      "result_digest": "0cdc234339dc207673c3408fd22894ff21bd27990fae4921fe674fa6507b73c0",
+      "normalized_facts_sha256": "f4aeecf1e050d90b4660a48638c3b4d567eecfa1771d78cd5944fc93c03eb4eb"
+    },
+    {
+      "name": "trend-null-series",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "week",
+        "split_by": "alert_label"
+      },
+      "result_digest": "883b69ed7adff47cd0199a393db27dd3f9030383041b7b77f0740a937f91dc25",
+      "normalized_facts_sha256": "3ed2782f4af44669f5aa3ded0174b2484ee096c7d7a058cc2f92871ea1e5934f"
+    },
+    {
+      "name": "trend-empty-filter",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "bgl",
+        "bucket": "day",
+        "from": "2005-06-03T00:00:00Z",
+        "to": "2005-06-15T00:00:00Z",
+        "text": "absenttokenlog31",
+        "split_by": "level"
+      },
+      "result_digest": "371976903cda1dcde1b96fe7d029cd2fd4e829d89d1351d4f4c3b7c3abb02052",
+      "normalized_facts_sha256": "3837e886f8cb610871624fffd124c3dac82610679bbd795b3cbe267871bc6d4c"
+    },
+    {
+      "name": "trend-single-bucket",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "openstack",
+        "bucket": "hour",
+        "split_by": "component"
+      },
+      "result_digest": "367b8004ff1d1552b082ee198a7aafd302ff6e48d15f41b876e312497be82f8e",
+      "normalized_facts_sha256": "2b8674add98527f40832f2bfa2fbc2a2a752f995f251bd9620e19bd748e0b040"
+    },
+    {
+      "name": "trend-outside",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "openstack",
+        "bucket": "hour",
+        "from": "2018-01-01T00:00:00Z",
+        "to": "2018-01-02T00:00:00Z"
+      },
+      "result_digest": "324312af25fbc40d0d2a23b63b20775776ce91d9124252972d47ebee6d8d3dc7",
+      "normalized_facts_sha256": "52ac0033ccca693daa00c376882d26c8f1a712eb17416197ea535dcf161eb582"
+    },
+    {
+      "name": "describe",
+      "tool": "describe_corpus",
+      "input": {},
+      "result_digest": "3e21e414f15576fe56e2719b5c3101edc671c81f06e75dc57ed241e46131cbcd",
+      "normalized_facts_sha256": "4770d90d52f853a23212fc369fda0a9b6cc6a08521984a9e61784174a04458b5"
+    }
+  ],
+  "loads": [
+    {
+      "image": "local/serenedb:26.10.1-arm64",
+      "data_version": "dv_379bf006bbb73434",
+      "describe_result_digest": "3e21e414f15576fe56e2719b5c3101edc671c81f06e75dc57ed241e46131cbcd"
+    },
+    {
+      "image": "serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9",
+      "data_version": "dv_3bafbdde56239465",
+      "describe_result_digest": "8e878dc7c1d27761687cb16a1543a5360f424107c99d23d6286b2cfffcbadc78"
+    }
+  ],
+  "load_reference_note": "data_version hashes image identity. Historical describe digests derive from the unchanged original captured data with only versions.data_version set to the exact approved load manifest. The complete original describe_result is retained; current comparisons also require the canonical CONTRACT_VERSION. All analytical fields and every normalized fact remain unchanged.",
+  "describe_result": {
+    "datasets": [
+      {
+        "dataset": "bgl",
+        "events": 2000,
+        "lines_read": 2000,
+        "rejected": 0,
+        "first_event": "2005-06-03T22:42:50.675872Z",
+        "last_event": "2006-01-03T15:13:09.127918Z",
+        "error_events": 395,
+        "patterns": 123,
+        "single_event_patterns": 45,
+        "time_basis": "Unix seconds (UTC) + microseconds of the text timestamp",
+        "label_source": "alert category in the first column (dataset label)",
+        "fields": [
+          {
+            "name": "event_id",
+            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+          },
+          {
+            "name": "ts",
+            "meaning": "Event time, UTC with microseconds."
+          },
+          {
+            "name": "level",
+            "meaning": "Severity as logged."
+          },
+          {
+            "name": "component",
+            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+          },
+          {
+            "name": "source_type",
+            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+          },
+          {
+            "name": "message",
+            "meaning": "Original log message, untrusted text."
+          },
+          {
+            "name": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04)."
+          },
+          {
+            "name": "is_error",
+            "meaning": "Error level after R-02."
+          },
+          {
+            "name": "node",
+            "meaning": "Node ID, e.g. R02-M1-N0-C:J12-U11."
+          },
+          {
+            "name": "midplane",
+            "meaning": "Midplane derived from the node, e.g. R02-M1."
+          },
+          {
+            "name": "rack",
+            "meaning": "Rack derived from the node, e.g. R02."
+          },
+          {
+            "name": "alert_label",
+            "meaning": "Dataset alert category; null for non-alert lines."
+          }
+        ],
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 1597
+          },
+          {
+            "level": "FATAL",
+            "events": 347
+          },
+          {
+            "level": "ERROR",
+            "events": 41
+          },
+          {
+            "level": "WARNING",
+            "events": 8
+          },
+          {
+            "level": "SEVERE",
+            "events": 7
+          }
+        ],
+        "components": [
+          {
+            "component": "KERNEL",
+            "team": "Compute Platform",
+            "events": 1820
+          },
+          {
+            "component": "APP",
+            "team": "Workload Runtime",
+            "events": 107
+          },
+          {
+            "component": "DISCOVERY",
+            "team": "Hardware Operations",
+            "events": 35
+          },
+          {
+            "component": "MMCS",
+            "team": "Control Plane",
+            "events": 35
+          },
+          {
+            "component": "HARDWARE",
+            "team": "Hardware Operations",
+            "events": 3
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 1857
+          },
+          {
+            "label": "KERNDTLB",
+            "events": 60
+          },
+          {
+            "label": "KERNSTOR",
+            "events": 30
+          },
+          {
+            "label": "APPSEV",
+            "events": 17
+          },
+          {
+            "label": "KERNMNTF",
+            "events": 11
+          },
+          {
+            "label": "KERNTERM",
+            "events": 7
+          },
+          {
+            "label": "KERNREC",
+            "events": 5
+          },
+          {
+            "label": "APPRES",
+            "events": 4
+          },
+          {
+            "label": "APPREAD",
+            "events": 3
+          },
+          {
+            "label": "APPTO",
+            "events": 2
+          },
+          {
+            "label": "KERNRTSP",
+            "events": 2
+          },
+          {
+            "label": "APPCHILD",
+            "events": 1
+          },
+          {
+            "label": "APPOUT",
+            "events": 1
+          }
+        ],
+        "api_accesses": null,
+        "api_accesses_without_request_id": null,
+        "requests": null
+      },
+      {
+        "dataset": "openstack",
+        "events": 2000,
+        "lines_read": 2000,
+        "rejected": 0,
+        "first_event": "2017-05-16T00:00:00.008000Z",
+        "last_event": "2017-05-16T00:14:47.687000Z",
+        "error_events": 0,
+        "patterns": 68,
+        "single_event_patterns": 7,
+        "time_basis": "timestamp without zone, assumed UTC",
+        "label_source": "none: this source has no anomaly labels",
+        "fields": [
+          {
+            "name": "event_id",
+            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+          },
+          {
+            "name": "ts",
+            "meaning": "Event time, UTC with microseconds."
+          },
+          {
+            "name": "level",
+            "meaning": "Severity as logged."
+          },
+          {
+            "name": "component",
+            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+          },
+          {
+            "name": "source_type",
+            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+          },
+          {
+            "name": "message",
+            "meaning": "Original log message, untrusted text."
+          },
+          {
+            "name": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04)."
+          },
+          {
+            "name": "is_error",
+            "meaning": "Error level after R-02."
+          },
+          {
+            "name": "request_id",
+            "meaning": "Request ID (req-…) of the request block."
+          },
+          {
+            "name": "instance_id",
+            "meaning": "Instance UUID named in the line."
+          },
+          {
+            "name": "http_method",
+            "meaning": "HTTP method of an API access line."
+          },
+          {
+            "name": "endpoint",
+            "meaning": "API path with IDs masked (R-04)."
+          },
+          {
+            "name": "http_status",
+            "meaning": "HTTP status of an API access line."
+          },
+          {
+            "name": "latency_ms",
+            "meaning": "Response time of an API access in milliseconds."
+          },
+          {
+            "name": "is_anomalous",
+            "meaning": "Dataset anomaly label of the instance, where assignable."
+          }
+        ],
+        "levels": [
+          {
+            "level": "INFO",
+            "events": 1969
+          },
+          {
+            "level": "WARNING",
+            "events": 31
+          }
+        ],
+        "components": [
+          {
+            "component": "nova-api",
+            "team": "API Gateway",
+            "events": 1060
+          },
+          {
+            "component": "nova-compute",
+            "team": "Compute Platform",
+            "events": 933
+          },
+          {
+            "component": "nova-scheduler",
+            "team": "Control Plane",
+            "events": 7
+          }
+        ],
+        "labels": [
+          {
+            "label": null,
+            "events": 2000
+          }
+        ],
+        "api_accesses": 1017,
+        "api_accesses_without_request_id": 89,
+        "requests": 928
+      }
+    ],
+    "limits": [
+      "No shared time axis: BGL (2005–2006) and OpenStack (2017) do not overlap. Trends and period comparisons are per dataset; numbers across both are totals over each full span and are labelled as such.",
+      "Logs only: there is no business, customer, cost or downtime data. Such impact is unknown and must be named as unknown.",
+      "Labels belong to the dataset: BGL alert categories and OpenStack anomaly labels are not findings of this system; cite them as dataset labels.",
+      "Matches are log entries: counted events, patterns and episodes are neither incidents nor outages."
+    ],
+    "ownership": {
+      "fictional": true,
+      "note": "fictional (Serene Platform)",
+      "teams": [
+        {
+          "team": "API Gateway",
+          "components": [
+            {
+              "dataset": "openstack",
+              "component": "nova-api"
+            }
+          ]
+        },
+        {
+          "team": "Compute Platform",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "KERNEL"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-compute"
+            }
+          ]
+        },
+        {
+          "team": "Control Plane",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "BGLMASTER"
+            },
+            {
+              "dataset": "bgl",
+              "component": "CMCS"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MMCS"
+            },
+            {
+              "dataset": "openstack",
+              "component": "nova-scheduler"
+            }
+          ]
+        },
+        {
+          "team": "Hardware Operations",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "DISCOVERY"
+            },
+            {
+              "dataset": "bgl",
+              "component": "HARDWARE"
+            },
+            {
+              "dataset": "bgl",
+              "component": "LINKCARD"
+            },
+            {
+              "dataset": "bgl",
+              "component": "MONITOR"
+            }
+          ]
+        },
+        {
+          "team": "Workload Runtime",
+          "components": [
+            {
+              "dataset": "bgl",
+              "component": "APP"
+            }
+          ]
+        }
+      ],
+      "unowned": []
+    },
+    "versions": {
+      "data_version": "dv_379bf006bbb73434",
+      "source": "samples",
+      "loader_version": "1.0.0",
+      "parser_version": "1.0.0",
+      "pattern_rules_version": "1.0.0",
+      "ownership_version": "1.0.0",
+      "rules_version": "concept-3.5",
+      "contract_version": "2.9.0"
+    },
+    "answer_guidance": null,
+    "guidance_version": null
+  }
+}
