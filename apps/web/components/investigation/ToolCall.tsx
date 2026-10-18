@@ -2,9 +2,6 @@ import { memo, useMemo } from "react"
 import { z } from "zod"
 import { Check, CircleDashed, LoaderCircle, XCircle } from "lucide-react"
 import { getToolName, type DynamicToolUIPart, type ToolUIPart } from "ai"
-import { toolResultSchema } from "@workspace/domain/tool"
-import { toolErrorSchema } from "@workspace/domain/errors"
-import { checkClaimsOutputSchema } from "@workspace/domain/tools/check-claims"
 import { Badge } from "@workspace/ui/components/badge"
 import {
   CodeBlock,
@@ -23,13 +20,14 @@ import {
 import { ReceiptLink } from "../evidence/ReceiptLink"
 import { receiptFeatures } from "../evidence/features"
 import { ResultView } from "../results/ResultView"
-import { ToolErrorNotice } from "../workspace/ToolErrorNotice"
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "@workspace/ui/components/alert"
+import { outcomeSchema } from "./mapper"
+import { CheckSummary } from "./Verification"
 import type { Interruption } from "./types"
-
-const outcomeSchema = z.discriminatedUnion("ok", [
-  z.object({ ok: z.literal(true), result: toolResultSchema(z.unknown()) }),
-  z.object({ ok: z.literal(false), error: toolErrorSchema }),
-])
 
 function toolState(
   failed: boolean,
@@ -61,6 +59,10 @@ export const ToolCall = memo(function ToolCall({
   )
   const outcome = output?.success ? output.data : null
   const result = outcome?.ok ? outcome.result : null
+  const features = useMemo(
+    () => (result ? receiptFeatures(result.receipt.sql) : []),
+    [result]
+  )
   const failed =
     part.state === "output-error" ||
     part.state === "output-denied" ||
@@ -101,15 +103,11 @@ export const ToolCall = memo(function ToolCall({
         })
         .join(" · ")
     : ""
-  const verification =
-    name === "check_claims" && result
-      ? checkClaimsOutputSchema.safeParse(result.data)
-      : null
   return (
     <Trace>
       <TraceCollapsible>
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-          <TraceCollapsibleTrigger aria-label={`${label} · ${state.label}`}>
+          <TraceCollapsibleTrigger>
             <TraceLine
               status={failed ? "error" : running ? "running" : undefined}
             >
@@ -118,8 +116,9 @@ export const ToolCall = memo(function ToolCall({
                   className={running ? "motion-safe:animate-spin" : undefined}
                 />
               </TraceIcon>
-              <TraceTitle className="capitalize">{label}</TraceTitle>
+              <TraceTitle className="font-mono">{name}</TraceTitle>
               <TraceDescription className="text-xs text-muted-foreground">
+                {label !== name.replaceAll("_", " ") ? `${label} · ` : ""}
                 {state.label}
               </TraceDescription>
             </TraceLine>
@@ -130,6 +129,18 @@ export const ToolCall = memo(function ToolCall({
                 SereneDB {result.receipt.duration_ms} ms
               </span>
               <ReceiptLink id={result.receipt.receipt_id} />
+              {features.slice(0, 3).map((feature) => (
+                <Badge
+                  key={feature.label}
+                  variant="secondary"
+                  title={feature.description}
+                >
+                  {feature.label}
+                </Badge>
+              ))}
+              {result.receipt.truncated && (
+                <Badge variant="outline">Truncated</Badge>
+              )}
             </>
           )}
         </div>
@@ -141,10 +152,10 @@ export const ToolCall = memo(function ToolCall({
             {summary}
           </p>
         )}
-        {verification?.success && !interruption && (
-          <p className="mt-2 pl-6 text-xs text-muted-foreground">
-            {verification.data.summary.text}
-          </p>
+        {name === "check_claims" && result && !interruption && (
+          <div className="mt-2 pl-6 text-muted-foreground">
+            <CheckSummary result={result} />
+          </div>
         )}
         <TraceCollapsibleContent className="mt-3 ml-2 max-h-96 min-w-0 space-y-4 overflow-auto border-l pl-5">
           <section aria-label="Tool input">
@@ -164,7 +175,15 @@ export const ToolCall = memo(function ToolCall({
               </CodeBlockContent>
             </CodeBlock>
           </section>
-          {outcome?.ok === false && <ToolErrorNotice error={outcome.error} />}
+          {outcome?.ok === false && (
+            <Alert>
+              <XCircle />
+              <AlertTitle>
+                {outcome.error.code} · {outcome.error.message}
+              </AlertTitle>
+              <AlertDescription>{outcome.error.hint}</AlertDescription>
+            </Alert>
+          )}
           {failed && outcome?.ok !== false && (
             <p className="text-sm text-muted-foreground">
               The tool could not complete. Narrow the scope and try again.
@@ -173,7 +192,7 @@ export const ToolCall = memo(function ToolCall({
           {result && (
             <>
               <div className="flex flex-wrap gap-2">
-                {receiptFeatures(result.receipt.sql).map((feature) => (
+                {features.map((feature) => (
                   <Badge
                     key={feature.label}
                     variant="secondary"
@@ -182,9 +201,6 @@ export const ToolCall = memo(function ToolCall({
                     {feature.label}
                   </Badge>
                 ))}
-                {result.receipt.truncated && (
-                  <Badge variant="outline">Truncated</Badge>
-                )}
               </div>
               {result.notes.map((note) => (
                 <p

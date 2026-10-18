@@ -253,7 +253,7 @@ describe("prepared chat", () => {
       expect(screen.getByText(/Interrupted · partial response/)).toBeTruthy()
     )
     expect(
-      screen.getByRole("button", { name: "search logs · Interrupted" })
+      screen.getByRole("button", { name: /search_logs.*Interrupted/ })
     ).toBeTruthy()
     expect(screen.getByRole("textbox")).toHaveProperty(
       "value",
@@ -300,10 +300,10 @@ describe("prepared chat", () => {
     expect(container.textContent).not.toContain("private model thoughts")
     expect(container.textContent).not.toContain("raw database stack")
     expect(
-      screen.getByRole("button", { name: "search logs · Running" })
+      screen.getByRole("button", { name: /search_logs.*Running/ })
     ).toBeTruthy()
     expect(
-      screen.getByRole("button", { name: "count events · Failed" })
+      screen.getByRole("button", { name: /count_events.*Failed/ })
     ).toBeTruthy()
   })
   it("renders a completed receipt, truncation, input and independent claim checks", () => {
@@ -384,9 +384,11 @@ describe("prepared chat", () => {
     expect(screen.getAllByText(check.summary.text)).toHaveLength(2)
     expect(screen.getByText("bgl")).toBeTruthy()
     fireEvent.click(
-      screen.getByRole("button", { name: "Investigation order · Complete" })
+      screen.getByRole("button", {
+        name: /recurring_patterns.*Investigation order.*Complete/,
+      })
     )
-    expect(screen.getByText("Truncated")).toBeTruthy()
+    expect(screen.getAllByText("Truncated")).toHaveLength(3)
     expect(screen.getByText("Synthetic test caveat")).toBeTruthy()
     expect(screen.getByText("Synthetic component-test evidence")).toBeTruthy()
     expect(screen.getByText("7", { exact: true })).toBeTruthy()
@@ -398,5 +400,394 @@ describe("prepared chat", () => {
         .getAttribute("href")
     ).toBe("/investigations/new?receipt=r_deadbeef&fact=r_deadbeef.f1")
     expect(screen.getByText(/"rank": "investigation_order"/)).toBeTruthy()
+  })
+})
+
+// Recorded wire fixture using the installed SDK's public chunk protocol.
+// Values are synthetic and exercise rendering; they are not corpus evidence.
+const fixtureResult: ToolResult<unknown> = {
+  data: { note: "Synthetic recorded evidence" },
+  facts: [
+    {
+      id: "r_deadbeef.f1",
+      path: "/result/events",
+      value: 7,
+      metric: "events",
+      unit: "log_events",
+      group: {},
+    },
+  ],
+  notes: [],
+  receipt: {
+    receipt_id: "r_deadbeef",
+    input: { dataset: "bgl" },
+    signature: "a".repeat(64),
+    data_version: "test-only",
+    sql: [],
+    params: [],
+    scope: { windows: [], filters: {} },
+    population: null,
+    rows_returned: 1,
+    truncated: false,
+    duration_ms: 12,
+    result_digest: "b".repeat(64),
+  },
+}
+function recordedCheck(id: string, verified: boolean): ToolResult<unknown> {
+  return {
+    ...fixtureResult,
+    receipt: { ...fixtureResult.receipt, receipt_id: id },
+    facts: ["checked", "verified", "mismatch", "unresolved"].map(
+      (field, index) => ({
+        id: `${id}.f${index + 1}`,
+        path: `/result/summary/${field}`,
+        value:
+          field === "checked" ||
+          (field === "verified" && verified) ||
+          (field === "mismatch" && !verified)
+            ? 1
+            : 0,
+        metric: `claims_${field}`,
+        unit: "claims",
+        group: {},
+      })
+    ),
+    data: {
+      claims: [
+        {
+          claim: {
+            fact: "r_deadbeef.f1",
+            value: verified ? 7 : 9,
+            metric: "events",
+            group: {},
+          },
+          status: verified ? "verified" : "mismatch",
+          mismatch_on: verified ? [] : ["value"],
+          reason: verified ? null : "The submitted value differs",
+          fact: null,
+          receipt: null,
+        },
+      ],
+      summary: {
+        checked: 1,
+        verified: verified ? 1 : 0,
+        mismatch: verified ? 0 : 1,
+        unresolved: 0,
+        text: `1 claims checked · ${verified ? 0 : 1} mismatch · 0 unresolved`,
+      },
+    },
+  }
+}
+function recordedTool(
+  id: string,
+  name: string,
+  result: ToolResult<unknown>
+): UIMessageChunk[] {
+  return [
+    {
+      type: "tool-input-available",
+      toolCallId: id,
+      toolName: name,
+      input: {},
+      dynamic: true,
+    },
+    {
+      type: "tool-output-available",
+      toolCallId: id,
+      output: { ok: true, result },
+    },
+  ]
+}
+const recordedDraft =
+  "## Answer\n9 events [r_deadbeef.f1]. Another 44 without evidence."
+const recordedFinal =
+  "## Scope\nBGL.\n## Answer\n7 events [r_deadbeef.f1].\n## Evidence\nSee the receipt.\n## Timeline\nUnknown.\n## Narrowing\nUnknown.\n## Hypotheses\nOpen.\n## Next check\nInspect the original message.\n## Unknown\nCause unknown.\n## Verification\nSee the claim check."
+const recordedRun = {
+  run_id: "run_deadbeef",
+  status: "completed",
+  duration_ms: 30,
+  usage: { input: 12, output: 15, cache_read: null, cache_write: null },
+}
+const revisionChunks: UIMessageChunk[] = [
+  { type: "start", messageId: "recorded-revision" },
+  { type: "data-phase", data: { kind: "preflight", draft: "draft" } },
+  ...recordedTool("corpus", "describe_corpus", fixtureResult),
+  { type: "data-phase", data: { kind: "investigate", draft: "draft" } },
+  ...recordedTool(
+    "draft-check",
+    "check_claims",
+    recordedCheck("r_aaaaaaaa", false)
+  ),
+  { type: "data-phase", data: { kind: "answer", draft: "draft" } },
+  { type: "text-start", id: "draft-text" },
+  { type: "text-delta", id: "draft-text", delta: recordedDraft },
+  { type: "text-end", id: "draft-text" },
+  {
+    type: "data-gate",
+    data: {
+      version: "draft",
+      findings: [
+        {
+          kind: "mismatch",
+          fact: "r_deadbeef.f1",
+          mismatch_on: ["value"],
+          check_receipt_id: "r_aaaaaaaa",
+          excerpt: "9 events",
+        },
+        {
+          kind: "uncited",
+          value: "44",
+          start: 0,
+          end: 2,
+          excerpt: "Another 44 without evidence",
+        },
+      ],
+    },
+  },
+  { type: "data-phase", data: { kind: "revise", draft: "final" } },
+  ...recordedTool(
+    "final-check",
+    "check_claims",
+    recordedCheck("r_bbbbbbbb", true)
+  ),
+  { type: "text-start", id: "final-text" },
+  { type: "text-delta", id: "final-text", delta: recordedFinal },
+  { type: "text-end", id: "final-text" },
+  { type: "data-gate", data: { version: "final", findings: [] } },
+  { type: "data-run", data: recordedRun },
+  { type: "finish", finishReason: "stop" },
+]
+
+describe("recorded investigation protocol", () => {
+  it("names the missing evidence in a follow-up phase and accepts legacy phases", () => {
+    render(
+      createElement(Conversation, {
+        status: "ready",
+        messages: [
+          {
+            id: "coverage-follow-up",
+            role: "assistant",
+            parts: [
+              {
+                type: "data-phase",
+                data: { kind: "investigate", draft: "draft" },
+              },
+              {
+                type: "data-phase",
+                data: {
+                  kind: "investigate",
+                  draft: "draft",
+                  requirement:
+                    "event_trend; 1 claim(s) mismatch their cited fact",
+                },
+              },
+              {
+                type: "data-phase",
+                data: { kind: "investigate", draft: "draft" },
+              },
+            ],
+          },
+        ],
+      })
+    )
+    expect(
+      screen.getByText(
+        "Required evidence requested: event_trend; 1 claim(s) mismatch their cited fact"
+      )
+    ).toBeTruthy()
+    expect(screen.getByText("Required evidence requested")).toBeTruthy()
+  })
+
+  it("splits the revision from its draft, marks citations and keeps each check independent", async () => {
+    const wire = streamTransport()
+    render(
+      createElement(InvestigationView, {
+        brief,
+        available: true,
+        chatTransport: wire.transport,
+      })
+    )
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "Investigate the recorded fixture" },
+    })
+    expect(screen.getByRole("textbox").getAttribute("maxlength")).toBe("4000")
+    fireEvent.click(screen.getByRole("button", { name: "Send question" }))
+    await waitFor(() => expect(wire.sendMessages).toHaveBeenCalledOnce())
+    await act(async () => {
+      for (const chunk of revisionChunks) wire.push(chunk)
+      wire.close()
+    })
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Export run" })).toBeTruthy()
+    )
+    expect(screen.queryByText(/Another 44/)).toBeNull()
+    expect(
+      screen
+        .getByRole("link", {
+          name: "Fact r_deadbeef.f1, verified, open evidence",
+        })
+        .getAttribute("href")
+    ).toContain("receipt=r_deadbeef&fact=r_deadbeef.f1")
+    expect(
+      screen.getByText(/Markings: 0 unchecked fact IDs · 0 uncited numbers/)
+    ).toBeTruthy()
+    expect(
+      screen.getAllByText("1 claims checked · 1 mismatch · 0 unresolved")
+    ).toHaveLength(2)
+    expect(
+      screen.getAllByText("1 claims checked · 0 mismatch · 0 unresolved")
+    ).toHaveLength(2)
+    expect(
+      screen.getByText(
+        /Revised after check: Mismatch on r_deadbeef.f1 \(value\)/
+      )
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: /Draft · 2 findings/ }))
+    expect(
+      await screen.findByRole("button", {
+        name: "Uncited number 44: No fact ID next to this number",
+      })
+    ).toBeTruthy()
+    expect(
+      screen.getByRole("link", {
+        name: "Fact r_deadbeef.f1, mismatch, open evidence",
+      })
+    ).toBeTruthy()
+    expect(screen.getByRole("textbox")).toHaveProperty("value", "")
+  })
+
+  it("preserves a declined question and suppresses verification for a refusal", async () => {
+    const wire = streamTransport()
+    render(
+      createElement(InvestigationView, {
+        brief,
+        available: true,
+        chatTransport: wire.transport,
+      })
+    )
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "Keep this declined question" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Send question" }))
+    await waitFor(() => expect(wire.sendMessages).toHaveBeenCalledOnce())
+    await act(async () => {
+      wire.push({ type: "start", messageId: "refused" })
+      wire.push({
+        type: "data-run",
+        data: { ...recordedRun, status: "refusal" },
+      })
+      wire.push({ type: "finish", finishReason: "stop" })
+      wire.close()
+    })
+    await waitFor(() =>
+      expect(screen.getByText(/The model declined this request/)).toBeTruthy()
+    )
+    expect(screen.getByRole("textbox")).toHaveProperty(
+      "value",
+      "Keep this declined question"
+    )
+    expect(
+      screen.queryByRole("region", { name: "Claim verification" })
+    ).toBeNull()
+  })
+
+  it("renders the canonical adapter error and its correction hint", () => {
+    render(
+      createElement(Conversation, {
+        status: "ready",
+        messages: [
+          {
+            id: "adapter-failed",
+            role: "assistant",
+            parts: [
+              {
+                type: "dynamic-tool",
+                toolName: "count_events",
+                toolCallId: "timeout",
+                state: "output-available",
+                input: {},
+                output: {
+                  ok: false,
+                  error: {
+                    error: {
+                      kind: "query_timeout",
+                      message: "The query timed out.",
+                      hint: "Choose a shorter time window.",
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      })
+    )
+    fireEvent.click(
+      screen.getByRole("button", { name: /count_events.*Failed/ })
+    )
+    expect(
+      screen.getByText("query_timeout · The query timed out.")
+    ).toBeTruthy()
+    expect(screen.getByText("Choose a shorter time window.")).toBeTruthy()
+  })
+
+  it.each(["timeout", "error", "stopped"])(
+    "shows %s as an unverified partial answer",
+    (status) => {
+      render(
+        createElement(Conversation, {
+          status: "ready",
+          messages: [
+            {
+              id: "partial-run",
+              role: "assistant",
+              parts: [
+                { type: "text", text: "Partial response" },
+                { type: "data-run", data: { ...recordedRun, status } },
+              ],
+            },
+          ],
+        })
+      )
+      expect(screen.getByText(/Partial answer – not verified/)).toBeTruthy()
+      expect(
+        screen.queryByRole("region", { name: "Claim verification" })
+      ).toBeNull()
+    }
+  )
+})
+
+describe("Markdown boundaries", () => {
+  it("preserves external URL targets and code while marking visible answer numbers", () => {
+    render(
+      createElement(Conversation, {
+        status: "ready",
+        messages: [
+          {
+            id: "markdown-edges",
+            role: "assistant",
+            parts: [
+              {
+                type: "text",
+                text: "Read [reference](https://example.com/42). Keep `42` verbatim. Another 17 without evidence.",
+              },
+            ],
+          },
+        ],
+      })
+    )
+    expect(
+      screen.getByRole("link", { name: "reference" }).getAttribute("href")
+    ).toBe("https://example.com/42")
+    expect(
+      screen.getByRole("button", {
+        name: "Uncited number 17: No fact ID next to this number",
+      })
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole("button", {
+        name: "Uncited number 42: No fact ID next to this number",
+      })
+    ).toBeNull()
   })
 })

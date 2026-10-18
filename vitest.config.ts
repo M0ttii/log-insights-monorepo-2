@@ -37,6 +37,7 @@ export default defineConfig({
             "packages/*/src/**/*.test.{ts,tsx}",
             "apps/mcp/src/**/*.test.ts",
             "apps/web/components/**/*.test.ts",
+            "apps/web/server/**/*.test.ts",
           ],
         },
       },
