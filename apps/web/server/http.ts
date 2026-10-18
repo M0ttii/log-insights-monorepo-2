@@ -10,6 +10,7 @@ export function errorResponse(error: ToolError) {
     db_unavailable: 503,
     receipt_unavailable: 503,
     limit_exceeded: 413,
+    source_changed: 409,
   }[error.code]
   return NextResponse.json({ ok: false, error }, { status })
 }

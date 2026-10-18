@@ -5,12 +5,24 @@ import {
   datasetList,
   datasetsWithColumn,
   DATASETS,
+  EXTERNAL_DATASETS,
+  REMOTE_SCAN_MAX_SECONDS,
   SPECIFIC_FILTER_COLUMNS,
   type Dataset,
   type SpecificFilter,
 } from "./datasets.ts"
-import { invalidInput, type InputIssue, type ToolError } from "./errors.ts"
-import { instantSchema, MAX_FRACTION_DIGITS, parseInstant } from "./time.ts"
+import {
+  invalidInput,
+  limitExceeded,
+  type InputIssue,
+  type ToolError,
+} from "./errors.ts"
+import {
+  formatInstant,
+  instantSchema,
+  MAX_FRACTION_DIGITS,
+  parseInstant,
+} from "./time.ts"
 
 /**
  * The shared filter (technical.md § 8.1). Tools pick the fields they accept
@@ -23,7 +35,7 @@ import { instantSchema, MAX_FRACTION_DIGITS, parseInstant } from "./time.ts"
 export const datasetSchema = z
   .enum(DATASET_IDS)
   .describe(
-    `Dataset: ${datasetList()}. No two datasets share a time axis; describe_corpus lists the loaded ones.`
+    `Dataset: ${datasetList()}. No two datasets share a time axis; describe_corpus lists the loaded ones. ${EXTERNAL_DATASETS.join(", ")} is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most ${REMOTE_SCAN_MAX_SECONDS} s apart.`
   )
 
 export type { Dataset }
@@ -61,7 +73,7 @@ const levelSchema = z
   .string()
   .regex(/^[A-Za-z][A-Za-z_]{0,15}$/)
   .describe(
-    "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache)."
+    "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel)."
   )
 
 const httpStatusSchema = z.number().int().min(100).max(599)
@@ -84,7 +96,7 @@ const filterShape = {
     .max(20)
     .optional()
     .describe(
-      "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute."
+      "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart."
     ),
   teams: z
     .array(name(64))
@@ -168,6 +180,13 @@ const filterShape = {
     .optional()
     .describe(
       "ZooKeeper only: exact thread name as logged, e.g. SendWorker:188978561024."
+    ),
+  trace_id: z
+    .string()
+    .regex(/^[0-9a-f]{1,64}$/)
+    .optional()
+    .describe(
+      "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace."
     ),
   pattern_id: z
     .string()
@@ -291,6 +310,12 @@ export function validateFilter(filter: Partial<Filter>): ToolError | null {
       })
   }
   if (
+    filter.pattern_id !== undefined &&
+    dataset !== undefined &&
+    !DATASETS[dataset].patterns
+  )
+    issues.push(patternsUnsupported(dataset, "pattern_id"))
+  if (
     filter.only_errors === true &&
     dataset !== undefined &&
     DATASETS[dataset].errorDefinition === null
@@ -302,6 +327,60 @@ export function validateFilter(filter: Partial<Filter>): ToolError | null {
   }
 
   return issues.length === 0 ? null : invalidInput(issues)
+}
+
+/**
+ * Patterns (R-04) do not exist for a dataset whose messages are not
+ * normalised at load time (remote Parquet, LOG-35): the issue for any
+ * pattern-based input, never a zero.
+ */
+export function patternsUnsupported(
+  dataset: Dataset,
+  path: string
+): InputIssue {
+  return {
+    path,
+    message: `Dataset ${dataset} has no message patterns (R-04): its messages stay in remote files and are not normalised at load time, so pattern_id, the pattern dimension, recurring_patterns and get_log_context mode aggregate are unavailable. Use search_logs for message text, or count_events / event_trend by component or level.`,
+  }
+}
+
+/**
+ * Bounded direct scan of a remote dataset (LOG-35, D3.2): counts and trends
+ * without full text read the remote files themselves, so the window must be
+ * given and at most REMOTE_SCAN_MAX_SECONDS long. Returns null when the
+ * filter is not such a scan or satisfies the limit.
+ */
+export function remoteScanError(filter: Partial<Filter>): ToolError | null {
+  const dataset = filter.dataset
+  if (dataset === undefined || DATASETS[dataset].storage !== "remote_parquet")
+    return null
+  if (filter.text !== undefined) return null
+  const missing = (["from", "to"] as const).filter(
+    (field) => filter[field] === undefined
+  )
+  if (missing.length > 0)
+    return invalidInput(
+      missing.map((path) => ({
+        path,
+        message: `Dataset ${dataset} is read in place from remote files: without text, counts and trends scan the files directly and need from and to (at most ${REMOTE_SCAN_MAX_SECONDS} s apart).`,
+      })),
+      `Pass from and to at most ${REMOTE_SCAN_MAX_SECONDS} s apart inside the data span (describe_corpus), e.g. one minute; or add text to count inside the indexed reference window.`
+    )
+  const from = filter.from === undefined ? null : parseInstant(filter.from)
+  const to = filter.to === undefined ? null : parseInstant(filter.to)
+  if (from === null || to === null || from >= to) return null
+  const micros = to - from
+  const limit = BigInt(REMOTE_SCAN_MAX_SECONDS) * 1_000_000n
+  if (micros <= limit) return null
+  const seconds = Number((micros + 999_999n) / 1_000_000n)
+  return {
+    ...limitExceeded(
+      `The direct-scan window of ${dataset} in seconds`,
+      REMOTE_SCAN_MAX_SECONDS,
+      seconds
+    ),
+    hint: `Split [from, to) into windows of at most ${REMOTE_SCAN_MAX_SECONDS} s (e.g. from ${filter.from} to ${formatInstant(from + limit)}) and call once per window; each call reads at most two remote files. Full text (text) works only inside the indexed reference window that describe_corpus lists.`,
+  }
 }
 
 function checkInstant(

@@ -381,7 +381,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                               "type": "string",
                             },
                             "components": {
-                              "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                              "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
                               "items": {
                                 "maxLength": 64,
                                 "minLength": 1,
@@ -440,7 +440,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                             "levels": {
                               "description": "Only these levels (1–10).",
                               "items": {
-                                "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+                                "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
                                 "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
                                 "type": "string",
                               },
@@ -507,6 +507,11 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                               "minLength": 1,
                               "type": "string",
                             },
+                            "trace_id": {
+                              "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+                              "pattern": "^[0-9a-f]{1,64}$",
+                              "type": "string",
+                            },
                           },
                           "type": "object",
                         },
@@ -516,7 +521,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                             "additionalProperties": false,
                             "properties": {
                               "dataset": {
-                                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                                 "enum": [
                                   "bgl",
                                   "openstack",
@@ -525,6 +530,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                                   "apache",
                                   "linux",
                                   "zookeeper",
+                                  "otel",
                                 ],
                                 "type": "string",
                               },
@@ -556,7 +562,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                             ],
                             "type": "object",
                           },
-                          "maxItems": 7,
+                          "maxItems": 8,
                           "type": "array",
                         },
                       },
@@ -828,7 +834,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                               "type": "string",
                             },
                             "components": {
-                              "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                              "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
                               "items": {
                                 "maxLength": 64,
                                 "minLength": 1,
@@ -887,7 +893,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                             "levels": {
                               "description": "Only these levels (1–10).",
                               "items": {
-                                "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+                                "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
                                 "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
                                 "type": "string",
                               },
@@ -954,6 +960,11 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                               "minLength": 1,
                               "type": "string",
                             },
+                            "trace_id": {
+                              "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+                              "pattern": "^[0-9a-f]{1,64}$",
+                              "type": "string",
+                            },
                           },
                           "type": "object",
                         },
@@ -963,7 +974,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                             "additionalProperties": false,
                             "properties": {
                               "dataset": {
-                                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                                 "enum": [
                                   "bgl",
                                   "openstack",
@@ -972,6 +983,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                                   "apache",
                                   "linux",
                                   "zookeeper",
+                                  "otel",
                                 ],
                                 "type": "string",
                               },
@@ -1003,7 +1015,7 @@ exports[`JSON Schema export > checkClaimsOutput converts losslessly for input an
                             ],
                             "type": "object",
                           },
-                          "maxItems": 7,
+                          "maxItems": 8,
                           "type": "array",
                         },
                       },
@@ -1161,7 +1173,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "description": "Period comparison (R-06): counts the same filters in a reference period B and reports C (the window), B, C − B, the change in percent and a classification per group. Needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ 25.",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -1172,7 +1184,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -1181,6 +1193,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -1191,7 +1204,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "type": "string",
       },
       "group_by": {
-        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.",
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS); for otel only dataset, team, component (service) and level. Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.",
         "items": {
           "description": "Grouping dimension.",
           "enum": [
@@ -1231,7 +1244,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -1371,7 +1384,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "description": "Period comparison (R-06): counts the same filters in a reference period B and reports C (the window), B, C − B, the change in percent and a classification per group. Needs exactly one dataset, from and to, exactly one group_by dimension and top_n ≤ 25.",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -1382,7 +1395,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -1391,6 +1404,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -1401,7 +1415,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
         "type": "string",
       },
       "group_by": {
-        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.",
+        "description": "1–2 distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS); for otel only dataset, team, component (service) and level. Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.",
         "items": {
           "description": "Grouping dimension.",
           "enum": [
@@ -1441,7 +1455,7 @@ exports[`JSON Schema export > countEventsInput converts losslessly for input and
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -1741,7 +1755,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
             },
             "dataset": {
-              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
               "enum": [
                 "bgl",
                 "openstack",
@@ -1750,6 +1764,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "apache",
                 "linux",
                 "zookeeper",
+                "otel",
               ],
               "type": "string",
             },
@@ -2192,7 +2207,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
               ],
             },
             "dataset": {
-              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
               "enum": [
                 "bgl",
                 "openstack",
@@ -2201,6 +2216,7 @@ exports[`JSON Schema export > countEventsOutput converts losslessly for input an
                 "apache",
                 "linux",
                 "zookeeper",
+                "otel",
               ],
               "type": "string",
             },
@@ -2750,8 +2766,10 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
         "type": "string",
       },
       "bucket": {
-        "description": "Bucket size in UTC: hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit).",
+        "description": "Bucket size in UTC: second, minute, hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit). second and minute suit the short windows of otel (at most 60 s per direct scan).",
         "enum": [
+          "second",
+          "minute",
           "hour",
           "day",
           "week",
@@ -2764,7 +2782,7 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -2784,6 +2802,7 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -2802,7 +2821,7 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -2909,8 +2928,10 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
         "type": "string",
       },
       "bucket": {
-        "description": "Bucket size in UTC: hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit).",
+        "description": "Bucket size in UTC: second, minute, hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit). second and minute suit the short windows of otel (at most 60 s per direct scan).",
         "enum": [
+          "second",
+          "minute",
           "hour",
           "day",
           "week",
@@ -2923,7 +2944,7 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -2943,6 +2964,7 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -2961,7 +2983,7 @@ exports[`JSON Schema export > eventTrendInput converts losslessly for input and 
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -3063,6 +3085,8 @@ exports[`JSON Schema export > eventTrendOutput converts losslessly for input and
     "properties": {
       "bucket": {
         "enum": [
+          "second",
+          "minute",
           "hour",
           "day",
           "week",
@@ -3255,7 +3279,7 @@ exports[`JSON Schema export > eventTrendOutput converts losslessly for input and
         "type": "object",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -3264,6 +3288,7 @@ exports[`JSON Schema export > eventTrendOutput converts losslessly for input and
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -3482,6 +3507,8 @@ exports[`JSON Schema export > eventTrendOutput converts losslessly for input and
     "properties": {
       "bucket": {
         "enum": [
+          "second",
+          "minute",
           "hour",
           "day",
           "week",
@@ -3674,7 +3701,7 @@ exports[`JSON Schema export > eventTrendOutput converts losslessly for input and
         "type": "object",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -3683,6 +3710,7 @@ exports[`JSON Schema export > eventTrendOutput converts losslessly for input and
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -3905,7 +3933,7 @@ exports[`JSON Schema export > exampleInput converts losslessly for input and out
     "additionalProperties": false,
     "properties": {
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -3916,7 +3944,7 @@ exports[`JSON Schema export > exampleInput converts losslessly for input and out
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -3925,6 +3953,7 @@ exports[`JSON Schema export > exampleInput converts losslessly for input and out
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -3961,7 +3990,7 @@ exports[`JSON Schema export > exampleInput converts losslessly for input and out
     "additionalProperties": false,
     "properties": {
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -3972,7 +4001,7 @@ exports[`JSON Schema export > exampleInput converts losslessly for input and out
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -3981,6 +4010,7 @@ exports[`JSON Schema export > exampleInput converts losslessly for input and out
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -4260,7 +4290,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                     "type": "string",
                   },
                   "components": {
-                    "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                    "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
                     "items": {
                       "maxLength": 64,
                       "minLength": 1,
@@ -4319,7 +4349,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   "levels": {
                     "description": "Only these levels (1–10).",
                     "items": {
-                      "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+                      "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
                       "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
                       "type": "string",
                     },
@@ -4386,6 +4416,11 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                     "minLength": 1,
                     "type": "string",
                   },
+                  "trace_id": {
+                    "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+                    "pattern": "^[0-9a-f]{1,64}$",
+                    "type": "string",
+                  },
                 },
                 "type": "object",
               },
@@ -4395,7 +4430,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   "additionalProperties": false,
                   "properties": {
                     "dataset": {
-                      "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                      "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                       "enum": [
                         "bgl",
                         "openstack",
@@ -4404,6 +4439,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                         "apache",
                         "linux",
                         "zookeeper",
+                        "otel",
                       ],
                       "type": "string",
                     },
@@ -4435,7 +4471,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   ],
                   "type": "object",
                 },
-                "maxItems": 7,
+                "maxItems": 8,
                 "type": "array",
               },
             },
@@ -4449,6 +4485,270 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
             "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
             "pattern": "^[0-9a-f]{64}$",
             "type": "string",
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "Remote source of the run; only for remote datasets.",
+            "properties": {
+              "bytes_estimated_from_footer": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "basis": {
+                        "type": "string",
+                      },
+                      "bytes": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "kind": {
+                        "const": "estimate",
+                        "type": "string",
+                      },
+                      "row_groups": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "bytes",
+                      "row_groups",
+                      "basis",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Upper-bound estimate from Parquet footers, labelled as such; null for the indexed path.",
+              },
+              "bytes_read": {
+                "additionalProperties": false,
+                "description": "Remote bytes are not instrumented on a normal query.",
+                "properties": {
+                  "kind": {
+                    "const": "not_measured",
+                    "type": "string",
+                  },
+                  "reason": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "reason",
+                ],
+                "type": "object",
+              },
+              "dataset": {
+                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
+                "enum": [
+                  "bgl",
+                  "openstack",
+                  "hdfs",
+                  "openssh",
+                  "apache",
+                  "linux",
+                  "zookeeper",
+                  "otel",
+                ],
+                "type": "string",
+              },
+              "files": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "assigned_from": {
+                      "description": "Start of the file's half-open assigned range [ts_min(n), ts_min(n+1)).",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    "assigned_to": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                          "type": "string",
+                        },
+                        {
+                          "type": "null",
+                        },
+                      ],
+                      "description": "Exclusive end of the assigned range; null for the last file (ends with its last row).",
+                    },
+                    "bytes": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "etag": {
+                      "description": "ETag of the load-time HEAD; null for local fixtures.",
+                      "type": [
+                        "string",
+                        "null",
+                      ],
+                    },
+                    "file_index": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "last_modified": {
+                      "description": "Last-Modified as read_blob reported it at load.",
+                      "type": "string",
+                    },
+                    "read_from": {
+                      "description": "Lower bound applied to this file, inclusive.",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    "read_to": {
+                      "description": "Upper bound applied to this file, exclusive.",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    "url": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "file_index",
+                    "url",
+                    "bytes",
+                    "etag",
+                    "last_modified",
+                    "assigned_from",
+                    "assigned_to",
+                    "read_from",
+                    "read_to",
+                  ],
+                  "type": "object",
+                },
+                "minItems": 1,
+                "type": "array",
+              },
+              "index": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "build_ms": {
+                        "minimum": 0,
+                        "type": "number",
+                      },
+                      "built_at": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                        "type": "string",
+                      },
+                      "from": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                        "type": "string",
+                      },
+                      "glob": {
+                        "type": "string",
+                      },
+                      "name": {
+                        "type": "string",
+                      },
+                      "to": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "name",
+                      "glob",
+                      "from",
+                      "to",
+                      "built_at",
+                      "build_ms",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Index snapshot of the reference window (freshness); null for direct scans.",
+              },
+              "kind": {
+                "const": "remote_parquet",
+                "type": "string",
+              },
+              "mapping_version": {
+                "description": "Column mapping of the remote files (load_manifest).",
+                "type": "string",
+              },
+              "path": {
+                "description": "indexed_window: the inverted index over the reference window; direct_scan: read_parquet over the HTTPS files.",
+                "enum": [
+                  "indexed_window",
+                  "direct_scan",
+                ],
+                "type": "string",
+              },
+              "source_check": {
+                "additionalProperties": false,
+                "description": "Check before the query that every file still matches its pin.",
+                "properties": {
+                  "files_checked": {
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer",
+                  },
+                  "method": {
+                    "const": "read_blob size and last_modified",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "method",
+                  "files_checked",
+                ],
+                "type": "object",
+              },
+              "window": {
+                "additionalProperties": false,
+                "description": "Queried window [from, to), UTC.",
+                "properties": {
+                  "from": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                  "to": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "from",
+                  "to",
+                ],
+                "type": "object",
+              },
+            },
+            "required": [
+              "dataset",
+              "kind",
+              "path",
+              "window",
+              "files",
+              "mapping_version",
+              "index",
+              "source_check",
+              "bytes_read",
+              "bytes_estimated_from_footer",
+            ],
+            "type": "object",
           },
           "sql": {
             "description": "Exact SQL texts in execution order.",
@@ -4726,7 +5026,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                     "type": "string",
                   },
                   "components": {
-                    "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                    "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
                     "items": {
                       "maxLength": 64,
                       "minLength": 1,
@@ -4785,7 +5085,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   "levels": {
                     "description": "Only these levels (1–10).",
                     "items": {
-                      "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+                      "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
                       "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
                       "type": "string",
                     },
@@ -4852,6 +5152,11 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                     "minLength": 1,
                     "type": "string",
                   },
+                  "trace_id": {
+                    "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+                    "pattern": "^[0-9a-f]{1,64}$",
+                    "type": "string",
+                  },
                 },
                 "type": "object",
               },
@@ -4861,7 +5166,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   "additionalProperties": false,
                   "properties": {
                     "dataset": {
-                      "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                      "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                       "enum": [
                         "bgl",
                         "openstack",
@@ -4870,6 +5175,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                         "apache",
                         "linux",
                         "zookeeper",
+                        "otel",
                       ],
                       "type": "string",
                     },
@@ -4901,7 +5207,7 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
                   ],
                   "type": "object",
                 },
-                "maxItems": 7,
+                "maxItems": 8,
                 "type": "array",
               },
             },
@@ -4915,6 +5221,270 @@ exports[`JSON Schema export > exampleResult converts losslessly for input and ou
             "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
             "pattern": "^[0-9a-f]{64}$",
             "type": "string",
+          },
+          "source": {
+            "additionalProperties": false,
+            "description": "Remote source of the run; only for remote datasets.",
+            "properties": {
+              "bytes_estimated_from_footer": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "basis": {
+                        "type": "string",
+                      },
+                      "bytes": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "kind": {
+                        "const": "estimate",
+                        "type": "string",
+                      },
+                      "row_groups": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "kind",
+                      "bytes",
+                      "row_groups",
+                      "basis",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Upper-bound estimate from Parquet footers, labelled as such; null for the indexed path.",
+              },
+              "bytes_read": {
+                "additionalProperties": false,
+                "description": "Remote bytes are not instrumented on a normal query.",
+                "properties": {
+                  "kind": {
+                    "const": "not_measured",
+                    "type": "string",
+                  },
+                  "reason": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "reason",
+                ],
+                "type": "object",
+              },
+              "dataset": {
+                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
+                "enum": [
+                  "bgl",
+                  "openstack",
+                  "hdfs",
+                  "openssh",
+                  "apache",
+                  "linux",
+                  "zookeeper",
+                  "otel",
+                ],
+                "type": "string",
+              },
+              "files": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "assigned_from": {
+                      "description": "Start of the file's half-open assigned range [ts_min(n), ts_min(n+1)).",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    "assigned_to": {
+                      "anyOf": [
+                        {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                          "type": "string",
+                        },
+                        {
+                          "type": "null",
+                        },
+                      ],
+                      "description": "Exclusive end of the assigned range; null for the last file (ends with its last row).",
+                    },
+                    "bytes": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "etag": {
+                      "description": "ETag of the load-time HEAD; null for local fixtures.",
+                      "type": [
+                        "string",
+                        "null",
+                      ],
+                    },
+                    "file_index": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "last_modified": {
+                      "description": "Last-Modified as read_blob reported it at load.",
+                      "type": "string",
+                    },
+                    "read_from": {
+                      "description": "Lower bound applied to this file, inclusive.",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    "read_to": {
+                      "description": "Upper bound applied to this file, exclusive.",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    "url": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "file_index",
+                    "url",
+                    "bytes",
+                    "etag",
+                    "last_modified",
+                    "assigned_from",
+                    "assigned_to",
+                    "read_from",
+                    "read_to",
+                  ],
+                  "type": "object",
+                },
+                "minItems": 1,
+                "type": "array",
+              },
+              "index": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "build_ms": {
+                        "minimum": 0,
+                        "type": "number",
+                      },
+                      "built_at": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                        "type": "string",
+                      },
+                      "from": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                        "type": "string",
+                      },
+                      "glob": {
+                        "type": "string",
+                      },
+                      "name": {
+                        "type": "string",
+                      },
+                      "to": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "name",
+                      "glob",
+                      "from",
+                      "to",
+                      "built_at",
+                      "build_ms",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Index snapshot of the reference window (freshness); null for direct scans.",
+              },
+              "kind": {
+                "const": "remote_parquet",
+                "type": "string",
+              },
+              "mapping_version": {
+                "description": "Column mapping of the remote files (load_manifest).",
+                "type": "string",
+              },
+              "path": {
+                "description": "indexed_window: the inverted index over the reference window; direct_scan: read_parquet over the HTTPS files.",
+                "enum": [
+                  "indexed_window",
+                  "direct_scan",
+                ],
+                "type": "string",
+              },
+              "source_check": {
+                "additionalProperties": false,
+                "description": "Check before the query that every file still matches its pin.",
+                "properties": {
+                  "files_checked": {
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "type": "integer",
+                  },
+                  "method": {
+                    "const": "read_blob size and last_modified",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "method",
+                  "files_checked",
+                ],
+                "type": "object",
+              },
+              "window": {
+                "additionalProperties": false,
+                "description": "Queried window [from, to), UTC.",
+                "properties": {
+                  "from": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                  "to": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "from",
+                  "to",
+                ],
+                "type": "object",
+              },
+            },
+            "required": [
+              "dataset",
+              "kind",
+              "path",
+              "window",
+              "files",
+              "mapping_version",
+              "index",
+              "source_check",
+              "bytes_read",
+              "bytes_estimated_from_footer",
+            ],
+            "type": "object",
           },
           "sql": {
             "description": "Exact SQL texts in execution order.",
@@ -5154,7 +5724,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -5165,7 +5735,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -5174,6 +5744,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -5232,7 +5803,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -5303,6 +5874,11 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
         "format": "date-time",
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "trace_id": {
+        "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+        "pattern": "^[0-9a-f]{1,64}$",
         "type": "string",
       },
     },
@@ -5329,7 +5905,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -5340,7 +5916,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -5349,6 +5925,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -5407,7 +5984,7 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -5478,6 +6055,11 @@ exports[`JSON Schema export > filter converts losslessly for input and output 1`
         "description": "Window end, exclusive. ISO-8601 with Z or ±HH:MM, later than from. Default: end of the data span.",
         "format": "date-time",
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+        "type": "string",
+      },
+      "trace_id": {
+        "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+        "pattern": "^[0-9a-f]{1,64}$",
         "type": "string",
       },
     },
@@ -5521,7 +6103,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -5541,6 +6123,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -5588,7 +6171,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -5656,6 +6239,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
           "same_process",
           "same_client",
           "same_thread",
+          "same_trace",
           "dataset",
         ],
         "type": "string",
@@ -5735,7 +6319,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -5755,6 +6339,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -5802,7 +6387,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -5870,6 +6455,7 @@ exports[`JSON Schema export > getLogContextInput converts losslessly for input a
           "same_process",
           "same_client",
           "same_thread",
+          "same_trace",
           "dataset",
         ],
         "type": "string",
@@ -5954,14 +6540,14 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                 ],
               },
               "component": {
-                "description": "BGL component or OpenStack service.",
+                "description": "BGL component, OpenStack service or OTel service (otel).",
                 "type": [
                   "string",
                   "null",
                 ],
               },
               "dataset": {
-                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                 "enum": [
                   "bgl",
                   "openstack",
@@ -5970,6 +6556,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "apache",
                   "linux",
                   "zookeeper",
+                  "otel",
                 ],
                 "type": "string",
               },
@@ -6012,8 +6599,11 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                 ],
               },
               "pattern_id": {
-                "description": "Pattern ID; pass it to get_log_context mode aggregate.",
-                "type": "string",
+                "description": "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel).",
+                "type": [
+                  "string",
+                  "null",
+                ],
               },
               "process_id": {
                 "description": "Process ID as logged (OpenSSH, Linux); IDs repeat over time. Absent for other datasets.",
@@ -6029,8 +6619,35 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "null",
                 ],
               },
+              "severity_number": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+              },
+              "span_id": {
+                "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
               "thread": {
                 "description": "Thread name (ZooKeeper); absent for other datasets.",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "trace_id": {
+                "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
                 "type": [
                   "string",
                   "null",
@@ -6085,7 +6702,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   ],
                 },
                 "component": {
-                  "description": "BGL component or OpenStack service.",
+                  "description": "BGL component, OpenStack service or OTel service (otel).",
                   "type": [
                     "string",
                     "null",
@@ -6134,8 +6751,11 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "type": "number",
                 },
                 "pattern_id": {
-                  "description": "Pattern ID; pass it to get_log_context mode aggregate.",
-                  "type": "string",
+                  "description": "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel).",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
                 },
                 "process_id": {
                   "description": "Process ID as logged (OpenSSH, Linux); IDs repeat over time. Absent for other datasets.",
@@ -6151,8 +6771,35 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                     "null",
                   ],
                 },
+                "severity_number": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+                },
+                "span_id": {
+                  "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
                 "thread": {
                   "description": "Thread name (ZooKeeper); absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "trace_id": {
+                  "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
                   "type": [
                     "string",
                     "null",
@@ -6210,7 +6857,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   ],
                 },
                 "component": {
-                  "description": "BGL component or OpenStack service.",
+                  "description": "BGL component, OpenStack service or OTel service (otel).",
                   "type": [
                     "string",
                     "null",
@@ -6259,8 +6906,11 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "type": "number",
                 },
                 "pattern_id": {
-                  "description": "Pattern ID; pass it to get_log_context mode aggregate.",
-                  "type": "string",
+                  "description": "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel).",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
                 },
                 "process_id": {
                   "description": "Process ID as logged (OpenSSH, Linux); IDs repeat over time. Absent for other datasets.",
@@ -6276,8 +6926,35 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                     "null",
                   ],
                 },
+                "severity_number": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+                },
+                "span_id": {
+                  "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
                 "thread": {
                   "description": "Thread name (ZooKeeper); absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "trace_id": {
+                  "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
                   "type": [
                     "string",
                     "null",
@@ -6323,12 +7000,13 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
               "same_process",
               "same_client",
               "same_thread",
+              "same_trace",
               "dataset",
             ],
             "type": "string",
           },
           "scope_value": {
-            "description": "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP or thread); null for scope dataset.",
+            "description": "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP, thread or trace ID); null for scope dataset.",
             "type": [
               "string",
               "null",
@@ -6617,7 +7295,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
             "type": "array",
           },
           "dataset": {
-            "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+            "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
             "enum": [
               "bgl",
               "openstack",
@@ -6626,6 +7304,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
               "apache",
               "linux",
               "zookeeper",
+              "otel",
             ],
             "type": "string",
           },
@@ -6725,14 +7404,14 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                 ],
               },
               "component": {
-                "description": "BGL component or OpenStack service.",
+                "description": "BGL component, OpenStack service or OTel service (otel).",
                 "type": [
                   "string",
                   "null",
                 ],
               },
               "dataset": {
-                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                 "enum": [
                   "bgl",
                   "openstack",
@@ -6741,6 +7420,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "apache",
                   "linux",
                   "zookeeper",
+                  "otel",
                 ],
                 "type": "string",
               },
@@ -6783,8 +7463,11 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                 ],
               },
               "pattern_id": {
-                "description": "Pattern ID; pass it to get_log_context mode aggregate.",
-                "type": "string",
+                "description": "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel).",
+                "type": [
+                  "string",
+                  "null",
+                ],
               },
               "process_id": {
                 "description": "Process ID as logged (OpenSSH, Linux); IDs repeat over time. Absent for other datasets.",
@@ -6800,8 +7483,35 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "null",
                 ],
               },
+              "severity_number": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+              },
+              "span_id": {
+                "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
               "thread": {
                 "description": "Thread name (ZooKeeper); absent for other datasets.",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "trace_id": {
+                "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
                 "type": [
                   "string",
                   "null",
@@ -6856,7 +7566,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   ],
                 },
                 "component": {
-                  "description": "BGL component or OpenStack service.",
+                  "description": "BGL component, OpenStack service or OTel service (otel).",
                   "type": [
                     "string",
                     "null",
@@ -6905,8 +7615,11 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "type": "number",
                 },
                 "pattern_id": {
-                  "description": "Pattern ID; pass it to get_log_context mode aggregate.",
-                  "type": "string",
+                  "description": "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel).",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
                 },
                 "process_id": {
                   "description": "Process ID as logged (OpenSSH, Linux); IDs repeat over time. Absent for other datasets.",
@@ -6922,8 +7635,35 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                     "null",
                   ],
                 },
+                "severity_number": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+                },
+                "span_id": {
+                  "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
                 "thread": {
                   "description": "Thread name (ZooKeeper); absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "trace_id": {
+                  "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
                   "type": [
                     "string",
                     "null",
@@ -6981,7 +7721,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   ],
                 },
                 "component": {
-                  "description": "BGL component or OpenStack service.",
+                  "description": "BGL component, OpenStack service or OTel service (otel).",
                   "type": [
                     "string",
                     "null",
@@ -7030,8 +7770,11 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                   "type": "number",
                 },
                 "pattern_id": {
-                  "description": "Pattern ID; pass it to get_log_context mode aggregate.",
-                  "type": "string",
+                  "description": "Pattern ID; pass it to get_log_context mode aggregate. null for datasets without patterns (otel).",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
                 },
                 "process_id": {
                   "description": "Process ID as logged (OpenSSH, Linux); IDs repeat over time. Absent for other datasets.",
@@ -7047,8 +7790,35 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
                     "null",
                   ],
                 },
+                "severity_number": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+                },
+                "span_id": {
+                  "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
                 "thread": {
                   "description": "Thread name (ZooKeeper); absent for other datasets.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "trace_id": {
+                  "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
                   "type": [
                     "string",
                     "null",
@@ -7094,12 +7864,13 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
               "same_process",
               "same_client",
               "same_thread",
+              "same_trace",
               "dataset",
             ],
             "type": "string",
           },
           "scope_value": {
-            "description": "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP or thread); null for scope dataset.",
+            "description": "Value the neighbours share with the anchor (node, component, request ID, block, process ID, client IP, thread or trace ID); null for scope dataset.",
             "type": [
               "string",
               "null",
@@ -7388,7 +8159,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
             "type": "array",
           },
           "dataset": {
-            "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+            "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
             "enum": [
               "bgl",
               "openstack",
@@ -7397,6 +8168,7 @@ exports[`JSON Schema export > getLogContextOutput converts losslessly for input 
               "apache",
               "linux",
               "zookeeper",
+              "otel",
             ],
             "type": "string",
           },
@@ -7474,7 +8246,7 @@ exports[`JSON Schema export > latencyStatsInput converts losslessly for input an
     "additionalProperties": false,
     "properties": {
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -7569,7 +8341,7 @@ exports[`JSON Schema export > latencyStatsInput converts losslessly for input an
     "additionalProperties": false,
     "properties": {
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -9586,7 +10358,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                 "type": "string",
               },
               "components": {
-                "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
                 "items": {
                   "maxLength": 64,
                   "minLength": 1,
@@ -9645,7 +10417,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               "levels": {
                 "description": "Only these levels (1–10).",
                 "items": {
-                  "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+                  "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
                   "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
                   "type": "string",
                 },
@@ -9712,6 +10484,11 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                 "minLength": 1,
                 "type": "string",
               },
+              "trace_id": {
+                "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+                "pattern": "^[0-9a-f]{1,64}$",
+                "type": "string",
+              },
             },
             "type": "object",
           },
@@ -9721,7 +10498,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               "additionalProperties": false,
               "properties": {
                 "dataset": {
-                  "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                  "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                   "enum": [
                     "bgl",
                     "openstack",
@@ -9730,6 +10507,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                     "apache",
                     "linux",
                     "zookeeper",
+                    "otel",
                   ],
                   "type": "string",
                 },
@@ -9761,7 +10539,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               ],
               "type": "object",
             },
-            "maxItems": 7,
+            "maxItems": 8,
             "type": "array",
           },
         },
@@ -9775,6 +10553,270 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
         "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
         "pattern": "^[0-9a-f]{64}$",
         "type": "string",
+      },
+      "source": {
+        "additionalProperties": false,
+        "description": "Remote source of the run; only for remote datasets.",
+        "properties": {
+          "bytes_estimated_from_footer": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "basis": {
+                    "type": "string",
+                  },
+                  "bytes": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "kind": {
+                    "const": "estimate",
+                    "type": "string",
+                  },
+                  "row_groups": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "bytes",
+                  "row_groups",
+                  "basis",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Upper-bound estimate from Parquet footers, labelled as such; null for the indexed path.",
+          },
+          "bytes_read": {
+            "additionalProperties": false,
+            "description": "Remote bytes are not instrumented on a normal query.",
+            "properties": {
+              "kind": {
+                "const": "not_measured",
+                "type": "string",
+              },
+              "reason": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "kind",
+              "reason",
+            ],
+            "type": "object",
+          },
+          "dataset": {
+            "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
+            "enum": [
+              "bgl",
+              "openstack",
+              "hdfs",
+              "openssh",
+              "apache",
+              "linux",
+              "zookeeper",
+              "otel",
+            ],
+            "type": "string",
+          },
+          "files": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "assigned_from": {
+                  "description": "Start of the file's half-open assigned range [ts_min(n), ts_min(n+1)).",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                  "type": "string",
+                },
+                "assigned_to": {
+                  "anyOf": [
+                    {
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "description": "Exclusive end of the assigned range; null for the last file (ends with its last row).",
+                },
+                "bytes": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "etag": {
+                  "description": "ETag of the load-time HEAD; null for local fixtures.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "file_index": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "last_modified": {
+                  "description": "Last-Modified as read_blob reported it at load.",
+                  "type": "string",
+                },
+                "read_from": {
+                  "description": "Lower bound applied to this file, inclusive.",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                  "type": "string",
+                },
+                "read_to": {
+                  "description": "Upper bound applied to this file, exclusive.",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                  "type": "string",
+                },
+                "url": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "file_index",
+                "url",
+                "bytes",
+                "etag",
+                "last_modified",
+                "assigned_from",
+                "assigned_to",
+                "read_from",
+                "read_to",
+              ],
+              "type": "object",
+            },
+            "minItems": 1,
+            "type": "array",
+          },
+          "index": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "build_ms": {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "built_at": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                  "from": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                  "glob": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "to": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "name",
+                  "glob",
+                  "from",
+                  "to",
+                  "built_at",
+                  "build_ms",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Index snapshot of the reference window (freshness); null for direct scans.",
+          },
+          "kind": {
+            "const": "remote_parquet",
+            "type": "string",
+          },
+          "mapping_version": {
+            "description": "Column mapping of the remote files (load_manifest).",
+            "type": "string",
+          },
+          "path": {
+            "description": "indexed_window: the inverted index over the reference window; direct_scan: read_parquet over the HTTPS files.",
+            "enum": [
+              "indexed_window",
+              "direct_scan",
+            ],
+            "type": "string",
+          },
+          "source_check": {
+            "additionalProperties": false,
+            "description": "Check before the query that every file still matches its pin.",
+            "properties": {
+              "files_checked": {
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer",
+              },
+              "method": {
+                "const": "read_blob size and last_modified",
+                "type": "string",
+              },
+            },
+            "required": [
+              "method",
+              "files_checked",
+            ],
+            "type": "object",
+          },
+          "window": {
+            "additionalProperties": false,
+            "description": "Queried window [from, to), UTC.",
+            "properties": {
+              "from": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+        },
+        "required": [
+          "dataset",
+          "kind",
+          "path",
+          "window",
+          "files",
+          "mapping_version",
+          "index",
+          "source_check",
+          "bytes_read",
+          "bytes_estimated_from_footer",
+        ],
+        "type": "object",
       },
       "sql": {
         "description": "Exact SQL texts in execution order.",
@@ -10091,7 +11133,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                 "type": "string",
               },
               "components": {
-                "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+                "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
                 "items": {
                   "maxLength": 64,
                   "minLength": 1,
@@ -10150,7 +11192,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               "levels": {
                 "description": "Only these levels (1–10).",
                 "items": {
-                  "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+                  "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
                   "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
                   "type": "string",
                 },
@@ -10217,6 +11259,11 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                 "minLength": 1,
                 "type": "string",
               },
+              "trace_id": {
+                "description": "otel only: exact OTel TraceId as logged (lower-case hex). Recorded as the scope of get_log_context same_trace.",
+                "pattern": "^[0-9a-f]{1,64}$",
+                "type": "string",
+              },
             },
             "type": "object",
           },
@@ -10226,7 +11273,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               "additionalProperties": false,
               "properties": {
                 "dataset": {
-                  "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+                  "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
                   "enum": [
                     "bgl",
                     "openstack",
@@ -10235,6 +11282,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
                     "apache",
                     "linux",
                     "zookeeper",
+                    "otel",
                   ],
                   "type": "string",
                 },
@@ -10266,7 +11314,7 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
               ],
               "type": "object",
             },
-            "maxItems": 7,
+            "maxItems": 8,
             "type": "array",
           },
         },
@@ -10280,6 +11328,270 @@ exports[`JSON Schema export > receipt converts losslessly for input and output 1
         "description": "SHA-256 over canonical JSON of tool, tool_version and input (query identity).",
         "pattern": "^[0-9a-f]{64}$",
         "type": "string",
+      },
+      "source": {
+        "additionalProperties": false,
+        "description": "Remote source of the run; only for remote datasets.",
+        "properties": {
+          "bytes_estimated_from_footer": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "basis": {
+                    "type": "string",
+                  },
+                  "bytes": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "kind": {
+                    "const": "estimate",
+                    "type": "string",
+                  },
+                  "row_groups": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "bytes",
+                  "row_groups",
+                  "basis",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Upper-bound estimate from Parquet footers, labelled as such; null for the indexed path.",
+          },
+          "bytes_read": {
+            "additionalProperties": false,
+            "description": "Remote bytes are not instrumented on a normal query.",
+            "properties": {
+              "kind": {
+                "const": "not_measured",
+                "type": "string",
+              },
+              "reason": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "kind",
+              "reason",
+            ],
+            "type": "object",
+          },
+          "dataset": {
+            "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
+            "enum": [
+              "bgl",
+              "openstack",
+              "hdfs",
+              "openssh",
+              "apache",
+              "linux",
+              "zookeeper",
+              "otel",
+            ],
+            "type": "string",
+          },
+          "files": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "assigned_from": {
+                  "description": "Start of the file's half-open assigned range [ts_min(n), ts_min(n+1)).",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                  "type": "string",
+                },
+                "assigned_to": {
+                  "anyOf": [
+                    {
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                      "type": "string",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "description": "Exclusive end of the assigned range; null for the last file (ends with its last row).",
+                },
+                "bytes": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "etag": {
+                  "description": "ETag of the load-time HEAD; null for local fixtures.",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "file_index": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "last_modified": {
+                  "description": "Last-Modified as read_blob reported it at load.",
+                  "type": "string",
+                },
+                "read_from": {
+                  "description": "Lower bound applied to this file, inclusive.",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                  "type": "string",
+                },
+                "read_to": {
+                  "description": "Upper bound applied to this file, exclusive.",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{9}Z$",
+                  "type": "string",
+                },
+                "url": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "file_index",
+                "url",
+                "bytes",
+                "etag",
+                "last_modified",
+                "assigned_from",
+                "assigned_to",
+                "read_from",
+                "read_to",
+              ],
+              "type": "object",
+            },
+            "minItems": 1,
+            "type": "array",
+          },
+          "index": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "build_ms": {
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "built_at": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                  "from": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                  "glob": {
+                    "type": "string",
+                  },
+                  "name": {
+                    "type": "string",
+                  },
+                  "to": {
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "name",
+                  "glob",
+                  "from",
+                  "to",
+                  "built_at",
+                  "build_ms",
+                ],
+                "type": "object",
+              },
+              {
+                "type": "null",
+              },
+            ],
+            "description": "Index snapshot of the reference window (freshness); null for direct scans.",
+          },
+          "kind": {
+            "const": "remote_parquet",
+            "type": "string",
+          },
+          "mapping_version": {
+            "description": "Column mapping of the remote files (load_manifest).",
+            "type": "string",
+          },
+          "path": {
+            "description": "indexed_window: the inverted index over the reference window; direct_scan: read_parquet over the HTTPS files.",
+            "enum": [
+              "indexed_window",
+              "direct_scan",
+            ],
+            "type": "string",
+          },
+          "source_check": {
+            "additionalProperties": false,
+            "description": "Check before the query that every file still matches its pin.",
+            "properties": {
+              "files_checked": {
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer",
+              },
+              "method": {
+                "const": "read_blob size and last_modified",
+                "type": "string",
+              },
+            },
+            "required": [
+              "method",
+              "files_checked",
+            ],
+            "type": "object",
+          },
+          "window": {
+            "additionalProperties": false,
+            "description": "Queried window [from, to), UTC.",
+            "properties": {
+              "from": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+              "to": {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "from",
+              "to",
+            ],
+            "type": "object",
+          },
+        },
+        "required": [
+          "dataset",
+          "kind",
+          "path",
+          "window",
+          "files",
+          "mapping_version",
+          "index",
+          "source_check",
+          "bytes_read",
+          "bytes_estimated_from_footer",
+        ],
+        "type": "object",
       },
       "sql": {
         "description": "Exact SQL texts in execution order.",
@@ -10347,7 +11659,7 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -10367,6 +11679,7 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -10391,7 +11704,7 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -10508,7 +11821,7 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -10528,6 +11841,7 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -10552,7 +11866,7 @@ exports[`JSON Schema export > recurringPatternsInput converts losslessly for inp
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -10723,7 +12037,7 @@ exports[`JSON Schema export > recurringPatternsOutput converts losslessly for in
         "type": "object",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -10732,6 +12046,7 @@ exports[`JSON Schema export > recurringPatternsOutput converts losslessly for in
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -11632,7 +12947,7 @@ exports[`JSON Schema export > recurringPatternsOutput converts losslessly for in
         "type": "object",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -11641,6 +12956,7 @@ exports[`JSON Schema export > recurringPatternsOutput converts losslessly for in
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -12498,7 +13814,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -12509,7 +13825,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -12518,6 +13834,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -12542,7 +13859,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -12670,7 +13987,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "type": "string",
       },
       "components": {
-        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute.",
+        "description": "Only these components (exact names, 1–20). BGL: e.g. KERNEL; OpenStack: e.g. nova-compute; otel: the service, e.g. cart.",
         "items": {
           "maxLength": 64,
           "minLength": 1,
@@ -12681,7 +13998,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
         "type": "array",
       },
       "dataset": {
-        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+        "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
         "enum": [
           "bgl",
           "openstack",
@@ -12690,6 +14007,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
           "apache",
           "linux",
           "zookeeper",
+          "otel",
         ],
         "type": "string",
       },
@@ -12714,7 +14032,7 @@ exports[`JSON Schema export > searchLogsInput converts losslessly for input and 
       "levels": {
         "description": "Only these levels (1–10).",
         "items": {
-          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache).",
+          "description": "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache), info, information, error (otel).",
           "pattern": "^[A-Za-z][A-Za-z_]{0,15}$",
           "type": "string",
         },
@@ -12860,14 +14178,14 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
               ],
             },
             "component": {
-              "description": "BGL component or OpenStack service, e.g. KERNEL, nova-api.",
+              "description": "BGL component, OpenStack service or OTel service (otel), e.g. KERNEL, nova-api, cart.",
               "type": [
                 "string",
                 "null",
               ],
             },
             "dataset": {
-              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
               "enum": [
                 "bgl",
                 "openstack",
@@ -12876,6 +14194,7 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
                 "apache",
                 "linux",
                 "zookeeper",
+                "otel",
               ],
               "type": "string",
             },
@@ -12960,8 +14279,35 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
               "description": "BM25 relevance score; only comparable within one result, not a count.",
               "type": "number",
             },
+            "severity_number": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+            },
+            "span_id": {
+              "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
             "thread": {
               "description": "Thread name (ZooKeeper); absent for other datasets.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "trace_id": {
+              "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
               "type": [
                 "string",
                 "null",
@@ -13088,14 +14434,14 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
               ],
             },
             "component": {
-              "description": "BGL component or OpenStack service, e.g. KERNEL, nova-api.",
+              "description": "BGL component, OpenStack service or OTel service (otel), e.g. KERNEL, nova-api, cart.",
               "type": [
                 "string",
                 "null",
               ],
             },
             "dataset": {
-              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper). No two datasets share a time axis; describe_corpus lists the loaded ones.",
+              "description": "Dataset: bgl (BGL), openstack (OpenStack), hdfs (HDFS_v1), openssh (OpenSSH), apache (Apache), linux (Linux), zookeeper (ZooKeeper), otel (OpenTelemetry logs (text_bench)). No two datasets share a time axis; describe_corpus lists the loaded ones. otel is read in place from remote Parquet files: it is only queried when named here, full text works only inside its indexed reference window, and counts or trends without text need from/to at most 60 s apart.",
               "enum": [
                 "bgl",
                 "openstack",
@@ -13104,6 +14450,7 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
                 "apache",
                 "linux",
                 "zookeeper",
+                "otel",
               ],
               "type": "string",
             },
@@ -13188,8 +14535,35 @@ exports[`JSON Schema export > searchLogsOutput converts losslessly for input and
               "description": "BM25 relevance score; only comparable within one result, not a count.",
               "type": "number",
             },
+            "severity_number": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+              "description": "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets.",
+            },
+            "span_id": {
+              "description": "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
             "thread": {
               "description": "Thread name (ZooKeeper); absent for other datasets.",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "trace_id": {
+              "description": "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets.",
               "type": [
                 "string",
                 "null",
@@ -13490,6 +14864,38 @@ exports[`JSON Schema export > toolError converts losslessly for input and output
         ],
         "type": "object",
       },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "source_changed",
+            "type": "string",
+          },
+          "files": {
+            "description": "Remote files whose size or Last-Modified differ from the load-time pin.",
+            "items": {
+              "type": "string",
+            },
+            "minItems": 1,
+            "type": "array",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "files",
+        ],
+        "type": "object",
+      },
     ],
   },
   "output": {
@@ -13689,6 +15095,38 @@ exports[`JSON Schema export > toolError converts losslessly for input and output
           "hint",
           "limit",
           "requested",
+        ],
+        "type": "object",
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "source_changed",
+            "type": "string",
+          },
+          "files": {
+            "description": "Remote files whose size or Last-Modified differ from the load-time pin.",
+            "items": {
+              "type": "string",
+            },
+            "minItems": 1,
+            "type": "array",
+          },
+          "hint": {
+            "description": "How to change the call so it succeeds.",
+            "type": "string",
+          },
+          "message": {
+            "description": "What went wrong, in one sentence.",
+            "type": "string",
+          },
+        },
+        "required": [
+          "code",
+          "message",
+          "hint",
+          "files",
         ],
         "type": "object",
       },

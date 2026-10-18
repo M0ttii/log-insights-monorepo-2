@@ -104,7 +104,7 @@ export const eventTrendInputSchema = z.strictObject({
       "Required, exactly one dataset. No two datasets share a time axis, so a trend is always per dataset; call once per dataset."
     ),
   bucket: bucketUnitSchema.describe(
-    "Bucket size in UTC: hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit)."
+    "Bucket size in UTC: second, minute, hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit). second and minute suit the short windows of otel (at most 60 s per direct scan)."
   ),
   ...TREND_FILTER.shape,
   split_by: trendDimensionSchema

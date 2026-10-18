@@ -48,6 +48,16 @@ export const toolErrorSchema = z.discriminatedUnion("code", [
     limit: z.number().int().nonnegative(),
     requested: z.number().int().nonnegative().nullable(),
   }),
+  z.strictObject({
+    code: z.literal("source_changed"),
+    ...base,
+    files: z
+      .array(z.string())
+      .min(1)
+      .describe(
+        "Remote files whose size or Last-Modified differ from the load-time pin."
+      ),
+  }),
 ])
 
 export type ToolError = z.infer<typeof toolErrorSchema>
@@ -134,6 +144,20 @@ export function limitExceeded(
   }
 }
 
+/**
+ * A remote source file changed after the load (LOG-35, D4): the load-time
+ * pins no longer describe it, so no number is computed from it and no
+ * receipt pretends to be reproducible.
+ */
+export function sourceChanged(dataset: string, files: string[]): ToolError {
+  return {
+    code: "source_changed",
+    message: `${files.length} source file(s) of dataset ${dataset} changed since the load (size or Last-Modified differ from the pin): ${files.join(", ")}.`,
+    hint: `Do not retry; tell the user the remote source changed and that \`pnpm data:setup --with ${dataset}\` must reload it (new pins, new data version) before numbers can be given.`,
+    files,
+  }
+}
+
 /** One line for text channels (MCP text block, logs without payloads). */
 export function formatToolError(error: ToolError): string {
   switch (error.code) {
@@ -143,6 +167,7 @@ export function formatToolError(error: ToolError): string {
     case "db_unavailable":
     case "receipt_unavailable":
     case "limit_exceeded":
+    case "source_changed":
       return `${error.code}: ${error.message} Hint: ${error.hint}`
     default:
       return assertNever(error)

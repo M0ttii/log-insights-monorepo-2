@@ -3,14 +3,18 @@ import { z } from "zod"
 import {
   DATASETS,
   EXTENSION_COLUMNS,
+  OTEL_COLUMNS,
   type Dataset,
   type ExtensionColumn,
+  type OtelColumn,
 } from "./datasets.ts"
 
 /**
- * Columns of the extension datasets on event rows (search hits, context
- * events): present only for datasets whose catalog entry gives the column a
- * meaning, so BGL and OpenStack rows keep their exact shape (U26).
+ * Dataset-specific columns on event rows (search hits, context events):
+ * present only for datasets whose catalog entry gives the column a meaning,
+ * so BGL and OpenStack rows keep their exact shape (U26). The extension
+ * columns live in log_events; the OpenTelemetry columns only in the otel
+ * relations (LOG-35).
  */
 export const EXTENSION_ATTRIBUTES = {
   host: z
@@ -42,29 +46,92 @@ export const EXTENSION_ATTRIBUTES = {
     .nullable()
     .optional()
     .describe("HDFS block ID; absent for other datasets."),
-} satisfies Record<ExtensionColumn, z.ZodType>
+  trace_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "OTel TraceId as logged (otel); the empty string when the record has no trace. Absent for other datasets."
+    ),
+  span_id: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "OTel SpanId as logged (otel); the empty string when absent. Absent for other datasets."
+    ),
+  severity_number: z
+    .number()
+    .int()
+    .nullable()
+    .optional()
+    .describe(
+      "OTel SeverityNumber as logged (otel; 0 = unspecified); the level is SeverityText. Absent for other datasets."
+    ),
+} satisfies Record<ExtensionColumn | OtelColumn, z.ZodType>
 
 export type ExtensionAttributes = Partial<
-  Record<ExtensionColumn, string | null>
->
+  Record<ExtensionColumn | "trace_id" | "span_id", string | null>
+> & { severity_number?: number | null }
 
-/** Parser of the five columns as SereneDB returns them. */
+/** Parser of the eight columns as SereneDB returns them. */
 export const extensionColumnsRow = z.object({
   host: z.string().nullable(),
   process_id: z.string().nullable(),
   client_ip: z.string().nullable(),
   thread: z.string().nullable(),
   block_id: z.string().nullable(),
+  trace_id: z.string().nullable(),
+  span_id: z.string().nullable(),
+  severity_number: z.number().int().nullable(),
 })
 
-/** The attributes the dataset carries, picked from a row with all five columns. */
+export type ExtensionColumnsRow = z.infer<typeof extensionColumnsRow>
+
+/** The attributes the dataset carries, picked from a row with all eight columns. */
 export function extensionAttributes(
   dataset: Dataset,
-  row: z.infer<typeof extensionColumnsRow>
+  row: ExtensionColumnsRow
 ): ExtensionAttributes {
   const attributes: ExtensionAttributes = {}
+  const fields = DATASETS[dataset].fields
   for (const column of EXTENSION_COLUMNS)
-    if (DATASETS[dataset].fields[column] !== undefined)
-      attributes[column] = row[column]
+    if (fields[column] !== undefined) attributes[column] = row[column]
+  for (const column of OTEL_COLUMNS) {
+    if (fields[column] === undefined) continue
+    if (column === "severity_number")
+      attributes.severity_number = row.severity_number
+    else attributes[column] = row[column]
+  }
   return attributes
+}
+
+/** Splits the eight attribute columns off a parsed row. */
+export function splitAttributes<R extends ExtensionColumnsRow>(
+  row: R
+): [Omit<R, keyof ExtensionColumnsRow>, ExtensionColumnsRow] {
+  const {
+    host,
+    process_id,
+    client_ip,
+    thread,
+    block_id,
+    trace_id,
+    span_id,
+    severity_number,
+    ...rest
+  } = row
+  return [
+    rest,
+    {
+      host,
+      process_id,
+      client_ip,
+      thread,
+      block_id,
+      trace_id,
+      span_id,
+      severity_number,
+    },
+  ]
 }

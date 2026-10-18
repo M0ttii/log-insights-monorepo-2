@@ -121,7 +121,9 @@ export const searchHitSchema = z.strictObject({
   component: z
     .string()
     .nullable()
-    .describe("BGL component or OpenStack service, e.g. KERNEL, nova-api."),
+    .describe(
+      "BGL component, OpenStack service or OTel service (otel), e.g. KERNEL, nova-api, cart."
+    ),
   level: z.string().nullable().describe("Level as logged."),
   node: z.string().nullable().describe("BGL node; null for OpenStack."),
   alert_label: z

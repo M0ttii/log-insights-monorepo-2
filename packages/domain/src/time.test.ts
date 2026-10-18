@@ -279,6 +279,23 @@ describe("bucketCount", () => {
     expect(bucketCount(range, "week")).toBe(32)
     expect(bucketCount(range, "day")).toBe(216)
   })
+
+  it("counts second and minute buckets of a short window", () => {
+    // 60 s across the part_000/part_001 boundary of the otel dataset.
+    const range = {
+      from: "2025-09-23T00:28:54.500000Z",
+      to: "2025-09-23T00:29:54.500000Z",
+    }
+    expect(bucketCount(range, "second")).toBe(61)
+    expect(bucketCount(range, "minute")).toBe(2)
+    for (const unit of ["second", "minute"] as const)
+      expect(bucketCount(range, unit)).toBe(bucketGrid(range, unit).length)
+    expect(bucketGrid(range, "second")[0]).toEqual({
+      start: "2025-09-23T00:28:54.000000Z",
+      end: "2025-09-23T00:28:55.000000Z",
+      partial: true,
+    })
+  })
 })
 
 describe("bucketGrid", () => {

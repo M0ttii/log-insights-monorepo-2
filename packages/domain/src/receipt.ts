@@ -74,6 +74,103 @@ export const populationSchema = z
 
 export type Population = z.infer<typeof populationSchema>
 
+/** ISO-8601 UTC with nine fractional digits, as remote Parquet times are pinned. */
+const nanoInstantSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}Z$/)
+
+/**
+ * Provenance of a run over remote files (LOG-35, D4): which allowlisted
+ * files were read on which path, with their load-time pins, the index
+ * snapshot for the reference window, and what is known about bytes read.
+ * Bytes are not instrumented on a normal query (only EXPLAIN ANALYZE shows
+ * them), so they are `not_measured`; the footer figure is an estimate.
+ */
+export const receiptSourceSchema = z
+  .strictObject({
+    dataset: datasetSchema,
+    kind: z.literal("remote_parquet"),
+    path: z
+      .enum(["indexed_window", "direct_scan"])
+      .describe(
+        "indexed_window: the inverted index over the reference window; direct_scan: read_parquet over the HTTPS files."
+      ),
+    window: z
+      .strictObject({ from: instantSchema, to: instantSchema })
+      .describe("Queried window [from, to), UTC."),
+    files: z
+      .array(
+        z.strictObject({
+          file_index: z.number().int().nonnegative(),
+          url: z.string(),
+          bytes: z.number().int().nonnegative(),
+          etag: z
+            .string()
+            .nullable()
+            .describe("ETag of the load-time HEAD; null for local fixtures."),
+          last_modified: z
+            .string()
+            .describe("Last-Modified as read_blob reported it at load."),
+          assigned_from: nanoInstantSchema.describe(
+            "Start of the file's half-open assigned range [ts_min(n), ts_min(n+1))."
+          ),
+          assigned_to: nanoInstantSchema
+            .nullable()
+            .describe(
+              "Exclusive end of the assigned range; null for the last file (ends with its last row)."
+            ),
+          read_from: nanoInstantSchema.describe(
+            "Lower bound applied to this file, inclusive."
+          ),
+          read_to: nanoInstantSchema.describe(
+            "Upper bound applied to this file, exclusive."
+          ),
+        })
+      )
+      .min(1),
+    mapping_version: z
+      .string()
+      .describe("Column mapping of the remote files (load_manifest)."),
+    index: z
+      .strictObject({
+        name: z.string(),
+        glob: z.string(),
+        from: instantSchema,
+        to: instantSchema,
+        built_at: instantSchema,
+        build_ms: z.number().nonnegative(),
+      })
+      .nullable()
+      .describe(
+        "Index snapshot of the reference window (freshness); null for direct scans."
+      ),
+    source_check: z
+      .strictObject({
+        method: z.literal("read_blob size and last_modified"),
+        files_checked: z.number().int().positive(),
+      })
+      .describe(
+        "Check before the query that every file still matches its pin."
+      ),
+    bytes_read: z
+      .strictObject({ kind: z.literal("not_measured"), reason: z.string() })
+      .describe("Remote bytes are not instrumented on a normal query."),
+    bytes_estimated_from_footer: z
+      .strictObject({
+        kind: z.literal("estimate"),
+        bytes: z.number().int().nonnegative(),
+        row_groups: z.number().int().nonnegative(),
+        basis: z.string(),
+      })
+      .nullable()
+      .describe(
+        "Upper-bound estimate from Parquet footers, labelled as such; null for the indexed path."
+      ),
+  })
+  .describe("Remote source of the run; only for remote datasets.")
+
+export type ReceiptSource = z.infer<typeof receiptSourceSchema>
+
 export const receiptSchema = z.strictObject({
   receipt_id: receiptIdSchema,
   created_at: instantSchema.describe("UTC time of the run."),
@@ -104,6 +201,7 @@ export const receiptSchema = z.strictObject({
   result: z.json(),
   result_digest: sha256Hex.describe("SHA-256 over canonical JSON of result."),
   facts: z.array(factSchema),
+  source: receiptSourceSchema.optional(),
 })
 
 export type Receipt = z.infer<typeof receiptSchema>
@@ -122,6 +220,7 @@ export const receiptSummarySchema = receiptSchema
     truncated: true,
     duration_ms: true,
     result_digest: true,
+    source: true,
   })
   .describe(
     "Receipt summary returned with every result; the full receipt is receipt://{id}."
