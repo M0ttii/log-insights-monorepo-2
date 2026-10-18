@@ -1,0 +1,127 @@
+{
+  "receipt_id": "r_2c4302ad",
+  "created_at": "2026-10-18T17:41:23.430Z",
+  "client": "eval",
+  "tool": "count_events",
+  "tool_version": "1.2.0",
+  "input": {
+    "group_by": [
+      "dataset"
+    ],
+    "dataset": "openstack",
+    "top_n": 20
+  },
+  "signature": "8acb7cd186d9509df490b66e26f6570669be80732ed064a25651d03af7993610",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH grouped AS (SELECT log_events.dataset AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.dataset = $1 GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) FILTER (WHERE rank > $2) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $2), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $2) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, CASE WHEN b IS NULL THEN NULL WHEN b = 0 AND c > 0 THEN 'first observed in this comparison' WHEN b = 0 THEN 'not observed in either period' WHEN c >= $3::BIGINT * b AND c - b >= $4::BIGINT THEN 'significantly increased' END AS classification, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, CASE WHEN baseline IS NULL THEN NULL WHEN baseline = 0 AND events > 0 THEN 'first observed in this comparison' WHEN baseline = 0 THEN 'not observed in either period' WHEN events >= $3::BIGINT * baseline AND events - baseline >= $4::BIGINT THEN 'significantly increased' END AS classification, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= $2 ORDER BY rank"
+  ],
+  "params": [
+    [
+      "openstack"
+    ],
+    [
+      "openstack",
+      20,
+      2,
+      20
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 207820,
+    "unit": "log_events"
+  },
+  "rows_returned": 1,
+  "truncated": false,
+  "row_limit": 20,
+  "duration_ms": 9.77,
+  "result": {
+    "group_by": [
+      "dataset"
+    ],
+    "unit": "log_events",
+    "total": 207820,
+    "group_count": 1,
+    "groups": [
+      {
+        "dataset": "openstack",
+        "events": 207820,
+        "share": 1
+      }
+    ],
+    "other": null,
+    "comparison": null,
+    "truncated": false,
+    "top_n": 20
+  },
+  "result_digest": "1924adcbfc678e07f72731c848a55828442638f88d1cdfee17677ac27bbc3476",
+  "facts": [
+    {
+      "id": "r_2c4302ad.f1",
+      "path": "/result/group_count",
+      "value": 1,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_2c4302ad.f2",
+      "path": "/result/groups/0/events",
+      "value": 207820,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_2c4302ad.f3",
+      "path": "/result/groups/0/share",
+      "value": 1,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_2c4302ad.f4",
+      "path": "/result/total",
+      "value": 207820,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_2c4302ad.f5",
+      "path": "/scope/windows/0/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_2c4302ad.f6",
+      "path": "/scope/windows/0/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "source": "https://linear.app/loginsights2/issue/LOG-12",
+  "comment_id": "90b6a682-479c-4a56-a2a8-96cd5ba08f60",
+  "created_at": "2026-10-17T17:28:36.002Z",
+  "status_at_recording": "untested background, before original full-corpus profiling",
+  "original_language": "de",
+  "original_appread_hypothesis": "Wiederkehrend in mehreren Episoden; systemisch (viele Nodes und Racks gleichzeitig, eher Job-/Netz-Ereignis an den I/O-Nodes als ein defekter Node)",
+  "timestamp_correction_comment_id": "76d95ddf-c18e-44e6-aba8-7a62fea310d7",
+  "timestamp_correction_created_at": "2026-10-17T17:53:58.831Z",
+  "note": "The typed clock time in the original comment is inaccurate; use its creation timestamp. This excerpt is provenance for a hypothesis, not measured corpus evidence."
+}

@@ -1,0 +1,243 @@
+{
+  "receipt_id": "r_872d82bd",
+  "created_at": "2026-10-18T17:41:23.839Z",
+  "client": "eval",
+  "tool": "latency_stats",
+  "tool_version": "1.0.0",
+  "input": {
+    "dataset": "openstack"
+  },
+  "signature": "a1920aeff0069d260155d726a8f69406e8b8931a9dda03f895a9abfc698e36c8",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH base AS (SELECT NULL AS g, log_events.request_id, log_events.latency_ms, log_events.http_status FROM log_events WHERE log_events.ts >= $1::TIMESTAMPTZ AND log_events.ts < $2::TIMESTAMPTZ AND log_events.dataset = 'openstack' AND log_events.http_status IS NOT NULL), agg AS (SELECT 0::BIGINT AS slot, NULL::VARCHAR AS g, 0::BIGINT AS groups, count(*) AS api_access_events, count(*) FILTER (WHERE request_id IS NULL) AS without_request_id, count(DISTINCT request_id) AS unique_requests, count(latency_ms) AS latency_values, quantile_cont(latency_ms, [0.5, 0.9, 0.95, 0.99]) AS q, max(latency_ms) AS max_ms, count(*) FILTER (WHERE http_status BETWEEN 500 AND 599) AS errors_5xx, count(*) FILTER (WHERE http_status BETWEEN 400 AND 499) AS errors_4xx FROM base) SELECT slot, g AS g, groups, api_access_events, without_request_id, unique_requests, latency_values, q[1] AS p50_ms, q[2] AS p90_ms, q[3] AS p95_ms, q[4] AS p99_ms, max_ms, errors_5xx, errors_5xx::DOUBLE / NULLIF(api_access_events, 0) AS rate_5xx, errors_4xx, errors_4xx::DOUBLE / NULLIF(api_access_events, 0) AS rate_4xx FROM agg"
+  ],
+  "params": [
+    [
+      "openstack"
+    ],
+    [
+      "2017-05-14T19:39:01.445000Z",
+      "2017-05-17T12:02:35.320001Z"
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 98733,
+    "unit": "api_accesses"
+  },
+  "rows_returned": 0,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 13.1,
+  "result": {
+    "dataset": "openstack",
+    "unit": "api_accesses",
+    "group_by": null,
+    "data_span": {
+      "first": "2017-05-14T19:39:01.445000Z",
+      "last": "2017-05-17T12:02:35.320000Z"
+    },
+    "effective_range": {
+      "from": "2017-05-14T19:39:01.445000Z",
+      "to": "2017-05-17T12:02:35.320001Z"
+    },
+    "total": {
+      "api_access_events": 98733,
+      "without_request_id": 9196,
+      "unique_requests": 89535,
+      "latency_values": 98733,
+      "p50_ms": 259.578,
+      "p90_ms": 289.05772,
+      "p95_ms": 381.81753999999995,
+      "p99_ms": 514.3884039999999,
+      "max_ms": 4164.4719,
+      "errors_5xx": 2,
+      "rate_5xx": 0.00002025665177802761,
+      "errors_4xx": 3969,
+      "rate_4xx": 0.04019932545349579
+    },
+    "group_count": 0,
+    "groups": [],
+    "other": null,
+    "truncated": false,
+    "top_n": null
+  },
+  "result_digest": "cd7483d19dd2cd70f200c077c5f29ccb544fa7c6ebd27c187bc6296a8f389418",
+  "facts": [
+    {
+      "id": "r_872d82bd.f1",
+      "path": "/result/data_span/first",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "data_span_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f2",
+      "path": "/result/data_span/last",
+      "value": "2017-05-17T12:02:35.320000Z",
+      "metric": "data_span_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f3",
+      "path": "/result/effective_range/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "range_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f4",
+      "path": "/result/effective_range/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "range_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f5",
+      "path": "/result/group_count",
+      "value": 0,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f6",
+      "path": "/result/total/api_access_events",
+      "value": 98733,
+      "metric": "api_access_events",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f7",
+      "path": "/result/total/errors_4xx",
+      "value": 3969,
+      "metric": "errors_4xx",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f8",
+      "path": "/result/total/errors_5xx",
+      "value": 2,
+      "metric": "errors_5xx",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f9",
+      "path": "/result/total/latency_values",
+      "value": 98733,
+      "metric": "latency_values",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f10",
+      "path": "/result/total/max_ms",
+      "value": 4164.4719,
+      "metric": "max_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f11",
+      "path": "/result/total/p50_ms",
+      "value": 259.578,
+      "metric": "p50_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f12",
+      "path": "/result/total/p90_ms",
+      "value": 289.05772,
+      "metric": "p90_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f13",
+      "path": "/result/total/p95_ms",
+      "value": 381.81753999999995,
+      "metric": "p95_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f14",
+      "path": "/result/total/p99_ms",
+      "value": 514.3884039999999,
+      "metric": "p99_ms",
+      "unit": "ms",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f15",
+      "path": "/result/total/rate_4xx",
+      "value": 0.04019932545349579,
+      "metric": "rate_4xx",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f16",
+      "path": "/result/total/rate_5xx",
+      "value": 0.00002025665177802761,
+      "metric": "rate_5xx",
+      "unit": "ratio",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f17",
+      "path": "/result/total/unique_requests",
+      "value": 89535,
+      "metric": "unique_requests",
+      "unit": "requests",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f18",
+      "path": "/result/total/without_request_id",
+      "value": 9196,
+      "metric": "without_request_id",
+      "unit": "api_accesses",
+      "group": {}
+    },
+    {
+      "id": "r_872d82bd.f19",
+      "path": "/scope/windows/0/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_872d82bd.f20",
+      "path": "/scope/windows/0/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    }
+  ]
+}

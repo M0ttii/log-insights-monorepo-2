@@ -1,0 +1,910 @@
+{
+  "receipt_id": "r_b42c7c9c",
+  "created_at": "2026-10-18T17:41:23.510Z",
+  "client": "eval",
+  "tool": "count_events",
+  "tool_version": "1.2.0",
+  "input": {
+    "group_by": [
+      "rack"
+    ],
+    "dataset": "bgl",
+    "from": "2005-06-01T00:00:00Z",
+    "to": "2005-07-01T00:00:00Z",
+    "alert_label": "APPREAD",
+    "top_n": 50
+  },
+  "signature": "07f979d3cc7c7ccea380347ae80ee0b72b0f5ced9bb2eb9c47a4ed27e03fc8a4",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH grouped AS (SELECT log_events.rack AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.dataset = $1 AND log_events.ts >= $2::TIMESTAMPTZ AND log_events.ts < $3::TIMESTAMPTZ AND log_events.alert_label = $4 GROUP BY 1), ranked AS (SELECT g1, events, baseline, row_number() OVER (ORDER BY events DESC, g1 ASC NULLS LAST) AS rank, sum(events) OVER () AS total FROM grouped), summary AS (SELECT coalesce(sum(events), 0) AS c, sum(baseline) AS b, count(*) AS n, count(*) FILTER (WHERE rank > $5) AS other_n, coalesce(sum(events) FILTER (WHERE rank > $5), 0) AS other_c, sum(baseline) FILTER (WHERE rank > $5) AS other_b FROM ranked) SELECT 0::BIGINT AS rank, NULL AS g1, c::BIGINT AS events, NULL::DOUBLE AS share, b::BIGINT AS baseline, (c - b)::BIGINT AS delta, 100 * (c - b)::DOUBLE / NULLIF(b, 0) AS pct_change, CASE WHEN b IS NULL THEN NULL WHEN b = 0 AND c > 0 THEN 'first observed in this comparison' WHEN b = 0 THEN 'not observed in either period' WHEN c >= $6::BIGINT * b AND c - b >= $7::BIGINT THEN 'significantly increased' END AS classification, n::BIGINT AS group_count, other_n::BIGINT AS other_groups, other_c::BIGINT AS other_events, other_c::DOUBLE / NULLIF(c, 0) AS other_share, other_b::BIGINT AS other_baseline, (other_c - other_b)::BIGINT AS other_delta, 100 * (other_c - other_b)::DOUBLE / NULLIF(other_b, 0) AS other_pct_change FROM summary UNION ALL SELECT rank, g1, events, events::DOUBLE / NULLIF(total, 0), baseline::BIGINT AS baseline, (events - baseline)::BIGINT AS delta, 100 * (events - baseline)::DOUBLE / NULLIF(baseline, 0) AS pct_change, CASE WHEN baseline IS NULL THEN NULL WHEN baseline = 0 AND events > 0 THEN 'first observed in this comparison' WHEN baseline = 0 THEN 'not observed in either period' WHEN events >= $6::BIGINT * baseline AND events - baseline >= $7::BIGINT THEN 'significantly increased' END AS classification, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM ranked WHERE rank <= $5 ORDER BY rank"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "bgl",
+      "2005-06-01T00:00:00Z",
+      "2005-07-01T00:00:00Z",
+      "APPREAD",
+      50,
+      2,
+      20
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-06-01T00:00:00Z",
+        "to": "2005-07-01T00:00:00Z"
+      }
+    ],
+    "filters": {
+      "alert_label": "APPREAD"
+    }
+  },
+  "population": {
+    "count": 5983,
+    "unit": "log_events"
+  },
+  "rows_returned": 32,
+  "truncated": false,
+  "row_limit": 50,
+  "duration_ms": 8.56,
+  "result": {
+    "group_by": [
+      "rack"
+    ],
+    "unit": "log_events",
+    "total": 5983,
+    "group_count": 32,
+    "groups": [
+      {
+        "rack": "R00",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R01",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R02",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R03",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R04",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R05",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R06",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R07",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R10",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R11",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R12",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R13",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R14",
+        "events": 240,
+        "share": 0.04011365535684439
+      },
+      {
+        "rack": "R16",
+        "events": 237,
+        "share": 0.03961223466488384
+      },
+      {
+        "rack": "R17",
+        "events": 237,
+        "share": 0.03961223466488384
+      },
+      {
+        "rack": "R15",
+        "events": 232,
+        "share": 0.038776533511616244
+      },
+      {
+        "rack": "R31",
+        "events": 144,
+        "share": 0.024068193214106637
+      },
+      {
+        "rack": "R32",
+        "events": 144,
+        "share": 0.024068193214106637
+      },
+      {
+        "rack": "R33",
+        "events": 144,
+        "share": 0.024068193214106637
+      },
+      {
+        "rack": "R34",
+        "events": 144,
+        "share": 0.024068193214106637
+      },
+      {
+        "rack": "R35",
+        "events": 144,
+        "share": 0.024068193214106637
+      },
+      {
+        "rack": "R37",
+        "events": 143,
+        "share": 0.023901052983453117
+      },
+      {
+        "rack": "R36",
+        "events": 141,
+        "share": 0.02356677252214608
+      },
+      {
+        "rack": "R30",
+        "events": 140,
+        "share": 0.023399632291492563
+      },
+      {
+        "rack": "R22",
+        "events": 129,
+        "share": 0.02156108975430386
+      },
+      {
+        "rack": "R21",
+        "events": 128,
+        "share": 0.021393949523650344
+      },
+      {
+        "rack": "R24",
+        "events": 128,
+        "share": 0.021393949523650344
+      },
+      {
+        "rack": "R25",
+        "events": 128,
+        "share": 0.021393949523650344
+      },
+      {
+        "rack": "R26",
+        "events": 128,
+        "share": 0.021393949523650344
+      },
+      {
+        "rack": "R27",
+        "events": 128,
+        "share": 0.021393949523650344
+      },
+      {
+        "rack": "R20",
+        "events": 124,
+        "share": 0.02072538860103627
+      },
+      {
+        "rack": "R23",
+        "events": 120,
+        "share": 0.020056827678422196
+      }
+    ],
+    "other": null,
+    "comparison": null,
+    "truncated": false,
+    "top_n": 50
+  },
+  "result_digest": "6371e8dbfbddfd28168867946d9f3fdd42841a531dae764492d06bbb9979e345",
+  "facts": [
+    {
+      "id": "r_b42c7c9c.f1",
+      "path": "/result/group_count",
+      "value": 32,
+      "metric": "groups",
+      "unit": "groups",
+      "group": {}
+    },
+    {
+      "id": "r_b42c7c9c.f2",
+      "path": "/result/groups/0/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R00"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f3",
+      "path": "/result/groups/0/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R00"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f4",
+      "path": "/result/groups/1/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R01"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f5",
+      "path": "/result/groups/1/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R01"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f6",
+      "path": "/result/groups/2/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R02"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f7",
+      "path": "/result/groups/2/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R02"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f8",
+      "path": "/result/groups/3/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R03"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f9",
+      "path": "/result/groups/3/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R03"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f10",
+      "path": "/result/groups/4/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R04"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f11",
+      "path": "/result/groups/4/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R04"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f12",
+      "path": "/result/groups/5/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R05"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f13",
+      "path": "/result/groups/5/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R05"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f14",
+      "path": "/result/groups/6/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R06"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f15",
+      "path": "/result/groups/6/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R06"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f16",
+      "path": "/result/groups/7/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R07"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f17",
+      "path": "/result/groups/7/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R07"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f18",
+      "path": "/result/groups/8/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R10"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f19",
+      "path": "/result/groups/8/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R10"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f20",
+      "path": "/result/groups/9/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R11"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f21",
+      "path": "/result/groups/9/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R11"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f22",
+      "path": "/result/groups/10/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R12"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f23",
+      "path": "/result/groups/10/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R12"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f24",
+      "path": "/result/groups/11/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R13"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f25",
+      "path": "/result/groups/11/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R13"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f26",
+      "path": "/result/groups/12/events",
+      "value": 240,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R14"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f27",
+      "path": "/result/groups/12/share",
+      "value": 0.04011365535684439,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R14"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f28",
+      "path": "/result/groups/13/events",
+      "value": 237,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R16"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f29",
+      "path": "/result/groups/13/share",
+      "value": 0.03961223466488384,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R16"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f30",
+      "path": "/result/groups/14/events",
+      "value": 237,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R17"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f31",
+      "path": "/result/groups/14/share",
+      "value": 0.03961223466488384,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R17"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f32",
+      "path": "/result/groups/15/events",
+      "value": 232,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R15"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f33",
+      "path": "/result/groups/15/share",
+      "value": 0.038776533511616244,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R15"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f34",
+      "path": "/result/groups/16/events",
+      "value": 144,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R31"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f35",
+      "path": "/result/groups/16/share",
+      "value": 0.024068193214106637,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R31"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f36",
+      "path": "/result/groups/17/events",
+      "value": 144,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R32"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f37",
+      "path": "/result/groups/17/share",
+      "value": 0.024068193214106637,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R32"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f38",
+      "path": "/result/groups/18/events",
+      "value": 144,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R33"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f39",
+      "path": "/result/groups/18/share",
+      "value": 0.024068193214106637,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R33"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f40",
+      "path": "/result/groups/19/events",
+      "value": 144,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R34"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f41",
+      "path": "/result/groups/19/share",
+      "value": 0.024068193214106637,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R34"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f42",
+      "path": "/result/groups/20/events",
+      "value": 144,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R35"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f43",
+      "path": "/result/groups/20/share",
+      "value": 0.024068193214106637,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R35"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f44",
+      "path": "/result/groups/21/events",
+      "value": 143,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R37"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f45",
+      "path": "/result/groups/21/share",
+      "value": 0.023901052983453117,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R37"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f46",
+      "path": "/result/groups/22/events",
+      "value": 141,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R36"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f47",
+      "path": "/result/groups/22/share",
+      "value": 0.02356677252214608,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R36"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f48",
+      "path": "/result/groups/23/events",
+      "value": 140,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R30"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f49",
+      "path": "/result/groups/23/share",
+      "value": 0.023399632291492563,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R30"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f50",
+      "path": "/result/groups/24/events",
+      "value": 129,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R22"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f51",
+      "path": "/result/groups/24/share",
+      "value": 0.02156108975430386,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R22"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f52",
+      "path": "/result/groups/25/events",
+      "value": 128,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R21"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f53",
+      "path": "/result/groups/25/share",
+      "value": 0.021393949523650344,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R21"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f54",
+      "path": "/result/groups/26/events",
+      "value": 128,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R24"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f55",
+      "path": "/result/groups/26/share",
+      "value": 0.021393949523650344,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R24"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f56",
+      "path": "/result/groups/27/events",
+      "value": 128,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R25"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f57",
+      "path": "/result/groups/27/share",
+      "value": 0.021393949523650344,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R25"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f58",
+      "path": "/result/groups/28/events",
+      "value": 128,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R26"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f59",
+      "path": "/result/groups/28/share",
+      "value": 0.021393949523650344,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R26"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f60",
+      "path": "/result/groups/29/events",
+      "value": 128,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R27"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f61",
+      "path": "/result/groups/29/share",
+      "value": 0.021393949523650344,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R27"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f62",
+      "path": "/result/groups/30/events",
+      "value": 124,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R20"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f63",
+      "path": "/result/groups/30/share",
+      "value": 0.02072538860103627,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R20"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f64",
+      "path": "/result/groups/31/events",
+      "value": 120,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {
+        "rack": "R23"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f65",
+      "path": "/result/groups/31/share",
+      "value": 0.020056827678422196,
+      "metric": "share",
+      "unit": "ratio",
+      "group": {
+        "rack": "R23"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f66",
+      "path": "/result/total",
+      "value": 5983,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_b42c7c9c.f67",
+      "path": "/scope/windows/0/from",
+      "value": "2005-06-01T00:00:00Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "id": "r_b42c7c9c.f68",
+      "path": "/scope/windows/0/to",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    }
+  ]
+}

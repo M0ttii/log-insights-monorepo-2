@@ -1,0 +1,1516 @@
+{
+  "receipt_id": "r_0f3a6bca",
+  "created_at": "2026-10-18T17:43:59.926Z",
+  "client": "eval",
+  "tool": "check_claims",
+  "tool_version": "1.0.0",
+  "input": {
+    "claims": [
+      {
+        "fact": "r_bcd0408f.f15",
+        "value": "2005-06-01T00:00:00Z",
+        "metric": "window_start",
+        "group": {
+          "dataset": "bgl",
+          "period": "current"
+        }
+      },
+      {
+        "fact": "r_bcd0408f.f16",
+        "value": "2005-07-01T00:00:00Z",
+        "metric": "window_end",
+        "group": {
+          "dataset": "bgl",
+          "period": "current"
+        }
+      },
+      {
+        "fact": "r_45c7a4ec.f50",
+        "value": "2005-06-03T22:42:50.363779Z",
+        "metric": "first_event_time",
+        "group": {
+          "dataset": "bgl"
+        }
+      },
+      {
+        "fact": "r_45c7a4ec.f58",
+        "value": "4,747,963",
+        "metric": "lines_read",
+        "group": {
+          "dataset": "bgl"
+        }
+      },
+      {
+        "fact": "r_8f3bdd12.f4",
+        "value": "4,747,945",
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_45c7a4ec.f59",
+        "value": "18",
+        "metric": "rejected_lines",
+        "group": {
+          "dataset": "bgl"
+        }
+      },
+      {
+        "fact": "r_45c7a4ec.f51",
+        "value": "2006-01-04T16:00:05.233639Z",
+        "metric": "last_event_time",
+        "group": {
+          "dataset": "bgl"
+        }
+      },
+      {
+        "fact": "r_45c7a4ec.f126",
+        "value": "207,820",
+        "metric": "lines_read",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_2c4302ad.f4",
+        "value": "207,820",
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_45c7a4ec.f127",
+        "value": "0",
+        "metric": "rejected_lines",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_45c7a4ec.f120",
+        "value": "2017-05-14T19:39:01.445000Z",
+        "metric": "first_event_time",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_45c7a4ec.f121",
+        "value": "2017-05-17T12:02:35.320000Z",
+        "metric": "last_event_time",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_b63b6c6e.f4",
+        "value": "5,983",
+        "metric": "matches",
+        "group": {}
+      },
+      {
+        "fact": "r_bcd0408f.f3",
+        "value": "5,983",
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_bcd0408f.f8",
+        "value": "7",
+        "metric": "episodes",
+        "group": {
+          "pattern_id": "287312f13c189c4d"
+        }
+      },
+      {
+        "fact": "r_bcd0408f.f5",
+        "value": "5",
+        "metric": "active_days",
+        "group": {
+          "pattern_id": "287312f13c189c4d"
+        }
+      },
+      {
+        "fact": "r_bcd0408f.f14",
+        "value": "30",
+        "metric": "episode_gap",
+        "group": {}
+      },
+      {
+        "fact": "r_bcd0408f.f12",
+        "value": "512",
+        "metric": "nodes",
+        "group": {
+          "pattern_id": "287312f13c189c4d"
+        }
+      },
+      {
+        "fact": "r_bcd0408f.f13",
+        "value": "32",
+        "metric": "racks",
+        "group": {
+          "pattern_id": "287312f13c189c4d"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f8",
+        "value": "-838.005",
+        "metric": "offset",
+        "group": {
+          "event_id": "14736"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f9",
+        "value": "2005-06-04T07:24:31.560279Z",
+        "metric": "event_time",
+        "group": {
+          "event_id": "14736"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f10",
+        "value": "-803.828",
+        "metric": "offset",
+        "group": {
+          "event_id": "14737"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f11",
+        "value": "2005-06-04T07:24:31.594456Z",
+        "metric": "event_time",
+        "group": {
+          "event_id": "14737"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f1",
+        "value": "2005-06-04T07:24:32.398284Z",
+        "metric": "event_time",
+        "group": {
+          "event_id": "14738"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f2",
+        "value": "33.908",
+        "metric": "offset",
+        "group": {
+          "event_id": "14739"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f3",
+        "value": "2005-06-04T07:24:32.432192Z",
+        "metric": "event_time",
+        "group": {
+          "event_id": "14739"
+        }
+      },
+      {
+        "fact": "r_b6ce5f6c.f13",
+        "value": "1,021",
+        "metric": "events_in_window",
+        "group": {
+          "direction": "after"
+        }
+      },
+      {
+        "fact": "r_16d9e58b.f1",
+        "value": "7",
+        "metric": "anchors",
+        "group": {}
+      },
+      {
+        "fact": "r_16d9e58b.f6",
+        "value": "6",
+        "metric": "anchors_with_pattern",
+        "group": {
+          "pattern_id": "bdec89f666f62cf9",
+          "direction": "before"
+        }
+      },
+      {
+        "fact": "r_16d9e58b.f5",
+        "value": "0.857143",
+        "metric": "anchor_share",
+        "group": {
+          "pattern_id": "bdec89f666f62cf9",
+          "direction": "before"
+        }
+      }
+    ]
+  },
+  "signature": "00e6f9a7959d3a3539ea2e376eba0aea72c99775cf2be63133ec9fe30a601268",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [],
+  "params": [],
+  "scope": {
+    "windows": [],
+    "filters": {}
+  },
+  "population": null,
+  "rows_returned": 30,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 0,
+  "result": {
+    "claims": [
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f15",
+          "value": "2005-06-01T00:00:00Z",
+          "metric": "window_start",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-06-01T00:00:00Z",
+          "metric": "window_start",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f16",
+          "value": "2005-07-01T00:00:00Z",
+          "metric": "window_end",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-07-01T00:00:00Z",
+          "metric": "window_end",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "bgl",
+            "period": "current"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f50",
+          "value": "2005-06-03T22:42:50.363779Z",
+          "metric": "first_event_time",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-06-03T22:42:50.363779Z",
+          "metric": "first_event_time",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f58",
+          "value": "4,747,963",
+          "metric": "lines_read",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 4747963,
+          "metric": "lines_read",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_8f3bdd12.f4",
+          "value": "4,747,945",
+          "metric": "events",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 4747945,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_8f3bdd12",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f59",
+          "value": "18",
+          "metric": "rejected_lines",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 18,
+          "metric": "rejected_lines",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f51",
+          "value": "2006-01-04T16:00:05.233639Z",
+          "metric": "last_event_time",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2006-01-04T16:00:05.233639Z",
+          "metric": "last_event_time",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f126",
+          "value": "207,820",
+          "metric": "lines_read",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 207820,
+          "metric": "lines_read",
+          "unit": "log_events",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_2c4302ad.f4",
+          "value": "207,820",
+          "metric": "events",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 207820,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_2c4302ad",
+          "tool": "count_events",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f127",
+          "value": "0",
+          "metric": "rejected_lines",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 0,
+          "metric": "rejected_lines",
+          "unit": "log_events",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f120",
+          "value": "2017-05-14T19:39:01.445000Z",
+          "metric": "first_event_time",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2017-05-14T19:39:01.445000Z",
+          "metric": "first_event_time",
+          "unit": "log_events",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_45c7a4ec.f121",
+          "value": "2017-05-17T12:02:35.320000Z",
+          "metric": "last_event_time",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2017-05-17T12:02:35.320000Z",
+          "metric": "last_event_time",
+          "unit": "log_events",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_45c7a4ec",
+          "tool": "describe_corpus",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b63b6c6e.f4",
+          "value": "5,983",
+          "metric": "matches",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 5983,
+          "metric": "matches",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_b63b6c6e",
+          "tool": "search_logs",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f3",
+          "value": "5,983",
+          "metric": "events",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 5983,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f8",
+          "value": "7",
+          "metric": "episodes",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 7,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f5",
+          "value": "5",
+          "metric": "active_days",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 5,
+          "metric": "active_days",
+          "unit": "days",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f14",
+          "value": "30",
+          "metric": "episode_gap",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 30,
+          "metric": "episode_gap",
+          "unit": "minutes",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f12",
+          "value": "512",
+          "metric": "nodes",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 512,
+          "metric": "nodes",
+          "unit": "nodes",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_bcd0408f.f13",
+          "value": "32",
+          "metric": "racks",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 32,
+          "metric": "racks",
+          "unit": "racks",
+          "group": {
+            "pattern_id": "287312f13c189c4d"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_bcd0408f",
+          "tool": "recurring_patterns",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z",
+                "period": "current"
+              },
+              {
+                "dataset": "bgl",
+                "from": "2005-05-02T00:00:00.000000Z",
+                "to": "2005-06-01T00:00:00.000000Z",
+                "period": "baseline"
+              }
+            ],
+            "filters": {
+              "alert_label": "APPREAD"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f8",
+          "value": "-838.005",
+          "metric": "offset",
+          "group": {
+            "event_id": "14736"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": -838.005,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "14736"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f9",
+          "value": "2005-06-04T07:24:31.560279Z",
+          "metric": "event_time",
+          "group": {
+            "event_id": "14736"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-06-04T07:24:31.560279Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "14736"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f10",
+          "value": "-803.828",
+          "metric": "offset",
+          "group": {
+            "event_id": "14737"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": -803.828,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "14737"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f11",
+          "value": "2005-06-04T07:24:31.594456Z",
+          "metric": "event_time",
+          "group": {
+            "event_id": "14737"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-06-04T07:24:31.594456Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "14737"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f1",
+          "value": "2005-06-04T07:24:32.398284Z",
+          "metric": "event_time",
+          "group": {
+            "event_id": "14738"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-06-04T07:24:32.398284Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "14738"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f2",
+          "value": "33.908",
+          "metric": "offset",
+          "group": {
+            "event_id": "14739"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 33.908,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "14739"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f3",
+          "value": "2005-06-04T07:24:32.432192Z",
+          "metric": "event_time",
+          "group": {
+            "event_id": "14739"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2005-06-04T07:24:32.432192Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "14739"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_b6ce5f6c.f13",
+          "value": "1,021",
+          "metric": "events_in_window",
+          "group": {
+            "direction": "after"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 1021,
+          "metric": "events_in_window",
+          "unit": "log_events",
+          "group": {
+            "direction": "after"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_b6ce5f6c",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-04T07:14:32.398284Z",
+                "to": "2005-06-04T07:34:32.398285Z"
+              }
+            ],
+            "filters": {
+              "components": [
+                "APP"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_16d9e58b.f1",
+          "value": "7",
+          "metric": "anchors",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 7,
+          "metric": "anchors",
+          "unit": "anchors",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_16d9e58b",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z"
+              }
+            ],
+            "filters": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_16d9e58b.f6",
+          "value": "6",
+          "metric": "anchors_with_pattern",
+          "group": {
+            "pattern_id": "bdec89f666f62cf9",
+            "direction": "before"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 6,
+          "metric": "anchors_with_pattern",
+          "unit": "anchors",
+          "group": {
+            "pattern_id": "bdec89f666f62cf9",
+            "direction": "before"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_16d9e58b",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z"
+              }
+            ],
+            "filters": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_16d9e58b.f5",
+          "value": "0.857143",
+          "metric": "anchor_share",
+          "group": {
+            "pattern_id": "bdec89f666f62cf9",
+            "direction": "before"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 0.8571428571428571,
+          "metric": "anchor_share",
+          "unit": "ratio",
+          "group": {
+            "pattern_id": "bdec89f666f62cf9",
+            "direction": "before"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_16d9e58b",
+          "tool": "get_log_context",
+          "data_version": "dv_229e422f86a9fc6e",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-01T00:00:00Z",
+                "to": "2005-07-01T00:00:00Z"
+              }
+            ],
+            "filters": {
+              "pattern_id": "287312f13c189c4d"
+            }
+          }
+        }
+      }
+    ],
+    "summary": {
+      "checked": 30,
+      "verified": 30,
+      "mismatch": 0,
+      "unresolved": 0,
+      "text": "30 claims checked · 0 mismatch · 0 unresolved"
+    }
+  },
+  "result_digest": "ffa37d600dcbc59b89614f1613461f7db2c785f2077bec18ad88c8c186b462cd",
+  "facts": [
+    {
+      "id": "r_0f3a6bca.f1",
+      "path": "/result/summary/checked",
+      "value": 30,
+      "metric": "claims_checked",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_0f3a6bca.f2",
+      "path": "/result/summary/mismatch",
+      "value": 0,
+      "metric": "claims_mismatch",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_0f3a6bca.f3",
+      "path": "/result/summary/unresolved",
+      "value": 0,
+      "metric": "claims_unresolved",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_0f3a6bca.f4",
+      "path": "/result/summary/verified",
+      "value": 30,
+      "metric": "claims_verified",
+      "unit": "claims",
+      "group": {}
+    }
+  ]
+}

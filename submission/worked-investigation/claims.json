@@ -1,0 +1,520 @@
+{
+  "claims": [
+    {
+      "fact": "r_bcd0408f.f15",
+      "value": "2005-06-01T00:00:00Z",
+      "metric": "window_start",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "fact": "r_bcd0408f.f16",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "window_end",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "fact": "r_45c7a4ec.f50",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "first_event_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "fact": "r_45c7a4ec.f58",
+      "value": "4,747,963",
+      "metric": "lines_read",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "fact": "r_8f3bdd12.f4",
+      "value": "4,747,945",
+      "metric": "events",
+      "group": {}
+    },
+    {
+      "fact": "r_45c7a4ec.f59",
+      "value": "18",
+      "metric": "rejected_lines",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "fact": "r_45c7a4ec.f51",
+      "value": "2006-01-04T16:00:05.233639Z",
+      "metric": "last_event_time",
+      "group": {
+        "dataset": "bgl"
+      }
+    },
+    {
+      "fact": "r_45c7a4ec.f126",
+      "value": "207,820",
+      "metric": "lines_read",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "fact": "r_2c4302ad.f4",
+      "value": "207,820",
+      "metric": "events",
+      "group": {}
+    },
+    {
+      "fact": "r_45c7a4ec.f127",
+      "value": "0",
+      "metric": "rejected_lines",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "fact": "r_45c7a4ec.f120",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "first_event_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "fact": "r_45c7a4ec.f121",
+      "value": "2017-05-17T12:02:35.320000Z",
+      "metric": "last_event_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "fact": "r_b63b6c6e.f4",
+      "value": "5,983",
+      "metric": "matches",
+      "group": {}
+    },
+    {
+      "fact": "r_bcd0408f.f3",
+      "value": "5,983",
+      "metric": "events",
+      "group": {}
+    },
+    {
+      "fact": "r_bcd0408f.f8",
+      "value": "7",
+      "metric": "episodes",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_bcd0408f.f5",
+      "value": "5",
+      "metric": "active_days",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_bcd0408f.f14",
+      "value": "30",
+      "metric": "episode_gap",
+      "group": {}
+    },
+    {
+      "fact": "r_bcd0408f.f12",
+      "value": "512",
+      "metric": "nodes",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_bcd0408f.f13",
+      "value": "32",
+      "metric": "racks",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f8",
+      "value": "-838.005",
+      "metric": "offset",
+      "group": {
+        "event_id": "14736"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f9",
+      "value": "2005-06-04T07:24:31.560279Z",
+      "metric": "event_time",
+      "group": {
+        "event_id": "14736"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f10",
+      "value": "-803.828",
+      "metric": "offset",
+      "group": {
+        "event_id": "14737"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f11",
+      "value": "2005-06-04T07:24:31.594456Z",
+      "metric": "event_time",
+      "group": {
+        "event_id": "14737"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f1",
+      "value": "2005-06-04T07:24:32.398284Z",
+      "metric": "event_time",
+      "group": {
+        "event_id": "14738"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f2",
+      "value": "33.908",
+      "metric": "offset",
+      "group": {
+        "event_id": "14739"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f3",
+      "value": "2005-06-04T07:24:32.432192Z",
+      "metric": "event_time",
+      "group": {
+        "event_id": "14739"
+      }
+    },
+    {
+      "fact": "r_b6ce5f6c.f13",
+      "value": "1,021",
+      "metric": "events_in_window",
+      "group": {
+        "direction": "after"
+      }
+    },
+    {
+      "fact": "r_16d9e58b.f1",
+      "value": "7",
+      "metric": "anchors",
+      "group": {}
+    },
+    {
+      "fact": "r_16d9e58b.f6",
+      "value": "6",
+      "metric": "anchors_with_pattern",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "fact": "r_16d9e58b.f5",
+      "value": "0.857143",
+      "metric": "anchor_share",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "fact": "r_16d9e58b.f8",
+      "value": "23",
+      "metric": "base_rate_windows",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "fact": "r_16d9e58b.f4",
+      "value": "3,896",
+      "metric": "grid_windows",
+      "group": {}
+    },
+    {
+      "fact": "r_16d9e58b.f7",
+      "value": "0.00590349",
+      "metric": "base_rate",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "fact": "r_16d9e58b.f9",
+      "value": "145.193",
+      "metric": "precursor_ratio",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9",
+        "direction": "before"
+      }
+    },
+    {
+      "fact": "r_16d9e58b.f2",
+      "value": "2005-06-03T22:42:50.363779Z",
+      "metric": "grid_start",
+      "group": {}
+    },
+    {
+      "fact": "r_16d9e58b.f3",
+      "value": "2005-07-01T00:00:00Z",
+      "metric": "grid_end",
+      "group": {}
+    },
+    {
+      "fact": "r_a7df3aee.f4",
+      "value": "8",
+      "metric": "patterns",
+      "group": {}
+    },
+    {
+      "fact": "r_8207d0e9.f16",
+      "value": "22",
+      "metric": "episodes",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f13",
+      "value": "15",
+      "metric": "active_days",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f21",
+      "value": "512",
+      "metric": "nodes",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f17",
+      "value": "3,384",
+      "metric": "events_current",
+      "group": {
+        "pattern_id": "61c1ec3180ed1d40"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f27",
+      "value": "14",
+      "metric": "episodes",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f24",
+      "value": "11",
+      "metric": "active_days",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f32",
+      "value": "480",
+      "metric": "nodes",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f28",
+      "value": "2,178",
+      "metric": "events_current",
+      "group": {
+        "pattern_id": "bdec89f666f62cf9"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f38",
+      "value": "7",
+      "metric": "episodes",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f35",
+      "value": "5",
+      "metric": "active_days",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f44",
+      "value": "512",
+      "metric": "nodes",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f39",
+      "value": "5,983",
+      "metric": "events_current",
+      "group": {
+        "pattern_id": "287312f13c189c4d"
+      }
+    },
+    {
+      "fact": "r_ef9745b3.f4",
+      "value": "13,409",
+      "metric": "events_current",
+      "group": {}
+    },
+    {
+      "fact": "r_c53dc64f.f2",
+      "value": "2,408",
+      "metric": "events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-05-30T00:00:00.000000Z"
+      }
+    },
+    {
+      "fact": "r_c53dc64f.f9",
+      "value": "2,240",
+      "metric": "events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-06T00:00:00.000000Z"
+      }
+    },
+    {
+      "fact": "r_c53dc64f.f16",
+      "value": "3,393",
+      "metric": "events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-13T00:00:00.000000Z"
+      }
+    },
+    {
+      "fact": "r_c53dc64f.f23",
+      "value": "4,200",
+      "metric": "events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-20T00:00:00.000000Z"
+      }
+    },
+    {
+      "fact": "r_c53dc64f.f30",
+      "value": "1,168",
+      "metric": "events",
+      "group": {
+        "dataset": "bgl",
+        "bucket_start": "2005-06-27T00:00:00.000000Z"
+      }
+    },
+    {
+      "fact": "r_ef9745b3.f7",
+      "value": "2005-05-02T00:00:00.000000Z",
+      "metric": "window_start",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "fact": "r_ef9745b3.f8",
+      "value": "2005-06-01T00:00:00.000000Z",
+      "metric": "window_end",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "fact": "r_8207d0e9.f4",
+      "value": "8",
+      "metric": "candidates_checked",
+      "group": {}
+    },
+    {
+      "fact": "r_8207d0e9.f9",
+      "value": "22",
+      "metric": "leader_episodes",
+      "group": {}
+    },
+    {
+      "fact": "r_8207d0e9.f7",
+      "value": "512",
+      "metric": "leader_breadth",
+      "group": {}
+    },
+    {
+      "fact": "r_8207d0e9.f11",
+      "value": "5,983",
+      "metric": "leader_events",
+      "group": {}
+    },
+    {
+      "fact": "r_7643eff2.f14",
+      "value": "34",
+      "metric": "episodes",
+      "group": {
+        "pattern_id": "842c2fed6a156022"
+      }
+    },
+    {
+      "fact": "r_872d82bd.f8",
+      "value": "2",
+      "metric": "errors_5xx",
+      "group": {}
+    },
+    {
+      "fact": "r_872d82bd.f6",
+      "value": "98,733",
+      "metric": "api_access_events",
+      "group": {}
+    },
+    {
+      "fact": "r_872d82bd.f16",
+      "value": "0.0000202567",
+      "metric": "rate_5xx",
+      "group": {}
+    },
+    {
+      "fact": "r_872d82bd.f17",
+      "value": "89,535",
+      "metric": "unique_requests",
+      "group": {}
+    },
+    {
+      "fact": "r_872d82bd.f18",
+      "value": "9,196",
+      "metric": "without_request_id",
+      "group": {}
+    },
+    {
+      "fact": "r_872d82bd.f14",
+      "value": "514.388",
+      "metric": "p99_ms",
+      "group": {}
+    }
+  ]
+}
