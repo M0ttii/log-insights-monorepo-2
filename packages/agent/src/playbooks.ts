@@ -3,7 +3,32 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import type { Filter } from "@workspace/domain/filters"
-import { roleGuidanceSchema, type RoleGuidance } from "@workspace/domain/tool"
+import {
+  roleGuidanceSchema,
+  TOOL_NAME_PATTERN,
+  type RoleGuidance,
+} from "@workspace/domain/tool"
+import { z } from "zod"
+
+const inputKeySchema = z.string().regex(/^[a-z][a-z0-9_]*$/)
+
+/** A string constrains the value; true requires a present input key. */
+export const coverageAlternativeSchema = z.strictObject({
+  tool: z.string().regex(TOOL_NAME_PATTERN),
+  input: z
+    .record(inputKeySchema, z.union([z.string().min(1), z.literal(true)]))
+    .optional(),
+})
+export type CoverageAlternative = z.infer<typeof coverageAlternativeSchema>
+
+export const coverageRequirementSchema = z.strictObject({
+  label: z.string().min(1),
+  anyOf: z.array(coverageAlternativeSchema).min(1),
+})
+export type CoverageRequirement = z.infer<typeof coverageRequirementSchema>
+
+export const roleCoverageSchema = z.array(coverageRequirementSchema).min(1)
+export type RoleCoverage = z.infer<typeof roleCoverageSchema>
 
 type Role = keyof RoleGuidance["roles"]
 type PromptArguments = Pick<Filter, "dataset" | "from" | "to"> & {
@@ -30,6 +55,49 @@ function section(text: string, heading: string): string {
   return body
 }
 
+function coverageAlternative(text: string): CoverageAlternative {
+  const match = text.match(
+    /^([a-z][a-z0-9_]{0,63})(?: ([a-z][a-z0-9_]*)=([^\s|=]+)| with ([a-z][a-z0-9_]*))?$/
+  )
+  if (match === null) throw new Error(`Invalid playbook coverage: ${text}`)
+  const [, tool, key, value, presentKey] = match
+  const input =
+    presentKey !== undefined
+      ? { [presentKey]: true }
+      : key !== undefined
+        ? { [key]: value }
+        : undefined
+  return coverageAlternativeSchema.parse({
+    tool,
+    ...(input === undefined ? {} : { input }),
+  })
+}
+
+/** Parses only the Coverage section body; prose and malformed lines fail closed. */
+export function parseCoverage(text: string): RoleCoverage {
+  const requirements = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    .map((line) => {
+      if (!line.startsWith("- "))
+        throw new Error(`Invalid playbook coverage line: ${line}`)
+      const label = line.slice(2)
+      const choices = label.startsWith("one of: ")
+        ? label.slice("one of: ".length).split("|")
+        : [label]
+      if (label.startsWith("one of: ") && choices.length < 2)
+        throw new Error(
+          `Coverage alternatives need at least two choices: ${line}`
+        )
+      return {
+        label,
+        anyOf: choices.map((choice) => coverageAlternative(choice.trim())),
+      }
+    })
+  return roleCoverageSchema.parse(requirements)
+}
+
 function readRole(name: string) {
   const text = read(name)
   const title = text.split("\n")[0]?.replace(/^# /, "")
@@ -39,6 +107,7 @@ function readRole(name: string) {
     title,
     description: section(text, "Goal"),
     summary: section(text, "Summary"),
+    coverage: parseCoverage(section(text, "Coverage")),
   }
 }
 
@@ -92,6 +161,11 @@ export function loadPlaybooks() {
     common,
     sharedRules,
     roles,
+    coverage: {
+      engineer: roles.engineer.coverage,
+      team_lead: roles.team_lead.coverage,
+      manager: roles.manager.coverage,
+    },
     guidance,
     instructions,
     systemPrompt,

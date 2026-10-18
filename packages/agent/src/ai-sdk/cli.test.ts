@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
-import { CliUsageError, parseCliArgs, runCli } from "./cli.ts"
+import { loadPlaybooks } from "../playbooks.ts"
+
+import { CliUsageError, main, parseCliArgs, runCli } from "./cli.ts"
+import * as investigation from "./investigation.ts"
 
 describe("parseCliArgs", () => {
   it("parses role, variant, effort and the positional question", () => {
@@ -85,5 +88,39 @@ describe("runCli", () => {
       err.write
     )
     expect(code).toBe(0)
+  })
+})
+
+describe("CLI investigation dependencies", () => {
+  it("passes the coverage parsed from the playbooks to the runner", async () => {
+    const run = vi
+      .spyOn(investigation, "runInvestigation")
+      .mockImplementationOnce(() => {
+        throw new Error("stop after dependency handoff")
+      })
+    const err = sink()
+    try {
+      const code = await main(
+        ["--role", "manager", "Which investigation should come first?"],
+        {
+          ANTHROPIC_API_KEY: "test-only-key",
+          SERENEDB_HOST: "127.0.0.1",
+          SERENEDB_PORT: "5432",
+          SERENEDB_USER: "test",
+          SERENEDB_PASSWORD: "test-only-password",
+          SERENEDB_DATABASE: "test",
+        },
+        sink().write,
+        err.write
+      )
+      expect(code).toBe(1)
+      expect(err.lines).toContain("stop after dependency handoff")
+      expect(run).toHaveBeenCalledTimes(1)
+      expect(run.mock.calls[0]?.[1].playbooks.coverage).toEqual(
+        loadPlaybooks().coverage
+      )
+    } finally {
+      run.mockRestore()
+    }
   })
 })
