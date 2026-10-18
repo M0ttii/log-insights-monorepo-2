@@ -599,7 +599,9 @@ async function runAggregate(
   const { window, span } = first
   const grid = gridBounds(window, span.first, spanEnd(span))
 
-  // The CTEs every aggregate query starts with: matched events and anchors.
+  // Filter first, then form one anchor per episode across all matches.
+  // Deliberately no partition by pattern_id: query anchors can span patterns
+  // (R-11). Ties select exactly the first event by ts, event_id (gate G11).
   const anchorCtes = (params: SqlParams) => {
     const compiled = compileFilter(
       input.query === undefined ? input : { ...input, text: input.query },
@@ -614,7 +616,7 @@ async function runAggregate(
     const gap = params.add(`${EPISODE_GAP_MINUTES} minutes`)
     return {
       ok: true as const,
-      sql: `matched AS (SELECT ${q}.event_id, ${q}.ts, ${q}.pattern_id FROM ${q} WHERE ${compiled.filter.where}), anchors AS (SELECT event_id, ts FROM (SELECT event_id, ts, lag(ts) OVER (ORDER BY ts, event_id) AS prev_ts FROM matched) s WHERE prev_ts IS NULL OR ts - prev_ts >= ${gap}::INTERVAL)`,
+      sql: `matched AS (SELECT ${q}.event_id, ${q}.ts, ${q}.pattern_id FROM ${q} WHERE ${compiled.filter.where}), anchors AS (SELECT event_id, ts FROM matched MATCH_RECOGNIZE (ORDER BY ts, event_id MEASURES FIRST(event_id) AS event_id, FIRST(ts) AS ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < ${gap}::INTERVAL))`,
     }
   }
   const gridWindowsSql = (params: SqlParams, bounds: Grid) =>

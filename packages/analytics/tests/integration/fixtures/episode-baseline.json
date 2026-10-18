@@ -1,0 +1,253 @@
+{
+  "source_commit": "0c201cbdcf17bc5e9a183158d29ade7f637bd929",
+  "source": "LOG-32 characterization of unchanged lag implementation on 26.10.1 before migration; only random receipt prefix removed from fact IDs",
+  "cases": [
+    {
+      "database": "patterns",
+      "name": "patterns-ABA-all",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "components": ["ABA"]
+      },
+      "result_digest": "e6ceb367d3c5f33b293508b5193e5d9afc1d9df34c2453148afb510278c9af9e",
+      "facts_sha256": "1d9c6d9faaa04d1b0bb1d4dce78223b45996cdee70f4153c3968882fa4b2aa72"
+    },
+    {
+      "database": "patterns",
+      "name": "patterns-ABA-R01-M0-N0-C:J02-U01",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "components": ["ABA"],
+        "node": "R01-M0-N0-C:J02-U01"
+      },
+      "result_digest": "674db9f23c7b64d919e3c30d274b0d1070b59dfa663a0dfd1434bf86edd681dc",
+      "facts_sha256": "283e1b3c6f7bee3b38bdb899ef09ff98bfba6bef9e4bb60595f35a6684619318"
+    },
+    {
+      "database": "patterns",
+      "name": "patterns-TIE-all",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "components": ["TIE"]
+      },
+      "result_digest": "2f58a3222469e871a80160701559dedebd0ef20a7f8a665ab376f9efe6bfb2d8",
+      "facts_sha256": "f4800eff969cb4ad1ef75802defec724fb0b07be063908743dd12abc23515191"
+    },
+    {
+      "database": "patterns",
+      "name": "patterns-TIE-R01-M0-N0-C:J02-U01",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "components": ["TIE"],
+        "node": "R01-M0-N0-C:J02-U01"
+      },
+      "result_digest": "15040b1e637302196bb3d7bb6372e73de6bc857487e626268de333283520ab6f",
+      "facts_sha256": "290663504d2e4e68b38660299c4166974d4b97f67b404c70764fc83f0f8f3ae8"
+    },
+    {
+      "database": "patterns",
+      "name": "patterns-GAP-all",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "components": ["GAP"]
+      },
+      "result_digest": "0c30b8a2dac2d3493e9ee702af2ca1fa2ddebbbcbf5bf9db3158131ee2520567",
+      "facts_sha256": "d8604c206382658c361e729686a6c580a4322bc90a110c027eed24a46e11bf55"
+    },
+    {
+      "database": "patterns",
+      "name": "patterns-GAP-R01-M0-N0-C:J02-U01",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "components": ["GAP"],
+        "node": "R01-M0-N0-C:J02-U01"
+      },
+      "result_digest": "0c30b8a2dac2d3493e9ee702af2ca1fa2ddebbbcbf5bf9db3158131ee2520567",
+      "facts_sha256": "d8604c206382658c361e729686a6c580a4322bc90a110c027eed24a46e11bf55"
+    },
+    {
+      "database": "samples",
+      "name": "samples-episodes",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "episodes",
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "b74b7ac6242e48a1c5b5372e6928755a401bed1e5f7a5ad13a84e76d739dd819",
+      "facts_sha256": "efa8e038fafd6a0a293a791e6edfbcb40cddd84f8a6520a56cfec36ddcf57e90"
+    },
+    {
+      "database": "samples",
+      "name": "samples-events",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "events",
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "40d7edf6c3834700f004ee67bf7df040bfc4e069133f689b72bf027379542171",
+      "facts_sha256": "cb2d7a2fcf686467501d68cb2664d969e4b7f5e44fe6dc4aa2e195e3f4a4b768"
+    },
+    {
+      "database": "samples",
+      "name": "samples-increase",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "increase",
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "8375a475819d84142131d44806c09256f8f0fabfa6a764e3d0b7d324c09edf79",
+      "facts_sha256": "e8d86fabc322af932744f660eea8f6619c723901eb53db7f392db1586fd1735c"
+    },
+    {
+      "database": "samples",
+      "name": "samples-investigation_order",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "bgl",
+        "rank": "investigation_order",
+        "from": "2005-08-01T00:00:00Z",
+        "to": "2005-09-01T00:00:00Z"
+      },
+      "result_digest": "824702279037c17cbc4f5e6d3ba7708aa818de791cf7609a2560d2c96d8983c4",
+      "facts_sha256": "2cc72fdf64852cfe126745bf7dba8025c003864a2b5f86f28683a2b15927f2e3"
+    },
+    {
+      "database": "samples",
+      "name": "query-generating",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "query": "generating",
+        "direction": "both"
+      },
+      "result_digest": "3ebea79fccbc8ffe88de2821093bc90ba0d4858c50d029535e293e3a2a61cd08",
+      "facts_sha256": "976542233cba6971f432828b33cfae8232a8e61b5b2427b7a81c93c21df4360e"
+    },
+    {
+      "database": "samples",
+      "name": "query-kernel",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "query": "kernel",
+        "direction": "both"
+      },
+      "result_digest": "00c93610707838e1656a50ed38f545f3313ba3a76855f1e9efcaf6efc0aabfb3",
+      "facts_sha256": "a4cbefad06157a783c65a1d0984cd7dbc9914c611c23d26ad29fa164765979c4"
+    },
+    {
+      "database": "samples",
+      "name": "query-absenttokenlog32",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "query": "absenttokenlog32",
+        "direction": "both"
+      },
+      "result_digest": "19d30c9971ae35de823299e7dc35b9d1ffd37ddfde7deef44799be93801a4003",
+      "facts_sha256": "6988ee6f77583d891e95d78c143da7cbb07a8829ac958c188330c4daa6079352"
+    },
+    {
+      "database": "precursors",
+      "name": "context-before-all",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "pattern_id": "aaaaaaaaaaaaaaaa",
+        "direction": "before",
+        "window_minutes": 10
+      },
+      "result_digest": "dd839c7094feed424b0596a00ebcf2f211534ee920f70e7819a0fdb083d2eaa9",
+      "facts_sha256": "f3f0370717b30f12e88bc448feb493f2c7d840519a0ae652106a08be8fe68c34"
+    },
+    {
+      "database": "precursors",
+      "name": "context-before-R01-M0-N0-C:J02-U01",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "pattern_id": "aaaaaaaaaaaaaaaa",
+        "direction": "before",
+        "window_minutes": 10,
+        "node": "R01-M0-N0-C:J02-U01"
+      },
+      "result_digest": "55e45774de09bbc1953f4dfcf52519c2aca7bbba18ce210ded1d44fcb282ccd5",
+      "facts_sha256": "a35dea97dae993bb53084c0f28e85661311537e7c77ff79b86efa3ac8efbfc5c"
+    },
+    {
+      "database": "precursors",
+      "name": "context-after-all",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "pattern_id": "aaaaaaaaaaaaaaaa",
+        "direction": "after",
+        "window_minutes": 10
+      },
+      "result_digest": "c3914546742a2a1699fceac6e0df7c80c2d95511221a125a4a203e33de5f92f4",
+      "facts_sha256": "d81ce3f607900ac591612e503dc2242de6bb20e0fa4a595fd88e91fde4fed95a"
+    },
+    {
+      "database": "precursors",
+      "name": "context-after-R01-M0-N0-C:J02-U01",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "pattern_id": "aaaaaaaaaaaaaaaa",
+        "direction": "after",
+        "window_minutes": 10,
+        "node": "R01-M0-N0-C:J02-U01"
+      },
+      "result_digest": "3a96f6e872daac676d6d1663d78dd3c6b7230fd978628760f07bff8974b3d45d",
+      "facts_sha256": "a75366aeebe5f8684b1f82ffb2a1e9d3e0202ace785aa8171f86033e114f23b9"
+    },
+    {
+      "database": "precursors",
+      "name": "context-both-all",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "pattern_id": "aaaaaaaaaaaaaaaa",
+        "direction": "both",
+        "window_minutes": 10
+      },
+      "result_digest": "1cec746507f04c919753d2bc5725f3c9f9ff9c040fd910bbef0c0757c287fc04",
+      "facts_sha256": "a96877712c52171e7b73c978eea1ddb34443640fbbcd304149f3d9f7c12a956b"
+    },
+    {
+      "database": "precursors",
+      "name": "context-both-R01-M0-N0-C:J02-U01",
+      "tool": "get_log_context",
+      "input": {
+        "mode": "aggregate",
+        "dataset": "bgl",
+        "pattern_id": "aaaaaaaaaaaaaaaa",
+        "direction": "both",
+        "window_minutes": 10,
+        "node": "R01-M0-N0-C:J02-U01"
+      },
+      "result_digest": "fccdcdb76a50c04f4ca5203119db0a4013d1810a1fb8c903c78bbfc526f4c3f7",
+      "facts_sha256": "182e7669efff4cf91ad12d5e89e0765ad295f49ebe9fdecbf0c3aa1ce71a342d"
+    }
+  ]
+}

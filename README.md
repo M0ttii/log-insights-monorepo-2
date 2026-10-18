@@ -190,6 +190,41 @@ receipt to `.data/receipts/` and returns fact IDs for its numbers. Until the
 README tool reference is generated from the registry, this table is kept by
 hand; the full descriptions are in the tool definitions.
 
+SereneDB computes episodes and precursor anchors with `MATCH_RECOGNIZE`
+after applying the full scope filter. Gate G11 covers timestamp ties, the
+30-minute boundary and filtered episodes; the independent golden queries
+check the results against a separate formulation.
+
+LOG-32 adopted this formulation on SereneDB 26.10.1 with unchanged results:
+19 captured sample/fixture cases preserve result digests and every fact
+(normalizing only its random receipt prefix); 42 full-BGL comparisons
+(14 inputs, three runs per variant) also match exactly. Gate G11 runs
+locally and in the loader CI job on the official amd64 image. The existing
+64 independent full-corpus golden tests pass without changes.
+
+Measured locally on `local/serenedb:26.10.1-arm64`, data version
+`dv_7ea6fcb2c9eb6882`, full BGL span, three sequential runs per variant:
+
+| Input | Previous `lag` (ms) | `MATCH_RECOGNIZE` (ms) |
+|---|---:|---:|
+| `recurring_patterns`, all patterns, `rank: episodes`, `limit: 5` | 297–363 | 546–749 |
+| `recurring_patterns`, most events (`10d868eba093620d`), default rank/limit | 135–140 | 296–304 |
+| `recurring_patterns`, rarest (`08b2f3b54c74ecf0`), default rank/limit | 22–23 | 25–25 |
+| `get_log_context`, most episodes (`8eb053329ba11348`), before, 10 min | 4,021–4,230 | 1,422–1,451 |
+| Same anchor, both directions, 60 min | 5,803–6,366 | 3,245–3,473 |
+| `get_log_context`, rarest, both directions, 60 min | 17–18 | 19–20 |
+
+Times include the receipt write and are observed ranges, not p95 estimates
+or a general speed guarantee. Context calls use `mode: aggregate`,
+`top_n: 10`, and the stated `pattern_id`, without additional filters. The
+longest SQL statement in the new measurements took 3,445 ms, below the
+pool's 10-second limit. Simple rankings became slower; the anchor-heavy
+precursor analysis became faster. Example receipts with the new SQL are
+`r_24652459` (ranking), `r_c25c95da` (1,561 anchors, both directions), and
+`r_d08e0b4b` (one anchor). Raw comparison records remain locally in
+`.data/log32-benchmark-{lag,match}.json`; receipts remain in
+`.data/receipts/`. No tool contract or episode rule changed.
+
 | Tool | Purpose | Limits |
 |---|---|---|
 | `describe_corpus` | Datasets with events, time spans, fields, levels, components with their fictional team, labels, known limits, versions and answer guidance per role | – |

@@ -450,7 +450,7 @@ describe("contract", () => {
     // Span, SQL coverage, manifest, aggregate with history/rules, details.
     expect(first.receipt.sql).toHaveLength(5)
     expect(first.receipt.sql[3]).toMatch(
-      /lag\(e\.ts\) OVER \(PARTITION BY e\.pattern_id ORDER BY e\.ts, e\.event_id\)/
+      /MATCH_RECOGNIZE \(PARTITION BY pattern_id ORDER BY ts, event_id/
     )
     expect(first.receipt.params[3]).toContain("30 minutes")
     expect(first.receipt.input).toMatchObject({ rank: "investigation_order" })
