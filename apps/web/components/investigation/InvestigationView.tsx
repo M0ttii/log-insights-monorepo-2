@@ -1,302 +1,392 @@
 "use client"
+
 import Link from "next/link"
 import { useRef, useState } from "react"
+import { useChat } from "@ai-sdk/react"
+import { DefaultChatTransport, type ChatTransport, type UIMessage } from "ai"
 import {
-  ArrowRight,
   ArrowUp,
+  ArrowUpRight,
   BriefcaseBusiness,
   ChevronDown,
   CircleHelp,
-  Database,
-  FileCheck2,
+  MessageSquarePlus,
   ScanSearch,
-  SlidersHorizontal,
+  Square,
+  Unplug,
   Users,
+  Waypoints,
   Wrench,
-  X,
 } from "lucide-react"
+import type { Filter } from "@workspace/domain/filters"
 import type { Brief } from "@/server/brief"
 import { Button } from "@workspace/ui/components/button"
-import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
 } from "@workspace/ui/components/input-group"
-import { Label } from "@workspace/ui/components/label"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTitle,
-  PopoverDescription,
-  PopoverTrigger,
-} from "@workspace/ui/components/popover"
-import { Card, CardContent } from "@workspace/ui/components/card"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+} from "@workspace/ui/components/empty"
 import {
   Alert,
-  AlertTitle,
   AlertDescription,
+  AlertTitle,
 } from "@workspace/ui/components/alert"
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@workspace/ui/components/native-select"
+import { Conversation } from "./Conversation"
+import { ScopeControls } from "./ScopeControls"
+import { readScope, scopeError } from "./scope"
+import type { Interruption } from "./types"
 
-const roleIcons = {
-  engineer: Wrench,
-  team_lead: Users,
-  manager: BriefcaseBusiness,
+const roles = {
+  engineer: {
+    label: "Engineer",
+    icon: Wrench,
+    placeholder: "Ask about an error, a node, or a failure…",
+  },
+  team_lead: {
+    label: "Team Lead",
+    icon: Users,
+    placeholder: "Ask about recurring problems and your team’s next step…",
+  },
+  manager: {
+    label: "Manager",
+    icon: BriefcaseBusiness,
+    placeholder: "Ask what to investigate first, and why…",
+  },
 }
-const labels = {
-  engineer: "Engineer",
-  team_lead: "Team Lead",
-  manager: "Manager",
-}
-type Role = keyof typeof labels
+type Role = keyof typeof roles
 function isRole(value: unknown): value is Role {
   return value === "engineer" || value === "team_lead" || value === "manager"
 }
-// Composer composition is reused from the demo's Base UI Prompt Input adaptation.
-export function InvestigationView({ brief }: { brief: Brief }) {
+
+// LOG-48 owns the server. No endpoint is called until its real integration opts
+// in through `available`. The injectable SDK transport also supports component QA.
+const transport = new DefaultChatTransport({ api: "/api/chat" })
+export function InvestigationView({
+  brief,
+  available = false,
+  chatTransport = transport,
+}: {
+  brief: Brief
+  available?: boolean
+  chatTransport?: ChatTransport<UIMessage>
+}) {
   const [role, setRole] = useState<Role>("engineer")
   const [question, setQuestion] = useState("")
-  const [dataset, setDataset] = useState("")
-  const [scope, setScope] = useState<Record<string, unknown>>({})
+  const [scope, setScope] = useState<Filter>({})
+  const [interruptions, setInterruptions] = useState<
+    Record<string, Interruption>
+  >({})
   const input = useRef<HTMLTextAreaElement>(null)
+  const form = useRef<HTMLFormElement>(null)
+  const chat = useChat({
+    transport: chatTransport,
+    onFinish: ({ message, isAbort, isError, isDisconnect }) => {
+      if (isAbort || isDisconnect || isError)
+        setInterruptions((previous) => ({
+          ...previous,
+          [message.id]: isAbort ? "stopped" : "failed",
+        }))
+      if (!isAbort && !isError && !isDisconnect) setQuestion("")
+    },
+  })
+  const busy = chat.status === "submitted" || chat.status === "streaming"
   const current = brief.roles.find((item) => item.id === role)
+  const RoleIcon = roles[role].icon
+  const problem = scopeError(scope)
+  const canSend = available && !busy && question.trim().length > 0 && !problem
+  const hasMessages = chat.messages.length > 0
+
+  function newInvestigation() {
+    chat.setMessages([])
+    chat.clearError()
+    setQuestion("")
+    setScope({})
+    setInterruptions({})
+    input.current?.focus()
+  }
+
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-5 py-8 sm:px-10 lg:px-14 lg:pt-14">
-      <div className="flex items-start justify-between gap-5">
-        <div>
-          <h1 className="page-heading">What do you need to know?</h1>
-          <p className="page-description">
-            Start with a question. Follow the evidence to your next step.
-          </p>
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="flex shrink-0 items-center justify-between gap-3 px-5 py-3 sm:px-8">
+        <span className="text-sm text-muted-foreground">New investigation</span>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="New chat"
+            disabled={
+              busy ||
+              (!hasMessages && !question && Object.keys(scope).length === 0)
+            }
+            onClick={newInvestigation}
+          >
+            <MessageSquarePlus />
+            <span className="hidden sm:inline">New chat</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="How it works"
+            render={<Link href="/datasets#connect" />}
+          >
+            <CircleHelp />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          render={<Link href="/datasets#connect" />}
-          className="hidden sm:inline-flex"
-        >
-          <CircleHelp />
-          How it works
-        </Button>
-      </div>
-      <section className="mt-10" aria-label="Choose your perspective">
-        <Label className="mb-3 block text-xs text-muted-foreground">
-          Your perspective
-        </Label>
-        <Tabs
-          value={role}
-          onValueChange={(value) => {
-            if (isRole(value)) setRole(value)
+      </header>
+
+      {hasMessages ? (
+        <div className="min-h-0 flex-1">
+          <Conversation
+            messages={chat.messages}
+            status={chat.status}
+            interruptions={interruptions}
+          />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <Empty className="chat-welcome mx-auto min-h-full max-w-3xl gap-8 px-5 py-8 sm:px-8">
+            <EmptyHeader className="max-w-xl gap-3">
+              <EmptyMedia className="mb-3 text-link">
+                <Waypoints className="size-8 stroke-[1.3]" aria-hidden="true" />
+              </EmptyMedia>
+              <h1 className="text-2xl leading-tight font-medium tracking-tight sm:text-3xl">
+                What do you need to know?
+              </h1>
+              <EmptyDescription className="max-w-md text-sm leading-6">
+                Ask a question. Trace the evidence.
+                <br className="hidden sm:block" /> Find your next step.
+              </EmptyDescription>
+            </EmptyHeader>
+            <section
+              className="w-full max-w-xl text-left"
+              aria-label={`Example questions for ${roles[role].label}`}
+            >
+              {brief.examples
+                .filter((example) => example.role === role)
+                .map((example) => (
+                  <Button
+                    key={example.id}
+                    variant="ghost"
+                    className="group h-auto w-full justify-start gap-3 rounded-lg px-3 py-3 text-left text-sm leading-6 font-normal whitespace-normal text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setQuestion(example.question.trim())
+                      setScope(readScope(example.scope))
+                      input.current?.focus()
+                    }}
+                  >
+                    <ScanSearch
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <span className="line-clamp-2 flex-1">
+                      {example.question.trim()}
+                    </span>
+                    <ArrowUpRight
+                      className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                ))}
+            </section>
+          </Empty>
+        </div>
+      )}
+
+      <section
+        aria-label="Question composer"
+        className="mx-auto w-full max-w-3xl shrink-0 px-4 pt-2 pb-4 sm:px-8 sm:pb-6"
+      >
+        {chat.error && (
+          <Alert className="mb-3">
+            <Unplug />
+            <AlertTitle>Response interrupted</AlertTitle>
+            <AlertDescription>
+              Your question is preserved. Check the connection and send it
+              again.
+            </AlertDescription>
+          </Alert>
+        )}
+        <form
+          ref={form}
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!canSend) return
+            chat.clearError()
+            void chat.sendMessage(
+              { text: question.trim() },
+              { body: { role, scope } }
+            )
           }}
         >
-          <TabsList className="h-10 w-full sm:w-auto">
-            {Object.entries(labels).map(([id, label]) => {
-              const Icon = isRole(id) ? roleIcons[id] : Wrench
-              return (
-                <TabsTrigger
-                  className="px-4 shadow-none sm:min-w-32 data-active:shadow-none"
-                  key={id}
-                  value={id}
+          <InputGroup className="chat-composer overflow-hidden rounded-xl border-border bg-card has-disabled:bg-card has-disabled:opacity-100 dark:bg-card dark:has-disabled:bg-card">
+            <InputGroupTextarea
+              ref={input}
+              aria-label="Your question"
+              aria-describedby="chat-availability"
+              placeholder={roles[role].placeholder}
+              value={question}
+              maxLength={12000}
+              readOnly={busy}
+              rows={2}
+              className="max-h-48 min-h-24 resize-none px-4 pt-4 pb-2 text-sm leading-7 md:text-sm"
+              onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault()
+                  if (canSend) form.current?.requestSubmit()
+                }
+              }}
+            />
+            <InputGroupAddon
+              align="block-end"
+              className="flex-wrap gap-0 px-2 pb-2"
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button variant="ghost" size="sm" />}
+                  disabled={busy}
+                  aria-label={`Choose perspective, ${roles[role].label}`}
+                  className="gap-1.5 text-xs"
                 >
-                  <Icon aria-hidden="true" />
-                  {label}
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
-        </Tabs>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  <RoleIcon className="size-3.5" />
+                  {roles[role].label}
+                  <ChevronDown className="size-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  side="top"
+                  className="w-80 max-w-[calc(100vw-2rem)]"
+                >
+                  <DropdownMenuRadioGroup
+                    value={role}
+                    onValueChange={(value) => {
+                      if (isRole(value)) setRole(value)
+                    }}
+                  >
+                    {Object.entries(roles).map(([id, item]) => (
+                      <DropdownMenuRadioItem
+                        closeOnClick
+                        key={id}
+                        value={id}
+                        className="items-start py-3"
+                      >
+                        <item.icon className="mt-0.5 size-4 shrink-0" />
+                        <span>
+                          <span className="block font-medium">
+                            {item.label}
+                          </span>
+                          <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                            {
+                              brief.roles.find((entry) => entry.id === id)
+                                ?.description
+                            }
+                          </span>
+                        </span>
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <span className="mx-1 h-4 border-l" aria-hidden="true" />
+              <ScopeControls
+                scope={scope}
+                onChange={setScope}
+                disabled={busy}
+              />
+              <InputGroupButton
+                type={busy ? "button" : "submit"}
+                variant="default"
+                size="icon-sm"
+                className="ml-auto rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover"
+                disabled={!busy && !canSend}
+                aria-label={
+                  busy
+                    ? "Stop response"
+                    : available
+                      ? "Send question"
+                      : "Send unavailable"
+                }
+                onClick={
+                  busy
+                    ? () => {
+                        void chat.stop()
+                      }
+                    : undefined
+                }
+              >
+                {busy ? (
+                  <Square className="size-3.5 fill-current" />
+                ) : (
+                  <ArrowUp className="size-4" />
+                )}
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </form>
+        <p
+          className="mt-2.5 px-1 text-xs leading-5 text-muted-foreground"
+          aria-live="polite"
+        >
           {current?.description}
         </p>
-      </section>
-      <section
-        className="mt-7 space-y-2"
-        aria-label={`Example questions for ${labels[role]}`}
-      >
-        <h2 className="mb-3 text-xs font-medium text-muted-foreground">
-          Try a question
-        </h2>
-        {brief.examples
-          .filter((example) => example.role === role)
-          .map((example) => (
-            <Button
-              key={example.id}
-              variant="ghost"
-              className="h-auto w-full justify-start gap-3 border border-border px-4 py-3 text-left leading-6 font-normal whitespace-normal hover:bg-muted"
-              onClick={() => {
-                setQuestion(example.question.trim())
-                setScope(example.scope ?? {})
-                setDataset(
-                  typeof example.scope?.dataset === "string"
-                    ? example.scope.dataset
-                    : ""
-                )
-                input.current?.focus()
-              }}
-            >
-              <ScanSearch
-                aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground"
-              />
-              <span className="flex-1">{example.question.trim()}</span>
-              <ArrowUp
-                className="size-3.5 shrink-0 rotate-45 text-muted-foreground"
-                aria-hidden="true"
-              />
-            </Button>
-          ))}
-      </section>
-      <section aria-label="Question composer" className="mt-8">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
-            <Database className="size-3.5 shrink-0" aria-hidden="true" />
-            {dataset
-              ? `Scope: ${dataset.toUpperCase()}`
-              : "Scope: chosen by the agent"}
-            {typeof scope.from === "string" && (
-              <span className="hidden sm:inline">
-                · [{scope.from.slice(0, 10)}, {String(scope.to).slice(0, 10)})
-                UTC
-              </span>
-            )}
-            {dataset && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Clear scope"
-                onClick={() => {
-                  setDataset("")
-                  setScope({})
-                }}
-              >
-                <X />
-              </Button>
-            )}
-          </span>
-          <Popover>
-            <PopoverTrigger render={<Button variant="ghost" size="xs" />}>
-              <SlidersHorizontal />
-              Set scope
-              <ChevronDown />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="space-y-3">
-              <PopoverTitle>Dataset scope</PopoverTitle>
-              <PopoverDescription>
-                Choose a dataset, or let the agent choose from your question.
-              </PopoverDescription>
-              <Label htmlFor="ask-dataset">Dataset</Label>
-              <NativeSelect
-                id="ask-dataset"
-                value={dataset}
-                onChange={(event) => {
-                  setDataset(event.target.value)
-                  setScope(
-                    event.target.value ? { dataset: event.target.value } : {}
-                  )
-                }}
-              >
-                <NativeSelectOption value="">
-                  Chosen by the agent
-                </NativeSelectOption>
-                <NativeSelectOption value="bgl">BGL</NativeSelectOption>
-                <NativeSelectOption value="openstack">
-                  OpenStack
-                </NativeSelectOption>
-              </NativeSelect>
-            </PopoverContent>
-          </Popover>
-        </div>
-        <InputGroup className="rounded-xl bg-card shadow-none has-disabled:bg-card has-disabled:opacity-100 dark:bg-card dark:has-disabled:bg-card">
-          <InputGroupTextarea
-            id="question"
-            ref={input}
-            aria-label="Your question"
-            aria-describedby="chat-availability"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Ask about errors, recurring problems, or priorities…"
-            rows={3}
-            maxLength={12000}
-            className="min-h-28 p-4 text-base"
-          />
-          <InputGroupAddon
-            align="block-end"
-            className="justify-between px-4 pb-3"
-          >
-            <span className="text-xs font-normal text-muted-foreground">
-              {labels[role]} · UTC
+        {(scope.from || scope.to) && (
+          <p className="mt-1 flex flex-wrap gap-x-1 px-1 font-mono text-xs leading-5 text-muted-foreground">
+            <span className="whitespace-nowrap">
+              [{scope.from ?? "span start"},
             </span>
-            <InputGroupButton
-              variant="default"
-              size="sm"
-              disabled
-              aria-label="Send unavailable in this preliminary interface"
-            >
-              <ArrowUp />
-              Send
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
+            <span className="whitespace-nowrap">{scope.to ?? "span end"})</span>
+            <span className="whitespace-nowrap">· UTC</span>
+          </p>
+        )}
+        {problem && (
+          <p role="alert" className="mt-1 text-xs text-destructive">
+            {problem}
+          </p>
+        )}
         <p
           id="chat-availability"
-          className="mt-3 text-xs leading-5 text-muted-foreground"
+          className="mt-3 flex items-start justify-center gap-1.5 text-center text-xs leading-5 text-muted-foreground"
         >
-          Preliminary interface · Chat is not connected yet. Your draft stays
-          editable.
+          {available ? (
+            "Answers can be incomplete. Follow the receipts to verify the evidence."
+          ) : (
+            <>
+              <Unplug className="mt-1 size-3 shrink-0" aria-hidden="true" />
+              <span>
+                Agent connection pending. Your question can be prepared here.{" "}
+                <Link
+                  className="text-link underline underline-offset-4"
+                  href="/datasets#connect"
+                >
+                  Use Claude via MCP
+                  <ArrowUpRight
+                    className="ml-0.5 inline size-3"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </span>
+            </>
+          )}
         </p>
       </section>
-      <Alert className="mt-6 bg-transparent">
-        <CircleHelp />
-        <AlertTitle>Ask with Claude now</AlertTitle>
-        <AlertDescription>
-          The MCP server already provides the shared tools and role playbooks.{" "}
-          <Link
-            href="/datasets#connect"
-            className="text-link underline underline-offset-4"
-          >
-            Connect from Claude{" "}
-            <ArrowRight className="inline size-3" aria-hidden="true" />
-          </Link>
-        </AlertDescription>
-      </Alert>
-      <div className="mt-auto pt-12">
-        <Card className="border-0 bg-transparent shadow-none">
-          <CardContent className="grid gap-5 p-0 text-xs leading-5 text-muted-foreground sm:grid-cols-3">
-            <p className="flex gap-2.5">
-              <ScanSearch className="mt-0.5 size-4 shrink-0" />
-              <span>
-                <strong className="block font-medium text-foreground">
-                  Choose a perspective
-                </strong>
-                The same corpus. A different question and next step.
-              </span>
-            </p>
-            <p className="flex gap-2.5">
-              <Database className="mt-0.5 size-4 shrink-0" />
-              <span>
-                <strong className="block font-medium text-foreground">
-                  Inspect the evidence
-                </strong>
-                Open the SQL, scope, and facts behind a result.
-              </span>
-            </p>
-            <p className="flex gap-2.5">
-              <FileCheck2 className="mt-0.5 size-4 shrink-0" />
-              <span>
-                <strong className="block font-medium text-foreground">
-                  Check the numbers
-                </strong>
-                Facts link to receipts across the web and MCP.
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   )
 }

@@ -13,7 +13,10 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
   await expect(
     page.getByRole("heading", { name: "What do you need to know?" })
   ).toBeVisible()
-  await page.getByRole("tab", { name: "Team Lead", exact: true }).click()
+  await page
+    .getByRole("button", { name: "Choose perspective, Engineer" })
+    .click()
+  await page.getByRole("menuitemradio", { name: /Team Lead/ }).click()
   const example = page
     .getByRole("region", { name: "Example questions for Team Lead" })
     .getByRole("button")
@@ -25,6 +28,18 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
   await expect(
     page.getByRole("button", { name: "Send unavailable" })
   ).toBeDisabled()
+  await expect(
+    page.getByRole("button", { name: /^Remove teams filter/ })
+  ).toBeVisible()
+  await expect(page.getByText(/Agent connection pending/)).toBeVisible()
+  expect(
+    await page
+      .getByRole("textbox", { name: "Your question" })
+      .evaluate(
+        (element) =>
+          element.getBoundingClientRect().bottom <= window.innerHeight
+      )
+  ).toBe(true)
   const ask = await new AxeBuilder({ page }).analyze()
   expect(
     ask.violations.filter(
@@ -78,6 +93,38 @@ test("roles, drafts, theme, navigation and accessible layouts", async ({
     )
   ).toEqual([])
   expect(errors).toEqual([])
+})
+
+test("composer retains the question across roles and validates the UTC scope", async ({
+  page,
+}) => {
+  await page.goto("/investigations/new")
+  const input = page.getByRole("textbox", { name: "Your question" })
+  await input.fill("Keep my investigation question")
+  await page
+    .getByRole("button", { name: "Choose perspective, Engineer" })
+    .click()
+  await page.getByRole("menuitemradio", { name: /Manager/ }).click()
+  await expect(input).toHaveValue("Keep my investigation question")
+  await page.getByRole("button", { name: /^Choose dataset/ }).click()
+  await page.getByRole("menuitemradio", { name: "BGL · 2005–2006" }).click()
+  const windowButton = page.getByRole("button", { name: /^Set time window/ })
+  await windowButton.click()
+  await page.getByLabel("From · inclusive").fill("2005-07-01T00:00:00Z")
+  await page.getByLabel("To · exclusive").fill("2005-06-01T00:00:00Z")
+  await page.getByRole("button", { name: "Apply window" }).click()
+  await expect(page.locator("#scope-error")).toContainText("later")
+  await page.getByLabel("To · exclusive").fill("2005-08-01T00:00:00Z")
+  await page.getByRole("button", { name: "Apply window" }).click()
+  await expect(page.getByText("Custom window", { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: /^Choose dataset/ }).click()
+  await page.getByRole("menuitemradio", { name: "OpenStack · 2017" }).click()
+  await expect(page.getByText("Full span", { exact: true })).toBeVisible()
+  await expect(input).toHaveValue("Keep my investigation question")
+  await input.press("Enter")
+  await expect(input).toHaveValue("Keep my investigation question")
+  await page.getByRole("button", { name: "New chat", exact: true }).click()
+  await expect(input).toHaveValue("")
 })
 
 test("search keeps filter scope in the URL and exposes real evidence or a recoverable error", async ({

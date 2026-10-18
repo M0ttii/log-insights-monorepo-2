@@ -29,3 +29,70 @@
     @apply text-xs leading-5 text-muted-foreground;
   }
 }
+
+@layer components {
+  .chat-prose {
+    @apply min-w-0 text-sm leading-7 wrap-break-word;
+    & > :first-child {
+      margin-top: 0;
+    }
+    & p {
+      @apply my-4;
+    }
+    & h1,
+    & h2,
+    & h3,
+    & h4 {
+      @apply mt-7 mb-3 text-base font-semibold tracking-tight;
+    }
+    & ul,
+    & ol {
+      @apply my-4 space-y-2 pl-5;
+    }
+    & ul {
+      list-style-type: disc;
+    }
+    & ol {
+      list-style-type: decimal;
+    }
+    & a {
+      @apply text-link underline underline-offset-4;
+    }
+    & a:focus-visible {
+      @apply rounded-sm outline-2 outline-offset-2 outline-ring;
+    }
+    & pre {
+      @apply my-4 max-h-96 overflow-auto rounded-lg bg-muted p-4 font-mono text-xs leading-6;
+    }
+    & :not(pre) > code {
+      @apply rounded-sm bg-muted px-1 py-0.5 font-mono text-xs;
+    }
+    & blockquote {
+      @apply my-4 border-l pl-4 text-muted-foreground;
+    }
+    & hr {
+      @apply my-6 border-border;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat-welcome {
+    animation: chat-arrive 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-slot="message"] {
+    animation: chat-arrive 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+@keyframes chat-arrive {
+  from {
+    opacity: 0.65;
+    transform: translateY(6px);
+    clip-path: inset(0 0 3px 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0);
+  }
+}
