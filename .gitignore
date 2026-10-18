@@ -46,6 +46,7 @@ next-env.d.ts
 
 # keep the env template
 !.env.example
+!.env.jury.example
 
 # playwright
 playwright-report/

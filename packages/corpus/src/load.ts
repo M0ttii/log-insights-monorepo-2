@@ -413,13 +413,31 @@ async function timed(run: () => Promise<void>): Promise<number> {
  * verified, runs sql/ in order,
  * checks the result, writes load_manifest and returns the load balance.
  */
-export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
+export async function runLoad(
+  source: Source,
+  log: Log,
+  managedImage?: ImageIdentity
+): Promise<LoadResult> {
+  // The jury stack pins the image by content and resolves its config digest
+  // before calling us. The host CLI keeps inspecting its own Compose service.
+  if (managedImage !== undefined) {
+    validateImage(managedImage)
+    if (source.external.length > 0 || source.replay !== null) {
+      throw new Error("Container setup supports Loghub datasets only")
+    }
+  }
   const totalStart = performance.now()
   const root = findWorkspaceRoot()
-  const baseConnection = connectionFromEnv()
+  const configuredConnection = connectionFromEnv()
+  // A fresh sample/custom database does not exist yet. Container clients
+  // name their final target, so bootstrap it through the built-in database.
+  const baseConnection =
+    managedImage === undefined
+      ? configuredConnection
+      : { ...configuredConnection, database: "postgres" }
   const connection: Connection = {
-    ...baseConnection,
-    database: source.database ?? baseConnection.database,
+    ...configuredConnection,
+    database: source.database ?? configuredConnection.database,
   }
 
   log("SereneDB")
@@ -428,12 +446,17 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
   const rawDir = hostRawDir(root)
   await mkdir(rawDir, { recursive: true })
   await mkdir(join(root, ".data", "receipts"), { recursive: true })
-  await ensureImage(root)
-  await docker(root, ["compose", "up", "-d", "--pull", "never", "serenedb"])
+  if (managedImage === undefined) {
+    await ensureImage(root)
+    await docker(root, ["compose", "up", "-d", "--pull", "never", "serenedb"])
+  }
   await waitForSereneDb(baseConnection, log)
-  if (source.database !== null)
-    await ensureDatabase(baseConnection, source.database)
-  const { image, ports } = await serenedbImage(root, baseConnection)
+  if (connection.database !== baseConnection.database)
+    await ensureDatabase(baseConnection, connection.database)
+  const { image, ports } =
+    managedImage === undefined
+      ? await serenedbImage(root, baseConnection)
+      : { image: managedImage, ports: {} }
   const server = await serverVersion(baseConnection, image)
   log(
     `  ${image.reference} (image ID ${image.imageId}), ${server}, database ${connection.database}`

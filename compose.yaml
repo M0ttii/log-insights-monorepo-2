@@ -1,5 +1,6 @@
-# SereneDB for Log Insights (technical.md § 5.1). The only service; app processes
-# run locally with Node.
+# Developer database stack (technical.md § 5.1); app processes run locally.
+# For the complete jury startup, copy .env.jury.example to .env and use
+# `docker compose up` (COMPOSE_FILE selects compose.jury.yaml).
 #
 # The image comes from SERENEDB_IMAGE in .env and has no default, so a missing
 # setting fails instead of silently starting another SereneDB version. Two

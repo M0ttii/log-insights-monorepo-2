@@ -76,7 +76,7 @@ sequenceDiagram
 | Web | Next.js 16.4, React 19.3 | Web-App (P1) |
 | UI | Tailwind, shadcn auf Base UI (`base-nova`), AI Elements (Base), Lucide, shadcn `chart`; Theme aus dem SereneDB-Designkit (`serenedb/serene-design` als Git-Submodule `vendor/serene-design`, nur CSS: Palette, Urbanist), Geist Mono für Daten | Kit-Komponenten nicht genutzt (Radix); siehe [ui-concept.md](ui-concept.md) 9 und DESIGN.md |
 | Tests | Vitest, Playwright (Smoke + axe) | Golden Queries gegen echte SereneDB; E2E nur für den Kernablauf |
-| Betrieb | Docker Compose nur für SereneDB | App-Prozesse laufen lokal mit Node |
+| Betrieb | Entwicklung: Compose für SereneDB, App-Prozesse lokal mit Node. Jury: `compose.jury.yaml` mit Datenbank und Produktions-Web-App | `.env.jury.example` setzt `COMPOSE_FILE`, danach reicht `docker compose up`; der Web-Container führt vor dem Serverstart den geprüften Loader aus (5.1) |
 
 **Entfällt gegenüber v1.2:** Effect (der Worker, für den es gedacht war, entfällt; verbleibende Bedarfe wie Pool, Timeout und Fehlertypen sind mit async/await und einer kleinen Fehler-Union abgedeckt), SQLite/`better-sqlite3`, eigener Worker-Prozess, Caddy und Basic Auth, Datenfreigabe- und Widerrufsskripte, Template-Miner nach Drain (ersetzt durch SQL-Normalisierung, R-04). **TanStack Query** wird nur eingesetzt, falls die interaktive Logsuche es braucht; Übersichten lesen als Server Components direkt aus der Registry. **Kein ORM:** Unsere Last besteht aus analytischen Lesezugriffen mit SereneDB-eigenem SQL (Volltextoperatoren, BM25, `read_csv`); ein ORM brächte nur `$queryRaw` und Migrationsrisiken auf einer Nicht-PostgreSQL-Engine.
 
@@ -94,6 +94,9 @@ pnpm-Workspace-Monorepo mit Turborepo, ein Lockfile an der Wurzel. Interne Paket
 
 ```text
 compose.yaml            # nur SereneDB; mountet .data/raw und .data/receipts read-only
+compose.jury.yaml       # Jury: SereneDB + Web inklusive Import, optionales MCP-Profil
+Dockerfile              # Node 24 / pnpm 11.25: Web-Build, Loader und stdio-MCP
+.env.jury.example       # Jury-Einstellungen einschließlich COMPOSE_FILE, Passwort und API-Key
 .env.example            # SERENEDB_*, ANTHROPIC_API_KEY, LOG_INSIGHTS_MODEL, LOG_INSIGHTS_RECEIPTS_DIR, LOG_INSIGHTS_WORKSPACE_TOOLS
 .mcp.json               # serenedb-docs und shadcn (Entwicklung) + log-insights (Jury, Claude Code)
 apps/
@@ -144,6 +147,14 @@ docs/                   # Konzepte, worked-investigation.md, evidence/ (exportie
 ### 5.1 Betrieb
 
 `compose.yaml` startet das Image aus `SERENEDB_IMAGE` (`.env`, ohne Standardwert) mit `pull_policy: never`, dem benannten Datenvolume `serenedb-data` auf `/var/lib/serenedb`, `nofile`-Limit 131072 (Installationsdoku) und den Mounts `./.data/raw:/data/raw:ro` (damit `read_csv` die Rohdateien im Container liest) und `./.data/receipts:/data/receipts:ro` (damit der Leistungsbericht die Receipts per `read_json` in SereneDB auswertet). Der Port ist nur auf Loopback veröffentlicht (`127.0.0.1:${SERENEDB_PORT}:7890`, Standard 7890); geprüft: von `127.0.0.1` erreichbar, von der LAN-Adresse des Hosts nicht (26.10.1: `ECONNREFUSED`). Ein Healthcheck (`psql … -c 'SELECT 1'` im Container) meldet Bereitschaft, auf die `pnpm data:setup` wartet.
+
+**Jury-Start (Ergänzung zur bisherigen Beschränkung „Compose nur für SereneDB“):** `.env.jury.example` wird nach `.env` kopiert; `COMPOSE_FILE=compose.jury.yaml` wählt danach mit `docker compose up` den vollständigen Start. Ein rekursiver Clone liefert das gepinnte Design-Submodul. Node 24 und pnpm 11.25 laufen im gebauten App-Image. Nach dem Datenbank-Healthcheck führt der Web-Container denselben Loader mit Download, Prüfsummen und Ladeprüfungen aus und startet erst bei Erfolg Next im Produktionsmodus. Bei jedem Containerstart wird idempotent neu geladen; vorhandene geprüfte Rohdateien werden wiederverwendet. Fehler stoppen den Web-Start sichtbar, statt still auf Samples oder andere Daten umzuschalten.
+
+Die Jury hat eigene benannte Volumes (`jury-serenedb-26101`, `jury-raw`, `jury-receipts`, `jury-runs`) und standardmäßig den Projektnamen `log-insights-jury`. Nur die Web-App wird auf `127.0.0.1:${WEB_PORT:-3000}` veröffentlicht; SereneDB bleibt im Compose-Netz ohne Host-Port. `SERENEDB_PASSWORD` ist Pflicht und initialisiert das Passwort nur auf einem frischen Volume. `ANTHROPIC_API_KEY` wird nur dem Web-Container zur Laufzeit übergeben; ohne Key bleibt Ask deaktiviert, die Datenansichten funktionieren. `.dockerignore` schließt `.env*`, lokale Daten und Secrets aus dem Build-Kontext aus. `LOG_INSIGHTS_MODEL` bleibt `claude-opus-5-5`. Standard ist der volle Basiskorpus; `LOG_INSIGHTS_DATASETS` wählt Loghub-Erweiterungen. Der ausdrücklich gewählte Modus `LOG_INSIGHTS_DATA_MODE=samples` verlangt die passende separate Sample-Datenbank in `SERENEDB_DATABASE`. Remote OTel und Replay bleiben im Entwicklerablauf.
+
+Der Container-Loader benötigt keinen Docker-Socket: `LOG_INSIGHTS_CONTAINER_IMAGE` wird von derselben Compose-Einstellung wie das Datenbank-Image gespeist. `container-config.ts` akzeptiert ausschließlich den bekannten offiziellen Registry-Digest mit fest zugeordnetem Config-Digest oder die vollständige bekannte ARM64-Image-ID. Ein veränderlicher lokaler Tag ist hier unzulässig. Die ARM64-Datei muss vorher vom Projektinhaber bezogen und mit `docker image load` wiederhergestellt werden; das offizielle AMD64-Image bleibt auf Apple Silicon nicht lauffähig. Der Host-Loader behält die Container-/Host-Port-Inspektion bei. Beide Wege schreiben Referenz, tatsächliche beziehungsweise durch unveränderliche Referenz festgelegte Image-ID und Serverversion ins Manifest. Frische Sample-/Zieldatenbanken werden im Container über die vorhandene Datenbank `postgres` angelegt, bevor die Zielverbindung geöffnet wird.
+
+Das optionale Profil `mcp` verwendet exakt dasselbe projektbezogene App-Image wie Web; dadurch aktualisiert `docker compose up --build` auch den später gestarteten stdio-Prozess. Nach dem initialen Laden startet der Client ihn mit `docker compose run --rm --no-deps -T mcp`, bei gemeinsamem Receipt-Volume. `/api/health` meldet nur Prozessbereitschaft und führt keine Tools aus, damit periodische Prüfungen keine Receipts erzeugen. Vor Daten-/Konfigurationswechseln werden Web und MCP gestoppt. `docker compose down` erhält alle Daten; `down --volumes` löscht ausdrücklich den gesamten Jury-Projektzustand. CI baut den vollständigen Stack mit frischen 2k-Samples und prüft echte Zählung, Receipt-Zugriff und Re-run; Vollkorpus-Download und Neustart werden lokal geprüft.
 
 **Image und Identität (26.10.1, LOG-29):** Zwei Builds desselben Quellstands (Tag `v26.10.1`, Commit `3d12e1a8473b2f63b3a08f197f7adf4bbb3bdf47`) sind geprüft:
 
