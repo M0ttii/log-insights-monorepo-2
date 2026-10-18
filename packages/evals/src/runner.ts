@@ -41,6 +41,23 @@ import {
   OPUS_PRICING,
   REPEATED_QUESTIONS,
 } from "./experiment.ts"
+import { observeEvalRuntime } from "./holdout-runtime.ts"
+
+// Released YAML is separately hash-bound input, never executable source. All
+// other tracked/untracked source and dirty state remain part of the freeze.
+function releasedQuestions(path: string): boolean {
+  return /^packages\/evals\/questions\/holdout-[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}\.yaml$/.test(
+    path
+  )
+}
+function configurationSource(path: string): boolean {
+  return (
+    path !== "" &&
+    !path.startsWith("packages/evals/results/") &&
+    !path.startsWith("vendor/") &&
+    !releasedQuestions(path)
+  )
+}
 
 async function sourceVersion(
   root: string
@@ -53,12 +70,7 @@ async function sourceVersion(
     { cwd: root, encoding: "utf8" }
   )
     .split("\0")
-    .filter(
-      (p) =>
-        p !== "" &&
-        !p.startsWith("packages/evals/results/") &&
-        !p.startsWith("vendor/")
-    )
+    .filter(configurationSource)
     .toSorted()
   const files: Record<string, string> = {}
   for (const path of paths)
@@ -68,15 +80,21 @@ async function sourceVersion(
       cwd: root,
       encoding: "utf8",
     }).trim(),
-    code_dirty:
-      execFileSync("git", ["status", "--porcelain"], {
+    code_dirty: execFileSync(
+      "git",
+      ["status", "--porcelain", "-z", "--untracked-files=all"],
+      {
         cwd: root,
         encoding: "utf8",
-      }).trim() !== "",
+      }
+    )
+      .split("\0")
+      .filter(Boolean)
+      .some((entry) => configurationSource(entry.slice(3))),
     code_sha256: digest(files),
   }
 }
-async function createManifest(input: {
+export async function createManifest(input: {
   round_id: string
   bank: QuestionBank
   data_version: string
@@ -258,10 +276,15 @@ export async function executeRound(
     )
   const config = loadConfig(),
     playbooks = loadPlaybooks()
+  const runtime = await observeEvalRuntime(join(dir, "runtime-receipts"))
+  if (runtime.data_version !== manifest.versions.data_version)
+    throw new Error("Observed corpus differs from the prepared data version")
+  await writeArtifact(dir, "runtime.json", runtime)
   // Append-only execution marker prevents rerunning/cherry-picking attempts.
   await writeArtifact(dir, "execution.json", {
     started_at: new Date().toISOString(),
     manifest_sha256: digest(manifest),
+    runtime_sha256: digest(runtime),
   })
   const db = createDatabase(config.connection),
     receipts = new FileReceiptStore(join(dir, "receipts"))

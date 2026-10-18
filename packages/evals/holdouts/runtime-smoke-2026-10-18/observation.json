@@ -1,0 +1,12 @@
+{
+  "observed_at": "2026-10-18T17:08:13.428Z",
+  "configured_image": "local/serenedb:26.10.1-arm64",
+  "running_image_id": "sha256:fd1b13533ceff354ffb48901dd63aa36a4b1d3c2b055b872e572bf83f38a7fb0",
+  "published_port": 7890,
+  "corpus_receipt_id": "r_06f08af0",
+  "corpus_receipt_sha256": "b793d6c06f6c4f901f0a5ed0b5054b730a1eaa9434613ff19bdb835a0101fdde",
+  "data_version": "dv_229e422f86a9fc6e",
+  "source": "corpus",
+  "datasets": ["bgl", "openstack"],
+  "lockfile_sha256": "115d9a2d9ca846cafe7dc665be9e3c57e4baa3e27180925c82270b0ad5b4966c"
+}

@@ -1,10 +1,11 @@
-# Development evaluation
+# Evaluation workflow
 
 LOG-52 supplies the measurement contracts; LOG-53 adds the predeclared development
 experiment and blinded independent review workflow. Implementation and synthetic
 controls establish no live quality result, baseline advantage, first-holdout result
 or U16 acceptance. The development bank and existing S-15 rounds are known
-regression material. Holdout questions are outside this workflow.
+regression material. LOG-54 adds the separate protected preparation below;
+unreleased holdout contents are outside the implementation workspace and context.
 
 Run from the repository root with Node 24 and pnpm 11.25:
 
@@ -48,6 +49,14 @@ invoked, including accumulated tool output. The byte guard is not an exact
 provider token counter. Preflight must match the manifest's data version before
 any paid request. Execution verifies source, prompt, catalog, question, model and
 limit hashes; an append-only execution marker prevents repeating a saved round.
+Before provider execution it also saves `runtime.json` and its complete corpus
+receipt, observing the running local Compose image and full base-corpus version.
+An older round without this runtime evidence cannot authorize a holdout freeze.
+The database call deadline includes connection acquisition and UTC session setup;
+stalled setup clients are discarded. Cancelling a pending physical connection
+returns to the caller immediately, but pool cleanup can still await pg-pool's
+existing 15-second connection-establishment bound because its connect API has no
+cancellation operation.
 
 The manifest records pricing provenance, the one-hour cache policy, planned
 answer/reviewer calls, output limits, a conservative input-token forecast and the
@@ -128,3 +137,78 @@ retain individual values and median/min/max with n, without p95, significance or
 an overall quality/cost score. Holdout and visible Web S-13 acceptance remain later
 gates. The committed LOG-52 fixture and evaluator mutation tests are controls,
 never measured corpus evidence.
+
+## Protected holdout preparation
+
+Preparation can start before the development gate passes. An independent author
+who did not write the playbooks creates at least two new questions per role and
+separate assessment expectations. Before release, both remain in a private vault
+outside the implementation checkout and its agents' context. The author validates
+expectations through independent SereneDB queries, keeps their evidence private
+and supplies only an opaque set identifier, role counts, authorship attestation,
+data version and file hashes. Authorship declarations are inspectable provenance,
+not automated proof of a person's identity or of question quality.
+
+The public registration schema rejects unknown fields. Do not add questions,
+concrete entities, filters, expected numbers or private rationale to a ticket,
+preparation metadata, PR or implementation prompt. Never inspect the private
+files to test registration. Only clearly labelled synthetic questions may be used
+for implementation and leak tests.
+
+```sh
+# Safe before the gate: reads public metadata only, not private questions.
+pnpm eval holdout-register packages/evals/holdouts/MY_SET /private/path/metadata.json
+
+# Later, only after a complete independently reviewed development gate passes:
+pnpm eval holdout-freeze .data/evals/MY_SET-freeze \
+  packages/evals/holdouts/MY_SET packages/evals/results/PASSED_DEV independent-v1
+
+# Later, after the saved freeze is revalidated; this does not call a model.
+pnpm eval holdout-release packages/evals/holdouts/MY_SET \
+  .data/evals/MY_SET-freeze /private/path/to/sealed-vault
+```
+
+Every output is append-only. Freeze requires the recomputed development report,
+not a caller-supplied `passed` flag or edited report JSON. It binds the saved
+review, source and lockfile, model and limits, actual instructions for both
+variants, tool catalog, rubric, predeclared attempts and pricing provenance.
+Runtime evidence binds the actual SereneDB container/image and base-corpus data
+version; missing or changed evidence keeps the gate closed. A synthetic fixture
+cannot authorize a real freeze. Preparation is neither a freeze nor permission
+to run an evaluation.
+
+The [registered set and runtime smoke proof](holdouts/README.md) are preparation
+evidence only. The real set remains sealed; a missing development round was
+rejected without creating a freeze directory. No actual freeze or release is
+claimed.
+
+Release revalidates the frozen configuration before opening private questions.
+It checks the source hash, set identifier, role counts and strict public schema,
+then serializes the validated public bank afresh as `holdout-<set-id>.yaml` under
+`packages/evals/questions`. Comments, anchor names and other YAML source syntax
+are not copied. Expectations and independent SQL evidence remain in their
+separate private assessment path. The public question projection contains only
+question, role and structured scope; it has no expectation, reference or rubric
+fields. Distinct hashes bind the sealed source and the actual public output. The
+versioned question file is bound separately as release data so its addition does
+not disguise unrelated source changes.
+
+Before reading private files, release saves an append-only `release-attempt.json`.
+Only after the public file is written and its hash verified does it save the
+completed `release.json`. A failed attempt remains visible without claiming
+successful publication and requires a fresh independently authored set; do not
+delete markers or overwrite the target to retry.
+
+The LOG-55 executor still needs to bind execution to the frozen base commit and
+allow only the explicitly hash-bound question-file commit after release. A new
+HEAD must not bypass the existing commit check merely because the source digest
+matches. This integration is required before the first holdout answer round;
+these preparation commands do not execute that round.
+
+If any implementing agent sees unreleased questions or expectations, mark that
+set contaminated and replace it through an independent author. Never relabel a
+known development/demo question as holdout. After the first actual holdout round,
+the inspected set becomes regression material; another generalization claim
+requires a fresh independently authored set and freeze. LOG-55 owns the first
+answer round and its acceptance. No real freeze, release or paid holdout run is
+established by synthetic controls or this preparation work.

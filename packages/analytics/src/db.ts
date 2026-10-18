@@ -18,7 +18,7 @@ import { loadConfig, type Connection } from "./config.ts"
  * SereneDB accepts `statement_timeout` but does not enforce it (gate G6).
  */
 
-/** Per query; the pool cancels the query on the server when it is exceeded. */
+/** Includes acquisition and setup; running queries are cancelled on the server. */
 export const QUERY_TIMEOUT_MS = 10_000
 
 /** Concurrent queries per process (§ 12); also the call limit MCP asks servers to enforce. */
@@ -31,7 +31,7 @@ const MAX_CONNECTIONS = 4
  */
 const MAX_WAITING_QUERIES = 8
 
-/** Longest wait for a free connection, or for SereneDB to accept one. */
+/** Physical connection/late-checkout cleanup stays bounded after caller cancellation. */
 const ACQUIRE_TIMEOUT_MS = 15_000
 
 /**
@@ -138,34 +138,80 @@ export function createDatabase(
     return pool
   }
 
-  const acquire = async (): Promise<PoolClient> => {
+  const acquire = async (
+    signal: AbortSignal,
+    deadline: number
+  ): Promise<PoolClient> => {
     const current = getPool()
     if (current.waitingCount >= MAX_WAITING_QUERIES)
       throw new QueryFailure("busy")
-    let client: PoolClient
-    try {
-      client = await current.connect()
-    } catch (error) {
-      // pg-pool rejects after ACQUIRE_TIMEOUT_MS both when every connection
-      // stays busy and when SereneDB does not accept a new one.
-      log(`db connect failed ${kindOf(error)}`)
-      throw new QueryFailure(
-        current.totalCount >= MAX_CONNECTIONS ? "busy" : "unavailable"
-      )
-    }
-    if (backendPids.has(client)) return client
-    try {
-      // A startup option `-c TimeZone=…` is ignored by SereneDB (gate G1).
-      await client.query("SET TimeZone = 'UTC'")
-      const { rows } = await client.query<{ pid: unknown }>(
-        "SELECT pg_backend_pid() AS pid"
-      )
-      backendPids.set(client, parsePid(rows[0]?.pid))
-      return client
-    } catch (error) {
+    let client: PoolClient | null = null
+    let discarded = false
+    let stopped: "timeout" | "cancelled" | null = null
+    const discard = () => {
+      if (client === null || discarded) return
+      discarded = true
+      // pg-pool removes the checkout and pg ends an active setup query by
+      // destroying its socket, rather than waiting for that query to finish.
       client.release(true)
-      log(`db session setup failed ${kindOf(error)}`)
-      throw new QueryFailure("unavailable")
+    }
+    let onAbort: (() => void) | undefined
+    let timer: NodeJS.Timeout | undefined
+    const stop = new Promise<never>((_resolve, reject) => {
+      const fail = (reason: "timeout" | "cancelled") => {
+        if (stopped !== null) return
+        stopped = reason
+        discard()
+        reject(new QueryFailure(reason))
+      }
+      onAbort = () => fail("cancelled")
+      signal.addEventListener("abort", onAbort, { once: true })
+      timer = setTimeout(
+        () => fail("timeout"),
+        Math.max(0, Math.ceil(deadline - performance.now()))
+      )
+      if (signal.aborted) onAbort()
+    })
+    const connecting = async () => {
+      if (stopped !== null) throw new QueryFailure(stopped)
+      try {
+        client = await current.connect()
+      } catch (error) {
+        if (stopped !== null) throw new QueryFailure(stopped)
+        // pg-pool also bounds a pending connection, including one whose
+        // caller already stopped and whose eventual checkout must be discarded.
+        log(`db connect failed ${kindOf(error)}`)
+        throw new QueryFailure(
+          current.totalCount >= MAX_CONNECTIONS ? "busy" : "unavailable"
+        )
+      }
+      if (stopped !== null) {
+        discard()
+        throw new QueryFailure(stopped)
+      }
+      if (backendPids.has(client)) return client
+      try {
+        // A startup option `-c TimeZone=…` is ignored by SereneDB (gate G1).
+        await client.query("SET TimeZone = 'UTC'")
+        if (stopped !== null) throw new QueryFailure(stopped)
+        const { rows } = await client.query<{ pid: unknown }>(
+          "SELECT pg_backend_pid() AS pid"
+        )
+        if (stopped !== null) throw new QueryFailure(stopped)
+        backendPids.set(client, parsePid(rows[0]?.pid))
+        return client
+      } catch (error) {
+        discard()
+        if (stopped !== null) throw new QueryFailure(stopped)
+        log(`db session setup failed ${kindOf(error)}`)
+        throw new QueryFailure("unavailable")
+      }
+    }
+    try {
+      return await Promise.race([connecting(), stop])
+    } finally {
+      clearTimeout(timer)
+      if (onAbort !== undefined) signal.removeEventListener("abort", onAbort)
     }
   }
 
@@ -185,7 +231,8 @@ export function createDatabase(
 
   const query: QueryRunner["query"] = async (sql, params, signal) => {
     if (signal.aborted) throw new QueryFailure("cancelled")
-    const client = await acquire()
+    const deadline = performance.now() + timeoutMs
+    const client = await acquire(signal, deadline)
     let released = false
     const release = (destroy: boolean) => {
       if (released) return
@@ -195,6 +242,10 @@ export function createDatabase(
     if (signal.aborted) {
       release(false)
       throw new QueryFailure("cancelled")
+    }
+    if (performance.now() >= deadline) {
+      release(true)
+      throw new QueryFailure("timeout")
     }
     const pid = backendPids.get(client)
     if (pid === undefined) {
@@ -212,7 +263,10 @@ export function createDatabase(
       )
       grace = setTimeout(() => release(true), CANCEL_GRACE_MS)
     }
-    const timer = setTimeout(() => stop("timeout"), timeoutMs)
+    const timer = setTimeout(
+      () => stop("timeout"),
+      Math.max(0, Math.ceil(deadline - performance.now()))
+    )
     const onAbort = () => stop("cancelled")
     signal.addEventListener("abort", onAbort, { once: true })
 
