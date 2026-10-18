@@ -34,6 +34,7 @@ import { g08ReadOnlyRole } from "./probes/g08-read-only-role.ts"
 import { g09Precursors } from "./probes/g09-precursors.ts"
 import { g10PhraseFuzzy } from "./probes/g10-phrase-fuzzy.ts"
 import { g11MatchRecognize } from "./probes/g11-match-recognize.ts"
+import { g12IndexFunctions } from "./probes/g12-index-functions.ts"
 
 const PROBES: readonly Probe[] = [
   g01Driver,
@@ -47,6 +48,7 @@ const PROBES: readonly Probe[] = [
   g09Precursors,
   g10PhraseFuzzy,
   g11MatchRecognize,
+  g12IndexFunctions,
 ]
 
 const isSkip = (entry: Check | Skip | Info): entry is Skip => "skipped" in entry

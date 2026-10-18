@@ -266,6 +266,28 @@ precursor analysis became faster. Example receipts with the new SQL are
 `.data/log32-benchmark-{lag,match}.json`; receipts remain in
 `.data/receipts/`. No tool contract or episode rule changed.
 
+LOG-34 evaluated dictionary facets, token regex and indexed ranges on the full
+base corpus (`dv_229e422f86a9fc6e`, local ARM64 26.10.1). These are decisions for
+follow-up work; the tool registry, search index and data version are unchanged.
+Gate G12 reproduces the relevant edge cases without corpus files and runs in the
+loader integration suite on the official amd64 image as well.
+
+| Candidate | Decision and measured evidence |
+|---|---|
+| Implicit dictionary facets | Selected for a bounded optimization in LOG-41. Nullable `GROUP BY` facets preserve the NULL group, including a dataset filter (`EXPLAIN`: `TsDict:`). Full-base-corpus `level` grouping: 4.41–14.46 ms from the table versus 1.26–2.25 ms from the index, with identical rows. Gains depend on scope: OpenStack-only level grouping was slower through the index (3.30–5.67 versus 1.76–1.91 ms). Preserve the current path for unproven shapes. |
+| Explicit dictionary aggregates and corpus value lists | Rejected as general replacements: `ts_dict_agg`/`ts_dict_count` omit NULL groups and reject time filters outside the index; marginal facets cannot replace two-dimensional groups. `describe_corpus` already reads precomputed tables (level/component/label lists: 0.72–2.29 ms). |
+| `ts_regexp` search mode | Rejected for general identifier/raw-text search: it matches whole analyzed tokens. `r02-m1-n0.*` returns 0 versus 16 raw messages containing that identifier; `0x0054.*` correctly returns 19,740 in 1.18–2.74 ms. Complete ordered lists and counts agree. Invalid `[` silently matches nothing on this image. |
+| Indexing `ts` and `event_id` | Rejected in the current scoring design. Three index rebuilds, compaction off/on/manual and 864 repeated range comparisons agree with the base table; 42 additional full ID-set comparisons also agree. However, indexed time filters change returned BM25 scores (first June BGL `parity` hit: 2.1018991 becomes 4.101899). Search times overlap: 2.06–5.47 versus 2.36–3.91 ms for the top 20. |
+
+Times are observed min–max query durations including driver transfer, excluding
+receipts: four sequential repetitions for facets/regex and five for the final
+search comparison, on an isolated instance. Full-base-corpus facets combine each
+dataset's separate full span, never a shared time axis. G12 covers NULLs, joint
+distributions, regex boundaries, microsecond ties, exact BIGINT IDs, compaction
+and the BM25 change. Local SQL, parameters and plans are in
+`.data/log34/{benchmark,final-measure,membership}.json`; the German decision record
+is in `docs/technical.md` § 5.3 (local planning docs are gitignored).
+
 | Tool | Purpose | Limits |
 |---|---|---|
 | `describe_corpus` | Datasets with events, time spans, fields, levels, components with their fictional team, labels, known limits, versions and answer guidance per role | – |
