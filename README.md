@@ -20,6 +20,11 @@ receipt.
 > comparison, complete live acceptance for all three web roles, and full
 > MCP-client role acceptance remain open.
 
+The [editable Typst presentation template](presentation/README.md) includes a
+[PDF preview](presentation/log-insights-template.pdf). It covers the three roles,
+architecture and query evidence; findings remain explicit placeholders until
+verified runs are available.
+
 ## Requirements
 
 - Node.js 24 (see `.nvmrc`)
