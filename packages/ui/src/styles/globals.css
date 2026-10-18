@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/*
+ * SereneDB design kit (git submodule vendor/serene-design, DESIGN.md):
+ * Urbanist and the SereneDB palette, light on :root and dark under .dark.
+ * Only the plain CSS is used. The kit's theme.css (square radii, its own
+ * base layer) and its React components (Radix) are not.
+ */
+@import "../../../../vendor/serene-design/src/styles/fonts.css";
+@import "../../../../vendor/serene-design/src/styles/tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -8,9 +16,17 @@
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
 
+/*
+ * shadcn names mapped onto the kit. Two kit names mean something else than
+ * in shadcn: the kit's --primary is the neutral surface and --thirdly the
+ * SereneDB violet, so shadcn's primary reads --action (the violet, deepened
+ * for white text); the kit's --accent is a blue whose foreground is the same
+ * blue, so shadcn's accent (hover and selected rows) reads --surface-hover.
+ */
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
+  --font-mono: var(--font-data);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -24,18 +40,20 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
+  --color-ring: var(--thirdly);
+  /* Links in answer prose (text-link); controls rendered as <a> keep their own colour. */
+  --color-link: var(--link);
+  --color-input: var(--control-border);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--foreground);
+  --color-accent: var(--surface-hover);
+  --color-muted-foreground: var(--text-secondary);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
+  --color-primary-foreground: var(--thirdly-foreground);
+  --color-primary: var(--action);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -51,42 +69,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --background: #f7f8fa;
-  --foreground: #202635;
-  --card: oklch(1 0 0);
-  --card-foreground: #202635;
-  --popover: oklch(1 0 0);
-  --popover-foreground: #202635;
-  --primary: #5654d6;
-  --primary-foreground: #ffffff;
-  --secondary: #eef0f4;
-  --secondary-foreground: #202635;
-  --muted: #f1f3f6;
-  /* Secondary text from ui-concept.md § 8; meets 4.5:1 on muted surfaces. */
-  --muted-foreground: #596579;
-  --accent: #eef0f4;
-  --accent-foreground: #202635;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #dfe3ea;
-  --input: #858fa1;
-  --ring: #5654d6;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #202635;
-  --sidebar-primary: #5654d6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eeedfc;
-  --sidebar-accent-foreground: #4543b5;
-  --sidebar-border: #e6e9ef;
-  --sidebar-ring: #5654d6;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -99,15 +81,37 @@
   }
 }
 
+/* Light theme: the kit's :root palette plus the layer below. */
 :root {
   color-scheme: light;
+  /* Slightly rounded like the SereneDB desktop app (the kit's theme.css is square). */
+  --radius: 0.375rem;
+  /* Geist Mono from next/font in the web app; system mono until it loads. */
+  --font-data:
+    var(--font-geist-mono, ui-monospace), ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, monospace;
+  --action: color-mix(in oklab, var(--thirdly) 86%, black);
+  --link: #6a3fd6;
+  --text-secondary: var(--secondary-foreground);
+  --surface-hover: color-mix(in srgb, var(--foreground) 5%, var(--background));
+  /* Outline of inputs and unfilled controls, at least 3:1 on the ground. */
+  --control-border: #858fa1;
+  --sidebar: var(--muted);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--action);
+  --sidebar-primary-foreground: var(--thirdly-foreground);
+  --sidebar-accent: color-mix(in srgb, var(--foreground) 7%, var(--sidebar));
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--thirdly);
+
   --workspace-gutter: 1.5rem;
   /* Reading column for answers (DESIGN.md, Layout); data views are wider. */
   --report-width: 53.75rem;
   --data-width: 76rem;
-  /* Quiet indigo-tinted surface reserved for the Verification block and highlighted targets. */
-  --conclusion-background: #f5f5fe;
-  --conclusion-border: #d9d8f6;
+  /* Violet-tinted surface reserved for the Verification block and highlighted targets. */
+  --conclusion-background: #f6f2ff;
+  --conclusion-border: #e1d5fd;
   /* Answer spine: visible on the workspace ground without competing with text. */
   --spine-line: #c3c9d4;
   /* Search matches in verbatim log messages, always with an underline. */
@@ -125,8 +129,8 @@
   --severity-unknown-foreground: #596579;
   --severity-unknown-background: #edf0f4;
   /* Run state (DESIGN.md): tool rows and answers; done and recorded are neutral. */
-  --run-running-foreground: #4543b5;
-  --run-running-background: #eeedfc;
+  --run-running-foreground: #6a3fd6;
+  --run-running-background: #f1ebff;
   --run-partial-foreground: #855000;
   --run-partial-background: #fff3d9;
   --run-failed-foreground: #a12b36;
@@ -140,7 +144,7 @@
   --hypothesis-contradicted-foreground: #475569;
   --hypothesis-contradicted-background: #e8edf2;
   /* Pattern status (R-10) and the separate recurring flag (R-05). */
-  --pattern-new-foreground: #4543b5;
+  --pattern-new-foreground: #6a3fd6;
   --pattern-new-background: #ffffff;
   --pattern-escalating-foreground: #805314;
   --pattern-escalating-background: #fff0d8;
@@ -168,28 +172,101 @@
   --verification-uncited-background: #ffffff;
   --verification-none-foreground: #596579;
   --verification-none-background: #edf0f4;
-  --role-foreground: #202635;
+  --role-foreground: #11121d;
   --role-background: #ffffff;
+}
+
+/* Dark theme, the default (DESIGN.md): the kit's .dark palette plus the layer below. */
+.dark {
+  color-scheme: dark;
+  --link: #b59cff;
+  --text-secondary: var(--muted-foreground);
+  --surface-hover: color-mix(in srgb, var(--foreground) 7%, var(--card));
+  --control-border: #6b6b6b;
+  --sidebar-accent: color-mix(in srgb, var(--foreground) 9%, var(--sidebar));
+
+  --conclusion-background: #241f33;
+  --conclusion-border: #3f3463;
+  --spine-line: #474747;
+  --match-highlight: #4d3f0f;
+  --severity-fatal-foreground: #ffb3bf;
+  --severity-fatal-background: #3d1a20;
+  --severity-error-foreground: #ff9aa8;
+  --severity-error-background: #35191d;
+  --severity-warning-foreground: #f5c66b;
+  --severity-warning-background: #33270f;
+  --severity-info-foreground: #9cc7f5;
+  --severity-info-background: #172636;
+  --severity-unknown-foreground: #b4b9c4;
+  --severity-unknown-background: #2a2b2e;
+  --run-running-foreground: #c4b1ff;
+  --run-running-background: #2c2346;
+  --run-partial-foreground: #f5c66b;
+  --run-partial-background: #33270f;
+  --run-failed-foreground: #ff9aa8;
+  --run-failed-background: #35191d;
+  --run-neutral-foreground: #b4b9c4;
+  --run-neutral-background: #2a2b2e;
+  --hypothesis-open-foreground: #c7cbd3;
+  --hypothesis-open-background: #212121;
+  --hypothesis-supported-foreground: #1c1c1c;
+  --hypothesis-supported-background: #c7cbd3;
+  --hypothesis-contradicted-foreground: #c7cbd3;
+  --hypothesis-contradicted-background: #2f3237;
+  --pattern-new-foreground: #c4b1ff;
+  --pattern-new-background: #212121;
+  --pattern-escalating-foreground: #f0c07a;
+  --pattern-escalating-background: #35280f;
+  --pattern-reappeared-foreground: #c7cbd3;
+  --pattern-reappeared-background: #2f3237;
+  --pattern-ongoing-foreground: #c7cbd3;
+  --pattern-ongoing-background: #2f3237;
+  --pattern-quiet-foreground: #a3a8b2;
+  --pattern-quiet-background: #262626;
+  --pattern-recurring-foreground: #c7cbd3;
+  --pattern-recurring-background: #212121;
+  --change-foreground: #c7cbd3;
+  --change-background: #2f3237;
+  --verification-verified-foreground: #8fd9ad;
+  --verification-verified-background: #16301f;
+  --verification-mismatch-foreground: #ff9aa8;
+  --verification-mismatch-background: #35191d;
+  --verification-unresolved-foreground: #f5c66b;
+  --verification-unresolved-background: #33270f;
+  --verification-unchecked-foreground: #b4b9c4;
+  --verification-unchecked-background: #2a2b2e;
+  --verification-uncited-foreground: #f5c66b;
+  --verification-uncited-background: #212121;
+  --verification-none-foreground: #b4b9c4;
+  --verification-none-background: #2a2b2e;
+  --role-foreground: #ffffff;
+  --role-background: #212121;
 }
 
 @layer base {
   body {
     font-variant-numeric: tabular-nums;
   }
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-data);
+  }
   ::selection {
-    background: #deddf8;
-    color: #202635;
+    background: color-mix(in srgb, var(--thirdly) 35%, transparent);
+    color: var(--foreground);
   }
   :focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid var(--thirdly);
     outline-offset: 3px;
   }
   input,
   textarea {
-    caret-color: var(--primary);
+    caret-color: var(--thirdly);
   }
   * {
-    scrollbar-color: #858fa1 transparent;
+    scrollbar-color: var(--control-border) transparent;
     scrollbar-width: thin;
   }
 }

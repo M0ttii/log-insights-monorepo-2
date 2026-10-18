@@ -18,6 +18,7 @@
       "ignoreDependencies": ["tsx"]
     }
   },
+  "ignore": ["vendor/**"],
   "ignoreIssues": {
     "packages/ui/src/components/**": ["exports", "types"]
   }

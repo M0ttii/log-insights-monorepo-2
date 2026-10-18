@@ -1,0 +1,3 @@
+[submodule "vendor/serene-design"]
+	path = vendor/serene-design
+	url = https://github.com/serenedb/serene-design.git

@@ -56,7 +56,7 @@ Ask (chat with role switcher, live tool calls and role comparison) is the primar
 
 ## Brand Commitments
 
-The working name is **Log Insights**. Communication is precise, understandable and explicit about evidence and uncertainty. Preserve the restrained light workspace direction documented in the UI concept and DESIGN.md.
+The working name is **Log Insights**. Communication is precise, understandable and explicit about evidence and uncertainty. The interface uses the SereneDB desktop app look from the SereneDB design kit: dark by default with a full light theme, Urbanist, the SereneDB violet as the only accent, restrained and exact (DESIGN.md).
 
 **Component foundation (binding):** The interface is built only from shadcn components, blocks and AI Elements patterns in their Base UI variant (`@base-ui/react`, style `base-nova`). Every UI task starts with the shadcn MCP. Where shadcn offers a component, block or pattern, it is used; no hand-built replacements in raw HTML and Tailwind. The chat uses AI Elements with `useChat` and streamed message parts, following [docs/ui-concept.md](docs/ui-concept.md) § 10; assistant-ui, Radix and other chat runtimes are excluded. Charts use the shadcn `chart` component. Details and enforced rules are in [AGENTS.md](AGENTS.md).
 

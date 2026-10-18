@@ -95,7 +95,10 @@ versions before using an API, and never infer an installation from a plan.
   `@ai-sdk/react` (one streaming request with tools and a step limit; Claude is the
   model, `claude-opus-5-5` by default and for eval, baseline and demo runs, because
   the judges use it); Next.js App Router, Tailwind, shadcn/ui on Base UI, Lucide;
-  TanStack Query only where interactive client fetching needs it.
+  TanStack Query only where interactive client fetching needs it. Palette and
+  Urbanist come from the SereneDB design kit, a git submodule at
+  `vendor/serene-design` used as CSS only (DESIGN.md); its React components
+  build on Radix and are not used.
 - Not used (concept v3.0): Effect, SQLite, a worker or job queue, Caddy or another
   proxy, a second agent framework, Python services, a vector database. Add none of
   these, nor another service, ORM or schema library, without a need recorded in
