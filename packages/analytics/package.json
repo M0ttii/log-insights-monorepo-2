@@ -7,7 +7,8 @@
     "report:perf": "node --env-file-if-exists=../../.env --import tsx src/report-perf.ts",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:golden": "vitest run --config ../../vitest.config.ts --project analytics-golden --no-file-parallelism"
+    "test:golden": "vitest run --config ../../vitest.config.ts --project analytics-golden --no-file-parallelism",
+    "otel:measure": "node --env-file-if-exists=../../.env --import tsx src/otel-measure.ts"
   },
   "exports": {
     "./config": "./src/config.ts",

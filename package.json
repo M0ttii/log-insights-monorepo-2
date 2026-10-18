@@ -32,7 +32,8 @@
     "test:golden": "pnpm --filter @workspace/analytics test:golden",
     "agent:ask": "pnpm --silent --filter @workspace/agent agent:ask",
     "test:e2e": "pnpm --filter web test:e2e",
-    "eval": "pnpm --filter @workspace/evals eval"
+    "eval": "pnpm --filter @workspace/evals eval",
+    "otel:measure": "pnpm --filter @workspace/analytics otel:measure"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",

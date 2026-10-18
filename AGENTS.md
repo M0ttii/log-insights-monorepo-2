@@ -182,6 +182,10 @@ versions before using an API, and never infer an installation from a plan.
   alone leaves the query running and the connection unusable. The pool cancels
   server-side (`pg_cancel_backend` or protocol cancel, SQLSTATE `57014` →
   `query_timeout`) and discards the connection.
+- Each connection sets instance-global `http_timeout = 3` and `http_retries = 1`
+  before queries, bounding a hung HTTP connect retry chain (no matching flagfile
+  option). The 10 s pool cancellation stays; HTTP calls can defer server-side
+  cancellation, so it is not a hard server-resource deadline for every network error.
 - Each connection runs `SET TimeZone = 'UTC'` after connecting (the startup option is
   ignored). Timestamps cross the driver as text, never `Date` (process time zone,
   lost microseconds). `BIGINT` stays exact (string or `bigint`) until a range check
@@ -261,8 +265,9 @@ versions before using an API, and never infer an installation from a plan.
 - SereneDB and the web app bind to loopback only; there is no user system. The
   OTLP/HTTP listener (enabled by the repo-owned `serened.conf`, never a compose
   `command:`) listens on `0.0.0.0` inside the container but is published only on
-  `127.0.0.1:${SERENEDB_OTLP_PORT}` and requires Basic auth; `SERENEDB_OTLP_PORT`
-  is set per checkout like `SERENEDB_PORT`.
+  `127.0.0.1:${SERENEDB_OTLP_PORT}` and the samples listener on
+  `127.0.0.1:${SERENEDB_OTLP_SAMPLES_PORT}`; both require Basic auth. Both variables
+  are set per checkout like `SERENEDB_PORT`.
 - Validate configuration at startup. Secrets stay out of source control, client
   bundles, fixtures, URLs, logs and error responses; commit only `.env.example`.
   Operational logs carry tool name, duration, result size and error kind, never
