@@ -133,10 +133,14 @@ describe("recurring_patterns SQL", () => {
     expect(manifest?.sql).toContain("rules_version")
     expect(coverage?.sql).toContain("comparison_coverage")
     expect(main?.sql).toContain(
-      "lag(e.ts) OVER (PARTITION BY e.pattern_id ORDER BY e.ts, e.event_id) AS prev_ts FROM log_events e WHERE e.dataset = $1 AND e.component IN ($2) AND e.ts >= $4::TIMESTAMPTZ AND e.ts < $5::TIMESTAMPTZ)"
+      "FROM log_events e WHERE e.dataset = $1 AND e.component IN ($2) AND e.ts >= $4::TIMESTAMPTZ AND e.ts < $5::TIMESTAMPTZ)"
     )
     expect(main?.sql).toContain(
-      "count(*) FILTER (WHERE prev_ts IS NULL OR ts - prev_ts >= $3::INTERVAL) AS episodes"
+      "MATCH_RECOGNIZE (PARTITION BY pattern_id ORDER BY ts, event_id"
+    )
+    expect(main?.sql).toContain("DEFINE n AS ts - PREV(ts) < $3::INTERVAL")
+    expect(main?.sql).toContain(
+      "count(*) FILTER (WHERE phase = 's') AS episodes"
     )
     expect(main?.sql).toContain(
       "FROM log_events e WHERE e.dataset = $1 AND e.component IN ($2) AND e.ts >= $6::TIMESTAMPTZ AND e.ts < $7::TIMESTAMPTZ GROUP BY e.pattern_id"

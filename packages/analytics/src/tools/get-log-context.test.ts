@@ -291,7 +291,7 @@ describe("mode aggregate SQL", () => {
     const [span, summary, patterns] = toolCalls()
     expect(span?.sql).toContain("FROM corpus_stats")
     expect(summary?.sql).toBe(
-      "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.node = $2 AND log_events.pattern_id = $3), anchors AS (SELECT event_id, ts FROM (SELECT event_id, ts, lag(ts) OVER (ORDER BY ts, event_id) AS prev_ts FROM matched) s WHERE prev_ts IS NULL OR ts - prev_ts >= $4::INTERVAL) SELECT (SELECT count(*) FROM matched) AS matched_events, (SELECT count(*) FROM anchors) AS anchors, (SELECT count(DISTINCT pattern_id) FROM matched) AS excluded_patterns, (epoch_us($5::TIMESTAMPTZ) - epoch_us($6::TIMESTAMPTZ) + $7::BIGINT - 1) // $8::BIGINT AS grid_windows"
+      "WITH matched AS (SELECT log_events.event_id, log_events.ts, log_events.pattern_id FROM log_events WHERE log_events.dataset = $1 AND log_events.node = $2 AND log_events.pattern_id = $3), anchors AS (SELECT event_id, ts FROM matched MATCH_RECOGNIZE (ORDER BY ts, event_id MEASURES FIRST(event_id) AS event_id, FIRST(ts) AS ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $4::INTERVAL)) SELECT (SELECT count(*) FROM matched) AS matched_events, (SELECT count(*) FROM anchors) AS anchors, (SELECT count(DISTINCT pattern_id) FROM matched) AS excluded_patterns, (epoch_us($5::TIMESTAMPTZ) - epoch_us($6::TIMESTAMPTZ) + $7::BIGINT - 1) // $8::BIGINT AS grid_windows"
     )
     expect(summary?.params).toEqual([
       "bgl",

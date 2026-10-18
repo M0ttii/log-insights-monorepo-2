@@ -78,11 +78,12 @@ import {
  * 2. the SQL coverage of current and baseline periods;
  * 3. the rule versions of the load (`load_manifest`);
  * 4. the main aggregate: the fully filtered window first, then gaps per
- *    pattern with `lag(ts) OVER (PARTITION BY pattern_id ORDER BY ts,
- *    event_id)`; an episode starts where there is no previous event or the
- *    gap is at least the R-05 threshold, bound as `$n::INTERVAL` (R-05:
- *    never precomputed gaps). In the same statement, when the previous
- *    period B overlaps the data span, the counts of B with the identical
+ *    pattern with MATCH_RECOGNIZE, ordered by ts, event_id. The pattern
+ *    (s n*) continues only below the R-05 gap, bound as `$n::INTERVAL`;
+ *    CLASSIFIER marks starts, MATCH_NUMBER identifies the first episode
+ *    for the example event. ALL ROWS preserves activity and breadth
+ *    dimensions (R-05: never precomputed gaps). In the same statement, when
+ *    the previous period B overlaps the data span, the counts of B with the identical
  *    filter, joined per pattern, so C − B comes from SereneDB and a pattern
  *    seen only in B has C = 0 (quiet);
  *    The same SQL computes history before the window, R-05 recurring and
@@ -398,8 +399,9 @@ async function mainAggregate(
   const investigating = input.rank === "investigation_order"
 
   const ctes = [
-    `WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.${u1} AS u1, e.${u2} AS u2, lag(e.ts) OVER (PARTITION BY e.pattern_id ORDER BY e.ts, e.event_id) AS prev_ts FROM ${relation} e WHERE ${where} AND ${inCurrent})`,
-    `, c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE prev_ts IS NULL OR ts - prev_ts >= ${gap}::INTERVAL) AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE prev_ts IS NULL) AS example_event_id FROM cur GROUP BY pattern_id)`,
+    `WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.${u1} AS u1, e.${u2} AS u2 FROM ${relation} e WHERE ${where} AND ${inCurrent})`,
+    `, episodic AS (SELECT * FROM cur MATCH_RECOGNIZE (PARTITION BY pattern_id ORDER BY ts, event_id MEASURES pattern AS pattern, dataset AS dataset, component AS component, u1 AS u1, u2 AS u2, CLASSIFIER() AS phase, MATCH_NUMBER() AS episode ALL ROWS PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < ${gap}::INTERVAL))`,
+    `, c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE phase = 's') AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE phase = 's' AND episode = 1) AS example_event_id FROM episodic GROUP BY pattern_id)`,
   ]
   if (inBaseline === null) {
     ctes.push(
