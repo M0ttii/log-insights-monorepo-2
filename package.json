@@ -28,7 +28,8 @@
     "mcp": "pnpm --silent --dir apps/mcp start",
     "mcp:desktop-config": "pnpm --silent --dir apps/mcp run desktop-config",
     "test:mcp": "pnpm --filter @workspace/mcp test:smoke",
-    "test:golden": "pnpm --filter @workspace/analytics test:golden"
+    "test:golden": "pnpm --filter @workspace/analytics test:golden",
+    "agent:ask": "pnpm --silent --filter @workspace/agent agent:ask"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",
