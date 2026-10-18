@@ -64,3 +64,6 @@ docs/
 
 # personal Superset lifecycle overrides
 .superset/config.local.json
+
+# Local pnpm dlx metadata
+.pnpm-store/

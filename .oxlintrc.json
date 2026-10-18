@@ -26,7 +26,7 @@
     "import/no-unassigned-import": [
       "warn",
       {
-        "allow": ["**/*.css"]
+        "allow": ["**/*.css", "server-only"]
       }
     ],
     "jsx-a11y/control-has-associated-label": "off"
