@@ -261,6 +261,9 @@ describe("prepared chat", () => {
     await waitFor(() =>
       expect(screen.getByText(/Interrupted · partial response/)).toBeTruthy()
     )
+    fireEvent.click(
+      screen.getByRole("button", { name: /1 tool call.*Interrupted/ })
+    )
     expect(
       screen.getByRole("button", { name: /search_logs.*Interrupted/ })
     ).toBeTruthy()
@@ -308,12 +311,176 @@ describe("prepared chat", () => {
     ).toBeNull()
     expect(container.textContent).not.toContain("private model thoughts")
     expect(container.textContent).not.toContain("raw database stack")
+    fireEvent.click(
+      screen.getByRole("button", { name: /2 tool calls.*Running.*1 failed/ })
+    )
     expect(
       screen.getByRole("button", { name: /search_logs.*Running/ })
     ).toBeTruthy()
     expect(
       screen.getByRole("button", { name: /count_events.*Failed/ })
     ).toBeTruthy()
+  })
+  it("keeps tool calls collapsed by default and preserves disclosure state during streaming", async () => {
+    const message: UIMessage = {
+      id: "collapsed-tools",
+      role: "assistant",
+      parts: [
+        {
+          type: "dynamic-tool",
+          toolName: "search_logs",
+          toolCallId: "search",
+          state: "input-available",
+          input: { query: "test" },
+        },
+        { type: "text", text: "## Answer\nThe answer stays visible." },
+      ],
+    }
+    const { rerender } = renderComponent(
+      createElement(Conversation, { messages: [message], status: "streaming" })
+    )
+    const disclosure = screen.getByRole("button", {
+      name: /1 tool call.*Running/,
+    })
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false")
+    expect(screen.queryByRole("button", { name: /search_logs/ })).toBeNull()
+    expect(screen.getByText("The answer stays visible.")).toBeTruthy()
+    fireEvent.click(disclosure)
+    expect(
+      screen.getByRole("button", { name: /search_logs.*Running/ })
+    ).toBeTruthy()
+
+    const updated: UIMessage = {
+      ...message,
+      parts: [
+        {
+          type: "dynamic-tool",
+          toolName: "search_logs",
+          toolCallId: "search",
+          state: "output-available",
+          input: { query: "test" },
+          output: { ok: true, result: fixtureResult },
+        },
+        {
+          type: "dynamic-tool",
+          toolName: "count_events",
+          toolCallId: "failed-count",
+          state: "output-available",
+          input: {},
+          output: {
+            ok: false,
+            error: {
+              code: "invalid_input",
+              message: "Missing group",
+              hint: "Choose a dimension.",
+              issues: [],
+            },
+          },
+        },
+        { type: "text", text: "## Answer\nThe answer stays visible." },
+      ],
+    }
+    rerender(
+      createElement(Conversation, { messages: [updated], status: "ready" })
+    )
+    const completed = await screen.findByRole("button", {
+      name: /2 tool calls.*1 failed/,
+    })
+    expect(completed.getAttribute("aria-expanded")).toBe("true")
+    expect(
+      screen.getByRole("button", { name: /count_events.*Failed/ })
+    ).toBeTruthy()
+    fireEvent.click(completed)
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: /count_events.*Failed/ })
+      ).toBeNull()
+    )
+    expect(screen.getByText("The answer stays visible.")).toBeTruthy()
+    rerender(
+      createElement(Conversation, { messages: [updated], status: "ready" })
+    )
+    expect(
+      screen
+        .getByRole("button", { name: /2 tool calls.*1 failed/ })
+        .getAttribute("aria-expanded")
+    ).toBe("false")
+  })
+  it("keeps disclosure choices with their answer version during revision", async () => {
+    const message: UIMessage = {
+      id: "revised-tools",
+      role: "assistant",
+      parts: [
+        { type: "data-phase", data: { kind: "answer", draft: "draft" } },
+        {
+          type: "dynamic-tool",
+          toolName: "search_logs",
+          toolCallId: "draft-search",
+          state: "input-available",
+          input: { query: "test" },
+        },
+        { type: "text", text: "Draft answer" },
+      ],
+    }
+    const { rerender } = renderComponent(
+      createElement(Conversation, { messages: [message], status: "streaming" })
+    )
+    fireEvent.click(
+      screen.getByRole("button", { name: /1 tool call.*Running/ })
+    )
+    expect(screen.getByRole("button", { name: /search_logs/ })).toBeTruthy()
+
+    const revised: UIMessage = {
+      ...message,
+      parts: [
+        ...message.parts,
+        { type: "data-phase", data: { kind: "revise", draft: "final" } },
+        {
+          type: "dynamic-tool",
+          toolName: "count_events",
+          toolCallId: "final-count",
+          state: "input-available",
+          input: {},
+        },
+        { type: "text", text: "Revised answer" },
+      ],
+    }
+    rerender(
+      createElement(Conversation, { messages: [revised], status: "streaming" })
+    )
+    const finalTools = await screen.findByRole("button", {
+      name: /1 tool call.*Running/,
+    })
+    expect(finalTools.getAttribute("aria-expanded")).toBe("false")
+    expect(screen.queryByRole("button", { name: /count_events/ })).toBeNull()
+    expect(screen.getByText("Revised answer")).toBeTruthy()
+
+    const draft = screen.getByRole("button", { name: /Draft · 0 findings/ })
+    fireEvent.click(draft)
+    expect(
+      await screen.findByRole("button", { name: /search_logs/ })
+    ).toBeTruthy()
+    expect(
+      screen
+        .getAllByRole("button", { name: /1 tool call.*Running/ })
+        .map((button) => button.getAttribute("aria-expanded"))
+    ).toEqual(["true", "false"])
+    fireEvent.click(finalTools)
+    expect(screen.getByRole("button", { name: /count_events/ })).toBeTruthy()
+    fireEvent.click(draft)
+    fireEvent.click(draft)
+    expect(
+      await screen.findByRole("button", { name: /search_logs/ })
+    ).toBeTruthy()
+
+    rerender(
+      createElement(Conversation, { messages: [revised], status: "streaming" })
+    )
+    expect(
+      screen
+        .getAllByRole("button", { name: /1 tool call.*Running/ })
+        .map((button) => button.getAttribute("aria-expanded"))
+    ).toEqual(["true", "true"])
   })
   it("renders a completed receipt, truncation, input and independent claim checks", () => {
     const result: ToolResult<unknown> = {
@@ -387,6 +554,12 @@ describe("prepared chat", () => {
       },
     ]
     render(createElement(Conversation, { messages, status: "ready" }))
+    const tools = screen.getByRole("button", { name: /3 tool calls.*Complete/ })
+    expect(tools.getAttribute("aria-expanded")).toBe("false")
+    expect(
+      screen.queryByRole("link", { name: "Open receipt r_deadbeef" })
+    ).toBeNull()
+    fireEvent.click(tools)
     expect(
       screen.getAllByRole("link", { name: "Open receipt r_deadbeef" })
     ).toHaveLength(3)
@@ -642,10 +815,10 @@ describe("recorded investigation protocol", () => {
     ).toBeTruthy()
     expect(
       screen.getAllByText("1 claims checked · 1 mismatch · 0 unresolved")
-    ).toHaveLength(2)
+    ).toHaveLength(1)
     expect(
       screen.getAllByText("1 claims checked · 0 mismatch · 0 unresolved")
-    ).toHaveLength(2)
+    ).toHaveLength(1)
     expect(
       screen.getByText(
         /Revised after check: Mismatch on r_deadbeef.f1 \(value\)/
@@ -730,6 +903,9 @@ describe("recorded investigation protocol", () => {
           },
         ],
       })
+    )
+    fireEvent.click(
+      screen.getByRole("button", { name: /1 tool call.*1 failed/ })
     )
     fireEvent.click(
       screen.getByRole("button", { name: /count_events.*Failed/ })

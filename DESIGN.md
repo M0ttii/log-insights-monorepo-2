@@ -371,6 +371,8 @@ A citation, not a link dump. The model writes value, unit and fact ID; the app t
 A dotted underline in `verification-uncited-fg` under a number or time without a fact chip next to it, with a 12px icon after it. It is focusable and explains itself ("No fact ID next to this number"). It marks, it does not judge.
 
 ### Tool row (trace)
+Tool calls for an answer version sit inside a shared disclosure, closed by default. Its compact summary shows the number of calls and their execution status, including running, failed and interrupted calls. Opening it reveals the original ordered tool rows and evidence requests; it never runs a tool again. Each answer version keeps the user's disclosure choice while streaming or moving into the draft. The answer and its per-call Verification summaries remain visible outside the disclosure.
+
 One line per tool call on the spine, from the AI Elements `Trace` pattern: tool name in Mono, the mode in plain words ("precursor analysis"), a one-line input summary, the run-state badge, "SereneDB 41 ms" in Label, the receipt chip and up to three feature chips. Expanding a row reveals the tool's result view and its validated input. A `check_claims` row shows its summary with its own fact chips.
 
 ### Feature chip
