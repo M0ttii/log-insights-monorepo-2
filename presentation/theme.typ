@@ -89,6 +89,30 @@
 
 #let tool-name(body) = text(size: 15pt, weight: "semibold", body)
 
+// Pitch helpers: rounded surfaces, oversized figures and small tags.
+#let surface(dark) = if dark { rgb("#2a2833") } else { palette.light }
+
+#let card(body, dark: false, fill: none, inset: 16pt, height: auto) = block(
+  width: 100%, height: height, inset: inset, radius: 8pt,
+  fill: if fill == none { surface(dark) } else { fill },
+  body,
+)
+
+#let big(body, size: 42pt, dark: false) = text(
+  size: size, weight: "bold", tracking: -1pt,
+  fill: if dark { palette.lilac } else { palette.plum },
+  body,
+)
+
+#let pill(body, dark: false) = box(
+  inset: (x: 8pt, y: 4pt), radius: 10pt,
+  fill: if dark { rgb("#3a3450") } else { rgb("#ece6ff") },
+  text(size: 11pt, weight: "semibold", fill: if dark { palette.lilac } else { palette.plum }, body),
+)
+
+#let arrow(dark: false, height: auto) = block(width: 100%, height: height, align(center + horizon,
+  text(size: 22pt, fill: if dark { palette.lilac } else { palette.violet })[→]))
+
 // Empty evidence frame, deliberately without synthetic data or invented axes.
 #let trend-frame(body) = block(
   width: 100%, height: 170pt, fill: palette.light,
