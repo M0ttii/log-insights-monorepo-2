@@ -181,7 +181,9 @@ describe("count_events SQL", () => {
     })
     const counted = toolCalls(calls).at(-1)
     expect(counted?.sql).toContain(
-      "SELECT log_events_idx.level AS g1, count(*) AS events, NULL::BIGINT AS baseline FROM log_events_idx WHERE log_events_idx.dataset = $1 AND log_events_idx.ts >= $2::TIMESTAMPTZ AND log_events_idx.ts < $3::TIMESTAMPTZ AND log_events_idx.message @@ plainto_tsquery($4) GROUP BY 1)"
+      // count(ts), not count(*): a grouped count(*) under a full-text filter
+      // is answered from the term dictionary and miscounts (LOG-35).
+      "SELECT log_events_idx.level AS g1, count(log_events_idx.ts) AS events, NULL::BIGINT AS baseline FROM log_events_idx WHERE log_events_idx.dataset = $1 AND log_events_idx.ts >= $2::TIMESTAMPTZ AND log_events_idx.ts < $3::TIMESTAMPTZ AND log_events_idx.message @@ plainto_tsquery($4) GROUP BY 1)"
     )
     expect(counted?.sql).toContain("WHERE rank <= $5 ORDER BY rank")
     expect(counted?.params).toEqual([

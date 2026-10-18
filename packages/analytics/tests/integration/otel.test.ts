@@ -283,6 +283,24 @@ describe("otel indexed reference window", () => {
     }
   })
 
+  it("splits a text count by component exactly like a regex over the files", async () => {
+    const counted = await ok("count_events", {
+      dataset: "otel",
+      group_by: ["component"],
+      text: "called",
+    })
+    const { rows } = await oracle.query<{ component: string; n: string }>(
+      `SELECT "ServiceName" AS component, count(*)::VARCHAR AS n FROM read_parquet('/data/raw/otel/part_00[0-1].parquet', filename = true)
+       WHERE ${word("called")} AND (filename = '${PART_0}' AND "Timestamp" < '${BOUNDARY}'::TIMESTAMPTZ_NS OR filename = '${PART_1}')
+       GROUP BY 1 ORDER BY count(*) DESC, 1`
+    )
+    expect(
+      (
+        counted.data as { groups: { component: string; events: number }[] }
+      ).groups.map((group) => [group.component, group.events])
+    ).toEqual(rows.map((row) => [row.component, Number(row.n)]))
+  })
+
   it("rejects full text outside the reference window and every pattern function", async () => {
     const outside = await failure("search_logs", {
       dataset: "otel",

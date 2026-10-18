@@ -32,7 +32,10 @@ SELECT
 -- files, truncated to microseconds (never rounded); events, lines_read,
 -- rejected and patterns stay NULL: the rows are not loaded and have no
 -- patterns. error_events, levels and components count the indexed
--- reference window only (describe_corpus says so in counts_cover).
+-- reference window only (describe_corpus says so in counts_cover), read
+-- from the view otel_ref (the same rows as the index): a grouped count on
+-- the index itself is answered from the term dictionary, which LOG-35
+-- found to miscount under a full-text filter.
 INSERT INTO corpus_stats (dataset, lines_read, events, rejected, first_ts,
   last_ts, error_events, patterns, single_event_patterns, time_basis,
   label_source, levels, components, labels, api_accesses,
@@ -41,19 +44,19 @@ SELECT
   'otel', NULL, NULL, NULL,
   (SELECT make_timestamptz(epoch_ns(min(ts_min)) // 1000) FROM otel_sources),
   (SELECT make_timestamptz(epoch_ns(max(ts_max)) // 1000) FROM otel_sources),
-  (SELECT count(*) FROM otel_ref_idx WHERE level IN ({{ERROR_LEVELS}})),
+  (SELECT count(*) FROM otel_ref WHERE level IN ({{ERROR_LEVELS}})),
   NULL, NULL,
   {{TIME_BASIS}},
   {{LABEL_SOURCE}},
   (SELECT to_json(list({'level': level, 'events': n} ORDER BY n DESC, level))
-    FROM (SELECT level, count(*) AS n FROM otel_ref_idx GROUP BY level)),
+    FROM (SELECT level, count(*) AS n FROM otel_ref GROUP BY level)),
   (SELECT to_json(list({'component': component, 'team': team, 'events': n}
       ORDER BY n DESC, component))
     FROM (SELECT i.component,
         coalesce((SELECT o.team FROM ownership o
           WHERE o.dataset = 'otel' AND o.component = i.component), 'unowned') AS team,
         count(*) AS n
-      FROM otel_ref_idx i GROUP BY i.component)),
+      FROM otel_ref i GROUP BY i.component)),
   '[]'::JSON,
   NULL, NULL, NULL;
 

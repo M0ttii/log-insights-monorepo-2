@@ -329,7 +329,7 @@ export const countEvents = defineTool({
     const values = keys.map((key) => `${key} ASC NULLS LAST`).join(", ")
     const inRange = (range: TimeRange) =>
       `${rel.col("ts")} >= ${rel.bound(params.add(range.from))} AND ${rel.col("ts")} < ${rel.bound(params.add(range.to))}`
-    let counts = "count(*) AS events, NULL::BIGINT AS baseline"
+    let counts = `${rel.countRows} AS events, NULL::BIGINT AS baseline`
     let order = `events DESC, ${values}`
     if (periods !== null) {
       const inCurrent = inRange(periods.current)

@@ -357,7 +357,7 @@ async function countBuckets(
   unit: BucketUnit
 ): Promise<Counted> {
   const { rows } = await ctx.db.query(
-    `WITH ${gridCte(params, effective, unit)}, counted AS (SELECT ${truncate} AS bucket, count(*) AS events FROM ${relation.from} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, coalesce(c.events, 0)::BIGINT AS events, sum(coalesce(c.events, 0)) OVER ()::BIGINT AS total FROM grid g LEFT JOIN counted c ON g.bucket = c.bucket ORDER BY g.bucket`,
+    `WITH ${gridCte(params, effective, unit)}, counted AS (SELECT ${truncate} AS bucket, ${relation.countRows} AS events FROM ${relation.from} WHERE ${where} GROUP BY 1) SELECT ${isoTime("g.bucket")} AS bucket, coalesce(c.events, 0)::BIGINT AS events, sum(coalesce(c.events, 0)) OVER ()::BIGINT AS total FROM grid g LEFT JOIN counted c ON g.bucket = c.bucket ORDER BY g.bucket`,
     params.values,
     ctx.signal
   )
@@ -402,7 +402,7 @@ async function countSeries(
   unit: BucketUnit
 ): Promise<Counted> {
   const value = dimensionExpression(dimension, relation)
-  const cte = `WITH ${gridCte(params, effective, unit)}, cells AS (SELECT ${truncate} AS bucket, ${value} AS value, count(*) AS events FROM ${relation.from} WHERE ${where} GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, ${OTHER_SLOT}) AS slot, CASE WHEN series_rank <= ${TREND_MAX_SERIES} THEN value END AS value, series_rank, events FROM ranked)`
+  const cte = `WITH ${gridCte(params, effective, unit)}, cells AS (SELECT ${truncate} AS bucket, ${value} AS value, ${relation.countRows} AS events FROM ${relation.from} WHERE ${where} GROUP BY 1, 2), ranked AS (SELECT bucket, value, events, dense_rank() OVER (ORDER BY value_events DESC, value ASC NULLS LAST) AS series_rank FROM (SELECT bucket, value, events, sum(events) OVER (PARTITION BY value) AS value_events FROM cells) t), slots AS (SELECT bucket, least(series_rank, ${OTHER_SLOT}) AS slot, CASE WHEN series_rank <= ${TREND_MAX_SERIES} THEN value END AS value, series_rank, events FROM ranked)`
   const seriesResult = await ctx.db.query(
     `${cte} SELECT slot, value, sum(events) AS events, count(DISTINCT series_rank) AS merged_values, sum(sum(events)) OVER () AS total FROM slots GROUP BY slot, value ORDER BY slot`,
     params.values,

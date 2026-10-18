@@ -42,6 +42,16 @@ export type Relation = {
   epochMicros(expr: string): string
   /** UTC bucket start of the relation's ts for a trend unit, truncated. */
   bucket(unit: BucketUnit): string
+  /**
+   * Row count of a grouped aggregate. On an index relation it counts the
+   * never-NULL ts instead of `*`: `count(*) … GROUP BY <indexed column>`
+   * under a full-text filter is answered from the term dictionary (TsDict)
+   * and miscounts on 26.10.1 (LOG-35: otel 'called' by component gave cart
+   * 3,216,496 + email 273 + frontend 1,358 instead of cart 3,218,839; BGL
+   * 'parity' by level INFO 119,931 instead of 119,930), while counting a
+   * column scans the matching rows and is exact.
+   */
+  readonly countRows: string
 }
 
 const NULLS: Partial<Record<RelationColumn, string>> = {
@@ -87,6 +97,7 @@ export function logEventsRelation(
     bound: (ref) => `${ref}::TIMESTAMPTZ`,
     epochMicros: (expr) => `epoch_us(${expr})`,
     bucket: (unit) => `date_trunc('${unit}', ${q}.ts)`,
+    countRows: options.indexed === true ? `count(${q}.ts)` : "count(*)",
   }
 }
 
@@ -203,6 +214,7 @@ export function otelIndexRelation(
     bound: (ref) => `${ref}::TIMESTAMPTZ_NS`,
     epochMicros: (expr) => `(epoch_ns(${expr}) // 1000)`,
     bucket: (unit) => nanoBucket(unit, `${q}.ts`),
+    countRows: `count(${q}.ts)`,
   }
 }
 
@@ -278,6 +290,7 @@ export function otelScanRelation(
     bound: (ref) => `${ref}::TIMESTAMPTZ_NS`,
     epochMicros: (expr) => `(epoch_ns(${expr}) // 1000)`,
     bucket: (unit) => nanoBucket(unit, `${SCAN}.ts`),
+    countRows: "count(*)",
   }
 }
 
