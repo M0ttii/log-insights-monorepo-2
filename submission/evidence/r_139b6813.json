@@ -1,0 +1,347 @@
+{
+  "receipt_id": "r_139b6813",
+  "created_at": "2026-10-18T17:26:47.720Z",
+  "client": "mcp",
+  "tool": "recurring_patterns",
+  "tool_version": "1.1.0",
+  "input": {
+    "dataset": "bgl",
+    "from": "2005-12-05T16:00:06Z",
+    "to": "2006-01-04T16:00:06Z",
+    "only_errors": true,
+    "pattern_id": "e1726baa21cb58fe",
+    "rank": "episodes",
+    "limit": 1
+  },
+  "signature": "af5c94d541a8eb622874dbb13dd84243cbd013337ad1370ae661c23fe0edb280",
+  "data_version": "dv_229e422f86a9fc6e",
+  "sql": [
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "WITH comparison_bounds AS (SELECT $1::TIMESTAMPTZ AS cf, $2::TIMESTAMPTZ AS ct, $3::TIMESTAMPTZ AS bf, $4::TIMESTAMPTZ AS bt, $5::TIMESTAMPTZ AS first_ts, $6::TIMESTAMPTZ + INTERVAL '1 microsecond' AS end_ts), comparison_coverage AS (SELECT CASE WHEN ct <= first_ts OR cf >= end_ts THEN 'none' WHEN cf >= first_ts AND ct <= end_ts THEN 'full' ELSE 'partial' END AS current, CASE WHEN bt <= first_ts OR bf >= end_ts THEN 'none' WHEN bf >= first_ts AND bt <= end_ts THEN 'full' ELSE 'partial' END AS baseline FROM comparison_bounds) SELECT current, baseline, current <> 'none' AND baseline <> 'none' AS determinable FROM comparison_coverage",
+    "SELECT rules_version, pattern_rules_version FROM load_manifest",
+    "WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.node AS u1, e.rack AS u2 FROM log_events e WHERE e.dataset = $1 AND e.is_error AND e.pattern_id = $2 AND e.ts >= $4::TIMESTAMPTZ AND e.ts < $5::TIMESTAMPTZ), episodic AS (SELECT * FROM cur MATCH_RECOGNIZE (PARTITION BY pattern_id ORDER BY ts, event_id MEASURES pattern AS pattern, dataset AS dataset, component AS component, u1 AS u1, u2 AS u2, CLASSIFIER() AS phase, MATCH_NUMBER() AS episode ALL ROWS PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < $3::INTERVAL)), c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE phase = 's') AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE phase = 's' AND episode = 1) AS example_event_id FROM episodic GROUP BY pattern_id), b AS (SELECT e.pattern_id, min(e.pattern) AS pattern, min(e.dataset) AS dataset, min(e.component) AS component, count(*) AS baseline FROM log_events e WHERE e.dataset = $1 AND e.is_error AND e.pattern_id = $2 AND e.ts >= $6::TIMESTAMPTZ AND e.ts < $7::TIMESTAMPTZ GROUP BY e.pattern_id), joined AS (SELECT coalesce(c.pattern_id, b.pattern_id) AS pattern_id, coalesce(c.pattern, b.pattern) AS pattern, coalesce(c.dataset, b.dataset) AS dataset, coalesce(c.component, b.component) AS component, coalesce(c.events, 0) AS events, coalesce(c.episodes, 0) AS episodes, coalesce(c.active_days, 0) AS active_days, coalesce(c.active_weeks, 0) AS active_weeks, CASE WHEN c.pattern_id IS NULL THEN 0 ELSE c.b1 END AS b1, CASE WHEN c.pattern_id IS NULL THEN 0 ELSE c.b2 END AS b2, coalesce(c.components, 0) AS components, c.first_ts, c.last_ts, c.example_event_id, coalesce(b.baseline, 0) AS baseline, coalesce(c.events, 0) - coalesce(b.baseline, 0) AS delta FROM c FULL OUTER JOIN b ON c.pattern_id = b.pattern_id), history AS (SELECT e.pattern_id, min(e.ts) AS first_before FROM log_events e WHERE e.dataset = $1 AND e.is_error AND e.pattern_id = $2 AND e.ts < $11::TIMESTAMPTZ AND $12::TIMESTAMPTZ < $11::TIMESTAMPTZ AND e.pattern_id IN (SELECT pattern_id FROM joined) GROUP BY e.pattern_id), ruled AS (SELECT joined.*, history.first_before, episodes >= $8::BIGINT AS recurring, CASE WHEN events > 0 AND history.first_before IS NULL AND $12::TIMESTAMPTZ < $11::TIMESTAMPTZ THEN 'new' WHEN baseline > 0 AND events >= $9::BIGINT * baseline AND events - baseline >= $10::BIGINT THEN 'escalating' WHEN baseline = 0 AND events > 0 AND history.first_before IS NOT NULL THEN 'reappeared' WHEN events > 0 THEN 'ongoing' WHEN baseline > 0 THEN 'quiet' ELSE NULL::VARCHAR END AS status FROM joined LEFT JOIN history ON joined.pattern_id = history.pattern_id), totals AS (SELECT coalesce(sum(events), 0)::BIGINT AS total, coalesce(count_if(events > 0), 0) AS active, coalesce(count_if(events = 0), 0) AS quiet FROM joined) , ranked AS (SELECT *, row_number() OVER (ORDER BY episodes DESC, events DESC, pattern_id ASC) AS rank FROM ruled) SELECT * FROM (SELECT 'pattern' AS record_kind, pattern_id AS pattern_id, pattern AS pattern, dataset AS dataset, component AS component, coalesce((SELECT o.team FROM ownership o WHERE o.dataset = ranked.dataset AND o.component = ranked.component), 'unowned') AS team, events AS events, episodes AS episodes, active_days AS active_days, active_weeks AS active_weeks, b1 AS b1, b2 AS b2, components AS components, example_event_id AS example_event_id, baseline AS baseline, delta AS delta, recurring AS recurring, status AS status, strftime(first_before, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen_before_window, strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first_seen, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last_seen, events::DOUBLE / NULLIF((SELECT total FROM totals), 0) AS share, (SELECT total FROM totals) AS total, (SELECT active FROM totals) AS active, (SELECT quiet FROM totals) AS quiet, NULL::BIGINT AS candidates_checked, NULL::BIGINT AS missing_breadth, NULL::BOOLEAN AS drop_breadth, NULL::BOOLEAN AS drop_increase, NULL::BIGINT AS not_dominated_by_first, NULL::VARCHAR AS first_pattern_id, NULL::BIGINT AS compared_with, NULL::BOOLEAN AS truncated, NULL::BIGINT AS qualifying, NULL::VARCHAR AS criterion, NULL::BIGINT AS value, NULL::BIGINT AS tied, NULL::VARCHAR AS a, NULL::VARCHAR AS b, NULL::BOOLEAN AS a_episodes, NULL::BOOLEAN AS a_breadth, NULL::BOOLEAN AS a_change, NULL::BOOLEAN AS b_episodes, NULL::BOOLEAN AS b_breadth, NULL::BOOLEAN AS b_change, NULL::BOOLEAN AS b_listed, NULL::BIGINT AS sort_section, rank AS sort_a, NULL::BIGINT AS sort_b FROM ranked WHERE rank <= $13::BIGINT UNION ALL SELECT 'summary' AS record_kind, NULL::VARCHAR AS pattern_id, NULL::VARCHAR AS pattern, NULL::VARCHAR AS dataset, NULL::VARCHAR AS component, NULL::VARCHAR AS team, NULL::BIGINT AS events, NULL::BIGINT AS episodes, NULL::BIGINT AS active_days, NULL::BIGINT AS active_weeks, NULL::BIGINT AS b1, NULL::BIGINT AS b2, NULL::BIGINT AS components, NULL::BIGINT AS example_event_id, NULL::BIGINT AS baseline, NULL::BIGINT AS delta, NULL::BOOLEAN AS recurring, NULL::VARCHAR AS status, NULL::VARCHAR AS first_seen_before_window, NULL::VARCHAR AS first_seen, NULL::VARCHAR AS last_seen, NULL::DOUBLE AS share, total AS total, active AS active, quiet AS quiet, NULL::BIGINT AS candidates_checked, NULL::BIGINT AS missing_breadth, NULL::BOOLEAN AS drop_breadth, NULL::BOOLEAN AS drop_increase, NULL::BIGINT AS not_dominated_by_first, NULL::VARCHAR AS first_pattern_id, NULL::BIGINT AS compared_with, active + quiet > $13::BIGINT AS truncated, active + quiet AS qualifying, NULL::VARCHAR AS criterion, NULL::BIGINT AS value, NULL::BIGINT AS tied, NULL::VARCHAR AS a, NULL::VARCHAR AS b, NULL::BOOLEAN AS a_episodes, NULL::BOOLEAN AS a_breadth, NULL::BOOLEAN AS a_change, NULL::BOOLEAN AS b_episodes, NULL::BOOLEAN AS b_breadth, NULL::BOOLEAN AS b_change, NULL::BOOLEAN AS b_listed, NULL::BIGINT AS sort_section, NULL::BIGINT AS sort_a, NULL::BIGINT AS sort_b FROM totals) records ORDER BY record_kind, sort_section, sort_a, sort_b, criterion, pattern_id, a, b"
+  ],
+  "params": [
+    [
+      "bgl"
+    ],
+    [
+      "2005-12-05T16:00:06Z",
+      "2006-01-04T16:00:06Z",
+      "2005-11-05T16:00:06.000000Z",
+      "2005-12-05T16:00:06.000000Z",
+      "2005-06-03T22:42:50.363779Z",
+      "2006-01-04T16:00:05.233639Z"
+    ],
+    [],
+    [
+      "bgl",
+      "e1726baa21cb58fe",
+      "30 minutes",
+      "2005-12-05T16:00:06Z",
+      "2006-01-04T16:00:06Z",
+      "2005-11-05T16:00:06.000000Z",
+      "2005-12-05T16:00:06.000000Z",
+      2,
+      2,
+      20,
+      "2005-12-05T16:00:06Z",
+      "2005-06-03T22:42:50.363779Z",
+      1
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "bgl",
+        "from": "2005-12-05T16:00:06Z",
+        "to": "2006-01-04T16:00:06Z",
+        "period": "current"
+      },
+      {
+        "dataset": "bgl",
+        "from": "2005-11-05T16:00:06.000000Z",
+        "to": "2005-12-05T16:00:06.000000Z",
+        "period": "baseline"
+      }
+    ],
+    "filters": {
+      "only_errors": true,
+      "pattern_id": "e1726baa21cb58fe"
+    }
+  },
+  "population": {
+    "count": 31,
+    "unit": "log_events"
+  },
+  "rows_returned": 1,
+  "truncated": false,
+  "row_limit": 1,
+  "duration_ms": 42.56,
+  "result": {
+    "dataset": "bgl",
+    "rank": "episodes",
+    "limit": 1,
+    "rules": {
+      "rules_version": "concept-3.8",
+      "pattern_rules_version": "1.1.0",
+      "episode_gap_minutes": 30,
+      "recurring_min_episodes": 2,
+      "breadth_unit": "nodes"
+    },
+    "comparison": {
+      "baseline": {
+        "from": "2005-11-05T16:00:06.000000Z",
+        "to": "2005-12-05T16:00:06.000000Z"
+      },
+      "coverage": {
+        "current": "partial",
+        "baseline": "full"
+      },
+      "determinable": true
+    },
+    "events": 31,
+    "pattern_count": 1,
+    "quiet_count": 0,
+    "patterns": [
+      {
+        "pattern_id": "e1726baa21cb58fe",
+        "pattern": "instruction plb error.............0",
+        "component": "KERNEL",
+        "team": "Compute Platform",
+        "events": 31,
+        "first_seen": "2005-12-05T21:23:02.337526Z",
+        "last_seen": "2006-01-03T11:24:47.428756Z",
+        "episodes": 23,
+        "recurring": true,
+        "active_days": 13,
+        "active_weeks": 5,
+        "nodes": 22,
+        "racks": 19,
+        "components": 1,
+        "baseline": 45,
+        "delta": -14,
+        "status": "ongoing",
+        "first_seen_before_window": "2005-06-05T08:55:00.167706Z",
+        "example_event_id": 4619014
+      }
+    ],
+    "truncated": false,
+    "investigation": null
+  },
+  "result_digest": "1d1fd174b001c6551c9412fa5cb4c09bba4d88497282fa31013bade1aa00b499",
+  "facts": [
+    {
+      "id": "r_139b6813.f1",
+      "path": "/result/comparison/baseline/from",
+      "value": "2005-11-05T16:00:06.000000Z",
+      "metric": "baseline_start",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_139b6813.f2",
+      "path": "/result/comparison/baseline/to",
+      "value": "2005-12-05T16:00:06.000000Z",
+      "metric": "baseline_end",
+      "unit": "utc_time",
+      "group": {}
+    },
+    {
+      "id": "r_139b6813.f3",
+      "path": "/result/events",
+      "value": 31,
+      "metric": "events",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_139b6813.f4",
+      "path": "/result/pattern_count",
+      "value": 1,
+      "metric": "patterns",
+      "unit": "patterns",
+      "group": {}
+    },
+    {
+      "id": "r_139b6813.f5",
+      "path": "/result/patterns/0/active_days",
+      "value": 13,
+      "metric": "active_days",
+      "unit": "days",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f6",
+      "path": "/result/patterns/0/active_weeks",
+      "value": 5,
+      "metric": "active_weeks",
+      "unit": "weeks",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f7",
+      "path": "/result/patterns/0/baseline",
+      "value": 45,
+      "metric": "events_baseline",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f8",
+      "path": "/result/patterns/0/components",
+      "value": 1,
+      "metric": "components",
+      "unit": "components",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f9",
+      "path": "/result/patterns/0/delta",
+      "value": -14,
+      "metric": "delta",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f10",
+      "path": "/result/patterns/0/episodes",
+      "value": 23,
+      "metric": "episodes",
+      "unit": "episodes",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f11",
+      "path": "/result/patterns/0/events",
+      "value": 31,
+      "metric": "events_current",
+      "unit": "log_events",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f12",
+      "path": "/result/patterns/0/first_seen",
+      "value": "2005-12-05T21:23:02.337526Z",
+      "metric": "first_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f13",
+      "path": "/result/patterns/0/first_seen_before_window",
+      "value": "2005-06-05T08:55:00.167706Z",
+      "metric": "first_seen_before_window",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f14",
+      "path": "/result/patterns/0/last_seen",
+      "value": "2006-01-03T11:24:47.428756Z",
+      "metric": "last_seen",
+      "unit": "utc_time",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f15",
+      "path": "/result/patterns/0/nodes",
+      "value": 22,
+      "metric": "nodes",
+      "unit": "nodes",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f16",
+      "path": "/result/patterns/0/racks",
+      "value": 19,
+      "metric": "racks",
+      "unit": "racks",
+      "group": {
+        "pattern_id": "e1726baa21cb58fe"
+      }
+    },
+    {
+      "id": "r_139b6813.f17",
+      "path": "/result/quiet_count",
+      "value": 0,
+      "metric": "quiet_patterns",
+      "unit": "patterns",
+      "group": {}
+    },
+    {
+      "id": "r_139b6813.f18",
+      "path": "/result/rules/episode_gap_minutes",
+      "value": 30,
+      "metric": "episode_gap",
+      "unit": "minutes",
+      "group": {}
+    },
+    {
+      "id": "r_139b6813.f19",
+      "path": "/scope/windows/0/from",
+      "value": "2005-12-05T16:00:06Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_139b6813.f20",
+      "path": "/scope/windows/0/to",
+      "value": "2006-01-04T16:00:06Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "current"
+      }
+    },
+    {
+      "id": "r_139b6813.f21",
+      "path": "/scope/windows/1/from",
+      "value": "2005-11-05T16:00:06.000000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    },
+    {
+      "id": "r_139b6813.f22",
+      "path": "/scope/windows/1/to",
+      "value": "2005-12-05T16:00:06.000000Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "bgl",
+        "period": "baseline"
+      }
+    }
+  ]
+}

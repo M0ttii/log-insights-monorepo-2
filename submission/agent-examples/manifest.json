@@ -1,0 +1,22 @@
+{
+  "captured_on": "2026-10-18",
+  "purpose": "Historical actual model examples, not formal evaluation or current-source acceptance",
+  "licence": "Source data is public Loghub BGL/OpenStack, Zenodo8196385 CC BY4.0; source attribution is in README Data. No restricted partner data, credentials, raw full corpus or private holdouts exported.",
+  "examples": [
+    {
+      "role": "engineer",
+      "answer": "engineer/answer.md",
+      "provenance": "engineer/provenance.json"
+    },
+    {
+      "role": "team-lead",
+      "answer": "team-lead/answer.md",
+      "provenance": "team-lead/provenance.json"
+    },
+    {
+      "role": "manager",
+      "answer": "manager/answer.md",
+      "provenance": "manager/provenance.json"
+    }
+  ]
+}

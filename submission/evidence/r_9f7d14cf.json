@@ -1,0 +1,681 @@
+{
+  "receipt_id": "r_9f7d14cf",
+  "created_at": "2026-10-18T19:20:25.402Z",
+  "client": "mcp",
+  "tool": "check_claims",
+  "tool_version": "1.0.0",
+  "input": {
+    "claims": [
+      {
+        "fact": "r_fb51ec23.f12",
+        "value": "4,747,945",
+        "metric": "events",
+        "group": {
+          "dataset": "bgl"
+        }
+      },
+      {
+        "fact": "r_fb51ec23.f66",
+        "value": "207,820",
+        "metric": "events",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_2d710a97.f5",
+        "value": "2017-05-14T19:39:01.445",
+        "metric": "window_start",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_2d710a97.f6",
+        "value": "2017-05-17T12:02:35.320001",
+        "metric": "window_end",
+        "group": {
+          "dataset": "openstack"
+        }
+      },
+      {
+        "fact": "r_0bb58204.f3",
+        "value": 2,
+        "metric": "matches",
+        "group": {}
+      },
+      {
+        "fact": "r_2d710a97.f4",
+        "value": 2,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_2d710a97.f2",
+        "value": 2,
+        "metric": "events",
+        "group": {
+          "component": "nova-api",
+          "level": "ERROR"
+        }
+      },
+      {
+        "fact": "r_9d6a96aa.f1",
+        "value": "2017-05-16T06:25:02.867",
+        "metric": "event_time",
+        "group": {
+          "event_id": "10070743"
+        }
+      },
+      {
+        "fact": "r_0bb58204.f2",
+        "value": "2017-05-17T06:25:03.044",
+        "metric": "event_time",
+        "group": {
+          "event_id": "10194062"
+        }
+      },
+      {
+        "fact": "r_9d6a96aa.f8",
+        "value": -1010,
+        "metric": "offset",
+        "group": {
+          "event_id": "10070742"
+        }
+      },
+      {
+        "fact": "r_9d6a96aa.f2",
+        "value": 1,
+        "metric": "offset",
+        "group": {
+          "event_id": "10070744"
+        }
+      },
+      {
+        "fact": "r_9d6a96aa.f4",
+        "value": 2,
+        "metric": "offset",
+        "group": {
+          "event_id": "10070745"
+        }
+      },
+      {
+        "fact": "r_9d6a96aa.f6",
+        "value": 3,
+        "metric": "offset",
+        "group": {
+          "event_id": "10070746"
+        }
+      }
+    ]
+  },
+  "signature": "5d0a3e04b2d1b634d3fc1be7b1bb141673840b5ef9b407c4e7afda9887aa6795",
+  "data_version": "dv_5663ee75e955ec1d",
+  "sql": [],
+  "params": [],
+  "scope": {
+    "windows": [],
+    "filters": {}
+  },
+  "population": null,
+  "rows_returned": 13,
+  "truncated": false,
+  "row_limit": null,
+  "duration_ms": 0,
+  "result": {
+    "claims": [
+      {
+        "claim": {
+          "fact": "r_fb51ec23.f12",
+          "value": "4,747,945",
+          "metric": "events",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 4747945,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "bgl"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_fb51ec23",
+          "tool": "describe_corpus",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              },
+              {
+                "dataset": "otel",
+                "from": "2025-09-23T00:00:00.000000Z",
+                "to": "2025-09-23T23:57:23.980054Z"
+              },
+              {
+                "dataset": "otel_replay",
+                "from": "2025-09-23T00:20:00.000000Z",
+                "to": "2025-09-23T00:20:00.000998Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_fb51ec23.f66",
+          "value": "207,820",
+          "metric": "events",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 207820,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_fb51ec23",
+          "tool": "describe_corpus",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "bgl",
+                "from": "2005-06-03T22:42:50.363779Z",
+                "to": "2006-01-04T16:00:05.233640Z"
+              },
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              },
+              {
+                "dataset": "otel",
+                "from": "2025-09-23T00:00:00.000000Z",
+                "to": "2025-09-23T23:57:23.980054Z"
+              },
+              {
+                "dataset": "otel_replay",
+                "from": "2025-09-23T00:20:00.000000Z",
+                "to": "2025-09-23T00:20:00.000998Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_2d710a97.f5",
+          "value": "2017-05-14T19:39:01.445",
+          "metric": "window_start",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2017-05-14T19:39:01.445000Z",
+          "metric": "window_start",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_2d710a97",
+          "tool": "count_events",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {
+              "text": "Bad response code while validating token"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_2d710a97.f6",
+          "value": "2017-05-17T12:02:35.320001",
+          "metric": "window_end",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2017-05-17T12:02:35.320001Z",
+          "metric": "window_end",
+          "unit": "utc_time",
+          "group": {
+            "dataset": "openstack"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_2d710a97",
+          "tool": "count_events",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {
+              "text": "Bad response code while validating token"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_0bb58204.f3",
+          "value": 2,
+          "metric": "matches",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 2,
+          "metric": "matches",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_0bb58204",
+          "tool": "search_logs",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_2d710a97.f4",
+          "value": 2,
+          "metric": "events",
+          "group": {}
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 2,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        "receipt": {
+          "receipt_id": "r_2d710a97",
+          "tool": "count_events",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {
+              "text": "Bad response code while validating token"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_2d710a97.f2",
+          "value": 2,
+          "metric": "events",
+          "group": {
+            "component": "nova-api",
+            "level": "ERROR"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 2,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "component": "nova-api",
+            "level": "ERROR"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_2d710a97",
+          "tool": "count_events",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {
+              "text": "Bad response code while validating token"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_9d6a96aa.f1",
+          "value": "2017-05-16T06:25:02.867",
+          "metric": "event_time",
+          "group": {
+            "event_id": "10070743"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2017-05-16T06:25:02.867000Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "10070743"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_9d6a96aa",
+          "tool": "get_log_context",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-16T06:15:02.867000Z",
+                "to": "2017-05-16T06:35:02.867001Z"
+              }
+            ],
+            "filters": {
+              "request_id": "req-1cc7d50c-25a2-46b0-a668-9c00f589160c"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_0bb58204.f2",
+          "value": "2017-05-17T06:25:03.044",
+          "metric": "event_time",
+          "group": {
+            "event_id": "10194062"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": "2017-05-17T06:25:03.044000Z",
+          "metric": "event_time",
+          "unit": "utc_time",
+          "group": {
+            "event_id": "10194062"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_0bb58204",
+          "tool": "search_logs",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-14T19:39:01.445000Z",
+                "to": "2017-05-17T12:02:35.320001Z"
+              }
+            ],
+            "filters": {}
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_9d6a96aa.f8",
+          "value": -1010,
+          "metric": "offset",
+          "group": {
+            "event_id": "10070742"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": -1010,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "10070742"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_9d6a96aa",
+          "tool": "get_log_context",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-16T06:15:02.867000Z",
+                "to": "2017-05-16T06:35:02.867001Z"
+              }
+            ],
+            "filters": {
+              "request_id": "req-1cc7d50c-25a2-46b0-a668-9c00f589160c"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_9d6a96aa.f2",
+          "value": 1,
+          "metric": "offset",
+          "group": {
+            "event_id": "10070744"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 1,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "10070744"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_9d6a96aa",
+          "tool": "get_log_context",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-16T06:15:02.867000Z",
+                "to": "2017-05-16T06:35:02.867001Z"
+              }
+            ],
+            "filters": {
+              "request_id": "req-1cc7d50c-25a2-46b0-a668-9c00f589160c"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_9d6a96aa.f4",
+          "value": 2,
+          "metric": "offset",
+          "group": {
+            "event_id": "10070745"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 2,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "10070745"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_9d6a96aa",
+          "tool": "get_log_context",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-16T06:15:02.867000Z",
+                "to": "2017-05-16T06:35:02.867001Z"
+              }
+            ],
+            "filters": {
+              "request_id": "req-1cc7d50c-25a2-46b0-a668-9c00f589160c"
+            }
+          }
+        }
+      },
+      {
+        "claim": {
+          "fact": "r_9d6a96aa.f6",
+          "value": 3,
+          "metric": "offset",
+          "group": {
+            "event_id": "10070746"
+          }
+        },
+        "status": "verified",
+        "mismatch_on": [],
+        "reason": null,
+        "fact": {
+          "value": 3,
+          "metric": "offset",
+          "unit": "ms",
+          "group": {
+            "event_id": "10070746"
+          }
+        },
+        "receipt": {
+          "receipt_id": "r_9d6a96aa",
+          "tool": "get_log_context",
+          "data_version": "dv_5663ee75e955ec1d",
+          "scope": {
+            "windows": [
+              {
+                "dataset": "openstack",
+                "from": "2017-05-16T06:15:02.867000Z",
+                "to": "2017-05-16T06:35:02.867001Z"
+              }
+            ],
+            "filters": {
+              "request_id": "req-1cc7d50c-25a2-46b0-a668-9c00f589160c"
+            }
+          }
+        }
+      }
+    ],
+    "summary": {
+      "checked": 13,
+      "verified": 13,
+      "mismatch": 0,
+      "unresolved": 0,
+      "text": "13 claims checked · 0 mismatch · 0 unresolved"
+    }
+  },
+  "result_digest": "af940c9808fb3f071fc769fe4dc04edced5a51cae30d7f88bc9116d36111afa4",
+  "facts": [
+    {
+      "id": "r_9f7d14cf.f1",
+      "path": "/result/summary/checked",
+      "value": 13,
+      "metric": "claims_checked",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_9f7d14cf.f2",
+      "path": "/result/summary/mismatch",
+      "value": 0,
+      "metric": "claims_mismatch",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_9f7d14cf.f3",
+      "path": "/result/summary/unresolved",
+      "value": 0,
+      "metric": "claims_unresolved",
+      "unit": "claims",
+      "group": {}
+    },
+    {
+      "id": "r_9f7d14cf.f4",
+      "path": "/result/summary/verified",
+      "value": 13,
+      "metric": "claims_verified",
+      "unit": "claims",
+      "group": {}
+    }
+  ]
+}

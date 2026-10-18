@@ -1,0 +1,95 @@
+{
+  "validated_on": "2026-10-18",
+  "kind": "Archive integrity and citation resolution; not a formal role-quality evaluation",
+  "results": [
+    {
+      "role": "engineer",
+      "answer_hash_valid": true,
+      "receipt_hashes_valid": true,
+      "signatures_valid": true,
+      "result_digests_valid": true,
+      "data_version": "dv_5663ee75e955ec1d",
+      "receipts": 5,
+      "cited_facts": 16,
+      "all_cited_facts_resolve": true,
+      "actual_claim_checks": [
+        {
+          "receipt": "r_9f7d14cf",
+          "summary": {
+            "checked": 13,
+            "verified": 13,
+            "mismatch": 0,
+            "unresolved": 0,
+            "text": "13 claims checked · 0 mismatch · 0 unresolved"
+          }
+        }
+      ]
+    },
+    {
+      "role": "team-lead",
+      "answer_hash_valid": true,
+      "receipt_hashes_valid": true,
+      "signatures_valid": true,
+      "result_digests_valid": true,
+      "data_version": "dv_229e422f86a9fc6e",
+      "receipts": 6,
+      "cited_facts": 44,
+      "all_cited_facts_resolve": true,
+      "actual_claim_checks": [
+        {
+          "receipt": "r_28e074c4",
+          "summary": {
+            "checked": 26,
+            "verified": 26,
+            "mismatch": 0,
+            "unresolved": 0,
+            "text": "26 claims checked · 0 mismatch · 0 unresolved"
+          }
+        },
+        {
+          "receipt": "r_8f9855db",
+          "summary": {
+            "checked": 12,
+            "verified": 12,
+            "mismatch": 0,
+            "unresolved": 0,
+            "text": "12 claims checked · 0 mismatch · 0 unresolved"
+          }
+        }
+      ]
+    },
+    {
+      "role": "manager",
+      "answer_hash_valid": true,
+      "receipt_hashes_valid": true,
+      "signatures_valid": true,
+      "result_digests_valid": true,
+      "data_version": "dv_229e422f86a9fc6e",
+      "receipts": 8,
+      "cited_facts": 41,
+      "all_cited_facts_resolve": true,
+      "actual_claim_checks": [
+        {
+          "receipt": "r_c5b60807",
+          "summary": {
+            "checked": 26,
+            "verified": 26,
+            "mismatch": 0,
+            "unresolved": 0,
+            "text": "26 claims checked · 0 mismatch · 0 unresolved"
+          }
+        },
+        {
+          "receipt": "r_f365f31a",
+          "summary": {
+            "checked": 9,
+            "verified": 9,
+            "mismatch": 0,
+            "unresolved": 0,
+            "text": "9 claims checked · 0 mismatch · 0 unresolved"
+          }
+        }
+      ]
+    }
+  ]
+}

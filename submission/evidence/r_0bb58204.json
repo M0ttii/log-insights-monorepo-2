@@ -1,0 +1,157 @@
+{
+  "receipt_id": "r_0bb58204",
+  "created_at": "2026-10-18T19:19:14.262Z",
+  "client": "mcp",
+  "tool": "search_logs",
+  "tool_version": "1.2.0",
+  "input": {
+    "query": "Bad response code while validating token",
+    "match": "phrase",
+    "dataset": "openstack",
+    "sort": "time_asc",
+    "limit": 5
+  },
+  "signature": "d41b11c9cd806828441d0397c4fd98cf82bee95036415ad809904302495de3e2",
+  "data_version": "dv_5663ee75e955ec1d",
+  "sql": [
+    "SELECT ts_lexize('log_text', $1::VARCHAR) AS tokens",
+    "SELECT strftime(first_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS first, strftime(last_ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS last FROM corpus_stats WHERE dataset = $1",
+    "SELECT count(*) AS total FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND log_events_idx.dataset = $2",
+    "WITH hits AS MATERIALIZED (SELECT log_events_idx.event_id AS event_id, log_events_idx.dataset AS dataset, strftime(log_events_idx.ts, '%Y-%m-%dT%H:%M:%S.%fZ') AS ts, log_events_idx.ts AS sort_ts, log_events_idx.component AS component, log_events_idx.level AS level, log_events_idx.node AS node, log_events_idx.alert_label AS alert_label, log_events_idx.request_id AS request_id, log_events_idx.host AS host, log_events_idx.process_id AS process_id, log_events_idx.client_ip AS client_ip, log_events_idx.thread AS thread, log_events_idx.block_id AS block_id, NULL::VARCHAR AS trace_id, NULL::VARCHAR AS span_id, NULL::INTEGER AS severity_number, left(log_events_idx.message, 400) AS message, length(log_events_idx.message) > 400 AS message_truncated, BM25(log_events_idx.tableoid) AS score FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND log_events_idx.dataset = $2 ORDER BY log_events_idx.ts, log_events_idx.event_id LIMIT $3) SELECT hits.*, matches.match_offsets FROM hits JOIN (SELECT log_events_idx.event_id AS event_id, ts_offsets(log_events_idx.message) AS match_offsets FROM log_events_idx WHERE log_events_idx.message @@ ts_phrase($1) AND CASE WHEN log_events_idx.event_id IN (SELECT event_id FROM hits) THEN TRUE ELSE FALSE END) AS matches ON hits.event_id = matches.event_id ORDER BY hits.sort_ts, hits.event_id"
+  ],
+  "params": [
+    [
+      "Bad response code while validating token"
+    ],
+    [
+      "openstack"
+    ],
+    [
+      "Bad response code while validating token",
+      "openstack"
+    ],
+    [
+      "Bad response code while validating token",
+      "openstack",
+      5
+    ]
+  ],
+  "scope": {
+    "windows": [
+      {
+        "dataset": "openstack",
+        "from": "2017-05-14T19:39:01.445000Z",
+        "to": "2017-05-17T12:02:35.320001Z"
+      }
+    ],
+    "filters": {}
+  },
+  "population": {
+    "count": 2,
+    "unit": "log_events"
+  },
+  "rows_returned": 2,
+  "truncated": false,
+  "row_limit": 5,
+  "duration_ms": 114.24,
+  "result": {
+    "query": "Bad response code while validating token",
+    "match_mode": "phrase",
+    "max_edits": null,
+    "sort": "time_asc",
+    "total_matches": 2,
+    "hits": [
+      {
+        "event_id": 10070743,
+        "dataset": "openstack",
+        "ts": "2017-05-16T06:25:02.867000Z",
+        "component": "nova-api",
+        "level": "ERROR",
+        "node": null,
+        "alert_label": null,
+        "request_id": "req-1cc7d50c-25a2-46b0-a668-9c00f589160c",
+        "message": "Bad response code while validating token: 503",
+        "message_truncated": false,
+        "match_ranges": [
+          {
+            "start": 0,
+            "end": 40
+          }
+        ],
+        "score": 30.322956
+      },
+      {
+        "event_id": 10194062,
+        "dataset": "openstack",
+        "ts": "2017-05-17T06:25:03.044000Z",
+        "component": "nova-api",
+        "level": "ERROR",
+        "node": null,
+        "alert_label": null,
+        "request_id": "req-abcdb287-429c-40a5-8e79-d490d4fb7410",
+        "message": "Bad response code while validating token: 503",
+        "message_truncated": false,
+        "match_ranges": [
+          {
+            "start": 0,
+            "end": 40
+          }
+        ],
+        "score": 30.322956
+      }
+    ],
+    "truncated": false,
+    "row_limit": 5
+  },
+  "result_digest": "c7731bc99ba330aa17b8c1b98ecf16e1c54b831efe818162d2b92db3ac4261c8",
+  "facts": [
+    {
+      "id": "r_0bb58204.f1",
+      "path": "/result/hits/0/ts",
+      "value": "2017-05-16T06:25:02.867000Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "10070743"
+      }
+    },
+    {
+      "id": "r_0bb58204.f2",
+      "path": "/result/hits/1/ts",
+      "value": "2017-05-17T06:25:03.044000Z",
+      "metric": "event_time",
+      "unit": "utc_time",
+      "group": {
+        "event_id": "10194062"
+      }
+    },
+    {
+      "id": "r_0bb58204.f3",
+      "path": "/result/total_matches",
+      "value": 2,
+      "metric": "matches",
+      "unit": "log_events",
+      "group": {}
+    },
+    {
+      "id": "r_0bb58204.f4",
+      "path": "/scope/windows/0/from",
+      "value": "2017-05-14T19:39:01.445000Z",
+      "metric": "window_start",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    },
+    {
+      "id": "r_0bb58204.f5",
+      "path": "/scope/windows/0/to",
+      "value": "2017-05-17T12:02:35.320001Z",
+      "metric": "window_end",
+      "unit": "utc_time",
+      "group": {
+        "dataset": "openstack"
+      }
+    }
+  ]
+}

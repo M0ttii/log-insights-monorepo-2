@@ -27,13 +27,16 @@ receipt.
 The tracked [submission evidence and remaining gates](submission/README.md) identify
 what is ready and what still needs final release verification. The
 [SereneDB function reference](submission/serenedb-functions.md) links implemented
-SQL paths to complete, unchanged receipts from real corpus runs. Live API evals
-and the human review sample are postponed; no passing U16 result is claimed.
+SQL paths to complete, unchanged receipts from real corpus runs. The formal baseline, independent ratings, freeze and holdout experiment are
+deferred by the owner’s scope decision on 2026-10-18. They are additional research,
+not original-brief submission gates; no passing U16 result is claimed. See the
+[minimum submission record](submission/minimum-scope.md).
 
-The [editable Typst presentation template](presentation/README.md) includes a
-[PDF preview](presentation/log-insights-template.pdf). It covers the three roles,
-architecture and query evidence; findings remain explicit placeholders until
-verified runs are available.
+The [worked-investigation slides](presentation/worked-investigation.pdf) show real
+queries, original receipts and explicitly analyst-written role views. The
+[actual Claude examples](submission/agent-examples/README.md) retain separate model
+answers and their provenance. Editable Typst source and the optional blank template
+are described in [the presentation guide](presentation/README.md).
 
 ## Requirements
 
@@ -360,7 +363,8 @@ playbooks and `get_log_context` source were unchanged by that integration.
 The [eval measurement foundation](packages/evals/README.md) adds `pnpm eval` on
 the shared production agent, immutable attempt/receipt exports and offline report
 replay. Its committed fixture tests metadata only. It establishes no live quality result, advantage over the baseline or holdout
-result; those remain separate U16 gates.
+result. Those optional research gates are deferred and do not block the
+original-brief workflow.
 
 ## Tools
 
@@ -541,9 +545,10 @@ shares and the remainder are preserved.
 ## Known development questions and boundaries
 
 These questions come from the checked-in [development bank](packages/evals/questions/dev.yaml).
-They are useful tool-level examples, not frozen-release verified model answers
-and not holdout questions. The final submission must link each to its actual
-answer, executed check and complete receipts after evaluation.
+They are known development/demo questions, not holdouts. See the
+[worked investigation](submission/worked-investigation.md) for the common case
+and the [actual Claude examples](submission/agent-examples/README.md) for archived
+model answers with their own scopes, original receipts and limitations.
 
 | Role | Known question | Evidence the answer must obtain |
 |---|---|---|
