@@ -1,6 +1,11 @@
 import { z } from "zod"
 
 import { formatFactValue, type Fact } from "../facts.ts"
+import {
+  datasetsWithColumn,
+  SPECIFIC_DIMENSION_COLUMNS,
+  type Dataset,
+} from "../datasets.ts"
 import { datasetSchema, pickFilter } from "../filters.ts"
 import { bucketUnitSchema, instantSchema } from "../time.ts"
 import type { ToolResult } from "../tool.ts"
@@ -28,13 +33,18 @@ export const TREND_FILTER = pickFilter([
   "alert_label",
   "only_errors",
   "only_alerts",
+  "block_id",
+  "host",
+  "process_id",
+  "client_ip",
+  "thread",
   "pattern_id",
   "text",
 ])
 
 /** A-08.3: a trend over both datasets on one time axis is rejected. */
 export const NO_SHARED_TIME_AXIS =
-  "BGL and OpenStack share no time axis; call event_trend once per dataset (bgl or openstack)."
+  "No two datasets share a time axis; call event_trend once per dataset (see describe_corpus for the loaded datasets)."
 
 /**
  * Dimensions a trend can be split by. `dataset` is fixed per call;
@@ -48,29 +58,50 @@ export const TREND_DIMENSIONS = [
   "alert_label",
   "rack",
   "node",
+  "host",
+  "client_ip",
+  "thread",
+  "block_id",
   "pattern",
 ] as const
 
 export const trendDimensionSchema = z
   .enum(TREND_DIMENSIONS)
   .describe(
-    "Dimension that splits the trend into series: team (fictional ownership, unmapped = unowned), component, level, alert_label (BGL only, dataset label), rack (BGL only), node (BGL only), pattern (pattern_id)."
+    "Dimension that splits the trend into series: team (fictional ownership, unmapped = unowned), component, level, alert_label (BGL only, dataset label), rack (BGL only), node (BGL only), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS), pattern (pattern_id)."
   )
 
 export type TrendDimension = z.infer<typeof trendDimensionSchema>
 
-/** Dimensions whose column exists only in BGL. */
-export const BGL_ONLY_DIMENSIONS: readonly TrendDimension[] = [
-  "alert_label",
-  "rack",
-  "node",
-]
+/**
+ * Datasets a split dimension applies to (catalog, U26); null for the
+ * dimensions every dataset has.
+ */
+export function trendDimensionDatasets(
+  dimension: TrendDimension
+): Dataset[] | null {
+  switch (dimension) {
+    case "alert_label":
+    case "rack":
+    case "node":
+    case "host":
+    case "client_ip":
+    case "thread":
+    case "block_id":
+      return datasetsWithColumn(SPECIFIC_DIMENSION_COLUMNS[dimension])
+    case "team":
+    case "component":
+    case "level":
+    case "pattern":
+      return null
+  }
+}
 
 export const eventTrendInputSchema = z.strictObject({
   dataset: z
     .enum(datasetSchema.options, { error: NO_SHARED_TIME_AXIS })
     .describe(
-      "Required, exactly one dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis, so a trend is always per dataset; call twice to see both."
+      "Required, exactly one dataset. No two datasets share a time axis, so a trend is always per dataset; call once per dataset."
     ),
   bucket: bucketUnitSchema.describe(
     "Bucket size in UTC: hour, day or week (weeks start on Monday 00:00 UTC). Each bucket is [start, start + 1 unit)."
@@ -108,6 +139,10 @@ export const trendSeriesSchema = z.strictObject({
   alert_label: seriesValue("alert_label"),
   rack: seriesValue("rack"),
   node: seriesValue("node"),
+  host: seriesValue("host"),
+  client_ip: seriesValue("client_ip"),
+  thread: seriesValue("thread"),
+  block_id: seriesValue("block_id"),
   pattern: seriesValue("pattern"),
   events: count.describe("Log events of this series."),
 })

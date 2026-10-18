@@ -1,0 +1,205 @@
+{
+  "dataset": "linux",
+  "role": "Team Lead",
+  "question": "Which programs log most and recur, and who owns them?",
+  "data_version": "dv_02dfa8cc8e16e2a2",
+  "client": "eval",
+  "model": "none (tools called directly through the registry)",
+  "tool_calls": [
+    {
+      "step": "count_events_by_team_component",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["team", "component"],
+        "dataset": "linux",
+        "top_n": 10
+      },
+      "receipt_id": "r_14047588",
+      "data_summary": "unit=log_events, total=25547, groups=73, shown=10",
+      "facts_used": [
+        {
+          "id": "r_14047588.f1",
+          "path": "/result/group_count",
+          "value": 73,
+          "metric": "groups",
+          "unit": "groups",
+          "group": {}
+        },
+        {
+          "id": "r_14047588.f2",
+          "path": "/result/groups/0/events",
+          "value": 13670,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "team": "Compute Platform",
+            "component": "kernel"
+          }
+        },
+        {
+          "id": "r_14047588.f4",
+          "path": "/result/groups/1/events",
+          "value": 4996,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "team": "Access Services",
+            "component": "sshd(pam_unix)"
+          }
+        },
+        {
+          "id": "r_14047588.f25",
+          "path": "/result/total",
+          "value": 25547,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        }
+      ]
+    },
+    {
+      "step": "recurring_patterns",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "linux",
+        "rank": "episodes",
+        "limit": 5
+      },
+      "receipt_id": "r_af8fc30d",
+      "data_summary": "rank=episodes, events=25547, pattern_count=765, shown=5",
+      "facts_used": [
+        {
+          "id": "r_af8fc30d.f3",
+          "path": "/result/events",
+          "value": 25547,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        {
+          "id": "r_af8fc30d.f4",
+          "path": "/result/pattern_count",
+          "value": 765,
+          "metric": "patterns",
+          "unit": "patterns",
+          "group": {}
+        },
+        {
+          "id": "r_af8fc30d.f8",
+          "path": "/result/patterns/0/episodes",
+          "value": 270,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "05d9fad193311a1f"
+          }
+        },
+        {
+          "id": "r_af8fc30d.f9",
+          "path": "/result/patterns/0/events",
+          "value": 472,
+          "metric": "events_current",
+          "unit": "log_events",
+          "group": {
+            "pattern_id": "05d9fad193311a1f"
+          }
+        }
+      ]
+    },
+    {
+      "step": "event_trend_week",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "linux",
+        "bucket": "week",
+        "split_by": "component"
+      },
+      "receipt_id": "r_657f0331",
+      "data_summary": "bucket=week, total=25547, buckets=39",
+      "facts_used": [
+        {
+          "id": "r_657f0331.f286",
+          "path": "/result/total",
+          "value": 25547,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "linux"
+          }
+        }
+      ]
+    }
+  ],
+  "check_claims": {
+    "receipt_id": "r_7fb7b96f",
+    "summary": "9 claims checked · 0 mismatch · 0 unresolved",
+    "claims": [
+      {
+        "fact": "r_14047588.f25",
+        "value": 25547,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_14047588.f1",
+        "value": 73,
+        "metric": "groups",
+        "group": {}
+      },
+      {
+        "fact": "r_14047588.f2",
+        "value": 13670,
+        "metric": "events",
+        "group": {
+          "team": "Compute Platform",
+          "component": "kernel"
+        }
+      },
+      {
+        "fact": "r_14047588.f4",
+        "value": 4996,
+        "metric": "events",
+        "group": {
+          "team": "Access Services",
+          "component": "sshd(pam_unix)"
+        }
+      },
+      {
+        "fact": "r_af8fc30d.f3",
+        "value": 25547,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_af8fc30d.f4",
+        "value": 765,
+        "metric": "patterns",
+        "group": {}
+      },
+      {
+        "fact": "r_af8fc30d.f8",
+        "value": 270,
+        "metric": "episodes",
+        "group": {
+          "pattern_id": "05d9fad193311a1f"
+        }
+      },
+      {
+        "fact": "r_af8fc30d.f9",
+        "value": 472,
+        "metric": "events_current",
+        "group": {
+          "pattern_id": "05d9fad193311a1f"
+        }
+      },
+      {
+        "fact": "r_657f0331.f286",
+        "value": 25547,
+        "metric": "events",
+        "group": {
+          "dataset": "linux"
+        }
+      }
+    ]
+  }
+}

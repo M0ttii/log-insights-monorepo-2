@@ -4,6 +4,17 @@ import {
   notFound,
   type ToolError,
 } from "@workspace/domain/errors"
+import {
+  extensionAttributes,
+  extensionColumnsRow,
+} from "@workspace/domain/attributes"
+import {
+  DATASET_IDS,
+  DATASETS,
+  SPECIFIC_CONTEXT_SCOPES,
+  type SpecificColumn,
+  type SpecificContextScope,
+} from "@workspace/domain/datasets"
 import { datasetSchema } from "@workspace/domain/filters"
 import type { Scope } from "@workspace/domain/receipt"
 import {
@@ -58,7 +69,7 @@ import {
   resolveWindows,
   scopeFilters,
 } from "../scope.ts"
-import { exactCount, isoTime, SqlParams } from "../sql.ts"
+import { exactCount, extensionSelect, isoTime, SqlParams } from "../sql.ts"
 import {
   INDEX,
   NO_SEARCHABLE_WORD,
@@ -118,6 +129,7 @@ const anchorRow = z.object({
   pattern_id: z.string(),
   message: z.string().nullable(),
   message_truncated: z.boolean().nullable(),
+  ...extensionColumnsRow.shape,
 })
 
 const neighbourRow = anchorRow
@@ -150,7 +162,7 @@ const patternRow = z.object({
 })
 
 const EVENT_COLUMNS = (q: string) =>
-  `${q}.event_id, ${isoTime(`${q}.ts`)} AS ts, ${q}.component, ${q}.level, ${q}.node, ${q}.alert_label, ${q}.request_id, ${q}.pattern_id, left(${q}.message, ${CONTEXT_TEXT_MAX_CHARS}) AS message, length(${q}.message) > ${CONTEXT_TEXT_MAX_CHARS} AS message_truncated`
+  `${q}.event_id, ${isoTime(`${q}.ts`)} AS ts, ${q}.component, ${q}.level, ${q}.node, ${q}.alert_label, ${q}.request_id, ${extensionSelect(q)}, ${q}.pattern_id, left(${q}.message, ${CONTEXT_TEXT_MAX_CHARS}) AS message, length(${q}.message) > ${CONTEXT_TEXT_MAX_CHARS} AS message_truncated`
 
 export const getLogContext = defineTool({
   name: "get_log_context",
@@ -172,9 +184,9 @@ export const getLogContext = defineTool({
       },
       { situation: "you need a development over time", use: "event_trend" },
     ],
-    inputs: `mode (event | aggregate, required) and window_minutes (both modes, 1–${CONTEXT_WINDOW_MAX_MINUTES}, default ${CONTEXT_WINDOW_DEFAULT_MINUTES}). Mode event: event_id (required), before and after (0–${CONTEXT_MAX_EVENTS} each, default ${CONTEXT_DEFAULT_EVENTS}), scope (same_node | same_component | same_request | dataset; default same_node for BGL events with a node, otherwise same_component; same_node needs a node, same_request needs an OpenStack event with a request ID). Before covers [anchor − w, anchor), after (anchor, anchor + w]; events at the anchor's timestamp are placed by event_id. Mode aggregate: dataset (required, exactly one), the anchor as pattern_id or query (exactly one; query matches like search_logs terms: all words, ${PRECURSOR_MAX_QUERY_LENGTH} characters at most), direction (before | after | both, default before), top_n (1–${PRECURSOR_MAX_TOP_N}, default ${PRECURSOR_DEFAULT_TOP_N}) and filters. Anchors are the episode starts (gap ≥ ${EPISODE_GAP_MINUTES} min) of the matching events after all filters, so a burst is one anchor; filters select anchors only, window events come from the whole dataset. Fields of the other mode are rejected with invalid_input.`,
+    inputs: `mode (event | aggregate, required) and window_minutes (both modes, 1–${CONTEXT_WINDOW_MAX_MINUTES}, default ${CONTEXT_WINDOW_DEFAULT_MINUTES}). Mode event: event_id (required), before and after (0–${CONTEXT_MAX_EVENTS} each, default ${CONTEXT_DEFAULT_EVENTS}), scope (same_node | same_component | same_request | same_block | same_process | same_client | same_thread | dataset; the anchor must carry the scope's value: same_node BGL, same_request OpenStack, same_block HDFS, same_process OpenSSH and Linux, same_client OpenSSH and Apache, same_thread ZooKeeper; default same_node for BGL events with a node, same_block for HDFS, same_process for OpenSSH, same_client for Apache events with a client, otherwise same_component). Before covers [anchor − w, anchor), after (anchor, anchor + w]; events at the anchor's timestamp are placed by event_id. Mode aggregate: dataset (required, exactly one), the anchor as pattern_id or query (exactly one; query matches like search_logs terms: all words, ${PRECURSOR_MAX_QUERY_LENGTH} characters at most), direction (before | after | both, default before), top_n (1–${PRECURSOR_MAX_TOP_N}, default ${PRECURSOR_DEFAULT_TOP_N}) and filters. Anchors are the episode starts (gap ≥ ${EPISODE_GAP_MINUTES} min) of the matching events after all filters, so a burst is one anchor; filters select anchors only, window events come from the whole dataset. Fields of the other mode are rejected with invalid_input.`,
     filters: `Mode aggregate only: ${PRECURSOR_FILTER.summary}`,
-    outputs: `Mode event: anchor (the event itself, not in the lists), scope and scope_value, events_before[] and events_after[] ascending by (ts, event_id) with event_id, ts, offset_ms (exact, negative before), component, level, node, alert_label, request_id, pattern_id and message (verbatim, untrusted), sides[] with in_window (exact count per side), returned and truncated. Mode aggregate: matched_events, anchors, excluded_patterns, base_rate_grid and by_direction[] with window, patterns_found, truncated and patterns[] with pattern_id, pattern, component, team, anchors_with_pattern, anchor_share (of all anchors), base_rate (share of grid windows of the same length from the start of the scope's data span in which the pattern occurs), ratio (anchor_share / base_rate) and example_event_id. Base rate and ratio are null below ${PRECURSOR_MIN_ANCHORS_FOR_BASE_RATE} anchors; ratio is null when the base rate is 0. Cite numbers by their fact IDs.`,
+    outputs: `Mode event: anchor (the event itself, not in the lists), scope and scope_value, events_before[] and events_after[] ascending by (ts, event_id) with event_id, ts, offset_ms (exact, negative before), component, level, node, alert_label, request_id, the dataset's own fields (host, process_id, client_ip, thread, block_id where it has them), pattern_id and message (verbatim, untrusted), sides[] with in_window (exact count per side), returned and truncated. Mode aggregate: matched_events, anchors, excluded_patterns, base_rate_grid and by_direction[] with window, patterns_found, truncated and patterns[] with pattern_id, pattern, component, team, anchors_with_pattern, anchor_share (of all anchors), base_rate (share of grid windows of the same length from the start of the scope's data span in which the pattern occurs), ratio (anchor_share / base_rate) and example_event_id. Base rate and ratio are null below ${PRECURSOR_MIN_ANCHORS_FOR_BASE_RATE} anchors; ratio is null when the base rate is 0. Cite numbers by their fact IDs.`,
     truncation: `mode event lists at most before/after events per side (truncated per side, in_window stays exact); mode aggregate lists at most top_n patterns per direction (truncated when patterns_found is larger). Messages and patterns are cut to ${CONTEXT_TEXT_MAX_CHARS} characters.`,
     countingUnit:
       "log events for neighbours and matched events; anchors (episode starts) for precursor counts; grid windows for the base rate. Not incidents.",
@@ -332,9 +344,17 @@ async function runEvent(
   const first = found.rows[0]
   if (first === undefined)
     return { ok: false, error: notFound("event", String(eventId)) }
-  const row = anchorRow.parse(first)
+  const { host, process_id, client_ip, thread, block_id, ...row } =
+    anchorRow.parse(first)
   const anchor: ContextAnchor = {
     ...row,
+    ...extensionAttributes(row.dataset, {
+      host,
+      process_id,
+      client_ip,
+      thread,
+      block_id,
+    }),
     message_truncated: row.message_truncated === true,
   }
 
@@ -385,8 +405,25 @@ async function runEvent(
       signal
     )
     return rows.map((raw): ContextEvent => {
-      const event = neighbourRow.parse(raw)
-      return { ...event, message_truncated: event.message_truncated === true }
+      const {
+        host: eventHost,
+        process_id: eventProcessId,
+        client_ip: eventClientIp,
+        thread: eventThread,
+        block_id: eventBlockId,
+        ...event
+      } = neighbourRow.parse(raw)
+      return {
+        ...event,
+        ...extensionAttributes(anchor.dataset, {
+          host: eventHost,
+          process_id: eventProcessId,
+          client_ip: eventClientIp,
+          thread: eventThread,
+          block_id: eventBlockId,
+        }),
+        message_truncated: event.message_truncated === true,
+      }
     })
   }
   // Read nearest first so LIMIT keeps the closest events; output ascending.
@@ -454,43 +491,53 @@ type ResolvedScope =
   | {
       ok: true
       scope: ContextScope
-      column: "node" | "component" | "request_id" | null
+      column: "component" | SpecificColumn | null
       value: string | null
       filters: Scope["filters"]
     }
   | { ok: false; error: ToolError }
 
+/** Readable name of a scope's column for hints. */
+const SCOPE_NOUN: Record<SpecificContextScope, string> = {
+  same_node: "node",
+  same_request: "request ID",
+  same_block: "block",
+  same_process: "process ID",
+  same_client: "client IP",
+  same_thread: "thread",
+}
+
 /**
- * The default scope follows the anchor: same_node for BGL events with a
- * node (the hardware unit that logged it), otherwise same_component.
- * Scopes the anchor cannot support are invalid_input with a hint (A-06.3).
+ * The default scope follows the anchor and the catalog (U26): the dataset's
+ * first specific scope when it defaults to it and the anchor carries its
+ * value (BGL node, HDFS block, OpenSSH process, Apache client), otherwise
+ * same_component. Scopes the anchor cannot support are invalid_input with a
+ * hint (A-06.3).
  */
 function resolveScope(
   anchor: ContextAnchor,
   requested: ContextScope | undefined
 ): ResolvedScope {
+  const spec = DATASETS[anchor.dataset]
+  const preferred = spec.contextScopes[0]
   const scope =
     requested ??
-    (anchor.dataset === "bgl" && anchor.node !== null
-      ? "same_node"
+    (spec.defaultsToSpecificScope &&
+    preferred !== undefined &&
+    anchorValue(anchor, SPECIFIC_CONTEXT_SCOPES[preferred]) !== null
+      ? preferred
       : "same_component")
+  const alternatives = [
+    ...spec.contextScopes.filter((other) => other !== scope),
+    "same_component",
+    "dataset",
+  ]
+    .filter((other) => other !== scope)
+    .map((other) => `"${other}"`)
+    .join(", ")
   switch (scope) {
     case "dataset":
       return { ok: true, scope, column: null, value: null, filters: {} }
-    case "same_node":
-      if (anchor.node === null) {
-        return reject(
-          `Event ${anchor.event_id} has no node${anchor.dataset === "openstack" ? " (OpenStack events have none)" : ""}.`,
-          'Use scope "same_component" or "dataset".'
-        )
-      }
-      return {
-        ok: true,
-        scope,
-        column: "node",
-        value: anchor.node,
-        filters: { node: anchor.node },
-      }
     case "same_component":
       if (anchor.component === null) {
         return reject(
@@ -505,26 +552,53 @@ function resolveScope(
         value: anchor.component,
         filters: { components: [anchor.component] },
       }
-    case "same_request":
-      if (anchor.dataset !== "openstack") {
+    default: {
+      const column = SPECIFIC_CONTEXT_SCOPES[scope]
+      if (!spec.contextScopes.includes(scope)) {
+        const datasets = DATASET_IDS.filter((id) =>
+          DATASETS[id].contextScopes.includes(scope)
+        )
         return reject(
-          "same_request is only available for OpenStack events; BGL has no request IDs.",
-          'Use scope "same_node", "same_component" or "dataset".'
+          `${scope} is only available for ${datasets.join(", ")} events; ${anchor.dataset} events have no ${SCOPE_NOUN[scope]}.`,
+          `Use scope ${alternatives}.`
         )
       }
-      if (anchor.request_id === null) {
+      const value = anchorValue(anchor, column)
+      if (value === null) {
         return reject(
-          `Event ${anchor.event_id} has no request ID.`,
-          'Use scope "same_component" or "dataset".'
+          `Event ${anchor.event_id} has no ${SCOPE_NOUN[scope]}.`,
+          `Use scope ${alternatives}.`
         )
       }
       return {
         ok: true,
         scope,
-        column: "request_id",
-        value: anchor.request_id,
-        filters: { request_id: anchor.request_id },
+        column,
+        value,
+        filters: { [column]: value },
       }
+    }
+  }
+}
+
+/** The anchor's value of a context column; null when it carries none. */
+function anchorValue(
+  anchor: ContextAnchor,
+  column: SpecificColumn
+): string | null {
+  switch (column) {
+    case "node":
+      return anchor.node
+    case "request_id":
+      return anchor.request_id
+    case "block_id":
+    case "process_id":
+    case "client_ip":
+    case "thread":
+    case "host":
+      return anchor[column] ?? null
+    default:
+      return null
   }
 }
 

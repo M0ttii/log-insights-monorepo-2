@@ -1,0 +1,253 @@
+{
+  "dataset": "hdfs",
+  "role": "Team Lead",
+  "question": "Which recurring WARN patterns does the Storage Platform team have, and how are they distributed over the two days?",
+  "data_version": "dv_02dfa8cc8e16e2a2",
+  "client": "eval",
+  "model": "none (tools called directly through the registry)",
+  "tool_calls": [
+    {
+      "step": "recurring_patterns",
+      "tool": "recurring_patterns",
+      "input": {
+        "dataset": "hdfs",
+        "levels": ["WARN"],
+        "teams": ["Storage Platform"],
+        "rank": "episodes",
+        "limit": 5
+      },
+      "receipt_id": "r_fa625aeb",
+      "data_summary": "rank=episodes, events=361771, pattern_count=4, shown=4",
+      "facts_used": [
+        {
+          "id": "r_fa625aeb.f3",
+          "path": "/result/events",
+          "value": 361771,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {}
+        },
+        {
+          "id": "r_fa625aeb.f4",
+          "path": "/result/pattern_count",
+          "value": 4,
+          "metric": "patterns",
+          "unit": "patterns",
+          "group": {}
+        },
+        {
+          "id": "r_fa625aeb.f5",
+          "path": "/result/patterns/0/active_days",
+          "value": 3,
+          "metric": "active_days",
+          "unit": "days",
+          "group": {
+            "pattern_id": "2ccea1080d47f97f"
+          }
+        },
+        {
+          "id": "r_fa625aeb.f9",
+          "path": "/result/patterns/0/episodes",
+          "value": 18,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "2ccea1080d47f97f"
+          }
+        },
+        {
+          "id": "r_fa625aeb.f10",
+          "path": "/result/patterns/0/events",
+          "value": 5545,
+          "metric": "events_current",
+          "unit": "log_events",
+          "group": {
+            "pattern_id": "2ccea1080d47f97f"
+          }
+        },
+        {
+          "id": "r_fa625aeb.f17",
+          "path": "/result/patterns/1/episodes",
+          "value": 8,
+          "metric": "episodes",
+          "unit": "episodes",
+          "group": {
+            "pattern_id": "aaa322fbb9fe5db9"
+          }
+        },
+        {
+          "id": "r_fa625aeb.f18",
+          "path": "/result/patterns/1/events",
+          "value": 356207,
+          "metric": "events_current",
+          "unit": "log_events",
+          "group": {
+            "pattern_id": "aaa322fbb9fe5db9"
+          }
+        }
+      ]
+    },
+    {
+      "step": "count_events_by_team",
+      "tool": "count_events",
+      "input": {
+        "group_by": ["team"],
+        "dataset": "hdfs",
+        "levels": ["WARN"],
+        "top_n": 10
+      },
+      "receipt_id": "r_b2a7339d",
+      "data_summary": "unit=log_events, total=362793, groups=2, shown=2",
+      "facts_used": [
+        {
+          "id": "r_b2a7339d.f2",
+          "path": "/result/groups/0/events",
+          "value": 361771,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "team": "Storage Platform"
+          }
+        }
+      ]
+    },
+    {
+      "step": "event_trend_day",
+      "tool": "event_trend",
+      "input": {
+        "dataset": "hdfs",
+        "bucket": "day",
+        "levels": ["WARN"],
+        "teams": ["Storage Platform"]
+      },
+      "receipt_id": "r_3c14789d",
+      "data_summary": "bucket=day, total=361771, buckets=3",
+      "facts_used": [
+        {
+          "id": "r_3c14789d.f2",
+          "path": "/result/buckets/0/events",
+          "value": 91734,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "hdfs",
+            "bucket_start": "2008-11-09T00:00:00.000000Z"
+          }
+        },
+        {
+          "id": "r_3c14789d.f3",
+          "path": "/result/buckets/1/events",
+          "value": 246616,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "hdfs",
+            "bucket_start": "2008-11-10T00:00:00.000000Z"
+          }
+        },
+        {
+          "id": "r_3c14789d.f9",
+          "path": "/result/total",
+          "value": 361771,
+          "metric": "events",
+          "unit": "log_events",
+          "group": {
+            "dataset": "hdfs"
+          }
+        }
+      ]
+    }
+  ],
+  "check_claims": {
+    "receipt_id": "r_61b31012",
+    "summary": "11 claims checked · 0 mismatch · 0 unresolved",
+    "claims": [
+      {
+        "fact": "r_fa625aeb.f3",
+        "value": 361771,
+        "metric": "events",
+        "group": {}
+      },
+      {
+        "fact": "r_fa625aeb.f4",
+        "value": 4,
+        "metric": "patterns",
+        "group": {}
+      },
+      {
+        "fact": "r_b2a7339d.f2",
+        "value": 361771,
+        "metric": "events",
+        "group": {
+          "team": "Storage Platform"
+        }
+      },
+      {
+        "fact": "r_fa625aeb.f10",
+        "value": 5545,
+        "metric": "events_current",
+        "group": {
+          "pattern_id": "2ccea1080d47f97f"
+        }
+      },
+      {
+        "fact": "r_fa625aeb.f9",
+        "value": 18,
+        "metric": "episodes",
+        "group": {
+          "pattern_id": "2ccea1080d47f97f"
+        }
+      },
+      {
+        "fact": "r_fa625aeb.f5",
+        "value": 3,
+        "metric": "active_days",
+        "group": {
+          "pattern_id": "2ccea1080d47f97f"
+        }
+      },
+      {
+        "fact": "r_fa625aeb.f18",
+        "value": 356207,
+        "metric": "events_current",
+        "group": {
+          "pattern_id": "aaa322fbb9fe5db9"
+        }
+      },
+      {
+        "fact": "r_fa625aeb.f17",
+        "value": 8,
+        "metric": "episodes",
+        "group": {
+          "pattern_id": "aaa322fbb9fe5db9"
+        }
+      },
+      {
+        "fact": "r_3c14789d.f9",
+        "value": 361771,
+        "metric": "events",
+        "group": {
+          "dataset": "hdfs"
+        }
+      },
+      {
+        "fact": "r_3c14789d.f2",
+        "value": 91734,
+        "metric": "events",
+        "group": {
+          "dataset": "hdfs",
+          "bucket_start": "2008-11-09T00:00:00.000000Z"
+        }
+      },
+      {
+        "fact": "r_3c14789d.f3",
+        "value": 246616,
+        "metric": "events",
+        "group": {
+          "dataset": "hdfs",
+          "bucket_start": "2008-11-10T00:00:00.000000Z"
+        }
+      }
+    ]
+  }
+}

@@ -38,9 +38,9 @@ describe("filterSchema", () => {
   })
 
   it("rejects unknown fields instead of ignoring them", () => {
-    expect(filterSchema.safeParse({ dataset: "bgl", host: "x" }).success).toBe(
-      false
-    )
+    expect(
+      filterSchema.safeParse({ dataset: "bgl", unknown_field: "x" }).success
+    ).toBe(false)
   })
 
   it("bounds lists and text", () => {
@@ -54,8 +54,12 @@ describe("filterSchema", () => {
       false
     )
     expect(filterSchema.safeParse({ text: "x".repeat(200) }).success).toBe(true)
-    expect(filterSchema.safeParse({ levels: ["error"] }).success).toBe(false)
-    expect(filterSchema.safeParse({ dataset: "hdfs" }).success).toBe(false)
+    // Levels are matched exactly as logged, so Apache's lower-case levels parse.
+    expect(filterSchema.safeParse({ levels: ["error"] }).success).toBe(true)
+    // An extension dataset is a valid dataset value (U26).
+    expect(filterSchema.safeParse({ dataset: "hdfs" }).success).toBe(true)
+    // A level with a space or too long is still rejected.
+    expect(filterSchema.safeParse({ levels: ["a b"] }).success).toBe(false)
   })
 })
 
@@ -102,6 +106,52 @@ describe("validateFilter", () => {
         http_status: { min: 500, max: 599 },
       })
     ).toEqual(["endpoints", "http_status"])
+  })
+
+  it("accepts the extension fields for their own datasets", () => {
+    expect(
+      validateFilter({ dataset: "hdfs", block_id: "blk_-1608999687919862906" })
+    ).toBeNull()
+    expect(
+      validateFilter({ dataset: "openssh", host: "LabSZ", process_id: "24200" })
+    ).toBeNull()
+    expect(
+      validateFilter({ dataset: "apache", client_ip: "173.234.31.186" })
+    ).toBeNull()
+    expect(
+      validateFilter({ dataset: "zookeeper", thread: "SendWorker:1" })
+    ).toBeNull()
+  })
+
+  it("rejects an extension field for a dataset without its column", () => {
+    expect(issuePaths({ dataset: "bgl", block_id: "blk_1" })).toEqual([
+      "block_id",
+    ])
+    // host belongs to OpenSSH and Linux, not ZooKeeper.
+    expect(issuePaths({ dataset: "zookeeper", host: "combo" })).toEqual([
+      "host",
+    ])
+    // thread belongs to ZooKeeper only.
+    expect(issuePaths({ dataset: "openssh", thread: "t" })).toEqual(["thread"])
+  })
+
+  it("rejects extension fields that no single dataset shares, without a dataset", () => {
+    // block_id is HDFS-only and thread is ZooKeeper-only: no shared dataset.
+    expect(issuePaths({ block_id: "blk_1", thread: "t" })).toEqual([""])
+    // host (OpenSSH, Linux) and client_ip (OpenSSH, Apache) share OpenSSH.
+    expect(
+      validateFilter({ host: "LabSZ", client_ip: "173.234.31.186" })
+    ).toBeNull()
+  })
+
+  it("rejects only_errors on a dataset without an error definition (linux)", () => {
+    expect(issuePaths({ dataset: "linux", only_errors: true })).toEqual([
+      "only_errors",
+    ])
+    // HDFS has an error definition (even if zero error events occur).
+    expect(validateFilter({ dataset: "hdfs", only_errors: true })).toBeNull()
+    // Without a dataset only_errors is allowed; the note names unknowns later.
+    expect(validateFilter({ only_errors: true })).toBeNull()
   })
 
   it("accepts an inclusive status range only with min ≤ max", () => {

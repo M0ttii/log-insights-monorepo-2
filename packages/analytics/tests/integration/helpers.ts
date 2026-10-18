@@ -23,6 +23,13 @@ const root = findWorkspaceRoot()
  */
 const SAMPLES_DATABASE = "log_insights_samples"
 
+/**
+ * Database of the base 2k samples plus the five Loghub extensions
+ * (`pnpm data:setup --samples --with all`, SAMPLES_EXTENDED_DATABASE in
+ * corpus/src/sources.ts; U26). Used by the extension integration tests.
+ */
+const SAMPLES_EXTENDED_DATABASE = "log_insights_samples_ext"
+
 /** Loads the root .env like the Node scripts do (--env-file-if-exists). */
 export function loadEnv(): void {
   const file = join(root, ".env")
@@ -31,6 +38,10 @@ export function loadEnv(): void {
 
 export function samplesConnection(): Connection {
   return { ...loadConfig().connection, database: SAMPLES_DATABASE }
+}
+
+export function extendedSamplesConnection(): Connection {
+  return { ...loadConfig().connection, database: SAMPLES_EXTENDED_DATABASE }
 }
 
 export async function temporaryDir(prefix: string): Promise<string> {

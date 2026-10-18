@@ -38,9 +38,15 @@ const summary = z.object({
 })
 // describe_corpus has no exported domain output schema yet. This projection validates
 // only fields compared below; the registry validates the complete canonical output.
+// U26: the full corpus now also carries the five extension datasets. The whole-corpus
+// output must validate for all of them, so error_events is nullable here (linux has no
+// error definition, so its canonical value is null, not zero). The exact BGL/OpenStack
+// aggregates below still go through the strict `summary` schema, which keeps
+// error_events a non-null integer for those two datasets.
 const description = z.object({
   datasets: z.array(
     summary.extend({
+      error_events: integer.nullable(),
       lines_read: integer,
       rejected: integer,
       levels: z.array(level),
@@ -70,8 +76,13 @@ const description = z.object({
 })
 
 it("reconciles every raw file, load_report, rejects and brief totals", async () => {
+  // U26: the full corpus now also carries the five extension datasets (hdfs, openssh,
+  // apache, linux, zookeeper), each with its own load_report rows and some rejects.
+  // This test reconciles the base corpus, so every oracle below is restricted to
+  // dataset IN ('bgl', 'openstack'); the BGL/OpenStack line counts, rejects and reasons
+  // stay exactly as before. The extension datasets are reconciled in extensions.test.ts.
   const report = await golden.sql(
-    "SELECT dataset, source_file, lines_read, events_loaded, rejected, reason_counts FROM load_report ORDER BY dataset, source_file",
+    "SELECT dataset, source_file, lines_read, events_loaded, rejected, reason_counts FROM load_report WHERE dataset IN ('bgl', 'openstack') ORDER BY dataset, source_file",
     [],
     z.object({
       dataset: z.enum(["bgl", "openstack"]),
@@ -144,7 +155,7 @@ it("reconciles every raw file, load_report, rejects and brief totals", async () 
     expect(loaded?.events).toBe(entry.events_loaded)
   }
   const totals = await golden.sql(
-    "SELECT dataset, sum(lines_read) AS lines_read, sum(events_loaded) AS events, sum(rejected) AS rejected FROM load_report GROUP BY dataset ORDER BY dataset",
+    "SELECT dataset, sum(lines_read) AS lines_read, sum(events_loaded) AS events, sum(rejected) AS rejected FROM load_report WHERE dataset IN ('bgl', 'openstack') GROUP BY dataset ORDER BY dataset",
     [],
     z.object({
       dataset: z.string(),
@@ -158,7 +169,7 @@ it("reconciles every raw file, load_report, rejects and brief totals", async () 
     { dataset: "openstack", lines_read: 207_820, events: 207_820, rejected: 0 },
   ])
   const reasons = await golden.sql(
-    "SELECT dataset, reason, count(*) AS events FROM load_rejects GROUP BY dataset, reason ORDER BY dataset, reason",
+    "SELECT dataset, reason, count(*) AS events FROM load_rejects WHERE dataset IN ('bgl', 'openstack') GROUP BY dataset, reason ORDER BY dataset, reason",
     [],
     z.object({ dataset: z.string(), reason: z.string(), events: integer })
   )
@@ -169,10 +180,21 @@ it("reconciles every raw file, load_report, rejects and brief totals", async () 
 
 it("describe_corpus and cached corpus_stats equal direct full-corpus aggregates, including unowned", async () => {
   const result = await golden.run("describe_corpus", {}, description)
-  expect(result.data.datasets.map((row) => row.dataset)).toEqual([
-    "bgl",
-    "openstack",
-  ])
+  // U26: describe_corpus is a whole-corpus call, so it now lists all seven loaded
+  // datasets. Verify the returned set independently against corpus_stats (order is the
+  // catalog order, asserted as a set here to avoid importing the catalog), and confirm
+  // the base corpus is still present. The exact BGL/OpenStack aggregates are checked below.
+  const loadedDatasets = await golden.sql(
+    "SELECT dataset FROM corpus_stats ORDER BY dataset",
+    [],
+    z.object({ dataset: z.string() })
+  )
+  expect(new Set(result.data.datasets.map((row) => row.dataset))).toEqual(
+    new Set(loadedDatasets.map((row) => row.dataset))
+  )
+  expect(result.data.datasets.map((row) => row.dataset)).toEqual(
+    expect.arrayContaining(["bgl", "openstack"])
+  )
   for (const dataset of ["bgl", "openstack"]) {
     const [direct] = await golden.sql(
       `SELECT dataset, count(*) AS events,
@@ -248,10 +270,16 @@ it("describe_corpus and cached corpus_stats equal direct full-corpus aggregates,
       team.components.map((entry) => ({ ...entry, team: team.team }))
     )
   ).toEqual(owners)
+  // U26: with more than one unowned component now present, order matters. describe_corpus
+  // reads components from corpus_stats ordered `ORDER BY dataset` (alphabetical) and each
+  // dataset's stored components JSON is ordered by events DESC then component name (NULL
+  // last). Compute the unowned counts with independent SQL and apply that same ORDER BY in
+  // SereneDB, so the comparison uses the engine's own collation rather than a JS reimplementation.
   const unowned = await golden.sql(
     `SELECT e.dataset, e.component, count(*) AS events FROM log_events e
     WHERE NOT EXISTS (SELECT 1 FROM ownership o WHERE o.dataset = e.dataset AND o.component = e.component)
-    GROUP BY e.dataset, e.component ORDER BY e.dataset, e.component NULLS LAST`,
+    GROUP BY e.dataset, e.component
+    ORDER BY e.dataset, count(*) DESC, e.component NULLS LAST`,
     [],
     z.object({
       dataset: z.string(),
@@ -260,9 +288,15 @@ it("describe_corpus and cached corpus_stats equal direct full-corpus aggregates,
     })
   )
   expect(result.data.ownership.unowned).toEqual(unowned)
-  expect(unowned).toEqual([
-    { dataset: "bgl", component: "SERV_NET", events: 3 },
-  ])
+  // U26: the extension datasets (notably linux) add many unowned components, so the
+  // whole-corpus `unowned` list above is no longer only SERV_NET. Preserve the original
+  // base-corpus guarantee by checking the BGL/OpenStack slice of the independent oracle:
+  // SERV_NET (3 events) remains the single deliberately unowned base component.
+  expect(
+    unowned.filter(
+      (row) => row.dataset === "bgl" || row.dataset === "openstack"
+    )
+  ).toEqual([{ dataset: "bgl", component: "SERV_NET", events: 3 }])
   expect(result.data.ownership.fictional).toBe(true)
   expect(result.data.ownership.note).toMatch(/fictional/i)
 })

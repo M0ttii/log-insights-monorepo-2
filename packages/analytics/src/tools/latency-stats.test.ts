@@ -160,7 +160,7 @@ describe("latency_stats validation", () => {
           {
             path: "dataset",
             message:
-              "latency_stats covers OpenStack API accesses only: BGL has no HTTP access lines. Use dataset openstack or leave it out; for error frequencies in BGL logs use count_events.",
+              "latency_stats covers OpenStack API accesses only: no other dataset has HTTP access lines with durations (the Apache file is an error log without access lines). Use dataset openstack or leave it out; for error frequencies in other datasets use count_events.",
           },
         ],
       },

@@ -1,5 +1,5 @@
 /**
- * `pnpm data:setup [--samples]` (technical.md § 7, LOG-11).
+ * `pnpm data:setup [--samples] [--with <id,…|all>]` (technical.md § 7, § 7.1).
  *
  * Starts SereneDB, downloads and verifies the raw files, loads them into
  * log_events with helper tables, index and manifest, and prints the load
@@ -8,6 +8,10 @@
  *
  *   (default)   BGL and OpenStack from Zenodo into SERENEDB_DATABASE
  *   --samples   Loghub 2k samples into the database log_insights_samples
+ *   --with …    additionally the named extension datasets (hdfs, openssh,
+ *               apache, linux, zookeeper or all); with --samples into
+ *               log_insights_samples_ext. Every load replaces the previous
+ *               one, so name every extension you want.
  *
  * Exit code: 0 loaded, 1 a load check failed, 2 error.
  */
@@ -18,7 +22,8 @@ import {
   type LoadReportRow,
   type LoadResult,
 } from "./load.ts"
-import { CORPUS, SAMPLES, type Source } from "./sources.ts"
+import { parseArgs } from "./args.ts"
+import { buildSource, datasetLoad, type Source } from "./sources.ts"
 import { VERSIONS } from "./versions.ts"
 
 const count = (value: unknown) => Number(value).toLocaleString("en-US")
@@ -47,9 +52,7 @@ function printChecks(checks: readonly LoadCheck[]): void {
 function printResult(source: Source, result: LoadResult): void {
   printChecks(result.checks)
 
-  console.log(
-    `Load balance (expected line counts: ${source.expectedLinesSource})`
-  )
+  console.log("Load balance")
   console.log(
     `  ${"dataset".padEnd(10)} ${"file".padEnd(28)} ${"read".padStart(10)} ${"loaded".padStart(10)} ${"rejected".padStart(9)}  reasons`
   )
@@ -61,17 +64,16 @@ function printResult(source: Source, result: LoadResult): void {
   }
   for (const stats of result.stats) {
     const dataset = String(stats["dataset"])
-    const expected =
-      dataset === "bgl"
-        ? source.expectedLines.bgl
-        : source.expectedLines.openstack
+    const load = source.datasets.find((entry) => entry.dataset === dataset)
+    if (load === undefined) throw new Error(`unexpected dataset ${dataset}`)
+    const expected = datasetLoad(source, load.dataset).expectedLines
     const read = Number(stats["lines_read"])
     const verdict =
       read === expected
         ? "matches"
         : `differs by ${count(read - expected)} lines (see reasons above)`
     console.log(
-      `  ${dataset}: read ${count(read)} lines, expected ${count(expected)}: ${verdict}; ` +
+      `  ${dataset}: read ${count(read)} lines, expected ${count(expected)} (${load.expectedLinesSource}): ${verdict}; ` +
         `loaded ${count(stats["events"])} events, rejected ${count(stats["rejected"])}`
     )
   }
@@ -94,8 +96,11 @@ function printResult(source: Source, result: LoadResult): void {
   }
 
   const t = result.timingsMs
+  const perDataset = source.datasets
+    .map(({ dataset }) => `${dataset} ${seconds(t[dataset] ?? 0)}`)
+    .join(", ")
   console.log(
-    `Load time: bgl ${seconds(t.bgl)}, openstack ${seconds(t.openstack)} (read + parse); ` +
+    `Load time: ${perDataset} (read + parse); ` +
       `shared steps ${seconds(t.shared)} incl. index ${seconds(t.index)}; total ${seconds(t.total)}`
   )
   console.log(
@@ -104,15 +109,15 @@ function printResult(source: Source, result: LoadResult): void {
 }
 
 async function main(): Promise<number> {
-  const args = process.argv.slice(2)
-  const unknown = args.filter((arg) => arg !== "--samples")
-  if (unknown.length > 0) {
-    console.error(
-      `Unknown argument(s): ${unknown.join(" ")}; usage: pnpm data:setup [--samples]`
-    )
+  const parsed = parseArgs(process.argv.slice(2))
+  if (typeof parsed === "string") {
+    console.error(parsed)
     return 2
   }
-  const source = args.includes("--samples") ? SAMPLES : CORPUS
+  const source = buildSource(
+    parsed.samples ? "samples" : "corpus",
+    parsed.extensions
+  )
   try {
     const result = await runLoad(source, (message) => console.log(message))
     printResult(source, result)

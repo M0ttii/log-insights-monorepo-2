@@ -12,3 +12,4 @@ DROP TABLE IF EXISTS stage_openstack_labels;
 DROP TABLE IF EXISTS stage_bgl;
 DROP TABLE IF EXISTS stage_openstack;
 DROP TABLE IF EXISTS stage_rejects;
+{{EXTENSION_CLEANUP}}

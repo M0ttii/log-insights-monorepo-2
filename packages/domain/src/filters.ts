@@ -1,5 +1,14 @@
 import { z } from "zod"
 
+import {
+  DATASET_IDS,
+  datasetList,
+  datasetsWithColumn,
+  DATASETS,
+  SPECIFIC_FILTER_COLUMNS,
+  type Dataset,
+  type SpecificFilter,
+} from "./datasets.ts"
 import { invalidInput, type InputIssue, type ToolError } from "./errors.ts"
 import { instantSchema, MAX_FRACTION_DIGITS, parseInstant } from "./time.ts"
 
@@ -12,12 +21,12 @@ import { instantSchema, MAX_FRACTION_DIGITS, parseInstant } from "./time.ts"
  */
 
 export const datasetSchema = z
-  .enum(["bgl", "openstack"])
+  .enum(DATASET_IDS)
   .describe(
-    "Dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017). They share no time axis."
+    `Dataset: ${datasetList()}. No two datasets share a time axis; describe_corpus lists the loaded ones.`
   )
 
-export type Dataset = z.infer<typeof datasetSchema>
+export type { Dataset }
 
 /** Grouping dimensions (§ 8.1); tools allowlist a subset. */
 export const dimensionSchema = z
@@ -32,6 +41,10 @@ export const dimensionSchema = z
     "pattern",
     "http_status",
     "endpoint",
+    "host",
+    "client_ip",
+    "thread",
+    "block_id",
   ])
   .describe("Grouping dimension.")
 
@@ -40,13 +53,16 @@ export type Dimension = z.infer<typeof dimensionSchema>
 const name = (max: number) => z.string().min(1).max(max)
 
 /**
- * Level names stay an open, bounded string until profiling (U03, concept O-07)
- * fixes the observed set; unknown levels are their own category (R-02).
+ * Level names stay an open, bounded string; unknown levels are their own
+ * category (R-02). Levels are matched exactly as logged, so Apache's lower
+ * case levels are valid too (U26).
  */
 const levelSchema = z
   .string()
-  .regex(/^[A-Z][A-Z_]{0,15}$/)
-  .describe("Level as stored, upper case, e.g. INFO, WARNING, ERROR, FATAL.")
+  .regex(/^[A-Za-z][A-Za-z_]{0,15}$/)
+  .describe(
+    "Level exactly as logged, e.g. INFO, WARNING, ERROR, FATAL (BGL), WARN (HDFS, ZooKeeper), error, notice (Apache)."
+  )
 
 const httpStatusSchema = z.number().int().min(100).max(599)
 
@@ -126,6 +142,33 @@ const filterShape = {
     .describe(
       "OpenStack only: only API accesses whose HTTP status lies in [min, max], both inclusive, e.g. {min: 500, max: 599} for 5xx or {min: 400, max: 499} for 4xx."
     ),
+  block_id: z
+    .string()
+    .regex(/^blk_-?\d{1,20}$/)
+    .optional()
+    .describe("HDFS only: exact block ID, e.g. blk_-1608999687919862906."),
+  host: name(64)
+    .optional()
+    .describe("OpenSSH and Linux only: exact syslog host, e.g. LabSZ, combo."),
+  process_id: z
+    .string()
+    .regex(/^\d{1,10}$/)
+    .optional()
+    .describe(
+      "OpenSSH and Linux only: exact process ID as logged, e.g. 24200; IDs repeat over time, so combine with from/to."
+    ),
+  client_ip: z
+    .string()
+    .regex(/^\d{1,3}(?:\.\d{1,3}){3}$/)
+    .optional()
+    .describe(
+      "OpenSSH and Apache only: exact IPv4 address of the remote side, e.g. 173.234.31.186."
+    ),
+  thread: name(128)
+    .optional()
+    .describe(
+      "ZooKeeper only: exact thread name as logged, e.g. SendWorker:188978561024."
+    ),
   pattern_id: z
     .string()
     .regex(/^[0-9a-f]{8,64}$/)
@@ -148,18 +191,29 @@ export type FilterField = keyof typeof filterShape
 
 export const FILTER_FIELDS = filterSchema.keyof().options
 
-const BGL_ONLY: readonly FilterField[] = [
-  "node",
-  "rack",
-  "alert_label",
-  "only_alerts",
-]
-const OPENSTACK_ONLY: readonly FilterField[] = [
-  "request_id",
-  "instance_id",
-  "endpoints",
-  "http_status",
-]
+/**
+ * Datasets a dataset-specific filter field applies to, from the catalog:
+ * the datasets whose rows carry its column with that meaning.
+ */
+export function filterDatasets(field: SpecificFilter): Dataset[] {
+  return datasetsWithColumn(SPECIFIC_FILTER_COLUMNS[field])
+}
+
+const SPECIFIC_FILTERS = Object.keys(SPECIFIC_FILTER_COLUMNS).filter(
+  (field): field is SpecificFilter => field in SPECIFIC_FILTER_COLUMNS
+)
+
+/** Present dataset-specific fields of a filter, in declaration order. */
+export function presentSpecificFilters(
+  filter: Partial<Filter>
+): SpecificFilter[] {
+  return SPECIFIC_FILTERS.filter((field) => filter[field] !== undefined)
+}
+
+const datasetsText = (datasets: readonly Dataset[]) =>
+  datasets.length === 1
+    ? `dataset ${datasets[0]}`
+    : `datasets ${datasets.join(", ")}`
 
 export type PickedFilter<K extends FilterField> = {
   /** Accepted fields in declaration order. */
@@ -211,24 +265,39 @@ export function validateFilter(filter: Partial<Filter>): ToolError | null {
     })
   }
 
-  const present = (fields: readonly FilterField[]) =>
-    fields.filter((field) => filter[field] !== undefined)
-  const bglFields = present(BGL_ONLY)
-  const openstackFields = present(OPENSTACK_ONLY)
-  if (filter.dataset === "openstack") {
-    for (const field of bglFields)
-      issues.push({ path: field, message: "Only available for dataset bgl." })
-  } else if (filter.dataset === "bgl") {
-    for (const field of openstackFields) {
-      issues.push({
-        path: field,
-        message: "Only available for dataset openstack.",
-      })
+  // Catalog (U26): a dataset-specific field only for datasets with that
+  // column's meaning; several such fields need a dataset they share.
+  const specific = presentSpecificFilters(filter)
+  const dataset = filter.dataset
+  if (dataset !== undefined) {
+    for (const field of specific) {
+      const datasets = filterDatasets(field)
+      if (!datasets.includes(dataset))
+        issues.push({
+          path: field,
+          message: `Only available for ${datasetsText(datasets)}.`,
+        })
     }
-  } else if (bglFields.length > 0 && openstackFields.length > 0) {
+  } else if (specific.length > 1) {
+    const shared = specific.reduce<Dataset[]>(
+      (common, field) =>
+        common.filter((id) => filterDatasets(field).includes(id)),
+      [...DATASET_IDS]
+    )
+    if (shared.length === 0)
+      issues.push({
+        path: "",
+        message: `${specific.map((field) => `${field} (${filterDatasets(field).join(", ")})`).join(" and ")} exclude each other: no dataset has all of them.`,
+      })
+  }
+  if (
+    filter.only_errors === true &&
+    dataset !== undefined &&
+    DATASETS[dataset].errorDefinition === null
+  ) {
     issues.push({
-      path: "",
-      message: `${bglFields.join(", ")} (bgl) and ${openstackFields.join(", ")} (openstack) exclude each other.`,
+      path: "only_errors",
+      message: `Dataset ${dataset} has no error definition (no level and no error marker in the log, R-02); error events are unknown, not zero.`,
     })
   }
 

@@ -90,6 +90,8 @@ function setup(rows: Row[] = [SUMMARY, ...GROUPS]) {
       const answer = ((): Row[] => {
         if (sql === "SELECT data_version FROM load_manifest")
           return [{ data_version: "dv_test" }]
+        if (sql === "SELECT dataset FROM corpus_stats ORDER BY dataset")
+          return [{ dataset: "bgl" }, { dataset: "openstack" }]
         if (sql.includes("FROM corpus_stats")) {
           const dataset = params[0] === "openstack" ? "openstack" : "bgl"
           return [SPAN[dataset]]
@@ -148,11 +150,11 @@ describe("count_events SQL", () => {
       top_n: 2,
     })
     expect(outcome.ok).toBe(true)
-    const [bglSpan, openstackSpan, counted] = toolCalls(calls)
-    expect([bglSpan?.params, openstackSpan?.params]).toEqual([
-      ["bgl"],
-      ["openstack"],
-    ])
+    const spans = toolCalls(calls).filter((call) =>
+      call.sql.includes("corpus_stats WHERE dataset = $1")
+    )
+    expect(spans.map((call) => call.params)).toEqual([["bgl"], ["openstack"]])
+    const counted = toolCalls(calls).at(-1)
     expect(counted?.sql).toContain(
       `WITH grouped AS (SELECT log_events.dataset AS g1, ${TEAM} AS g2, count(*) AS events, NULL::BIGINT AS baseline FROM log_events WHERE log_events.is_error GROUP BY 1, 2)`
     )
@@ -263,12 +265,12 @@ describe("count_events validation", () => {
       })
     ).toMatchObject({
       code: "invalid_input",
-      hint: "http_status and endpoint count OpenStack API accesses: group or filter by BGL fields in a separate call.",
+      hint: "http_status and endpoint count OpenStack API accesses: group or filter by fields of other datasets in a separate call.",
       issues: [
         {
           path: "group_by",
           message:
-            "node is BGL-only; http_status counts OpenStack API accesses.",
+            "node is bgl-only; http_status counts OpenStack API accesses.",
         },
         {
           path: "dataset",
@@ -277,7 +279,7 @@ describe("count_events validation", () => {
         },
         {
           path: "only_alerts",
-          message: "BGL-only; http_status counts OpenStack API accesses.",
+          message: "bgl-only; http_status counts OpenStack API accesses.",
         },
       ],
     })
@@ -818,7 +820,7 @@ describe("count_events compare", () => {
         {
           path: "dataset",
           message:
-            "compare needs exactly one dataset: comparisons run within one dataset; BGL and OpenStack share no time axis.",
+            "compare needs exactly one dataset: comparisons run within one dataset; no two datasets share a time axis.",
         },
         { path: "to" },
         {

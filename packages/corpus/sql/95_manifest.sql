@@ -19,4 +19,6 @@ SELECT
   $10::VARCHAR AS pattern_rules_version,
   $11::VARCHAR AS ownership_version,
   $12::VARCHAR AS rules_version,
-  $13::VARCHAR AS sql_digest;
+  $13::VARCHAR AS sql_digest,
+  -- Loaded datasets in catalog order (U26), e.g. ["bgl","openstack"].
+  $14::JSON AS datasets;

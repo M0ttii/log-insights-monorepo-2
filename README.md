@@ -1,7 +1,8 @@
 # Log Insights
 
-Log Insights turns the BGL and OpenStack log corpus into **question → evidence →
-recommendation** for three roles: engineer, team lead and manager. SereneDB
+Log Insights turns the BGL and OpenStack log corpus (optionally extended by five
+more Loghub datasets: HDFS_v1, OpenSSH, Apache, Linux and ZooKeeper) into
+**question → evidence → recommendation** for three roles: engineer, team lead and manager. SereneDB
 searches and computes; Claude explains and recommends; every number has a query
 receipt.
 
@@ -69,7 +70,7 @@ in the technical spec (§ 5.1).
 | Script | Purpose |
 |---|---|
 | `pnpm check` | Lint, types, format, architecture rules, unused code, unit tests |
-| `pnpm data:setup [--samples]` | Load BGL and OpenStack into SereneDB (idempotent); `--samples` loads the Loghub 2k samples into the database `log_insights_samples` instead |
+| `pnpm data:setup [--samples] [--with <ids>\|all]` | Load BGL and OpenStack into SereneDB (idempotent); `--with hdfs,openssh,apache,linux,zookeeper` (or `all`) adds the extension datasets; `--samples` loads the Loghub 2k samples into `log_insights_samples` instead (with `--with` into `log_insights_samples_ext`) |
 | `pnpm data:profile [name …] [--samples] [--wide]` | Read-only profiling queries in `packages/corpus/sql/profiling/` against the loaded corpus; the data decisions cite their results |
 | `pnpm test:integration` | Loader, pattern and tool tests against SereneDB with the 2k samples and fixtures, including the comparison with the Loghub templates (needs Docker and `.env`) |
 | `pnpm --silent mcp` | Run the stdio MCP server over the shared tool registry |
@@ -294,6 +295,75 @@ stay. The masks are in `packages/corpus/sql/20_patterns.sql`. They produce
 merges two Loghub templates (checked in CI). Episodes start after at least
 30 minutes without an event of the same pattern.
 
+### Extension datasets (LOG-40)
+
+`pnpm data:setup --with all` (or a comma-separated subset) adds five Loghub
+datasets from the same Zenodo record; the base corpus is always loaded and stays
+the default. One catalog, `packages/domain/src/datasets.ts`, pins every raw file
+by size and SHA-256 and states per dataset the time basis, field meanings, error
+definition, breadth unit, context scopes and capabilities; filters, dimensions,
+the loader plan and `describe_corpus` (field guide with real example values)
+derive from it. A new similar source is one catalog entry, one parser SQL file
+and ownership rows. Each load replaces the previous one, so name every extension
+you want. With all seven datasets the load takes about 60 s locally
+(full rerun from present raw files, Apple M3).
+
+Load balance (18.10.2026, `--with all`, data version `dv_02dfa8cc8e16e2a2`):
+
+| Dataset | Lines read | Expected (Loghub) | Events loaded | Rejected | Patterns | Span (UTC, assumed) |
+|---|---:|---:|---:|---:|---:|---|
+| HDFS_v1 (`hdfs`) | 11,175,629 | 11,175,629 | 11,175,629 | 0 | 54 | 2008-11-09 – 2008-11-11 |
+| OpenSSH (`openssh`) | 655,147 | 655,146 + unterminated last line | 655,147 | 0 | 104 | 2017-12-10 – 2018-01-07 |
+| Apache (`apache`) | 56,482 | 56,481 + unterminated last line | 52,004 | 4,478 | 37 | 2005-06-09 – 2006-02-28 |
+| Linux (`linux`) | 25,567 | 25,567 | 25,547 | 20 | 765 | 2005-06-09 – 2006-02-28 |
+| ZooKeeper (`zookeeper`) | 74,380 | 74,380 | 74,380 | 0 | 124 | 2015-07-29 – 2015-08-25 |
+
+BGL and OpenStack rows stay identical with the extensions loaded (column
+fingerprints of all 4,955,765 rows match the previous load); the data version
+changes because the loader SQL, rule versions and dataset list are part of it.
+
+- **Time:** no extension log names a zone; times are assumed UTC. OpenSSH and
+  Linux lines carry no year: OpenSSH is December 2017 and January 2018 after its
+  single month wrap (archive entry dated 2018-01-07), Linux June–December 2005
+  and January–February 2006, confirmed by every full date that `ftpd` writes
+  into its messages. Load checks fail on a second wrap or a mismatching date.
+- **Rejects:** Apache has 4,478 bare continuation lines ("script not found or
+  unable to stat") without time or level, rejected instead of borrowing a time;
+  Linux has 20 lines of invalid UTF-8 (format-string attacks on `rpc.statd`).
+- **Errors (R-02):** levels as logged, never mapped across formats. HDFS and
+  ZooKeeper `ERROR`/`FATAL` (HDFS has none; `WARN` is a warning), Apache
+  `error` and higher (38,081), OpenSSH messages prefixed `error:` or `fatal:`
+  (its levels ERROR and FATAL, 2,087). Linux has neither a level nor a marker:
+  its error events are unknown, so `only_errors` and `investigation_order` are
+  rejected for `linux` with a hint.
+- **Fields:** `block_id` (HDFS; null for a line naming several blocks),
+  `host` and `process_id` (OpenSSH, Linux), `client_ip` (OpenSSH remote
+  address in fixed message forms, Apache `[client …]`), `thread` (ZooKeeper).
+  No base-corpus field is reused with another meaning. HDFS block labels
+  (Normal/Anomaly) are dataset labels per block, like the OpenStack instance
+  labels.
+- **No shared time axis:** Apache and Linux overlap BGL's calendar but are other
+  systems with unknown zones; trends, comparisons, context and precursors stay
+  per dataset.
+
+Tool applicability (unsupported combinations return `invalid_input` with a
+hint, never a zero):
+
+| Function | bgl | openstack | hdfs | openssh | apache | linux | zookeeper |
+|---|---|---|---|---|---|---|---|
+| search, counts, trends, recurring patterns, precursors | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `only_errors`, `rank: investigation_order` | ✓ | ✓ | ✓ (0 errors) | ✓ | ✓ | – | ✓ |
+| Breadth (R-08) | nodes | instances | blocks | client IPs | client IPs | – | – |
+| Context scopes besides `same_component`, `dataset` (default first) | `same_node` | `same_request` | `same_block` | `same_process`, `same_client` | `same_client` | `same_process` | `same_thread` |
+| API accesses, `latency_stats` | – | ✓ | – | – | – | – | – |
+
+Independent golden tests (`packages/analytics/tests/golden/extensions.test.ts`,
+30 cases, raw-file oracles) cover load balance, search, context, counts, weekly
+trends and episodes for each extension. One role question per extension with its
+tool calls, receipt IDs and a clean `check_claims` is in
+[`packages/evals/u26`](packages/evals/u26/README.md) (development evidence,
+answers composed without a model).
+
 ### Ownership (fictional)
 
 Teams are an invented organisation, "Serene Platform", so that answers can be
@@ -310,6 +380,16 @@ assignment is stored in the `reason` column of the `ownership` table.
 | Hardware Operations | `HARDWARE`, `LINKCARD`, `MONITOR`, `DISCOVERY` | – |
 | API Gateway | – | `nova-api` |
 | `unowned` | `SERV_NET` | – |
+
+Extensions (ownership 1.1.0): **Storage Platform** owns the HDFS datanode
+classes; **Control Plane** additionally the HDFS namenode classes
+(`dfs.FSNamesystem`, `dfs.PendingReplicationBlocks…`); **Access Services**
+OpenSSH `sshd` and the Linux login and remote-access programs (`sshd(pam_unix)`,
+`su(pam_unix)`, `ftpd`, `telnetd`, `xinetd`, …); **Web Platform** Apache `httpd`
+and Linux `httpd`; **Coordination Services** every ZooKeeper class; **Compute
+Platform** additionally Linux `kernel` and `udev`. The 60 rarer Linux programs
+(1,472 events, e.g. `named`, `cups`, `smartd`) stay `unowned` on purpose; the
+list is in `load_checks`.
 
 ## Superset workspaces
 

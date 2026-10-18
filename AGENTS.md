@@ -1,7 +1,8 @@
 # Log Insights conventions
 
-Log Insights turns the BGL and OpenStack log corpus into **question → evidence →
-recommendation** for three roles: a tool layer on SereneDB, exposed through an MCP
+Log Insights turns the BGL and OpenStack log corpus (optionally extended by five
+more Loghub datasets: HDFS_v1, OpenSSH, Apache, Linux, ZooKeeper, U26) into
+**question → evidence → recommendation** for three roles: a tool layer on SereneDB, exposed through an MCP
 server (P0) and a web chat (P1). SereneDB searches and computes; Claude explains and
 recommends; every number has a query receipt. `apps/` stays empty until `apps/mcp`
 and `apps/web` get their first real code; the registry in `packages/analytics` is
@@ -70,12 +71,21 @@ matching paths):
   trade-offs between dimensions; there is no composite risk score (R-08, R-09).
 - UTC is the visible default. Time windows include the start and exclude the end.
   BGL time comes from its Unix seconds. Buckets outside a dataset's span are not zero.
-- BGL (2005–2006) and OpenStack (2017) share no time axis: trends and comparisons
-  are per dataset; cross-dataset numbers are labelled totals over each full span.
+- No two datasets share a time axis: BGL (2005–2006) and OpenStack (2017) do not
+  overlap, and the extensions are separate systems with unknown time zones even
+  where calendars overlap. Trends, comparisons, context and precursors are per
+  dataset; cross-dataset numbers are labelled totals over each full span.
+- The dataset catalog (`packages/domain/src/datasets.ts`) is the one source for
+  dataset IDs, sources and checksums, time basis, field meaning, error definition,
+  breadth unit, context scopes and capabilities. Never equate fields across
+  datasets without that meaning (no hosts in `node`, no blocks in `request_id`),
+  never invent a missing year, zone or level, and answer an unsupported
+  dataset/function combination with `invalid_input` and a hint, never a zero.
 - Matched entries, patterns and episodes are not incidents or outages. Follow
   R-01–R-11 rather than inventing other grouping, status or ranking rules.
 - The ownership table is fictional and labelled so; unmapped components are
-  `unowned`. Dataset labels (BGL alerts, OpenStack anomalies) are not our findings.
+  `unowned`. Dataset labels (BGL alerts, OpenStack and HDFS anomalies) are not our
+  findings.
 - No invented business impact, downtime, cost or customer effect; say what is
   unknown. Never present unsupported capabilities or synthetic results as real data.
 - No production changes, autonomous fixes, tickets or paging.
@@ -113,6 +123,7 @@ versions before using an API, and never infer an installation from a plan.
   export `./playbooks`, AI SDK adapter as `./ai-sdk`), `packages/evals`. Preserve the
   boundaries in technical.md § 4; do not scaffold empty layers.
 - Allowed workspace dependencies: `domain` on none; `analytics` only on `domain`;
+  `corpus` only on the dataset catalog of `domain` (`@workspace/domain/datasets`);
   `agent` on `analytics` and `domain`; `apps/mcp` on `analytics`, `domain` and only
   the `./playbooks` export of `agent`; `apps/web` on all. No package except
   `apps/web` depends on `next`, `react` or `server-only`: the MCP process and the
@@ -207,7 +218,10 @@ versions before using an API, and never infer an installation from a plan.
   idempotent (`CREATE OR REPLACE TABLE`, after dropping the views that depend on
   the replaced tables, gate G3); load checks compare line counts with the
   brief and record rejects with reasons. `pnpm data:setup --samples` loads the
-  Loghub 2k samples into the separate database `log_insights_samples`.
+  Loghub 2k samples into the separate database `log_insights_samples`. The base
+  corpus is the default; extensions are chosen with `--with <id,…|all>` (samples
+  with extensions go to `log_insights_samples_ext`). A new dataset is a catalog
+  entry, a parser SQL file and ownership rows, never a copy of the tool stack.
 - Validate input sizes, limits and time ranges; bound result sets. Never read a whole
   dataset into React or the model to calculate a total.
 - Logs and model output are untrusted text: render safely, no raw HTML, no unsafe

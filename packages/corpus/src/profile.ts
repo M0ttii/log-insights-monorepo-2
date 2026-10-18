@@ -1,5 +1,5 @@
 /**
- * `pnpm data:profile [name …] [--samples]` (U03, LOG-12).
+ * `pnpm data:profile [name …] [--samples | --samples-ext]` (U03, LOG-12).
  *
  * Runs the read-only profiling queries in sql/profiling/ against the loaded
  * corpus and prints every result as a table. The decisions in concept.md and
@@ -11,6 +11,8 @@
  *
  *   (default)   the full corpus in SERENEDB_DATABASE
  *   --samples   the Loghub 2k samples in log_insights_samples
+ *   --samples-ext  the 2k samples with the extensions in
+ *               log_insights_samples_ext (U26)
  *   --wide      print cells in full instead of cutting them at 120 characters
  *
  * Exit code: 0 done, 2 error.
@@ -20,7 +22,7 @@ import { readdir, readFile } from "node:fs/promises"
 import { connectionFromEnv } from "./config.ts"
 import { openClient } from "./db.ts"
 import { profilingQueries } from "./profiling-queries.ts"
-import { SAMPLES_DATABASE } from "./sources.ts"
+import { SAMPLES_DATABASE, SAMPLES_EXTENDED_DATABASE } from "./sources.ts"
 
 const PROFILING_DIR = new URL("../sql/profiling/", import.meta.url)
 const MAX_CELL = 120
@@ -68,6 +70,7 @@ function printTable(
 async function main(): Promise<number> {
   const args = process.argv.slice(2)
   const samples = args.includes("--samples")
+  const samplesExtended = args.includes("--samples-ext")
   const wide = args.includes("--wide")
   const filters = args.filter((arg) => !arg.startsWith("--"))
   const files = (await readdir(PROFILING_DIR))
@@ -85,7 +88,11 @@ async function main(): Promise<number> {
   const base = connectionFromEnv()
   const client = await openClient({
     ...base,
-    database: samples ? SAMPLES_DATABASE : base.database,
+    database: samplesExtended
+      ? SAMPLES_EXTENDED_DATABASE
+      : samples
+        ? SAMPLES_DATABASE
+        : base.database,
   })
   try {
     const manifest = await client.query<{ data_version: string }>(

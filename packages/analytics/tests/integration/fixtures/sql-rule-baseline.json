@@ -1,6 +1,6 @@
 {
   "source": "LOG-31 pre-change characterization, Loghub 2k samples on SereneDB 26.10.1",
-  "data_version": "dv_379bf006bbb73434",
+  "data_version": "dv_f9c4be888db8f242",
   "cases": [
     {
       "name": "count-totals",
@@ -153,7 +153,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "adbcb1d1e503149f2b3c4f6db6eb3765b02360fb2b45d58ca784f88cc0686caf",
+      "result_digest": "f533b85eb876806d98d4fcd7b06bf667fe73efe960caa36945c05d6b7b810582",
       "normalized_facts_sha256": "5621e55ac6490f97ac0f0a8ab8fc10cd12f39501f6e2f6c721af56f79249146c"
     },
     {
@@ -166,7 +166,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "57e1426fe90552d10a3107b1dbcbe409bb192e8f87987de881a1eea1712e93a4",
+      "result_digest": "a01e8a22cdc1c35999db4805e1ea09a6ff0ff703fa4d7feb47e18a94a1da03a8",
       "normalized_facts_sha256": "60e1d72e68303278321d9ef143430e016f0e7f717e6939af16429ff8e460a18c"
     },
     {
@@ -179,7 +179,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "3d5997812e3f690b4fc5f6479e7a0cc706efbb518a6db8ae3cc6cf71e2acba4f",
+      "result_digest": "cab12c16a930ed35c76e8a7f00b58bc01319f5d3462d699024b5fa3f45cabcd5",
       "normalized_facts_sha256": "afd45f418e0a6dafeb2f5610f8c87dc970e1f8654a4450e9c12c046ca59ef538"
     },
     {
@@ -192,7 +192,7 @@
         "from": "2005-08-01T00:00:00Z",
         "to": "2005-09-01T00:00:00Z"
       },
-      "result_digest": "236d00cf0dc223a29a7789a00504c14f6dfe025f4609bd740926b491c599a868",
+      "result_digest": "da0b157cc7d2ae2f3a7439f9b55684c7dcfc984b5429236f5b683fefbdbc4de4",
       "normalized_facts_sha256": "3227cf74ea5bf60a2c3aba02fe60bd4de9bc3f846e9d7b6bb6901404c7a200f6"
     },
     {
@@ -203,7 +203,7 @@
         "rank": "investigation_order",
         "limit": 5
       },
-      "result_digest": "3912cd381cd206c3633a010dd0514edc5f16ac4a55a9da76daaa8564857942fa",
+      "result_digest": "bbad0cd5098c016bbe13e1327a858609bbcb68a9bda176aac9e7a73dfb83a93e",
       "normalized_facts_sha256": "a066fc62809c21d488063fb106b09b99ce4baed65d9517d2afbf0e89089b32f3"
     },
     {
@@ -214,7 +214,7 @@
         "rank": "investigation_order",
         "limit": 5
       },
-      "result_digest": "a720dfcc25a337f643e320711f3397bb501a0997a59c9f2d2dc2df3f8f97bdcd",
+      "result_digest": "5fc6a4a05c26149076a147c1fa91e2f3e301b6fef53d1d2953c51658f4f96b92",
       "normalized_facts_sha256": "ead190552a9114a9b214f33a193317df4026b1cf37c33274022e3db358ec0ad7"
     },
     {
@@ -317,15 +317,15 @@
       "name": "describe",
       "tool": "describe_corpus",
       "input": {},
-      "result_digest": "3e21e414f15576fe56e2719b5c3101edc671c81f06e75dc57ed241e46131cbcd",
-      "normalized_facts_sha256": "4770d90d52f853a23212fc369fda0a9b6cc6a08521984a9e61784174a04458b5"
+      "result_digest": "1e805bd446c09be542cd46fb8c152c5b0ccecfbde8388d1310a161369c153b18",
+      "normalized_facts_sha256": "7936705d5b872bb0d59b7df7bd7d287ec7e74ddc21987ef4b0cd3beeaad0daab"
     }
   ],
   "loads": [
     {
       "image": "local/serenedb:26.10.1-arm64",
-      "data_version": "dv_379bf006bbb73434",
-      "describe_result_digest": "3e21e414f15576fe56e2719b5c3101edc671c81f06e75dc57ed241e46131cbcd"
+      "data_version": "dv_f9c4be888db8f242",
+      "describe_result_digest": "1e805bd446c09be542cd46fb8c152c5b0ccecfbde8388d1310a161369c153b18"
     },
     {
       "image": "serenedb/serenedb:26.10.1@sha256:6d41ac6577e797289158786a2015ba8fbd6875feadb5c491518e166c011058c9",
@@ -338,6 +338,12 @@
     "datasets": [
       {
         "dataset": "bgl",
+        "title": "BGL",
+        "origin": "BlueGene/L supercomputer at Lawrence Livermore National Labs, 2005–2006.",
+        "citation": [
+          "Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu: Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics. ISSRE 2023.",
+          "Adam Oliner, Jon Stearley: What Supercomputers Say: A Study of Five System Logs. DSN 2007."
+        ],
         "events": 2000,
         "lines_read": 2000,
         "rejected": 0,
@@ -350,54 +356,215 @@
         "label_source": "alert category in the first column (dataset label)",
         "fields": [
           {
-            "name": "event_id",
-            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+            "field": "event_id",
+            "meaning": "Stable event ID: the line number.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "ts",
-            "meaning": "Event time, UTC with microseconds."
+            "field": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04).",
+            "filter": "pattern_id",
+            "dimension": "pattern",
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "level",
-            "meaning": "Severity as logged."
+            "field": "ts",
+            "meaning": "Event time, UTC with microseconds.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "component",
-            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+            "field": "level",
+            "meaning": "Severity as logged: INFO, WARNING, SEVERE, ERROR, FATAL, FAILURE.",
+            "filter": "levels",
+            "dimension": "level",
+            "events_with_value": 2000,
+            "distinct_values": 5,
+            "examples": [
+              {
+                "value": "INFO",
+                "events": 1597
+              },
+              {
+                "value": "FATAL",
+                "events": 347
+              },
+              {
+                "value": "ERROR",
+                "events": 41
+              }
+            ]
           },
           {
-            "name": "source_type",
-            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+            "field": "component",
+            "meaning": "BGL component (KERNEL, APP, …).",
+            "filter": "components",
+            "dimension": "component",
+            "events_with_value": 2000,
+            "distinct_values": 5,
+            "examples": [
+              {
+                "value": "KERNEL",
+                "events": 1820
+              },
+              {
+                "value": "APP",
+                "events": 107
+              },
+              {
+                "value": "DISCOVERY",
+                "events": 35
+              }
+            ]
           },
           {
-            "name": "message",
-            "meaning": "Original log message, untrusted text."
+            "field": "source_type",
+            "meaning": "BGL message type (RAS, …).",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 1962,
+            "distinct_values": 1,
+            "examples": [
+              {
+                "value": "RAS",
+                "events": 1962
+              }
+            ]
           },
           {
-            "name": "pattern_id",
-            "meaning": "Hash of dataset, component and normalised message (R-04)."
+            "field": "message",
+            "meaning": "Original log message after the header fields, untrusted text.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "is_error",
-            "meaning": "Error level after R-02."
+            "field": "is_error",
+            "meaning": "Error level after R-02.",
+            "filter": "only_errors",
+            "dimension": null,
+            "events_with_value": 2000,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "false",
+                "events": 1605
+              },
+              {
+                "value": "true",
+                "events": 395
+              }
+            ]
           },
           {
-            "name": "node",
-            "meaning": "Node ID, e.g. R02-M1-N0-C:J12-U11."
+            "field": "node",
+            "meaning": "Node ID, e.g. R02-M1-N0-C:J12-U11.",
+            "filter": "node",
+            "dimension": "node",
+            "events_with_value": 1965,
+            "distinct_values": 1777,
+            "examples": [
+              {
+                "value": "R30-M0-N9-C:J16-U01",
+                "events": 60
+              },
+              {
+                "value": "R02-M1-N0-C:J12-U11",
+                "events": 30
+              },
+              {
+                "value": "UNKNOWN_LOCATION",
+                "events": 10
+              }
+            ]
           },
           {
-            "name": "midplane",
-            "meaning": "Midplane derived from the node, e.g. R02-M1."
+            "field": "midplane",
+            "meaning": "Midplane derived from the node, e.g. R02-M1.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 1955,
+            "distinct_values": 128,
+            "examples": [
+              {
+                "value": "R62-M0",
+                "events": 81
+              },
+              {
+                "value": "R30-M0",
+                "events": 78
+              },
+              {
+                "value": "R20-M1",
+                "events": 45
+              }
+            ]
           },
           {
-            "name": "rack",
-            "meaning": "Rack derived from the node, e.g. R02."
+            "field": "rack",
+            "meaning": "Rack derived from the node, e.g. R02.",
+            "filter": "rack",
+            "dimension": "rack",
+            "events_with_value": 1955,
+            "distinct_values": 64,
+            "examples": [
+              {
+                "value": "R30",
+                "events": 97
+              },
+              {
+                "value": "R62",
+                "events": 90
+              },
+              {
+                "value": "R20",
+                "events": 71
+              }
+            ]
           },
           {
-            "name": "alert_label",
-            "meaning": "Dataset alert category; null for non-alert lines."
+            "field": "alert_label",
+            "meaning": "Dataset alert category; null for non-alert lines.",
+            "filter": "alert_label",
+            "dimension": "alert_label",
+            "events_with_value": 143,
+            "distinct_values": 12,
+            "examples": [
+              {
+                "value": "KERNDTLB",
+                "events": 60
+              },
+              {
+                "value": "KERNSTOR",
+                "events": 30
+              },
+              {
+                "value": "APPSEV",
+                "events": 17
+              }
+            ]
           }
         ],
+        "capabilities": {
+          "error_definition": "levels ERROR, SEVERE, FATAL, FAILURE",
+          "only_errors": true,
+          "investigation_order": true,
+          "breadth_unit": "nodes",
+          "context_scopes": ["same_node", "same_component", "dataset"],
+          "api_accesses": false,
+          "labels": "line"
+        },
         "levels": [
           {
             "level": "INFO",
@@ -507,6 +674,11 @@
       },
       {
         "dataset": "openstack",
+        "title": "OpenStack",
+        "origin": "Nova services nova-api, nova-compute, nova-scheduler, 2017.",
+        "citation": [
+          "Jieming Zhu, Shilin He, Pinjia He, Jinyang Liu, Michael R. Lyu: Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics. ISSRE 2023."
+        ],
         "events": 2000,
         "lines_read": 2000,
         "rejected": 0,
@@ -519,66 +691,268 @@
         "label_source": "none: this source has no anomaly labels",
         "fields": [
           {
-            "name": "event_id",
-            "meaning": "Stable event ID; BGL line number, OpenStack 10,000,000 + running line number."
+            "field": "event_id",
+            "meaning": "Stable event ID: 10,000,000 + running line number over the files in load order.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "ts",
-            "meaning": "Event time, UTC with microseconds."
+            "field": "pattern_id",
+            "meaning": "Hash of dataset, component and normalised message (R-04).",
+            "filter": "pattern_id",
+            "dimension": "pattern",
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "level",
-            "meaning": "Severity as logged."
+            "field": "ts",
+            "meaning": "Event time, UTC with microseconds.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "component",
-            "meaning": "BGL component (KERNEL, APP, …) or OpenStack service (nova-api, …)."
+            "field": "level",
+            "meaning": "Severity as logged: INFO, WARNING, ERROR, CRITICAL.",
+            "filter": "levels",
+            "dimension": "level",
+            "events_with_value": 2000,
+            "distinct_values": 2,
+            "examples": [
+              {
+                "value": "INFO",
+                "events": 1969
+              },
+              {
+                "value": "WARNING",
+                "events": 31
+              }
+            ]
           },
           {
-            "name": "source_type",
-            "meaning": "BGL message type (RAS, …) or OpenStack logger name."
+            "field": "component",
+            "meaning": "OpenStack service from the file prefix (nova-api, …).",
+            "filter": "components",
+            "dimension": "component",
+            "events_with_value": 2000,
+            "distinct_values": 3,
+            "examples": [
+              {
+                "value": "nova-api",
+                "events": 1060
+              },
+              {
+                "value": "nova-compute",
+                "events": 933
+              },
+              {
+                "value": "nova-scheduler",
+                "events": 7
+              }
+            ]
           },
           {
-            "name": "message",
-            "meaning": "Original log message, untrusted text."
+            "field": "source_type",
+            "meaning": "OpenStack logger name.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 2000,
+            "distinct_values": 10,
+            "examples": [
+              {
+                "value": "nova.osapi_compute.wsgi.server",
+                "events": 809
+              },
+              {
+                "value": "nova.virt.libvirt.imagecache",
+                "events": 336
+              },
+              {
+                "value": "nova.compute.manager",
+                "events": 262
+              }
+            ]
           },
           {
-            "name": "pattern_id",
-            "meaning": "Hash of dataset, component and normalised message (R-04)."
+            "field": "message",
+            "meaning": "Original log message after the header fields, untrusted text.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": null,
+            "distinct_values": null,
+            "examples": []
           },
           {
-            "name": "is_error",
-            "meaning": "Error level after R-02."
+            "field": "is_error",
+            "meaning": "Error level after R-02.",
+            "filter": "only_errors",
+            "dimension": null,
+            "events_with_value": 2000,
+            "distinct_values": 1,
+            "examples": [
+              {
+                "value": "false",
+                "events": 2000
+              }
+            ]
           },
           {
-            "name": "request_id",
-            "meaning": "Request ID (req-…) of the request block."
+            "field": "request_id",
+            "meaning": "Request ID (req-…) of the request block.",
+            "filter": "request_id",
+            "dimension": null,
+            "events_with_value": 1845,
+            "distinct_values": 938,
+            "examples": [
+              {
+                "value": "req-addc1839-2ed5-4778-b57e-5854eb7b8b09",
+                "events": 398
+              },
+              {
+                "value": "req-3ea4052c-895d-4b64-9e2d-04d64c4d94ab",
+                "events": 130
+              },
+              {
+                "value": "req-01d570b0-78a7-4719-b7a3-429fd7dc5a3f",
+                "events": 12
+              }
+            ]
           },
           {
-            "name": "instance_id",
-            "meaning": "Instance UUID named in the line."
+            "field": "instance_id",
+            "meaning": "Instance UUID named in the line.",
+            "filter": "instance_id",
+            "dimension": null,
+            "events_with_value": 535,
+            "distinct_values": 22,
+            "examples": [
+              {
+                "value": "bf8c824d-f099-4433-a41e-e3da7578262e",
+                "events": 26
+              },
+              {
+                "value": "127e769a-4fe6-4548-93b1-513ac51e0452",
+                "events": 25
+              },
+              {
+                "value": "17288ea8-cbf4-4f0e-94fe-853fd2735f29",
+                "events": 25
+              }
+            ]
           },
           {
-            "name": "http_method",
-            "meaning": "HTTP method of an API access line."
+            "field": "http_method",
+            "meaning": "HTTP method of an API access line.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 1017,
+            "distinct_values": 3,
+            "examples": [
+              {
+                "value": "GET",
+                "events": 931
+              },
+              {
+                "value": "POST",
+                "events": 64
+              },
+              {
+                "value": "DELETE",
+                "events": 22
+              }
+            ]
           },
           {
-            "name": "endpoint",
-            "meaning": "API path with IDs masked (R-04)."
+            "field": "endpoint",
+            "meaning": "API path with IDs masked (R-04).",
+            "filter": "endpoints",
+            "dimension": "endpoint",
+            "events_with_value": 1017,
+            "distinct_values": 25,
+            "examples": [
+              {
+                "value": "/v2/<ID>/servers/detail",
+                "events": 700
+              },
+              {
+                "value": "/openstack/2013-10-17/vendor_data.json",
+                "events": 44
+              },
+              {
+                "value": "/v2/<ID>/os-server-external-events",
+                "events": 43
+              }
+            ]
           },
           {
-            "name": "http_status",
-            "meaning": "HTTP status of an API access line."
+            "field": "http_status",
+            "meaning": "HTTP status of an API access line.",
+            "filter": "http_status",
+            "dimension": "http_status",
+            "events_with_value": 1017,
+            "distinct_values": 4,
+            "examples": [
+              {
+                "value": "200",
+                "events": 933
+              },
+              {
+                "value": "404",
+                "events": 41
+              },
+              {
+                "value": "204",
+                "events": 22
+              }
+            ]
           },
           {
-            "name": "latency_ms",
-            "meaning": "Response time of an API access in milliseconds."
+            "field": "latency_ms",
+            "meaning": "Response time of an API access in milliseconds.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 1017,
+            "distinct_values": 1015,
+            "examples": [
+              {
+                "value": "0.9151",
+                "events": 2
+              },
+              {
+                "value": "269.1431",
+                "events": 2
+              },
+              {
+                "value": "0.546",
+                "events": 1
+              }
+            ]
           },
           {
-            "name": "is_anomalous",
-            "meaning": "Dataset anomaly label of the instance, where assignable."
+            "field": "is_anomalous",
+            "meaning": "Dataset anomaly label of the instance, where assignable.",
+            "filter": null,
+            "dimension": null,
+            "events_with_value": 0,
+            "distinct_values": 0,
+            "examples": []
           }
         ],
+        "capabilities": {
+          "error_definition": "levels ERROR, CRITICAL; failed API accesses are 5xx",
+          "only_errors": true,
+          "investigation_order": true,
+          "breadth_unit": "instances",
+          "context_scopes": ["same_request", "same_component", "dataset"],
+          "api_accesses": true,
+          "labels": "instance"
+        },
         "levels": [
           {
             "level": "INFO",
@@ -617,11 +991,13 @@
         "requests": 928
       }
     ],
+    "license": "Zenodo record 8196385 (CC BY 4.0): refer to https://github.com/logpai/loghub and cite the Loghub paper.",
     "limits": [
-      "No shared time axis: BGL (2005–2006) and OpenStack (2017) do not overlap. Trends and period comparisons are per dataset; numbers across both are totals over each full span and are labelled as such.",
+      "No shared time axis: no two datasets overlap as systems, BGL (2005–2006) and OpenStack (2017) not even in time; Apache and Linux overlap BGL's calendar but are other systems with unknown time zones. Trends, period comparisons, context and precursors are per dataset; numbers across datasets are totals over each full span and are labelled as such.",
       "Logs only: there is no business, customer, cost or downtime data. Such impact is unknown and must be named as unknown.",
-      "Labels belong to the dataset: BGL alert categories and OpenStack anomaly labels are not findings of this system; cite them as dataset labels.",
-      "Matches are log entries: counted events, patterns and episodes are neither incidents nor outages."
+      "Labels belong to the dataset: BGL alert categories, OpenStack instance and HDFS block anomaly labels are not findings of this system; cite them as dataset labels.",
+      "Matches are log entries: counted events, patterns and episodes are neither incidents nor outages.",
+      "Times without a zone in the log are assumed UTC, and missing years (OpenSSH, Linux) are inferred from the data; time_basis names the assumption per dataset."
     ],
     "ownership": {
       "fictional": true,
@@ -704,14 +1080,14 @@
       "unowned": []
     },
     "versions": {
-      "data_version": "dv_379bf006bbb73434",
+      "data_version": "dv_f9c4be888db8f242",
       "source": "samples",
-      "loader_version": "1.0.0",
-      "parser_version": "1.0.0",
-      "pattern_rules_version": "1.0.0",
-      "ownership_version": "1.0.0",
-      "rules_version": "concept-3.5",
-      "contract_version": "2.9.0"
+      "loader_version": "1.1.0",
+      "parser_version": "1.1.0",
+      "pattern_rules_version": "1.1.0",
+      "ownership_version": "1.1.0",
+      "rules_version": "concept-3.8",
+      "contract_version": "3.0.0"
     },
     "answer_guidance": null,
     "guidance_version": null

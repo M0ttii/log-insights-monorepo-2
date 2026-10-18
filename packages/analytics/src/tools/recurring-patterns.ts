@@ -1,4 +1,5 @@
 import { toSafeInteger } from "@workspace/domain/bigint"
+import { DATASETS, type BreadthUnit } from "@workspace/domain/datasets"
 import {
   invalidInput,
   type InputIssue,
@@ -100,26 +101,47 @@ import {
 
 const GAP_INTERVAL = `${EPISODE_GAP_MINUTES} minutes`
 
-/** Breadth columns per dataset (R-08, U03): the unit first, the extra one second. */
-const BREADTH: Record<
-  Dataset,
-  { unit: "nodes" | "instances"; columns: readonly [string, string] }
-> = {
-  bgl: { unit: "nodes", columns: ["node", "rack"] },
-  openstack: { unit: "instances", columns: ["instance_id", "request_id"] },
+const BREADTH_ARTICLE: Record<BreadthUnit, string> = {
+  nodes: "a node",
+  instances: "an instance",
+  blocks: "a block",
+  client_ips: "a client IP",
+}
+
+/**
+ * Breadth columns per dataset (R-08, catalog): the unit first, the extra one
+ * second; a dataset without a unit reads NULL, so breadth is null for every
+ * pattern and drops out of investigation_order with its reason.
+ */
+function breadthColumns(dataset: Dataset): readonly [string, string] {
+  const breadth = DATASETS[dataset].breadth
+  return [
+    breadth === null ? "NULL::VARCHAR" : `e.${breadth.column}`,
+    breadth?.extra == null ? "NULL::VARCHAR" : `e.${breadth.extra.column}`,
+  ]
 }
 
 /** R-08 candidates: error events or alerts (R-02); OpenStack also 5xx accesses. */
-const CANDIDATE: Record<Dataset, (q: string) => string> = {
-  bgl: (q) => `(${q}.is_error OR ${q}.is_alert)`,
-  openstack: (q) =>
-    `(${q}.is_error OR (${q}.http_status >= 500 AND ${q}.http_status <= 599))`,
+function candidate(dataset: Dataset, q: string): string {
+  switch (dataset) {
+    case "bgl":
+      return `(${q}.is_error OR ${q}.is_alert)`
+    case "openstack":
+      return `(${q}.is_error OR (${q}.http_status >= 500 AND ${q}.http_status <= 599))`
+    default:
+      return `${q}.is_error`
+  }
 }
 
-const CANDIDATE_TEXT: Record<Dataset, string> = {
-  bgl: "error events (FATAL, ERROR, SEVERE, FAILURE) or alerts (R-02)",
-  openstack:
-    "error events (ERROR, CRITICAL) or failed API accesses (HTTP 500–599, R-02)",
+function candidateText(dataset: Dataset): string {
+  switch (dataset) {
+    case "bgl":
+      return "error events (FATAL, ERROR, SEVERE, FAILURE) or alerts (R-02)"
+    case "openstack":
+      return "error events (ERROR, CRITICAL) or failed API accesses (HTTP 500–599, R-02)"
+    default:
+      return `error events (${DATASETS[dataset].errorDefinition ?? "none defined"}, R-02)`
+  }
 }
 
 const BASE_NOTE =
@@ -213,9 +235,9 @@ export const recurringPatterns = defineTool({
         use: "event_trend",
       },
     ],
-    inputs: `dataset (required, exactly one: bgl or openstack), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span; the previous period of the same length is the reference for delta and status, so without a window it lies before the data and is not determinable. rank: episodes (default; episodes, then events), events (log events, then episodes; inflated by bursts), increase (C − B, then events; fails when the previous period lies outside the data span), investigation_order (error events and alerts only, for OpenStack also 5xx accesses; order episodes ↓, breadth ↓, increase ↓, events ↓, pattern_id; a criterion not determinable for every candidate is dropped for all). limit 1–${RECURRING_MAX_LIMIT}, default ${RECURRING_DEFAULT_LIMIT}; with investigation_order 1–${INVESTIGATION_MAX_LIMIT}, default ${INVESTIGATION_DEFAULT_LIMIT}, and no ${INVESTIGATION_EXCLUDED_FILTERS.join(", ")}. Episodes depend on the filters: filtering by node can split one episode into two.`,
+    inputs: `dataset (required, exactly one loaded dataset), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span; the previous period of the same length is the reference for delta and status, so without a window it lies before the data and is not determinable. rank: episodes (default; episodes, then events), events (log events, then episodes; inflated by bursts), increase (C − B, then events; fails when the previous period lies outside the data span), investigation_order (error events after R-02 and BGL alerts only, for OpenStack also 5xx accesses; not for linux, which has no error definition; order episodes ↓, breadth ↓, increase ↓, events ↓, pattern_id; a criterion not determinable for every candidate is dropped for all). limit 1–${RECURRING_MAX_LIMIT}, default ${RECURRING_DEFAULT_LIMIT}; with investigation_order 1–${INVESTIGATION_MAX_LIMIT}, default ${INVESTIGATION_DEFAULT_LIMIT}, and no ${INVESTIGATION_EXCLUDED_FILTERS.join(", ")}. Episodes depend on the filters: filtering by node can split one episode into two.`,
     filters: RECURRING_FILTER.summary,
-    outputs: `per pattern pattern_id, pattern, component, team (fictional), events (C), first_seen, last_seen, episodes, recurring (≥ ${RECURRING_MIN_EPISODES} episodes), active_days, active_weeks, breadth (BGL nodes and racks, OpenStack instances and requests; null when not every event carries the unit), components, baseline (B), delta (C − B, null when B is not determinable), status, first_seen_before_window (same filters except time), example_event_id; totals events, pattern_count, quiet_count; comparison (B window, coverage, determinable); rules (versions, ${EPISODE_GAP_MINUTES}-minute gap, breadth unit). investigation_order adds per candidate share_of_error_events, levels and labels, and investigation with candidates_checked (all candidates, not only the listed), rank_basis (criteria used and dropped with reason), leaders (highest value and holder per criterion), dominance (clear_priority = clear priority 1, or trade_off with the conflicts to name) and limits (the R-09 limit; quote it). Levels, labels and status are no ranking criteria. Cite every number by its fact ID (group pattern_id).`,
+    outputs: `per pattern pattern_id, pattern, component, team (fictional), events (C), first_seen, last_seen, episodes, recurring (≥ ${RECURRING_MIN_EPISODES} episodes), active_days, active_weeks, breadth (BGL nodes and racks, OpenStack instances and requests, HDFS blocks, OpenSSH and Apache client_ips, none for Linux and ZooKeeper; null when not every event carries the unit), components, baseline (B), delta (C − B, null when B is not determinable), status, first_seen_before_window (same filters except time), example_event_id; totals events, pattern_count, quiet_count; comparison (B window, coverage, determinable); rules (versions, ${EPISODE_GAP_MINUTES}-minute gap, breadth unit). investigation_order adds per candidate share_of_error_events, levels and labels, and investigation with candidates_checked (all candidates, not only the listed), rank_basis (criteria used and dropped with reason), leaders (highest value and holder per criterion), dominance (clear_priority = clear priority 1, or trade_off with the conflicts to name) and limits (the R-09 limit; quote it). Levels, labels and status are no ranking criteria. Cite every number by its fact ID (group pattern_id).`,
     truncation:
       "at most limit patterns in rank order with pattern_id as final tiebreaker; truncated is true when more qualify. investigation_order still checks every candidate in scope.",
     countingUnit:
@@ -287,7 +309,7 @@ export const recurringPatterns = defineTool({
         ...rules,
         episode_gap_minutes: EPISODE_GAP_MINUTES,
         recurring_min_episodes: RECURRING_MIN_EPISODES,
-        breadth_unit: BREADTH[dataset].unit,
+        breadth_unit: DATASETS[dataset].breadth?.unit ?? null,
       },
       comparison: {
         baseline,
@@ -362,7 +384,7 @@ function scopeCondition(
   if (!compiled.ok) throw new Error(compiled.error.message)
   const conditions = [compiled.filter.where]
   if (input.rank === "investigation_order")
-    conditions.push(CANDIDATE[input.dataset]("e"))
+    conditions.push(candidate(input.dataset, "e"))
   return { relation: compiled.filter.relation, where: conditions.join(" AND ") }
 }
 
@@ -391,7 +413,7 @@ async function mainAggregate(
 ): Promise<Aggregate> {
   const params = new SqlParams()
   const { relation, where } = scopeCondition(input, params)
-  const [u1, u2] = BREADTH[input.dataset].columns
+  const [u1, u2] = breadthColumns(input.dataset)
   const gap = params.add(GAP_INTERVAL)
   const inCurrent = inRange(periods.current, params)
   const compared = periods.coverage.determinable
@@ -399,7 +421,7 @@ async function mainAggregate(
   const investigating = input.rank === "investigation_order"
 
   const ctes = [
-    `WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, e.${u1} AS u1, e.${u2} AS u2 FROM ${relation} e WHERE ${where} AND ${inCurrent})`,
+    `WITH cur AS (SELECT e.event_id, e.pattern_id, e.pattern, e.dataset, e.component, e.ts, ${u1} AS u1, ${u2} AS u2 FROM ${relation} e WHERE ${where} AND ${inCurrent})`,
     `, episodic AS (SELECT * FROM cur MATCH_RECOGNIZE (PARTITION BY pattern_id ORDER BY ts, event_id MEASURES pattern AS pattern, dataset AS dataset, component AS component, u1 AS u1, u2 AS u2, CLASSIFIER() AS phase, MATCH_NUMBER() AS episode ALL ROWS PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (s n*) DEFINE n AS ts - PREV(ts) < ${gap}::INTERVAL))`,
     `, c AS (SELECT pattern_id, min(pattern) AS pattern, min(dataset) AS dataset, min(component) AS component, count(*) AS events, count(*) FILTER (WHERE phase = 's') AS episodes, count(DISTINCT date_trunc('day', ts)) AS active_days, count(DISTINCT date_trunc('week', ts)) AS active_weeks, CASE WHEN count(u1) = count(*) THEN count(DISTINCT u1) END AS b1, CASE WHEN count(u2) = count(*) THEN count(DISTINCT u2) END AS b2, count(DISTINCT component) AS components, min(ts) AS first_ts, max(ts) AS last_ts, min(event_id) FILTER (WHERE phase = 's' AND episode = 1) AS example_event_id FROM episodic GROUP BY pattern_id)`,
   ]
@@ -537,10 +559,13 @@ function assembleAggregate(
   if (investigating) {
     if (summary === undefined) throw new Error("investigation summary missing")
     if (summary.drop_breadth) {
-      const unit = BREADTH[dataset].unit
+      const breadth = DATASETS[dataset].breadth
       dropped.push({
         criterion: "breadth",
-        reason: `${summary.missing_breadth} of ${summary.candidates_checked} candidates have events without ${unit === "nodes" ? "a node" : "an instance"} in scope, so breadth (${unit}) is not determinable for every candidate (R-08).`,
+        reason:
+          breadth === null
+            ? `Dataset ${dataset} has no breadth unit (no node, instance, block or client field, R-08), so breadth is no criterion.`
+            : `${summary.missing_breadth} of ${summary.candidates_checked} candidates have events without ${BREADTH_ARTICLE[breadth.unit]} in scope, so breadth (${breadth.unit}) is not determinable for every candidate (R-08).`,
       })
     }
     if (summary.drop_increase)
@@ -657,10 +682,14 @@ function toPattern(
     details: Details | null
   }
 ): RecurringPattern {
+  const unit = DATASETS[context.dataset].breadth
   const breadth =
-    context.dataset === "bgl"
-      ? { nodes: row.b1, racks: row.b2 }
-      : { instances: row.b1, requests: row.b2 }
+    unit === null
+      ? {}
+      : {
+          [unit.unit]: row.b1,
+          ...(unit.extra === null ? {} : { [unit.extra.unit]: row.b2 }),
+        }
   const pattern: RecurringPattern = {
     pattern_id: row.pattern_id,
     pattern: row.pattern,
@@ -717,6 +746,11 @@ function validatePatterns(input: RecurringPatternsInput): ToolError | null {
         path: "only_errors",
         message:
           "investigation_order always ranks error events and alerts (R-08); leave only_errors out.",
+      })
+    if (DATASETS[input.dataset].errorDefinition === null)
+      issues.push({
+        path: "rank",
+        message: `Dataset ${input.dataset} has no error definition (no level or error marker in the log, R-02), so there are no determinable candidates; use rank episodes or events instead.`,
       })
   }
   const investigationIssues = issues.length
@@ -781,7 +815,7 @@ function notesFor(
   if (investigating) {
     notes.push(
       INVESTIGATION_NOTE,
-      `Candidates are patterns with ${CANDIDATE_TEXT[input.dataset]} in scope; only those events are counted, and share_of_error_events is their share of the ${data.events} candidate events.`
+      `Candidates are patterns with ${candidateText(input.dataset)} in scope; only those events are counted, and share_of_error_events is their share of the ${data.events} candidate events.`
     )
     for (const { criterion, reason } of dropped)
       notes.push(

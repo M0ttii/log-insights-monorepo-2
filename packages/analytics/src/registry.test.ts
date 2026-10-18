@@ -742,7 +742,7 @@ describe("createRegistry", () => {
     expect(entry).toMatchObject({
       name: "describe_corpus",
       title: "Describe corpus",
-      version: "1.1.0",
+      version: "2.0.0",
       annotations: READ_ONLY_ANNOTATIONS,
       inputSchema: {
         type: "object",

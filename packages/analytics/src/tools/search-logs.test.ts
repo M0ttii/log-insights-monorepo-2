@@ -29,6 +29,12 @@ const HIT = {
   node: "R02-M1-N0",
   alert_label: null,
   request_id: null,
+  // The five extension columns SereneDB always selects; null for a BGL hit.
+  host: null,
+  process_id: null,
+  client_ip: null,
+  thread: null,
+  block_id: null,
   message: "instruction cache parity error corrected",
   message_truncated: false,
   match_offsets: [18, 24],
@@ -42,6 +48,7 @@ function setup(
     tokens?: string[]
     total?: string
     hits?: Record<string, unknown>[]
+    loaded?: string[]
   } = {}
 ) {
   const calls: Call[] = []
@@ -55,6 +62,11 @@ function setup(
           return [{ data_version: "dv_test" }]
         if (sql.includes("ts_lexize"))
           return [{ tokens: answers.tokens ?? ["parity"] }]
+        // The loaded datasets (U26): the base corpus, in catalog order.
+        if (sql === "SELECT dataset FROM corpus_stats ORDER BY dataset")
+          return (answers.loaded ?? ["bgl", "openstack"]).map((dataset) => ({
+            dataset,
+          }))
         if (sql.includes("FROM corpus_stats")) {
           const dataset = params[0] === "openstack" ? "openstack" : "bgl"
           return [SPAN[dataset]]
@@ -178,7 +190,7 @@ describe("search_logs SQL", () => {
     await search({ query: "parity" })
     expect(
       toolCalls(calls)
-        .filter((call) => call.sql.includes("corpus_stats"))
+        .filter((call) => call.sql.includes("corpus_stats WHERE dataset = $1"))
         .map((call) => call.params)
     ).toEqual([["bgl"], ["openstack"]])
     expect(stored[0]?.scope.windows).toEqual([

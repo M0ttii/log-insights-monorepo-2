@@ -54,12 +54,13 @@ visibility AS (
     (SELECT count(*) FROM log_events
       WHERE dataset = 'openstack' AND ts < (SELECT mid FROM spans WHERE dataset = 'openstack')
         AND regexp_matches(lower(message), '(^|[^a-z0-9_])image([^a-z0-9_]|$)'))
+  {{EXTENSION_VISIBILITY}}
 ),
 empty_strings AS (
   SELECT count(*) AS n FROM log_events
   WHERE '' IN (level, component, source_type, node, rack, midplane, alert_label,
     request_id, user_id, tenant_id, instance_id, http_method, http_path, endpoint,
-    pattern_id)
+    host, process_id, client_ip, thread, block_id, pattern_id)
 )
 SELECT check_name, expected, observed, ok FROM (
   SELECT 1 AS ord, 'load_report: lines_read = events_loaded + rejected for every file' AS check_name,
@@ -142,5 +143,7 @@ SELECT check_name, expected, observed, ok FROM (
     count(*)::VARCHAR || ' rows',
     count(*) = 0
   FROM log_events WHERE level IS NOT NULL AND is_error IS NULL
+  -- Checks of the loaded extension datasets (src/plan.ts, U26).
+  {{EXTENSION_CHECKS}}
 )
 ORDER BY ord;

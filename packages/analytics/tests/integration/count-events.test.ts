@@ -608,7 +608,7 @@ describe("compare", () => {
         {
           path: "dataset",
           message:
-            "compare needs exactly one dataset: comparisons run within one dataset; BGL and OpenStack share no time axis.",
+            "compare needs exactly one dataset: comparisons run within one dataset; no two datasets share a time axis.",
         },
       ],
     })
@@ -643,11 +643,15 @@ describe("receipt", () => {
       only_errors: true,
       top_n: 2,
     })
-    expect(stored.sql).toHaveLength(3)
-    expect(stored.sql[0]).toContain("FROM corpus_stats")
+    // Over the whole load (no dataset given) the tool first lists the loaded
+    // datasets, then reads each dataset's span, then runs the grouped query
+    // (U26: resolveWindows over LOADED).
+    expect(stored.sql).toHaveLength(4)
+    expect(stored.sql[0]).toContain("SELECT dataset FROM corpus_stats")
     expect(stored.sql[1]).toContain("FROM corpus_stats")
-    expect(stored.sql[2]).toMatch(/^WITH grouped AS/)
-    expect(stored.params).toEqual([["bgl"], ["openstack"], [2, 2, 20]])
+    expect(stored.sql[2]).toContain("FROM corpus_stats")
+    expect(stored.sql[3]).toMatch(/^WITH grouped AS/)
+    expect(stored.params).toEqual([[], ["bgl"], ["openstack"], [2, 2, 20]])
     // BGL errors: Compute Platform 240, Workload Runtime 107, Control Plane 35, Hardware Operations 13.
     expect(stored.population).toEqual({ count: 395, unit: "log_events" })
     expect(stored.scope.filters).toEqual({ only_errors: true })

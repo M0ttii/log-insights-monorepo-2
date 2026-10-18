@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/evals",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "u26": "node --env-file-if-exists=../../.env --import tsx u26/run.ts"
+  },
+  "dependencies": {
+    "@workspace/analytics": "workspace:*",
+    "@workspace/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^10",
+    "tsx": "4.23.15",
+    "typescript": "^5"
+  }
+}

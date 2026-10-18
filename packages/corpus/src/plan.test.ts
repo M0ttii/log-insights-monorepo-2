@@ -2,8 +2,10 @@ import { readdir } from "node:fs/promises"
 
 import { describe, expect, it } from "vitest"
 
-import { loadSteps, readSql, SQL_FILES } from "./plan.ts"
-import { CORPUS, SAMPLES } from "./sources.ts"
+import { EXTENSION_DATASETS, type Dataset } from "@workspace/domain/datasets"
+
+import { cleanupPlaceholders, loadSteps, readSql, SQL_FILES } from "./plan.ts"
+import { buildSource, CORPUS, SAMPLES } from "./sources.ts"
 import { fillPlaceholders, splitSqlScript } from "./sql-script.ts"
 
 const timings = { bgl: 1234, openstack: 56, shared: 0 }
@@ -24,9 +26,39 @@ describe("SQL plan", () => {
           await readSql(step.file),
           step.placeholders(timings)
         )
-        expect(filled).not.toMatch(/\{\{/)
+        // A `--` comment may mention `{{EXTENSION_…}}` as prose; only the
+        // executed statements must be free of any real {{NAME}} placeholder
+        // (the ellipsis in the comment is not a valid placeholder name).
+        for (const statement of splitSqlScript(filled))
+          expect(statement).not.toMatch(/\{\{[A-Z_]+\}\}/)
         expect(splitSqlScript(filled).length).toBeGreaterThan(0)
       }
+    }
+  )
+
+  it.each([
+    { kind: "samples" as const, extensions: ["hdfs", "linux"] as Dataset[] },
+    { kind: "corpus" as const, extensions: [...EXTENSION_DATASETS] },
+  ])(
+    "fills every placeholder of the $kind steps with extensions and leaves no placeholder in any statement",
+    async ({ kind, extensions }) => {
+      const source = buildSource(kind, extensions)
+      const steps = [...loadSteps(source)]
+      for (const step of steps) {
+        const filled = fillPlaceholders(
+          await readSql(step.file),
+          step.placeholders(timings)
+        )
+        for (const statement of splitSqlScript(filled))
+          expect(statement).not.toMatch(/\{\{[A-Z_]+\}\}/)
+      }
+      // Cleanup (99) runs after the checks with its own placeholders.
+      const cleanup = fillPlaceholders(
+        await readSql("99_cleanup.sql"),
+        cleanupPlaceholders(source)
+      )
+      for (const statement of splitSqlScript(cleanup))
+        expect(statement).not.toMatch(/\{\{[A-Z_]+\}\}/)
     }
   )
 
@@ -46,14 +78,39 @@ describe("SQL plan", () => {
     ])
   })
 
+  it("names every loaded dataset and its parser in catalog order", () => {
+    const source = buildSource("samples", ["hdfs", "linux"])
+    const reads = loadSteps(source)
+      .filter((step) => step.file === "05_read.sql")
+      .map((step) => step.placeholders(timings)["DATASET"])
+    // Base datasets stay first; extensions follow in catalog order.
+    expect(reads).toEqual(["bgl", "openstack", "hdfs", "linux"])
+  })
+
   it("passes the measured durations to the load report in seconds", () => {
     const report = loadSteps(SAMPLES).find(
       (step) => step.file === "15_load_report.sql"
     )
-    expect(report?.placeholders(timings)).toEqual({
-      BGL_LOAD_S: "1.234",
-      OPENSTACK_LOAD_S: "0.056",
-    })
+    const filled = report?.placeholders(timings)
+    expect(filled?.["BGL_LOAD_S"]).toBe("1.234")
+    expect(filled?.["OPENSTACK_LOAD_S"]).toBe("0.056")
+    // Without extensions the per-extension pieces are empty.
+    expect(filled?.["EXTENSION_REJECTS"]).toBe("")
+    expect(filled?.["EXTENSION_DURATIONS"]).toBe("")
+  })
+
+  it("adds a duration case per loaded extension to the load report", () => {
+    const source = buildSource("samples", ["hdfs", "linux"])
+    const report = loadSteps(source).find(
+      (step) => step.file === "15_load_report.sql"
+    )
+    const durations = report?.placeholders({
+      ...timings,
+      hdfs: 7,
+      linux: 800,
+    })["EXTENSION_DURATIONS"]
+    expect(durations).toContain("WHEN 'hdfs' THEN 0.007")
+    expect(durations).toContain("WHEN 'linux' THEN 0.800")
   })
 
   it("marks sources without anomaly labels", () => {

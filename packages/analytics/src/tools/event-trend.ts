@@ -24,7 +24,7 @@ import {
   type ToolContext,
 } from "@workspace/domain/tool"
 import {
-  BGL_ONLY_DIMENSIONS,
+  trendDimensionDatasets,
   eventTrendInputSchema,
   eventTrendOutputSchema,
   summarizeEventTrend,
@@ -127,7 +127,7 @@ export const eventTrend = defineTool({
       },
       { situation: "you need example log lines", use: "search_logs" },
     ],
-    inputs: `dataset (required, exactly one: bgl or openstack; they share no time axis, so call once per dataset), bucket (hour | day | week; weeks start on Monday 00:00 UTC), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span, split_by (optional, one of ${TREND_DIMENSIONS.join(", ")}; alert_label, rack and node only for bgl). At most ${TREND_MAX_BUCKETS} buckets per call: a longer range fails with limit_exceeded, whose hint names the next coarser bucket or a shorter window.`,
+    inputs: `dataset (required, exactly one loaded dataset; no two datasets share a time axis, so call once per dataset), bucket (hour | day | week; weeks start on Monday 00:00 UTC), from/to as ISO-8601 with Z or offset, [from, to), default the whole data span, split_by (optional, one of ${TREND_DIMENSIONS.join(", ")}; alert_label, rack and node only for bgl, host for openssh and linux, client_ip for openssh and apache, thread for zookeeper, block_id for hdfs). At most ${TREND_MAX_BUCKETS} buckets per call: a longer range fails with limit_exceeded, whose hint names the next coarser bucket or a shorter window.`,
     filters: TREND_FILTER.summary,
     outputs: `data_span (first and last event of the dataset), effective_range (window ∩ data span, the time the buckets cover; null if the window lies outside the data span – then no buckets are returned), bucket_count, total, series[] (top ${TREND_MAX_SERIES} values by events in scope, then value) with events, other (events and merged_values beyond the top ${TREND_MAX_SERIES}), buckets[] by bucket_start with bucket_end, events, series[] in the same order, other_events, partial (window or data span starts or ends inside the bucket, so less time is covered – a lower count is no drop) and capture_gap (the dataset has no event at all in the bucket, so its zero is not observed calm). Buckets inside the effective range without events are observed zeros; buckets outside the data span are never listed. Cite counts by their fact IDs (group dataset, bucket_start and the split dimension).`,
     truncation: `never truncated: more than ${TREND_MAX_BUCKETS} buckets is an error (limit_exceeded); values beyond the top ${TREND_MAX_SERIES} series are summed in other, so every bucket's series plus other_events equal its events.`,
@@ -432,20 +432,18 @@ function gridCte(
   return `grid AS (SELECT unnest(range(date_trunc('${bucketUnitSchema.parse(unit)}', ${from}::TIMESTAMPTZ), ${to}::TIMESTAMPTZ, ${step}::INTERVAL)) AS bucket)`
 }
 
-/** Cross-field rules: the shared filter rules plus BGL-only split dimensions. */
+/** Cross-field rules: the shared filter rules plus dataset-specific split dimensions. */
 function validateTrend(input: EventTrendInput): ToolError | null {
   const issues: InputIssue[] = []
   const filterError = validateFilter(input)
   if (filterError?.code === "invalid_input") issues.push(...filterError.issues)
   else if (filterError !== null) return filterError
-  if (
-    input.dataset === "openstack" &&
-    input.split_by !== undefined &&
-    BGL_ONLY_DIMENSIONS.includes(input.split_by)
-  ) {
+  const datasets =
+    input.split_by === undefined ? null : trendDimensionDatasets(input.split_by)
+  if (datasets !== null && !datasets.includes(input.dataset)) {
     issues.push({
       path: "split_by",
-      message: `${input.split_by} exists only for dataset bgl.`,
+      message: `${input.split_by} exists only for ${datasets.length === 1 ? "dataset" : "datasets"} ${datasets.join(", ")}.`,
     })
   }
   return issues.length === 0 ? null : invalidInput(issues)

@@ -40,6 +40,11 @@ export const COUNT_FILTER = pickFilter([
   "only_alerts",
   "request_id",
   "instance_id",
+  "block_id",
+  "host",
+  "process_id",
+  "client_ip",
+  "thread",
   "pattern_id",
   "text",
 ])
@@ -52,13 +57,6 @@ export const COUNT_FILTER = pickFilter([
 export const API_ACCESS_DIMENSIONS: readonly Dimension[] = [
   "http_status",
   "endpoint",
-]
-
-/** BGL-only dimensions; they carry no value on API access lines. */
-export const BGL_DIMENSIONS: readonly Dimension[] = [
-  "node",
-  "rack",
-  "alert_label",
 ]
 
 export function countsApiAccesses(groupBy: readonly Dimension[]): boolean {
@@ -93,7 +91,7 @@ export const countEventsInputSchema = z.strictObject({
     .min(1)
     .max(COUNT_MAX_DIMENSIONS)
     .describe(
-      `1–${COUNT_MAX_DIMENSIONS} distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. With compare exactly one.`
+      `1–${COUNT_MAX_DIMENSIONS} distinct dimensions to group by: dataset, team (fictional ownership, unmapped components are 'unowned'), component, level, alert_label (BGL dataset label), rack, node (BGL), pattern (pattern_id), http_status, endpoint (OpenStack API accesses), host (OpenSSH, Linux), client_ip (OpenSSH, Apache), thread (ZooKeeper), block_id (HDFS). Groups are the combinations of their values; a missing value (e.g. node for OpenStack) is its own category null. A dataset-specific dimension with a dataset that lacks it is rejected. With compare exactly one.`
     ),
   ...COUNT_FILTER.shape,
   top_n: z
@@ -171,6 +169,12 @@ export const countGroupSchema = z.strictObject({
     .optional()
     .describe("HTTP status of the API accesses."),
   endpoint: dimensionValue("API path with IDs masked."),
+  host: dimensionValue("OpenSSH or Linux syslog host."),
+  client_ip: dimensionValue(
+    "OpenSSH or Apache remote IPv4 address; null when the line names none."
+  ),
+  thread: dimensionValue("ZooKeeper thread name."),
+  block_id: dimensionValue("HDFS block ID."),
   events: count.describe(
     "Count of the group in the counting unit; with compare the count C in [from, to)."
   ),

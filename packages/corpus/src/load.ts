@@ -22,6 +22,7 @@ import {
 } from "./image.ts"
 import { dataVersion, sqlDigest, type ManifestInput } from "./manifest.ts"
 import {
+  cleanupPlaceholders,
   loadSteps,
   readSql,
   SQL_FILES,
@@ -74,6 +75,9 @@ export class LoadCheckFailed extends Error {
 }
 
 const READY_TIMEOUT_MS = 90_000
+
+/** Buffer manager limit during a load (see runLoad). */
+const LOAD_MEMORY_LIMIT = "3GB"
 
 async function docker(root: string, args: string[]): Promise<string> {
   try {
@@ -339,13 +343,16 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
     if (content === undefined) throw new Error(`Missing SQL file ${name}`)
     return content
   }
+  const labelPaths = new Set(
+    source.datasets.flatMap(({ labels }) => (labels === null ? [] : [labels]))
+  )
   const loadedPaths = new Set([
-    source.bglLog,
-    ...source.openstackLogs,
-    ...(source.openstackLabels === null ? [] : [source.openstackLabels]),
+    ...source.datasets.flatMap(({ logs }) => logs),
+    ...labelPaths,
   ])
   const manifest: ManifestInput = {
     source: source.id,
+    datasets: source.datasets.map(({ dataset }) => dataset),
     files: files
       .filter((file) => loadedPaths.has(file.path))
       .map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })),
@@ -360,13 +367,20 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
   const client = await openClient(connection)
   try {
     log("Load")
-    const timings: Timings = { bgl: 0, openstack: 0, shared: 0 }
+    // Bounds SereneDB's buffer manager for the load (U26): with HDFS the
+    // shared steps build log_events from about 17 million lines, and the
+    // default limit (80 % of the VM memory) let the server process run out
+    // of memory when another instance shares the Docker VM (observed on an
+    // 8 GB VM). Larger intermediates spill to disk. memory_limit is a global
+    // setting, so the default is restored afterwards.
+    await client.query(`SET memory_limit = '${LOAD_MEMORY_LIMIT}'`)
+    const timings: Timings = { shared: 0 }
     let indexMs = 0
     for (const step of loadSteps(source)) {
       const ms = await timed(() =>
         runScript(client, step.file, sql(step.file), step.placeholders(timings))
       )
-      timings[step.timing] += ms
+      timings[step.timing] = (timings[step.timing] ?? 0) + ms
       if (step.file === "50_index.sql") indexMs = ms
       log(`  ${step.file.padEnd(20)} ${(ms / 1000).toFixed(1).padStart(6)} s`)
     }
@@ -385,7 +399,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
 
     // Independent of SereneDB: lines counted by Node while hashing the file.
     for (const file of files.filter((f) => loadedPaths.has(f.path))) {
-      if (file.path === source.openstackLabels) continue
+      if (labelPaths.has(file.path)) continue
       const row = report.find((r) => r.source_file === basename(file.path))
       const lines = row === undefined ? "missing" : row.lines_read
       checks.push({
@@ -415,8 +429,14 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       VERSIONS.ownership,
       VERSIONS.rules,
       manifest.sqlDigest,
+      JSON.stringify(manifest.datasets),
     ])
-    await runScript(client, "99_cleanup.sql", sql("99_cleanup.sql"), {})
+    await runScript(
+      client,
+      "99_cleanup.sql",
+      sql("99_cleanup.sql"),
+      cleanupPlaceholders(source)
+    )
 
     const stats = (
       await client.query<Record<string, unknown>>(
@@ -441,6 +461,7 @@ export async function runLoad(source: Source, log: Log): Promise<LoadResult> {
       },
     }
   } finally {
+    await client.query("RESET memory_limit").catch(() => undefined)
     await client.end()
   }
 }

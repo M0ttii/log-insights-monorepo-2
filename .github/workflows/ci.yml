@@ -69,6 +69,9 @@ jobs:
               .env.example > .env
           grep -qx "SERENEDB_IMAGE=${SERENEDB_CI_IMAGE}" .env
       - run: pnpm --silent data:setup --samples
+      # The five Loghub extensions (U26) into log_insights_samples_ext, so the
+      # extension integration tests have their database next to the base one.
+      - run: pnpm --silent data:setup --samples --with all
       - run: pnpm test:integration
       - name: MCP stdio smoke (Loghub 2k samples)
         run: pnpm test:mcp

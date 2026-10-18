@@ -272,6 +272,9 @@ async function ensureArchive(
   }
 
   await mkdir(join(rawDir, archive.extractTo), { recursive: true })
+  // Entries can sit in subdirectories (HDFS_v1.zip: preprocessed/…).
+  for (const target of missing.values())
+    await mkdir(dirname(target), { recursive: true })
   const entries =
     archive.format === "zip"
       ? await extractZip(archivePath, missing, log)

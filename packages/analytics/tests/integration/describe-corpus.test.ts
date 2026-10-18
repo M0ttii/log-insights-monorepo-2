@@ -150,7 +150,7 @@ describe("describe_corpus", () => {
       "Hardware Operations",
       "Workload Runtime",
     ])
-    expect(data.limits).toHaveLength(4)
+    expect(data.limits).toHaveLength(5)
   })
 
   it("stores a receipt with exact SQL, data version, scope and duration", async () => {
@@ -161,11 +161,14 @@ describe("describe_corpus", () => {
     const stored: Receipt = JSON.parse(await readFile(file, "utf8"))
     expect(stored.result).toEqual(result.data)
     expect(stored.facts).toEqual(result.facts)
-    expect(receipt.sql).toHaveLength(3)
+    // describe_corpus 2.0.0 reads the field guide from corpus_field_stats as a
+    // fourth statement, after the per-dataset stats, before ownership and the
+    // manifest; all four take no parameters.
+    expect(receipt.sql).toHaveLength(4)
     expect(receipt.sql[0]).toMatch(
       /^SELECT sum\(events\) OVER \(\) AS population_count, dataset/
     )
-    expect(receipt.params).toEqual([[], [], []])
+    expect(receipt.params).toEqual([[], [], [], []])
     expect(receipt.data_version).toMatch(/^dv_[0-9a-f]{16}$/)
     expect(result.data.versions.data_version).toBe(receipt.data_version)
     expect(receipt.duration_ms).toBeGreaterThan(0)
@@ -190,7 +193,9 @@ describe("describe_corpus", () => {
     const { receipt, facts } = await describeCorpus()
     const stored = await new FileReceiptStore(dir).get(receipt.receipt_id)
     if (stored === null) throw new Error("receipt missing")
-    expect(facts).toHaveLength(30)
+    // 2.0.0 adds the field-guide facts (per dataset and field) to the
+    // per-dataset counts; every fact still resolves to its receipt value.
+    expect(facts).toHaveLength(116)
     facts.forEach((fact, index) => {
       expect(fact.id).toBe(`${receipt.receipt_id}.f${index + 1}`)
       expect(resolve(stored, fact.path)).toBe(fact.value)

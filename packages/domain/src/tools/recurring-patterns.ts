@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { formatFactValue, type Fact, type FactSpec } from "../facts.ts"
+import { DATASETS } from "../datasets.ts"
 import { datasetSchema, pickFilter } from "../filters.ts"
 import { priorityDominanceSchema } from "../rules/dominance.ts"
 import { leaderSchema, rankCriterionSchema } from "../rules/ranking.ts"
@@ -42,6 +43,11 @@ export const RECURRING_FILTER = pickFilter([
   "only_alerts",
   "request_id",
   "instance_id",
+  "block_id",
+  "host",
+  "process_id",
+  "client_ip",
+  "thread",
   "pattern_id",
   "text",
 ])
@@ -72,10 +78,10 @@ export const recurringPatternsInputSchema = z.strictObject({
   dataset: z
     .enum(datasetSchema.options, {
       error:
-        "Pass exactly one dataset, bgl or openstack: patterns, episodes and rankings are per dataset (no shared time axis).",
+        "Pass exactly one dataset: patterns, episodes and rankings are per dataset (no shared time axis); describe_corpus lists the loaded ones.",
     })
     .describe(
-      "Required, exactly one dataset: bgl (BlueGene/L, 2005–2006) or openstack (2017)."
+      "Required, exactly one dataset; describe_corpus lists the loaded ones."
     ),
   ...RECURRING_FILTER.shape,
   rank: rankSchema.default("episodes"),
@@ -114,7 +120,7 @@ const breadth = (unit: string, description: string) =>
     .nullable()
     .optional()
     .describe(
-      `${description} Distinct ${unit} of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for the other dataset.`
+      `${description} Distinct ${unit} of the pattern's events in the window; null when not every event carries one (no lower bound from partly set values, R-08). Absent for other datasets.`
     )
 
 export const patternLevelSchema = z.strictObject({
@@ -163,6 +169,8 @@ export const recurringPatternSchema = z.strictObject({
   racks: breadth("racks", "BGL, shown in addition."),
   instances: breadth("instances", "OpenStack breadth (R-08)."),
   requests: breadth("request IDs", "OpenStack, shown in addition."),
+  blocks: breadth("blocks", "HDFS breadth (R-08)."),
+  client_ips: breadth("client IPs", "OpenSSH and Apache breadth (R-08)."),
   components: count.describe(
     "Distinct components; a pattern belongs to one component (R-04), so 1 when it has events in the window."
   ),
@@ -195,7 +203,7 @@ export const recurringPatternSchema = z.strictObject({
   share_of_error_events: ratio
     .optional()
     .describe(
-      "Only with investigation_order: events / candidate_events (error events, alerts and, for OpenStack, 5xx accesses in scope), computed in SereneDB."
+      "Only with investigation_order: events / candidate_events (error events after R-02, BGL alerts and OpenStack 5xx accesses in scope), computed in SereneDB."
     ),
   levels: z
     .array(patternLevelSchema)
@@ -274,8 +282,11 @@ export const recurringPatternsOutputSchema = z.strictObject({
         .describe("R-05 gap that starts a new episode, bound in the SQL."),
       recurring_min_episodes: z.number().int().positive(),
       breadth_unit: z
-        .enum(["nodes", "instances"])
-        .describe("Unit of breadth (R-08): BGL nodes, OpenStack instances."),
+        .enum(["nodes", "instances", "blocks", "client_ips"])
+        .nullable()
+        .describe(
+          "Unit of breadth (R-08): BGL nodes, OpenStack instances, HDFS blocks, OpenSSH and Apache client IPs; null for datasets without one (Linux, ZooKeeper), where breadth is no criterion."
+        ),
     })
     .describe("Rules the numbers follow."),
   comparison: z
@@ -327,6 +338,8 @@ const PER_PATTERN: readonly [string, string, string][] = [
   ["racks", "racks", "racks"],
   ["instances", "instances", "instances"],
   ["requests", "requests", "requests"],
+  ["blocks", "blocks", "blocks"],
+  ["client_ips", "client_ips", "client_ips"],
   ["components", "components", "components"],
   ["baseline", "events_baseline", "log_events"],
   ["delta", "delta", "log_events"],
@@ -365,7 +378,7 @@ function leaderSpecs(
 export function recurringPatternsFactSpecs(
   input: Pick<RecurringPatternsInput, "dataset">
 ): FactSpec[] {
-  const breadthUnit = input.dataset === "bgl" ? "nodes" : "instances"
+  const breadthUnit = DATASETS[input.dataset].breadth?.unit ?? "patterns"
   return [
     {
       path: "/result/rules/episode_gap_minutes",
@@ -500,14 +513,13 @@ export function summarizeRecurringPatterns(
   }
   data.patterns.forEach((pattern, index) => {
     const p = `/result/patterns/${index}`
-    const width =
-      unit === "nodes" ? (pattern.nodes ?? null) : (pattern.instances ?? null)
+    const width = unit === null ? null : (pattern[unit] ?? null)
     const change =
       pattern.delta === null
         ? "delta n/a"
         : `delta ${pattern.delta > 0 ? "+" : ""}${formatFactValue(pattern.delta)}${cite(`${p}/delta`)}`
     lines.push(
-      `${index + 1}. ${pattern.pattern_id} ${JSON.stringify(pattern.pattern)} (${pattern.component ?? "null"}, ${pattern.team}): ${formatFactValue(pattern.episodes)} episodes${cite(`${p}/episodes`)}, ${formatFactValue(pattern.events)} events${cite(`${p}/events`)}, ${formatFactValue(pattern.active_days)} active days${cite(`${p}/active_days`)}, ${width === null ? `${unit} n/a` : `${formatFactValue(width)} ${unit}${cite(`${p}/${unit}`)}`}, ${change}, status ${pattern.status ?? "none"}, recurring ${pattern.recurring}`
+      `${index + 1}. ${pattern.pattern_id} ${JSON.stringify(pattern.pattern)} (${pattern.component ?? "null"}, ${pattern.team}): ${formatFactValue(pattern.episodes)} episodes${cite(`${p}/episodes`)}, ${formatFactValue(pattern.events)} events${cite(`${p}/events`)}, ${formatFactValue(pattern.active_days)} active days${cite(`${p}/active_days`)}, ${unit === null ? "no breadth unit" : width === null ? `${unit} n/a` : `${formatFactValue(width)} ${unit}${cite(`${p}/${unit}`)}`}, ${change}, status ${pattern.status ?? "none"}, recurring ${pattern.recurring}`
     )
   })
   if (investigation !== null) lines.push(`Limits: ${investigation.limits}`)

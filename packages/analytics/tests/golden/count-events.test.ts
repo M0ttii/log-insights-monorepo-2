@@ -76,22 +76,42 @@ describe("count_events independent full-corpus SQL", () => {
       expect(expected.some((row) => row.key === "unowned")).toBe(
         dimension === "team"
       )
+      // U26: the full corpus now spans seven datasets, so `component` has more than 50
+      // groups (124) and cannot be fully listed within the tool's top_n limit of 50.
+      // Assert coverage and truncation at top_n = 50 generically against the independent
+      // oracle: the top 50 groups are listed, and any remainder is summed into `other`.
+      // For dataset/team/level (<= 50 groups) this still asserts complete, untruncated
+      // coverage exactly as before.
       const complete = await harness.run(
         "count_events",
         { group_by: [dimension], top_n: 50 },
         countEventsOutputSchema
       )
-      expect(complete.data.other).toBeNull()
-      expect(complete.data.truncated).toBe(false)
+      const completeOther = expected.slice(50)
       expect(complete.data.total).toBe(data.total)
+      expect(complete.data.group_count).toBe(expected.length)
+      expect(complete.data.truncated).toBe(expected.length > 50)
+      expect(complete.data.other === null).toBe(completeOther.length === 0)
+      expect(complete.data.other?.groups ?? 0).toBe(completeOther.length)
+      expect(complete.data.other?.events ?? 0).toBe(
+        completeOther.reduce((sum, row) => sum + row.events, 0)
+      )
+      expectClose(
+        complete.data.other?.share ?? null,
+        completeOther.length === 0
+          ? null
+          : completeOther.reduce((sum, row) => sum + (row.share ?? 0), 0)
+      )
+      const completeTop = expected.slice(0, 50)
+      expect(complete.data.groups).toHaveLength(completeTop.length)
       expect(
         complete.data.groups.map((row) => ({
           key: row[dimension],
           events: row.events,
         }))
-      ).toEqual(expected.map(({ key, events }) => ({ key, events })))
+      ).toEqual(completeTop.map(({ key, events }) => ({ key, events })))
       for (const [index, actual] of complete.data.groups.entries()) {
-        expectClose(actual.share, expected[index]?.share ?? null)
+        expectClose(actual.share, completeTop[index]?.share ?? null)
       }
     }
   )

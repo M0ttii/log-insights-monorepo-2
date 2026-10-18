@@ -6,10 +6,44 @@ import type { Registry } from "./registry.ts"
 import { readCorpusResource } from "./resources.ts"
 import { describeCorpus } from "./tools/describe-corpus.ts"
 
+const CAPABILITIES = {
+  error_definition: "levels ERROR, SEVERE, FATAL, FAILURE",
+  only_errors: true,
+  investigation_order: true,
+  breadth_unit: "nodes" as const,
+  context_scopes: ["same_node", "same_component", "dataset"],
+  api_accesses: false,
+  labels: "line" as const,
+}
+
+const FIELDS = [
+  {
+    field: "event_id",
+    meaning: "Stable event ID.",
+    filter: null,
+    dimension: null,
+    events_with_value: null,
+    distinct_values: null,
+    examples: [],
+  },
+  {
+    field: "component",
+    meaning: "BGL component.",
+    filter: "components",
+    dimension: "component",
+    events_with_value: 3,
+    distinct_values: 1,
+    examples: [{ value: "KERNEL", events: 3 }],
+  },
+]
+
 const DATA = describeCorpus.output.parse({
   datasets: [
     {
       dataset: "bgl",
+      title: "BGL",
+      origin: "BlueGene/L supercomputer.",
+      citation: ["Loghub paper."],
       events: 3,
       lines_read: 3,
       rejected: 0,
@@ -20,7 +54,8 @@ const DATA = describeCorpus.output.parse({
       single_event_patterns: 1,
       time_basis: "Unix seconds",
       label_source: "Dataset alert category",
-      fields: [{ name: "event_id", meaning: "Stable event ID." }],
+      fields: FIELDS,
+      capabilities: CAPABILITIES,
       levels: [{ level: "INFO", events: 3 }],
       components: [{ component: "KERNEL", team: "unowned", events: 3 }],
       labels: [{ label: null, events: 3 }],
@@ -29,6 +64,7 @@ const DATA = describeCorpus.output.parse({
       requests: null,
     },
   ],
+  license: "Loghub CC BY 4.0.",
   limits: ["Events are not incidents."],
   ownership: {
     fictional: true,
@@ -133,7 +169,8 @@ describe("corpus resources", () => {
           datasets: [
             {
               dataset: "bgl",
-              fields: [{ name: "event_id", meaning: "Stable event ID." }],
+              fields: FIELDS,
+              capabilities: CAPABILITIES,
             },
           ],
           versions: DATA.versions,
